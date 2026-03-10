@@ -1,0 +1,327 @@
+name: Sandbox Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      task_id:
+        description: 'Task Queue ID'
+        required: true
+        type: string
+      commit_sha:
+        description: 'Commit SHA to test'
+        required: false
+        type: string
+      branch:
+        description: 'Branch to test'
+        required: false
+        default: 'main'
+        type: string
+      callback_url:
+        description: 'Webhook URL for results'
+        required: true
+        type: string
+      project_id:
+        description: 'Project ID in Orchestrator'
+        required: true
+        type: string
+
+  repository_dispatch:
+    types: [sandbox-test]
+
+env:
+  TASK_ID: ${{ inputs.task_id || github.event.client_payload.task_id }}
+  COMMIT_SHA: ${{ inputs.commit_sha || github.event.client_payload.commit_sha || github.sha }}
+  BRANCH: ${{ inputs.branch || github.event.client_payload.branch || 'main' }}
+  CALLBACK_URL: ${{ inputs.callback_url || github.event.client_payload.callback_url }}
+  PROJECT_ID: ${{ inputs.project_id || github.event.client_payload.project_id }}
+
+jobs:
+  setup:
+    name: Setup & Notify Start
+    runs-on: ubuntu-latest
+    outputs:
+      has_php: ${{ steps.detect.outputs.has_php }}
+      has_js: ${{ steps.detect.outputs.has_js }}
+      has_tests: ${{ steps.detect.outputs.has_tests }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.COMMIT_SHA || env.BRANCH }}
+
+      - name: Detect Project Type
+        id: detect
+        run: |
+          echo "has_php=$(test -f composer.json && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "has_js=$(test -f package.json && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "has_tests=$(test -d tests || test -d test && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+
+      - name: Notify Start
+        run: |
+          curl -X POST "${{ env.CALLBACK_URL }}" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.ORCHESTRATOR_ANON_KEY }}" \
+            -d '{
+              "task_id": "${{ env.TASK_ID }}",
+              "project_id": "${{ env.PROJECT_ID }}",
+              "github_run_id": ${{ github.run_id }},
+              "status": "running",
+              "commit_sha": "${{ env.COMMIT_SHA }}",
+              "branch": "${{ env.BRANCH }}",
+              "logs_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "started_at": "'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'"
+            }'
+
+  php-lint:
+    name: PHP Lint
+    needs: setup
+    if: needs.setup.outputs.has_php == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.lint.outcome }}
+      errors: ${{ steps.lint.outputs.errors }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.COMMIT_SHA || env.BRANCH }}
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: phpcs, php-cs-fixer
+
+      - name: PHP Syntax Check
+        id: lint
+        run: |
+          ERROR_COUNT=0
+          ERRORS=""
+          for file in $(find . -name "*.php" -not -path "./vendor/*"); do
+            if ! php -l "$file" > /dev/null 2>&1; then
+              ERROR_COUNT=$((ERROR_COUNT + 1))
+              ERRORS="$ERRORS$file\n"
+            fi
+          done
+          echo "errors=$ERROR_COUNT" >> $GITHUB_OUTPUT
+          if [ $ERROR_COUNT -gt 0 ]; then
+            echo "Found $ERROR_COUNT PHP syntax errors"
+            exit 1
+          fi
+
+      - name: PHP CodeSniffer
+        if: always()
+        continue-on-error: true
+        run: |
+          if [ -f phpcs.xml ] || [ -f phpcs.xml.dist ]; then
+            phpcs --standard=phpcs.xml . || true
+          else
+            phpcs --standard=PSR12 --extensions=php --ignore=vendor . || true
+          fi
+
+  js-lint:
+    name: JavaScript Lint
+    needs: setup
+    if: needs.setup.outputs.has_js == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.lint.outcome }}
+      errors: ${{ steps.lint.outputs.errors }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.COMMIT_SHA || env.BRANCH }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci --ignore-scripts || npm install --ignore-scripts
+
+      - name: ESLint
+        id: lint
+        run: |
+          if [ -f .eslintrc.js ] || [ -f .eslintrc.json ] || [ -f eslint.config.js ]; then
+            npx eslint . --format json --output-file eslint-report.json || true
+            ERRORS=$(cat eslint-report.json | jq '[.[].errorCount] | add // 0')
+            echo "errors=$ERRORS" >> $GITHUB_OUTPUT
+            if [ "$ERRORS" -gt 0 ]; then
+              exit 1
+            fi
+          else
+            echo "No ESLint config found, skipping"
+            echo "errors=0" >> $GITHUB_OUTPUT
+          fi
+
+  unit-tests:
+    name: Unit Tests
+    needs: setup
+    if: needs.setup.outputs.has_tests == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.test.outcome }}
+      passed: ${{ steps.test.outputs.passed }}
+      failed: ${{ steps.test.outputs.failed }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.COMMIT_SHA || env.BRANCH }}
+
+      - name: Setup PHP
+        if: needs.setup.outputs.has_php == 'true'
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: xdebug
+
+      - name: Install PHP Dependencies
+        if: needs.setup.outputs.has_php == 'true'
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Run PHPUnit
+        id: phpunit
+        if: needs.setup.outputs.has_php == 'true'
+        run: |
+          if [ -f phpunit.xml ] || [ -f phpunit.xml.dist ]; then
+            ./vendor/bin/phpunit --log-junit test-results.xml || true
+            PASSED=$(grep -oP 'tests="\K[0-9]+' test-results.xml | head -1 || echo 0)
+            FAILED=$(grep -oP 'failures="\K[0-9]+' test-results.xml | head -1 || echo 0)
+            echo "passed=$PASSED" >> $GITHUB_OUTPUT
+            echo "failed=$FAILED" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup Node.js
+        if: needs.setup.outputs.has_js == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install JS Dependencies
+        if: needs.setup.outputs.has_js == 'true'
+        run: npm ci --ignore-scripts || npm install --ignore-scripts
+
+      - name: Run Jest/Vitest
+        id: test
+        if: needs.setup.outputs.has_js == 'true'
+        run: |
+          if grep -q "vitest" package.json; then
+            npx vitest run --reporter=json --outputFile=test-results.json || true
+          elif grep -q "jest" package.json; then
+            npx jest --json --outputFile=test-results.json || true
+          fi
+          if [ -f test-results.json ]; then
+            PASSED=$(cat test-results.json | jq '.numPassedTests // 0')
+            FAILED=$(cat test-results.json | jq '.numFailedTests // 0')
+            echo "passed=$PASSED" >> $GITHUB_OUTPUT
+            echo "failed=$FAILED" >> $GITHUB_OUTPUT
+          else
+            echo "passed=0" >> $GITHUB_OUTPUT
+            echo "failed=0" >> $GITHUB_OUTPUT
+          fi
+
+  build:
+    name: Build
+    needs: [setup, js-lint]
+    if: always() && needs.setup.outputs.has_js == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.build.outcome }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.COMMIT_SHA || env.BRANCH }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci || npm install
+
+      - name: Build
+        id: build
+        run: |
+          if grep -q '"build"' package.json; then
+            npm run build
+          else
+            echo "No build script found"
+          fi
+
+      - name: Upload Build Artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: |
+            dist/
+            build/
+          retention-days: 7
+
+  report:
+    name: Report Results
+    needs: [setup, php-lint, js-lint, unit-tests, build]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine Overall Status
+        id: status
+        run: |
+          if [ "${{ needs.php-lint.result }}" == "failure" ] || \
+             [ "${{ needs.js-lint.result }}" == "failure" ] || \
+             [ "${{ needs.unit-tests.result }}" == "failure" ] || \
+             [ "${{ needs.build.result }}" == "failure" ]; then
+            echo "overall=failed" >> $GITHUB_OUTPUT
+          elif [ "${{ needs.php-lint.result }}" == "cancelled" ] || \
+               [ "${{ needs.js-lint.result }}" == "cancelled" ] || \
+               [ "${{ needs.unit-tests.result }}" == "cancelled" ] || \
+               [ "${{ needs.build.result }}" == "cancelled" ]; then
+            echo "overall=cancelled" >> $GITHUB_OUTPUT
+          else
+            echo "overall=passed" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Report to Callback
+        run: |
+          curl -X POST "${{ env.CALLBACK_URL }}" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.ORCHESTRATOR_ANON_KEY }}" \
+            -d '{
+              "task_id": "${{ env.TASK_ID }}",
+              "project_id": "${{ env.PROJECT_ID }}",
+              "github_run_id": ${{ github.run_id }},
+              "status": "${{ steps.status.outputs.overall }}",
+              "completed_at": "'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'",
+              "result_summary": {
+                "php_lint": "${{ needs.php-lint.result || 'skipped' }}",
+                "php_lint_errors": ${{ needs.php-lint.outputs.errors || 0 }},
+                "js_lint": "${{ needs.js-lint.result || 'skipped' }}",
+                "js_lint_errors": ${{ needs.js-lint.outputs.errors || 0 }},
+                "unit_tests": "${{ needs.unit-tests.result || 'skipped' }}",
+                "tests_passed": ${{ needs.unit-tests.outputs.passed || 0 }},
+                "tests_failed": ${{ needs.unit-tests.outputs.failed || 0 }},
+                "build": "${{ needs.build.result || 'skipped' }}"
+              },
+              "artifacts_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts"
+            }'
+
+      - name: Job Summary
+        run: |
+          echo "## Sandbox Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| PHP Lint | ${{ needs.php-lint.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| JS Lint | ${{ needs.js-lint.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Unit Tests | ${{ needs.unit-tests.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Overall: ${{ steps.status.outputs.overall }}**" >> $GITHUB_STEP_SUMMARY
