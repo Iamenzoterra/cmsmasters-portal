@@ -1,0 +1,20 @@
+{
+  "name": "cmsmasters-portal",
+  "private": true,
+  "packageManager": "npm@10.9.4",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "cc:dev": "turbo run dev --filter=command-center",
+    "cc:scan": "turbo run scan --filter=command-center",
+    "cc:report": "turbo run report --filter=command-center",
+    "build": "turbo run build",
+    "lint": "turbo run lint"
+  },
+  "devDependencies": {
+    "turbo": "latest",
+    "typescript": "^5.9.3"
+  }
+}
