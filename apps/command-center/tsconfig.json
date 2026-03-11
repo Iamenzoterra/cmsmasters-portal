@@ -15,9 +15,10 @@
     "incremental": true,
     "baseUrl": ".",
     "paths": {
+      "@/*": ["./*"],
       "tailwindcss": ["./types/tailwindcss.d.ts"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules"]
 }
