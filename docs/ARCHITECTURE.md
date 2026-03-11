@@ -82,7 +82,7 @@ Defines all raw values as a typed const object:
 | `status` | `success`, `active`, `warning`, `danger`, `orchestrator` | `#22c55e`, `#3b82f6` |
 | `spacing` | `card`, `section` | `1.25rem`, `2rem` |
 | `borderRadius` | `card`, `badge` | `0.875rem`, `0.375rem` |
-| `typography` | `fontFamily`, `fontSize`, `fontWeight` | Geist + JetBrains Mono |
+| `typography` | `fontFamily`, `fontSize`, `fontWeight` | LINE Seed JP + JetBrains Mono |
 
 ### tailwind.config.ts
 
@@ -182,6 +182,35 @@ Command Center uses Tailwind CSS v4. Key differences from v3:
 - **`globals.css`** uses `@import "tailwindcss"` and `@config "../tailwind.config.ts"` instead of `@tailwind base/components/utilities`
 - **PostCSS** uses `@tailwindcss/postcss` plugin (not `tailwindcss` directly)
 - Config is still in `tailwind.config.ts` via `theme.extend`
+
+---
+
+## Typography
+
+Command Center uses two fonts:
+
+| Font | Role | Source |
+|------|------|--------|
+| **LINE Seed JP** | Primary sans-serif (`font-sans`) | Google Fonts CDN via `<link>` in `layout.tsx` |
+| **JetBrains Mono** | Monospace (`font-mono`) | `next/font/google` in `layout.tsx` |
+
+**Loading strategy:**
+
+- **LINE Seed JP** is loaded via a `<link rel="stylesheet">` tag in the `<head>` of `app/layout.tsx`, pointing to Google Fonts CSS API. Weights: 100, 400, 700, 800. Not available in `next/font/google` so cannot use the Next.js font optimizer.
+- **JetBrains Mono** is loaded via `next/font/google` with `variable: '--font-mono'`, which enables automatic font optimization and self-hosting by Next.js.
+
+**CSS variable wiring:**
+
+```
+globals.css  →  :root { --font-sans: 'LINE Seed JP', …; --font-mono: 'JetBrains Mono', …; }
+                         ↓
+tailwind.config.ts  →  fontFamily.sans: ['var(--font-sans)', …]
+                       fontFamily.mono: ['var(--font-mono)', …]
+                         ↓
+Components use Tailwind classes: font-sans (default), font-mono
+```
+
+To change the primary font, update the `<link>` in `layout.tsx` and the `--font-sans` variable in `globals.css`.
 
 ---
 

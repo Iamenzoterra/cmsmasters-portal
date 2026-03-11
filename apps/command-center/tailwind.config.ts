@@ -43,7 +43,7 @@ const config: Config = {
         badge: '0.375rem',
       },
       fontFamily: {
-        sans: ['var(--font-geist)', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-sans)', 'LINE Seed JP', 'system-ui', 'sans-serif'],
         mono: ['var(--font-mono)', 'JetBrains Mono', 'monospace'],
       },
     },

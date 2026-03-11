@@ -1,12 +1,7 @@
 import type { Metadata } from 'next';
-import { Geist, JetBrains_Mono } from 'next/font/google';
+import { JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { Sidebar } from '@/components/Sidebar';
-
-const geist = Geist({
-  variable: '--font-geist',
-  subsets: ['latin'],
-});
 
 const jetbrainsMono = JetBrains_Mono({
   variable: '--font-mono',
@@ -24,8 +19,14 @@ export default function RootLayout({
 }): React.ReactElement {
   return (
     <html lang="en" className="dark">
+      <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=LINE+Seed+JP:wght@100;400;700;800&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body
-        className={`${geist.variable} ${jetbrainsMono.variable} ${geist.className} bg-surface-app text-text-primary`}
+        className={`${jetbrainsMono.variable} bg-surface-app text-text-primary`}
       >
         <div className="flex h-screen">
           <Sidebar />

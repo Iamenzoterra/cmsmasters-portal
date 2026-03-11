@@ -65,7 +65,7 @@ export const tokens = {
 
   typography: {
     fontFamily: {
-      sans: 'var(--font-geist), ui-sans-serif, system-ui, sans-serif',
+      sans: 'var(--font-sans), LINE Seed JP, ui-sans-serif, system-ui, sans-serif',
       mono: 'var(--font-mono), ui-monospace, monospace',
     },
     fontSize: {
