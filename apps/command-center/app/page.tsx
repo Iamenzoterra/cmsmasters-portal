@@ -1,10 +1,7 @@
 import type React from 'react';
-import { AtomsShowcase } from '../ui/AtomsShowcase';
 
-export default function CommandCenterPage(): React.ReactElement {
+export default function MissionControl(): React.ReactElement {
   return (
-    <main className="min-h-screen bg-surface-app">
-      <AtomsShowcase />
-    </main>
+    <h1 className='text-text-primary'>Mission Control</h1>
   );
 }
