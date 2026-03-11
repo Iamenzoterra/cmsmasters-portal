@@ -9,6 +9,7 @@ import { Modal } from './Modal';
 import { Checkbox } from './Checkbox';
 import { Input } from './Input';
 import { Select, type SelectOption } from './Select';
+import { tokens } from '../theme/tokens';
 
 const ALL_STATUSES: Status[] = ['todo', 'in-progress', 'review', 'done', 'blocked'];
 
@@ -57,8 +58,8 @@ export function AtomsShowcase(): React.ReactElement {
       <section>
         <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-text-secondary">DonutChart</h2>
         <div className="flex flex-wrap gap-6">
-          <DonutChart value={37} label="Coverage" color="#3b82f6" />
-          <DonutChart value={82} label="Progress" color="#22c55e" />
+          <DonutChart value={37} label="Coverage" color={tokens.status['in-progress']} />
+          <DonutChart value={82} label="Progress" color={tokens.status.done} />
         </div>
       </section>
 
@@ -77,7 +78,7 @@ export function AtomsShowcase(): React.ReactElement {
 
           {/* Card 2: DonutChart */}
           <Card className="flex items-center justify-center">
-            <DonutChart value={68} label="Done" color="#a78bfa" />
+            <DonutChart value={68} label="Done" color={tokens.status.orchestrator} />
           </Card>
 
           {/* Card 3: Input + Select + Checkbox */}
