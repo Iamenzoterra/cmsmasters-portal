@@ -1,9 +1,18 @@
 {
   "name": "cmsmasters-portal",
-  "version": "0.1.0",
   "private": true,
+  "packageManager": "npm@10.9.4",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "build": "echo \"No build step configured yet\"",
-    "lint": "echo \"No lint step configured yet\""
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint"
+  },
+  "devDependencies": {
+    "turbo": "latest",
+    "typescript": "^5.0.0"
   }
 }

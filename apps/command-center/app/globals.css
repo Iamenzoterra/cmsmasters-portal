@@ -1,0 +1,13 @@
+@import 'tailwindcss';
+@config '../tailwind.config.ts';
+
+:root {
+  --font-geist: 'Geist', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Geist Mono', monospace;
+}
+
+body {
+  background-color: #09090b;
+  color: #f4f4f5;
+  font-family: var(--font-geist);
+}

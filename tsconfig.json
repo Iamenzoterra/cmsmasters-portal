@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "tailwindcss": ["./apps/command-center/types/tailwindcss.d.ts"]
+    }
+  },
+  "include": ["apps/command-center/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}
