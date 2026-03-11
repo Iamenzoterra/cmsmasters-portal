@@ -10,5 +10,7 @@
     "paths": {
       "tailwindcss": ["./apps/command-center/types/tailwindcss.d.ts"]
     }
-  }
+  },
+  "include": ["apps/command-center/types/**/*.ts"],
+  "exclude": ["node_modules"]
 }
