@@ -1,0 +1,9 @@
+{
+  "name": "cmsmasters-portal",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "echo \"No build step configured yet\"",
+    "lint": "echo \"No lint step configured yet\""
+  }
+}
