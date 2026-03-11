@@ -75,12 +75,13 @@ Defines all raw values as a typed const object:
 
 | Category | Keys | Example value |
 |----------|------|---------------|
-| `surface` | `app`, `card`, `hover` | `#09090b`, `#18181b` |
+| `surface` | `app`, `card`, `hover` | `#09090b`, `#18181b`, `#27272a` |
 | `text` | `primary`, `secondary`, `muted`, `disabled` | `#f4f4f5`, `#a1a1aa` |
-| `border` | `default`, `focus` | `#3f3f46`, `#a1a1aa` |
-| `status` | `done`, `in-progress`, `review`, `blocked`, `orchestrator` | `#22c55e`, `#3b82f6` |
-| `spacing` | `0`–`16` | `1rem` |
-| `radius` | `sm`, `md`, `lg`, `full` | `0.25rem`–`9999px` |
+| `border` | `default`, `subtle` | `#27272a`, `#1f1f23` |
+| `accent` | — | `#3b82f6` (blue — active nav, focus ring) |
+| `status` | `success`, `active`, `warning`, `danger`, `orchestrator` | `#22c55e`, `#3b82f6` |
+| `spacing` | `card`, `section` | `1.25rem`, `2rem` |
+| `borderRadius` | `card`, `badge` | `0.875rem`, `0.375rem` |
 | `typography` | `fontFamily`, `fontSize`, `fontWeight` | Geist + JetBrains Mono |
 
 ### tailwind.config.ts
@@ -121,6 +122,40 @@ All atoms are in `ui/`. They follow these rules:
 | `Select` | Dropdown select with dark theme styling |
 | `Checkbox` | Checkbox input with dark theme styling |
 | `Modal` | Overlay dialog with backdrop |
+
+---
+
+## Sidebar Layout
+
+`components/Sidebar.tsx` is the persistent navigation column rendered in `app/layout.tsx`.
+
+**Directive:** `'use client'` — required for `usePathname()` (Next.js navigation hook).
+
+**Layout:**
+
+```
+<nav class="flex h-screen w-16 flex-col border-r border-border-subtle bg-surface-card transition-all xl:w-[210px]">
+  Logo section
+  Nav items (flex-1, scrollable)
+  Bottom section (last scan, rescan button)
+</nav>
+```
+
+| Breakpoint | Width | Content |
+|------------|-------|---------|
+| Default (< `xl`) | `w-16` (64px) | Icons only — labels hidden |
+| `xl` (≥ 1280px) | `w-[210px]` | Icons + labels visible |
+
+**Active state detection:**
+
+```ts
+function isActive(href: string): boolean {
+  if (href === '/') return pathname === href;        // exact match for root
+  return pathname === href || pathname.startsWith(href + '/');  // prefix for sub-routes
+}
+```
+
+Active nav items receive `bg-accent/10 text-accent` classes. Inactive items receive `text-text-secondary hover:bg-surface-hover hover:text-text-primary`.
 
 ---
 
