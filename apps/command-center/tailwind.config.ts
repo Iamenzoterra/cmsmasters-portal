@@ -5,6 +5,7 @@ const config: Config = {
     './app/**/*.{js,ts,jsx,tsx,mdx}',
     './ui/**/*.{js,ts,jsx,tsx,mdx}',
     './theme/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
@@ -22,7 +23,9 @@ const config: Config = {
         },
         border: {
           default: '#27272a',
+          subtle: '#1f1f23',
         },
+        accent: '#3b82f6',
         status: {
           success: '#22c55e',
           active: '#3b82f6',
