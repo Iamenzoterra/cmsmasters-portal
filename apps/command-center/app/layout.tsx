@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
+import { Sidebar } from '@/components/Sidebar';
 
 const geist = Geist({
   variable: '--font-geist',
@@ -26,7 +27,12 @@ export default function RootLayout({
       <body
         className={`${geist.variable} ${jetbrainsMono.variable} ${geist.className} bg-surface-app text-text-primary`}
       >
-        {children}
+        <div className="flex h-screen">
+          <Sidebar />
+          <main className="flex-1 overflow-y-auto px-8 py-6">
+            {children}
+          </main>
+        </div>
       </body>
     </html>
   );
