@@ -4,7 +4,7 @@ title: SEO and AI Discovery
 version: 2
 status: active
 category: product
-relatedADRs: [8, 15]
+relatedADRs: [8, 15, 22]
 supersededBy: null
 date: 2026-03-12
 ---
