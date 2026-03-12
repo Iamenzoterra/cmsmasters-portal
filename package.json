@@ -7,12 +7,14 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "turbo run build",
-    "dev": "turbo run dev",
-    "lint": "turbo run lint"
+    "build": "nx run-many -t build",
+    "dev": "nx run-many -t dev",
+    "lint": "nx run-many -t lint"
   },
   "devDependencies": {
-    "turbo": "latest",
+    "@nx/eslint": "^22.5.4",
+    "@nx/next": "^22.5.4",
+    "nx": "latest",
     "typescript": "^5.0.0"
   }
 }
