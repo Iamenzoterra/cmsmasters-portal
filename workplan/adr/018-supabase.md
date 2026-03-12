@@ -1,9 +1,12 @@
 ---
 id: 18
 title: 'Supabase Platform Choice'
+version: 2
 status: active
 category: tooling
 relatedADRs: [7, 12, 17]
+supersededBy: null
+date: 2026-03-12
 ---
 
 ## Context

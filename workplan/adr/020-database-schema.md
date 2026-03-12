@@ -1,9 +1,12 @@
 ---
 id: 20
 title: 'Database Schema'
+version: 2
 status: active
 category: data-future
 relatedADRs: [5, 12, 18, 21]
+supersededBy: null
+date: 2026-03-12
 ---
 
 ## Context
