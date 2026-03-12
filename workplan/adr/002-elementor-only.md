@@ -1,6 +1,7 @@
 ---
 id: 2
 title: Elementor-Only — Exclusive Support for Elementor Page Builder
+version: 2
 status: active
 category: core
 relatedADRs: [1, 3]
