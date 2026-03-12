@@ -3,7 +3,7 @@ id: 19
 title: 'Orchestrator Role'
 status: active
 category: tooling
-relatedADRs: [13, 17]
+relatedADRs: [13, 17, 18]
 ---
 
 ## Context
