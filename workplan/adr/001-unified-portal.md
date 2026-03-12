@@ -1,6 +1,7 @@
 ---
 id: 1
 title: Unified Portal — Single Codebase for All CMSMasters Products
+version: 2
 status: active
 category: core
 relatedADRs: [2, 3]

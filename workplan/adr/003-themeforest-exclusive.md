@@ -1,6 +1,7 @@
 ---
 id: 3
 title: ThemeForest Exclusive — Single-Channel Distribution via Envato Marketplace
+version: 2
 status: active
 category: core
 relatedADRs: [1, 2]
