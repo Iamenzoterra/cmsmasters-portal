@@ -1,9 +1,12 @@
 ---
 id: 19
 title: 'Orchestrator Role'
+version: 2
 status: active
 category: tooling
 relatedADRs: [13, 17, 18]
+supersededBy: null
+date: 2026-03-12
 ---
 
 ## Context
