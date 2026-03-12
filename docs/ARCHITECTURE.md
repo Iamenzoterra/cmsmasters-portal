@@ -28,7 +28,7 @@ apps/command-center/
 │       └── page.tsx            # Dependencies (/dependencies)
 ├── components/
 │   └── Sidebar.tsx             # Navigation sidebar
-├── ui/                         # Design system atoms
+├── ui/                         # Design system primitives
 │   ├── Card.tsx
 │   ├── StatusBadge.tsx
 │   ├── ProgressBar.tsx
@@ -37,7 +37,7 @@ apps/command-center/
 │   ├── Select.tsx
 │   ├── Checkbox.tsx
 │   ├── Modal.tsx
-│   └── AtomsShowcase.tsx       # Dev showcase of all atoms
+│   └── AtomsShowcase.tsx       # Dev showcase of all primitives
 ├── theme/
 │   ├── tokens.ts               # Single source of truth for design values
 │   └── utils.ts                # cn() helper, getStatusColor(), getStatusBg()
@@ -104,15 +104,15 @@ Maps token values to named Tailwind classes. Components use semantic class names
 
 ---
 
-## UI Atoms
+## UI Primitives
 
-All atoms are in `ui/`. They follow these rules:
+All primitives are in `ui/`. They follow these rules:
 - Named exports only (no default exports)
 - Props typed with explicit TypeScript interfaces
 - Use `cn()` for class composition
 - Use design token classes exclusively — no hardcoded colors
 
-| Atom | Purpose |
+| Primitive | Purpose |
 |------|---------|
 | `Card` | Surface container with `bg-surface-card rounded-card p-card` |
 | `StatusBadge` | Colored pill badge for task/phase status |
@@ -323,7 +323,7 @@ Paths are resolved with `path.join(process.cwd(), ...)` so they work from any CW
 
 ### Content Model
 
-There is **no `/content` directory**. Structured content (themes, docs, blog posts) lives in Supabase PostgreSQL tables per **ADR-008** (`008-structured-content-supabase.md`). The old `content/schemas/` JSON Schema files have been replaced by **Zod schemas** in `packages/validators` (`@cmsmasters/validators`).
+There is **no `/content` directory**. Structured content (themes, docs, blog posts) lives in Supabase PostgreSQL tables per **ADR-008** (`008-structured-content-supabase.md`). The old `content/schemas/` validation files have been replaced by **Zod schemas** in `packages/validators` (`@cmsmasters/validators`).
 
 ---
 
@@ -350,7 +350,7 @@ Build system: **Nx** with **pnpm workspaces** (per ADR-017: `017-monorepo-nx.md`
 | `packages/ui` | `@cmsmasters/ui` | Shared UI components |
 | `packages/db` | `@cmsmasters/db` | Database client (Supabase) |
 | `packages/auth` | `@cmsmasters/auth` | Auth utilities + entitlement resolvers |
-| `packages/validators` | `@cmsmasters/validators` | Shared Zod schemas (replaces JSON Schema) |
+| `packages/validators` | `@cmsmasters/validators` | Shared Zod schemas |
 | `packages/email` | `@cmsmasters/email` | Email templates |
 | `packages/api-client` | `@cmsmasters/api-client` | Typed Hono RPC client (`hono/client`) |
 
