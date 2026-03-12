@@ -13,7 +13,8 @@ export type App =
   | 'command-center'
   | 'ui'
   | 'infra'
-  | 'content';
+  | 'content'
+  | 'api';
 
 // ─── phases.json schemas ─────────────────────────────────────────────────────
 
@@ -49,9 +50,10 @@ export interface Project {
   phases: Phase[];
 }
 
-// ─── components.json schemas ──────────────────────────────────────────────────
+// ─── packages/validators/src/components.ts schema ────────────────────────────
 
 export type ComponentStatus = 'planned' | 'in-progress' | 'done' | 'blocked';
+export type ComponentLayer = 'primitives' | 'domain' | 'layouts';
 
 export interface Component {
   id: string;
@@ -63,22 +65,43 @@ export interface Component {
   dependencies?: string[];
 }
 
-// ─── content-status.json schemas ──────────────────────────────────────────────
+export interface ComponentEntry {
+  id: string;
+  name: string;
+  description: string;
+  app: App;
+  status: ComponentStatus;
+  layer: ComponentLayer;
+  phase: string;
+  dependencies?: string[];
+}
+
+export interface ComponentSummary {
+  primitives: number;
+  domain: number;
+  layouts: number;
+}
+
+// ─── packages/validators/src/content-status.ts schema ────────────────────────
 
 export type ContentStatusValue = 'empty' | 'draft' | 'review' | 'approved' | 'published';
 
-export interface Theme {
-  id: string;
+export interface ThemeEntry {
+  slug: string;
   name: string;
-  app: App;
-  pagesTotal: number;
-  pagesDone: number;
+  status: 'empty' | 'draft' | 'published';
+  docsCount: number;
+  hasHeroImage: boolean;
+  pluginsCount: number;
+  featuresCount: number;
+  lastUpdated: string;
 }
 
 export interface ContentStatus {
   themeId: string;
   pageId: string;
   status: ContentStatusValue;
+  source: 'supabase' | 'placeholder';
   updatedAt: string;
 }
 
@@ -93,6 +116,10 @@ export interface Progress {
   estimatedHours: number;
   actualHours: number;
   percentComplete: number;
+}
+
+export interface ProgressData {
+  byApp: Record<App, number>;
 }
 
 // ─── ADR frontmatter schema ───────────────────────────────────────────────────
