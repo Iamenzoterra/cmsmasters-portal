@@ -1,10 +1,10 @@
 ---
 id: 14
 title: Content Studio
-version: 1
+version: 2
 status: active
 category: tooling
-relatedADRs: [8, 11]
+relatedADRs: [8, 11, 22]
 supersededBy: null
 date: 2026-03-12
 ---

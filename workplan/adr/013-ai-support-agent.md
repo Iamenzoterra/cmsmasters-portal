@@ -1,10 +1,10 @@
 ---
 id: 13
-title: AI-First Support
-version: 1
+title: AI Support Agent
+version: 2
 status: active
-category: roles-security
-relatedADRs: [11, 18]
+category: tooling
+relatedADRs: [11, 18, 22]
 supersededBy: null
 date: 2026-03-12
 ---
