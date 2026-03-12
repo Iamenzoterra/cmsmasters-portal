@@ -216,22 +216,143 @@ To change the primary font, update the `<link>` in `layout.tsx` and the `--font-
 
 ## Data Layer
 
-- All filesystem reads go through `lib/data.ts` (planned — not yet populated)
-- Components never read files directly
-- Missing data files show an empty state — never crash
-- Data sources: JSON + Markdown files from `/workplan` directory and monorepo structure
+All filesystem reads go through `lib/data.ts`. Components never read files directly. Missing data files return `null` or `[]` — never crash.
+
+### Path Constants
+
+| Constant | Resolved Path |
+|----------|--------------|
+| `PHASES_PATH` | `workplan/phases.json` |
+| `COMPONENTS_PATH` | `workplan/components.json` |
+| `CONTENT_STATUS_PATH` | `workplan/content-status.json` |
+| `PROGRESS_PATH` | `workplan/progress.json` |
+| `ADR_DIR` | `workplan/adr/` |
+
+Paths are resolved with `path.join(process.cwd(), ...)` so they work from any CWD Next.js uses.
+
+### Reader Functions (lib/data.ts)
+
+| Function | Return type | Description |
+|----------|-------------|-------------|
+| `getPhases()` | `Promise<Project \| null>` | Reads `workplan/phases.json` |
+| `getComponents()` | `Promise<ComponentSummary[] \| null>` | Reads `workplan/components.json` |
+| `getContentStatus()` | `Promise<ContentStatus \| null>` | Reads `workplan/content-status.json` |
+| `getProgress()` | `Promise<ProgressData \| null>` | Reads `workplan/progress.json` |
+| `getADRList()` | `Promise<ADRMeta[]>` | Lists all ADR files, parses frontmatter |
+| `getADRContent(idOrSlug)` | `Promise<ADRMetaWithBody \| null>` | Returns single ADR frontmatter + body |
+
+### phases.json Schema
+
+**Project-level fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | `string` | Project name |
+| `started` | `string` (ISO date) | Project start date |
+| `targetLaunch` | `string` (ISO date) | Target launch date |
+| `currentPhase` | `number` | Index of the active phase (0–6) |
+| `phases` | `Phase[]` | Array of 7 phase objects |
+
+**Task fields (inside each phase):**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `string` | Unique task ID, e.g. `P0-T1` |
+| `phase` | `number` | Phase index this task belongs to |
+| `title` | `string` | Short task title |
+| `status` | `string` | `todo` \| `in-progress` \| `done` \| `blocked` |
+| `app` | `string` | Target app: `portal`, `dashboard`, `support`, `studio`, `admin`, `api`, `command-center`, `ui`, `infra` |
+| `group` | `string` | Logical task group within the phase |
+| `description` | `string` | Full task description |
+
+### ADR Files (workplan/adr/)
+
+22 ADR Markdown files live in `workplan/adr/`. All are hand-edited and use V2 frontmatter (`version: 2`).
+
+**V2 Frontmatter Schema:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `string` | Numeric string, e.g. `"1"` |
+| `title` | `string` | Human-readable ADR title |
+| `version` | `number` | Always `2` for V2 files |
+| `status` | `string` | `active` \| `accepted` \| `superseded` |
+| `category` | `string` | See category list below |
+| `relatedADRs` | `number[]` | IDs of related ADRs |
+| `supersededBy` | `number \| null` | ADR that supersedes this one |
+| `date` | `string` (ISO date) | Decision date |
+
+**Categories:**
+
+| Category | ADRs |
+|----------|------|
+| `core` | 001, 002, 003 |
+| `access` | 004, 005, 006 |
+| `tech-stack` | 007, 008 |
+| `product` | 009, 010, 015 |
+| `roles-security` | 011, 012, 013 |
+| `tooling` | 014, 016, 017 |
+| `data-future` | 018, 019, 020, 021, 022 |
+
+**All 22 V2 filenames:**
+
+```
+001-unified-portal.md
+002-elementor-only.md
+003-themeforest-exclusive.md
+004-elements-users.md
+005-entitlement-based-access.md
+006-activation-flow.md
+007-split-stack.md
+008-structured-content-supabase.md
+009-component-theme-pages.md
+010-design-system-shadcn.md
+011-five-roles-six-apps.md
+012-security-architecture.md
+013-ai-support-agent.md
+014-content-studio.md
+015-search-first-homepage.md
+016-seo-ai-discovery.md
+017-monorepo-nx.md
+018-supabase-backbone.md
+019-orchestrator-role.md
+020-database-schema.md
+021-subscription-architecture.md
+022-auth-api-dataflow.md
+```
+
+### Content Model
+
+There is **no `/content` directory**. Structured content (themes, docs, blog posts) lives in Supabase PostgreSQL tables per **ADR-008** (`008-structured-content-supabase.md`). The old `content/schemas/` JSON Schema files have been replaced by **Zod schemas** in `packages/validators` (`@cmsmasters/validators`).
+
+---
+
+## lib/utils.ts
+
+Five pure utility functions exported from `apps/command-center/lib/utils.ts`. Zero external dependencies.
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `formatDate` | `(iso: string) => string` | Formats ISO date to `Mon DD, YYYY` via `Intl.DateTimeFormat` |
+| `formatHours` | `(decimal: number) => string` | Formats decimal hours to `Xh Ym`, omitting zero units |
+| `calculateProgress` | `(done: number, total: number) => number` | Returns integer percentage (0 when total is 0) |
+| `getRelativeTime` | `(iso: string) => string` | Returns human-readable relative time (`5m ago`, `2d ago`, etc.) |
+| `groupBy` | `<T>(array: T[], key: keyof T) => Record<string, T[]>` | Groups array items by any key |
 
 ---
 
 ## Monorepo Packages
 
+Build system: **Nx** with **pnpm workspaces** (per ADR-017: `017-monorepo-nx.md`).
+
 | Package | Name | Purpose |
 |---------|------|---------|
-| `packages/ui` | `@cmsmasters/ui` | Shared UI components (future) |
-| `packages/db` | `@cmsmasters/db` | Database client |
-| `packages/auth` | `@cmsmasters/auth` | Auth utilities |
-| `packages/validators` | `@cmsmasters/validators` | Shared Zod schemas |
+| `packages/ui` | `@cmsmasters/ui` | Shared UI components |
+| `packages/db` | `@cmsmasters/db` | Database client (Supabase) |
+| `packages/auth` | `@cmsmasters/auth` | Auth utilities + entitlement resolvers |
+| `packages/validators` | `@cmsmasters/validators` | Shared Zod schemas (replaces JSON Schema) |
 | `packages/email` | `@cmsmasters/email` | Email templates |
+| `packages/api-client` | `@cmsmasters/api-client` | Typed Hono RPC client (`hono/client`) |
 
 ---
 
