@@ -104,4 +104,18 @@ export interface ADRMeta {
   date: string;
   deciders?: string[];
   tags?: string[];
+  category?: string;
+  relatedADRs?: string[];
+}
+
+export type ADRMetaWithBody = ADRMeta & { body: string };
+
+// ─── Aliases / wrappers ───────────────────────────────────────────────────────
+
+/** Single entry in components.json */
+export type ComponentSummary = Component;
+
+/** Shape of progress.json */
+export interface ProgressData {
+  phases: Progress[];
 }
