@@ -21,7 +21,7 @@ The Command Center (`apps/command-center`) is an internal dashboard for tracking
 
 ### Start dev server
 
-From the monorepo root (uses Turborepo, starts all apps):
+From the monorepo root (uses Nx, starts all apps):
 
 ```bash
 npm run dev

@@ -37,7 +37,7 @@ apps/command-center/
 │   ├── Select.tsx
 │   ├── Checkbox.tsx
 │   ├── Modal.tsx
-│   └── AtomsShowcase.tsx       # Dev showcase of all atoms
+│   └── AtomsShowcase.tsx       # Dev showcase of all primitives
 ├── theme/
 │   ├── tokens.ts               # Single source of truth for design values
 │   └── utils.ts                # cn() helper, getStatusColor(), getStatusBg()
@@ -104,16 +104,16 @@ Maps token values to named Tailwind classes. Components use semantic class names
 
 ---
 
-## UI Atoms
+## UI Primitives
 
-All atoms are in `ui/`. They follow these rules:
+All primitives are in `ui/`. They follow these rules:
 - Named exports only (no default exports)
 - Props typed with explicit TypeScript interfaces
 - Use `cn()` for class composition
 - Use design token classes exclusively — no hardcoded colors
 
-| Atom | Purpose |
-|------|---------|
+| Primitive | Purpose |
+|-----------|---------|
 | `Card` | Surface container with `bg-surface-card rounded-card p-card` |
 | `StatusBadge` | Colored pill badge for task/phase status |
 | `ProgressBar` | Horizontal progress indicator with label and percentage |
