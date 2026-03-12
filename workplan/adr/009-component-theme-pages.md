@@ -1,9 +1,10 @@
 ---
-id: 9
+id: '009'
+version: 2
 title: Component Theme Pages
-status: active
+status: accepted
 category: product
-relatedADRs: [7, 8, 10]
+relatedADRs: [7, 8, 10, 15]
 ---
 
 ## Context
@@ -12,8 +13,10 @@ The CMSMasters Portal must deliver over 65 themes, each requiring dedicated brow
 
 ## Decision
 
-Theme pages are composed from reusable React components rather than monolithic page templates. Each theme page assembles atoms and molecules defined in the design system (see ADR 10 — Atomic Design and Storybook) to render hero sections, metadata panels, preview galleries, and call-to-action blocks. Page-level files remain thin orchestration layers that pass data from `lib/data.ts` into presentational components. This ensures visual consistency across all 65+ themes and allows individual UI sections to be updated in isolation without touching page files.
+Theme pages are composed from reusable React components organized according to the three-layer design system defined in ADR 10 (Design System — shadcn/ui Three-Layer Model). Each theme page assembles primitives and domain components to render hero sections, metadata panels, preview galleries, and call-to-action blocks. Page-level files are layout layer components: thin orchestration layers that pass data from `lib/data.ts` into domain components. This ensures visual consistency across all 65+ themes and allows individual UI sections to be updated in isolation without touching page files.
+
+The search-first homepage defined in ADR 15 serves as the primary entry point into theme browsing, so component theme pages are optimized for direct navigation from search results — each page must be independently renderable with a theme ID as the sole route parameter.
 
 ## Consequences
 
-Adopting a component-first page architecture means that adding a new theme variant requires only new data and configuration, not new page logic — reducing duplication and lowering the risk of regressions. The atomic component library referenced in ADR 10 must be kept in sync with page-level composition requirements; any new layout pattern introduced in a theme page should be extracted into a reusable component before shipping. Teams working on ADR 8 data structures must ensure that Supabase content schemas map cleanly to the component props consumed by these pages. The initial investment in component decomposition pays off as the theme catalog scales.
+Adopting a component-first page architecture means that adding a new theme variant requires only new data and configuration, not new page logic — reducing duplication and lowering the risk of regressions. The design system layer boundaries referenced in ADR 10 must be respected: new layout patterns introduced in a theme page should be extracted into domain components before shipping. Teams working on ADR 8 data structures must ensure that Supabase content schemas map cleanly to the component props consumed by these pages. The initial investment in component decomposition pays off as the theme catalog scales.
