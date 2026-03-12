@@ -68,7 +68,6 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
         className
       )}
       title={config.tooltip}
-      onClick={(e) => e.stopPropagation()}
     >
       {config.label}
     </span>

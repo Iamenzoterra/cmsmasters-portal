@@ -1,10 +1,12 @@
 ---
-id: '010'
-version: 2
+id: 10
 title: Design System — shadcn/ui Three-Layer Model
-status: accepted
+version: 2
+status: active
 category: product
 relatedADRs: [7, 8, 9, 15]
+supersededBy: null
+date: 2026-03-09
 ---
 
 ## Context

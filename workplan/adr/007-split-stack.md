@@ -5,6 +5,8 @@ version: 2
 status: active
 category: tech-stack
 relatedADRs: [11, 17, 22]
+supersededBy: null
+date: 2026-03-09
 ---
 
 # ADR-007: Split-Stack Architecture

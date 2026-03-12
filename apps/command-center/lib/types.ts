@@ -100,7 +100,8 @@ export interface Progress {
 export interface ADRMeta {
   id: string;
   title: string;
-  status: 'proposed' | 'accepted' | 'deprecated' | 'superseded';
+  version?: number;
+  status: 'proposed' | 'accepted' | 'deprecated' | 'superseded' | 'active';
   date: string;
   deciders?: string[];
   tags?: string[];

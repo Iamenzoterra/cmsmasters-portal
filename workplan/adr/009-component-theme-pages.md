@@ -1,10 +1,12 @@
 ---
-id: '009'
-version: 2
+id: 9
 title: Component Theme Pages
-status: accepted
+version: 2
+status: active
 category: product
 relatedADRs: [7, 8, 10, 15]
+supersededBy: null
+date: 2026-03-09
 ---
 
 ## Context

@@ -5,6 +5,8 @@ version: 2
 status: active
 category: tech-stack
 relatedADRs: [9, 14, 18]
+supersededBy: null
+date: 2026-03-09
 ---
 
 # ADR-008: Structured Content in Supabase

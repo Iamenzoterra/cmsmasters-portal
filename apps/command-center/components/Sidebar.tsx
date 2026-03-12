@@ -6,8 +6,7 @@ import {
   LayoutDashboard,
   ListChecks,
   Blocks,
-  BookOpen,
-  GitBranch,
+  FileText,
   Package,
   RefreshCw,
 } from 'lucide-react';
@@ -26,8 +25,7 @@ const NAV_ITEMS: Array<{
   { label: 'Mission Control', href: '/', icon: LayoutDashboard },
   { label: 'Phase Tracker', href: '/phases', icon: ListChecks },
   { label: 'Components', href: '/components', icon: Blocks },
-  { label: 'Content', href: '/content', icon: BookOpen },
-  { label: 'Architecture', href: '/architecture', icon: GitBranch },
+  { label: 'ADRs', href: '/architecture', icon: FileText },
   { label: 'Dependencies', href: '/dependencies', icon: Package },
 ];
 
@@ -45,7 +43,9 @@ export function Sidebar({ lastScanText, onRescan }: SidebarProps): React.JSX.Ele
       <div className="flex items-center px-3 py-4 xl:px-4">
         <LayoutDashboard size={20} className="shrink-0 text-accent xl:hidden" />
         <span className="hidden text-sm font-bold text-text-primary xl:block">
-          CMSMasters Command Center
+          <span className="text-accent">CMSMasters Portal</span>
+          <br />
+          <span className="text-xs font-normal text-text-secondary">Command Center</span>
         </span>
       </div>
 

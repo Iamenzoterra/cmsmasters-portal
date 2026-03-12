@@ -1,10 +1,12 @@
 ---
-id: '015'
-version: 2
+id: 15
 title: Search-First Homepage
-status: accepted
+version: 2
+status: active
 category: product
 relatedADRs: [7, 8, 9, 10]
+supersededBy: null
+date: 2026-03-09
 ---
 
 ## Context

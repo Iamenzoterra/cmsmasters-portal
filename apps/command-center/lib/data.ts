@@ -12,11 +12,12 @@ import type {
 
 // ─── Source path constants (relative to monorepo root) ───────────────────────
 
-const PHASES_PATH         = path.join(process.cwd(), 'workplan', 'phases.json');
-const COMPONENTS_PATH     = path.join(process.cwd(), 'workplan', 'components.json');
-const CONTENT_STATUS_PATH = path.join(process.cwd(), 'workplan', 'content-status.json');
-const PROGRESS_PATH       = path.join(process.cwd(), 'workplan', 'progress.json');
-const ADR_DIR             = path.join(process.cwd(), 'workplan', 'adr');
+const MONOREPO_ROOT       = path.resolve(process.cwd(), '..', '..');
+const PHASES_PATH         = path.join(MONOREPO_ROOT, 'workplan', 'phases.json');
+const COMPONENTS_PATH     = path.join(MONOREPO_ROOT, 'workplan', 'components.json');
+const CONTENT_STATUS_PATH = path.join(MONOREPO_ROOT, 'workplan', 'content-status.json');
+const PROGRESS_PATH       = path.join(MONOREPO_ROOT, 'workplan', 'progress.json');
+const ADR_DIR             = path.join(MONOREPO_ROOT, 'workplan', 'adr');
 
 // ─── Private helpers ─────────────────────────────────────────────────────────
 
@@ -41,7 +42,7 @@ function parseFrontmatter(content: string): { meta: Partial<ADRMeta>; body: stri
 
     if (match) {
       const key = match[1] as string;
-      const value = match[2].trim();
+      const value = match[2].trim().replace(/^['"](.+)['"]$/, '$1');
 
       if (value === '') {
         // Multi-line list — read following '  - item' lines
@@ -64,6 +65,7 @@ function parseFrontmatter(content: string): { meta: Partial<ADRMeta>; body: stri
         case 'title':    meta.title    = value; break;
         case 'status':   meta.status   = value as ADRMeta['status']; break;
         case 'date':     meta.date     = value; break;
+        case 'version':  meta.version  = Number(value); break;
         case 'category': meta.category = value; break;
         default: break;
       }
