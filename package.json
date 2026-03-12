@@ -12,6 +12,8 @@
     "lint": "nx run-many -t lint"
   },
   "devDependencies": {
+    "@nx/eslint": "^22.5.4",
+    "@nx/next": "^22.5.4",
     "nx": "latest",
     "typescript": "^5.0.0"
   }
