@@ -29,10 +29,49 @@ const ADR_DIR             = path.join(MONOREPO_ROOT, 'workplan', 'adr');
 
 // ─── Private helpers ─────────────────────────────────────────────────────────
 
+function parseYamlListItems(lines: string[], startIndex: number): { items: string[]; nextIndex: number } {
+  const items: string[] = [];
+  let i = startIndex;
+  while (i < lines.length && /^\s+-\s+/.test(lines[i])) {
+    items.push(lines[i].replace(/^\s+-\s+/, '').trim());
+    i++;
+  }
+  return { items, nextIndex: i };
+}
+
+const LIST_KEYS = new Set(['relatedADRs', 'deciders', 'tags']);
+const SCALAR_PARSERS: Record<string, (value: string, meta: Partial<ADRMeta>) => void> = {
+  id:       (v, m) => { m.id = v; },
+  title:    (v, m) => { m.title = v; },
+  status:   (v, m) => { m.status = v as ADRMeta['status']; },
+  date:     (v, m) => { m.date = v; },
+  version:  (v, m) => { m.version = Number(v); },
+  category: (v, m) => { m.category = v; },
+};
+
+function applyFrontmatterEntry(
+  key: string,
+  value: string,
+  lines: string[],
+  index: number,
+  meta: Partial<ADRMeta>,
+): number {
+  if (value === '' && LIST_KEYS.has(key)) {
+    const { items, nextIndex } = parseYamlListItems(lines, index + 1);
+    const listMeta = meta as Record<string, unknown>;
+    listMeta[key] = items;
+    return nextIndex;
+  }
+
+  const parser = SCALAR_PARSERS[key];
+  if (parser) parser(value, meta);
+
+  return index + 1;
+}
+
 function parseFrontmatter(content: string): { meta: Partial<ADRMeta>; body: string } {
   const parts = content.split(/^---\s*$/m);
 
-  // Expect: ['', frontmatter, body] or just ['content'] when no frontmatter
   if (parts.length < 3) {
     return { meta: {}, body: content.trim() };
   }
@@ -40,49 +79,18 @@ function parseFrontmatter(content: string): { meta: Partial<ADRMeta>; body: stri
   const yamlBlock = parts[1];
   const body = parts.slice(2).join('---').trim();
   const meta: Partial<ADRMeta> = {};
-
   const lines = yamlBlock.split('\n');
   let i = 0;
 
   while (i < lines.length) {
-    const line = lines[i];
-    const match = line.match(/^(\w[\w-]*):\s*(.*)/);
-
+    const match = lines[i].match(/^(\w[\w-]*):\s*(.*)/);
     if (match) {
       const key = match[1] as string;
       const value = match[2].trim().replace(/^['"](.+)['"]$/, '$1');
-
-      if (value === '') {
-        // Multi-line list — read following '  - item' lines
-        const items: string[] = [];
-        i++;
-        while (i < lines.length && /^\s+-\s+/.test(lines[i])) {
-          items.push(lines[i].replace(/^\s+-\s+/, '').trim());
-          i++;
-        }
-
-        switch (key) {
-          case 'relatedADRs': { meta.relatedADRs = items; break; }
-          case 'deciders': { meta.deciders = items; break; }
-          case 'tags': { meta.tags = items; break; }
-          default: { break; }
-        }
-
-        continue;
-      }
-
-      switch (key) {
-        case 'id': { meta.id = value; break; }
-        case 'title': { meta.title = value; break; }
-        case 'status': { meta.status = value as ADRMeta['status']; break; }
-        case 'date': { meta.date = value; break; }
-        case 'version': { meta.version = Number(value); break; }
-        case 'category': { meta.category = value; break; }
-        default: { break; }
-      }
+      i = applyFrontmatterEntry(key, value, lines, i, meta);
+    } else {
+      i++;
     }
-
-    i++;
   }
 
   return { meta, body };

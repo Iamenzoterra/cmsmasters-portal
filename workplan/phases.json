@@ -13,16 +13,17 @@
           "id": "P0-T1",
           "phase": 0,
           "title": "Nx monorepo init",
-          "status": "todo",
+          "status": "done",
           "app": "infra",
           "group": "setup",
-          "description": "Initialize Nx monorepo with workspace configuration, nx.json, and root package.json. Configure apps/ and packages/ directories per ADR-017 V3."
+          "description": "Initialize Nx monorepo with workspace configuration, nx.json, and root package.json. Configure apps/ and packages/ directories per ADR-017 V3.",
+          "completedAt": "2026-03-13T19:08:08.889Z"
         },
         {
           "id": "P0-T2",
           "phase": 0,
           "title": "Folder structure per ADR-017 V3",
-          "status": "todo",
+          "status": "in-progress",
           "app": "infra",
           "group": "setup",
           "description": "Create full monorepo folder structure: apps/portal, apps/dashboard, apps/support, apps/studio, apps/admin, apps/api, packages/ui, packages/db, packages/auth, packages/api-client, packages/validators, packages/email."
@@ -31,57 +32,64 @@
           "id": "P0-T3",
           "phase": 0,
           "title": "Command Center app setup",
-          "status": "todo",
+          "status": "done",
           "app": "command-center",
           "group": "setup",
-          "description": "Bootstrap Command Center Next.js 15 app at apps/command-center with App Router, Tailwind CSS 4, TypeScript strict mode, port 4000 configuration."
+          "description": "Bootstrap Command Center Next.js 15 app at apps/command-center with App Router, Tailwind CSS 4, TypeScript strict mode, port 4000 configuration.",
+          "completedAt": "2026-03-11T23:10:42.616Z"
         },
         {
           "id": "P0-T4",
           "phase": 0,
           "title": "phases.json creation",
-          "status": "todo",
+          "status": "done",
           "app": "command-center",
           "group": "data",
-          "description": "Create workplan/phases.json with all 7 phases (0-6), project metadata, and full V2 task list. Serves as the primary data source for Command Center dashboards."
+          "description": "Create workplan/phases.json with all 7 phases (0-6), project metadata, and full V2 task list. Serves as the primary data source for Command Center dashboards.",
+          "completedAt": "2026-03-13T22:25:09.352Z"
         },
         {
           "id": "P0-T5",
           "phase": 0,
           "title": "22 ADR files",
-          "status": "todo",
+          "status": "done",
           "app": "command-center",
           "group": "documentation",
-          "description": "Create 22 Architecture Decision Record markdown files in workplan/adr/ covering all major architectural decisions: monorepo, auth, DB schema, design system, API strategy, deployment, etc."
+          "description": "Create 22 Architecture Decision Record markdown files in workplan/adr/ covering all major architectural decisions: monorepo, auth, DB schema, design system, API strategy, deployment, etc.",
+          "completedAt": "2026-03-12T22:55:37.536Z"
         },
         {
           "id": "P0-T6",
           "phase": 0,
           "title": "CLI scanner (cc:scan)",
-          "status": "todo",
+          "status": "done",
           "app": "command-center",
           "group": "cli",
-          "description": "Implement cc:scan CLI script that traverses the monorepo, collects component counts, ADR status, phase progress, and writes scan results to workplan/scan-results.json."
+          "description": "Implement cc:scan CLI script that traverses the monorepo, collects component counts, ADR status, phase progress, and writes scan results to workplan/scan-results.json.",
+          "completedAt": "2026-03-13T19:31:54.166Z"
         },
         {
           "id": "P0-T7",
           "phase": 0,
           "title": "CLI report (cc:report)",
-          "status": "todo",
+          "status": "done",
           "app": "command-center",
           "group": "cli",
-          "description": "Implement cc:report CLI script that reads scan results and phases.json, then outputs a formatted terminal report showing phase completion, component coverage, and blocking issues."
+          "description": "Implement cc:report CLI script that reads scan results and phases.json, then outputs a formatted terminal report showing phase completion, component coverage, and blocking issues.",
+          "completedAt": "2026-03-13T21:47:01.390Z"
         },
         {
           "id": "P0-T8",
           "phase": 0,
           "title": "6 CC pages",
-          "status": "todo",
+          "status": "done",
           "app": "command-center",
           "group": "pages",
-          "description": "Build all 6 Command Center pages: Mission Control (overview), Phase Tracker (phases.json viewer), Components (design system status), Content (ADR/docs), Architecture (dependency graph), Dependencies (package audit)."
+          "description": "Build all 6 Command Center pages: Mission Control (overview), Phase Tracker (phases.json viewer), Components (design system status), Content (ADR/docs), Architecture (dependency graph), Dependencies (package audit).",
+          "completedAt": "2026-03-13T21:28:32.592Z"
         }
-      ]
+      ],
+      "status": "in-progress"
     },
     {
       "id": 1,
@@ -452,7 +460,7 @@
           "id": "P1-T41",
           "phase": 1,
           "title": "Package — @cmsmasters/ui",
-          "status": "todo",
+          "status": "in-progress",
           "app": "ui",
           "group": "packages",
           "description": "Finalize packages/ui shared package — export all primitives and domain components, configure package.json with proper exports map, build pipeline, Storybook integration."
@@ -461,7 +469,7 @@
           "id": "P1-T42",
           "phase": 1,
           "title": "Package — @cmsmasters/db",
-          "status": "todo",
+          "status": "in-progress",
           "app": "db",
           "group": "packages",
           "description": "Finalize packages/db shared package — Supabase client factory, type-safe query helpers, migration runner, schema type exports generated from Supabase."
@@ -470,7 +478,7 @@
           "id": "P1-T43",
           "phase": 1,
           "title": "Package — @cmsmasters/auth",
-          "status": "todo",
+          "status": "in-progress",
           "app": "auth",
           "group": "packages",
           "description": "Finalize packages/auth shared package — auth utilities, session helpers, middleware factories, entitlement hooks, role constants, type exports."
@@ -479,7 +487,7 @@
           "id": "P1-T44",
           "phase": 1,
           "title": "Package — @cmsmasters/api-client",
-          "status": "todo",
+          "status": "in-progress",
           "app": "infra",
           "group": "packages",
           "description": "Finalize packages/api-client shared package — typed API client for CF Workers API, request/response types, error handling, retry logic, auth header injection."
@@ -488,7 +496,7 @@
           "id": "P1-T45",
           "phase": 1,
           "title": "Package — @cmsmasters/validators",
-          "status": "todo",
+          "status": "in-progress",
           "app": "infra",
           "group": "packages",
           "description": "Finalize packages/validators shared package — Zod schemas for all domain entities (user, theme, plugin, ticket, order), shared validation utilities, parse helpers."
@@ -497,7 +505,7 @@
           "id": "P1-T46",
           "phase": 1,
           "title": "Package — @cmsmasters/email",
-          "status": "todo",
+          "status": "in-progress",
           "app": "infra",
           "group": "packages",
           "description": "Finalize packages/email shared package — React Email templates for transactional emails, Resend integration, template registry, preview server."
@@ -533,10 +541,11 @@
           "id": "P1-T50",
           "phase": 1,
           "title": "Infra — Nx config and build pipeline",
-          "status": "todo",
+          "status": "done",
           "app": "infra",
           "group": "infrastructure",
-          "description": "Configure Nx workspace — project.json for all apps and packages, task executors, build/test/lint targets, affected commands, remote caching setup."
+          "description": "Configure Nx workspace — project.json for all apps and packages, task executors, build/test/lint targets, affected commands, remote caching setup.",
+          "completedAt": "2026-03-13T19:07:58.204Z"
         },
         {
           "id": "P1-T51",
@@ -556,7 +565,8 @@
           "group": "infrastructure",
           "description": "Configure Storybook for packages/ui — stories for all primitives and domain components, Tailwind integration, dark theme default, Chromatic visual testing."
         }
-      ]
+      ],
+      "status": "in-progress"
     },
     {
       "id": 2,
@@ -635,7 +645,8 @@
           "group": "commerce",
           "description": "Implement checkout flow — cart, payment method (Stripe), order confirmation, billing history, invoice downloads, subscription management."
         }
-      ]
+      ],
+      "status": "todo"
     },
     {
       "id": 3,
@@ -705,7 +716,8 @@
           "group": "features",
           "description": "Build notifications center — categorized alerts (updates, billing, support), mark read/unread, notification preferences link, real-time badge count."
         }
-      ]
+      ],
+      "status": "todo"
     },
     {
       "id": 4,
@@ -766,7 +778,8 @@
           "group": "features",
           "description": "Integrate live chat widget — real-time messaging via Supabase Realtime, typing indicators, agent assignment, chat history, offline fallback to ticket."
         }
-      ]
+      ],
+      "status": "todo"
     },
     {
       "id": 5,
@@ -845,7 +858,8 @@
           "group": "features",
           "description": "Build admin analytics — revenue metrics, user growth charts, product performance, support volume, conversion funnels, exportable reports."
         }
-      ]
+      ],
+      "status": "todo"
     },
     {
       "id": 6,
@@ -906,7 +920,8 @@
           "group": "launch",
           "description": "Production launch checklist — DNS cutover, SSL certificates, monitoring setup (Sentry, Grafana), runbook documentation, on-call rotation, go-live announcement."
         }
-      ]
+      ],
+      "status": "todo"
     }
   ]
 }

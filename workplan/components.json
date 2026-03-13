@@ -1,12 +1,12 @@
 {
-  "lastScanned": "2026-03-13T00:54:19.282Z",
+  "lastScanned": "2026-03-13T22:29:44.711Z",
   "components": [
     {
       "id": "P0-T1",
       "name": "Nx monorepo init",
       "description": "Initialize Nx monorepo with workspace configuration, nx.json, and root package.json. Configure apps/ and packages/ directories per ADR-017 V3.",
       "app": "infra",
-      "status": "planned",
+      "status": "done",
       "phase": "0"
     },
     {
@@ -14,55 +14,7 @@
       "name": "Folder structure per ADR-017 V3",
       "description": "Create full monorepo folder structure: apps/portal, apps/dashboard, apps/support, apps/studio, apps/admin, apps/api, packages/ui, packages/db, packages/auth, packages/api-client, packages/validators, packages/email.",
       "app": "infra",
-      "status": "planned",
-      "phase": "0"
-    },
-    {
-      "id": "P0-T3",
-      "name": "Command Center app setup",
-      "description": "Bootstrap Command Center Next.js 15 app at apps/command-center with App Router, Tailwind CSS 4, TypeScript strict mode, port 4000 configuration.",
-      "app": "command-center",
-      "status": "planned",
-      "phase": "0"
-    },
-    {
-      "id": "P0-T4",
-      "name": "phases.json creation",
-      "description": "Create workplan/phases.json with all 7 phases (0-6), project metadata, and full V2 task list. Serves as the primary data source for Command Center dashboards.",
-      "app": "command-center",
-      "status": "planned",
-      "phase": "0"
-    },
-    {
-      "id": "P0-T5",
-      "name": "22 ADR files",
-      "description": "Create 22 Architecture Decision Record markdown files in workplan/adr/ covering all major architectural decisions: monorepo, auth, DB schema, design system, API strategy, deployment, etc.",
-      "app": "command-center",
-      "status": "planned",
-      "phase": "0"
-    },
-    {
-      "id": "P0-T6",
-      "name": "CLI scanner (cc:scan)",
-      "description": "Implement cc:scan CLI script that traverses the monorepo, collects component counts, ADR status, phase progress, and writes scan results to workplan/scan-results.json.",
-      "app": "command-center",
-      "status": "planned",
-      "phase": "0"
-    },
-    {
-      "id": "P0-T7",
-      "name": "CLI report (cc:report)",
-      "description": "Implement cc:report CLI script that reads scan results and phases.json, then outputs a formatted terminal report showing phase completion, component coverage, and blocking issues.",
-      "app": "command-center",
-      "status": "planned",
-      "phase": "0"
-    },
-    {
-      "id": "P0-T8",
-      "name": "6 CC pages",
-      "description": "Build all 6 Command Center pages: Mission Control (overview), Phase Tracker (phases.json viewer), Components (design system status), Content (ADR/docs), Architecture (dependency graph), Dependencies (package audit).",
-      "app": "command-center",
-      "status": "planned",
+      "status": "in-progress",
       "phase": "0"
     },
     {
@@ -390,7 +342,7 @@
       "name": "Package — @cmsmasters/ui",
       "description": "Finalize packages/ui shared package — export all primitives and domain components, configure package.json with proper exports map, build pipeline, Storybook integration.",
       "app": "ui",
-      "status": "planned",
+      "status": "in-progress",
       "phase": "1"
     },
     {
@@ -398,7 +350,7 @@
       "name": "Package — @cmsmasters/db",
       "description": "Finalize packages/db shared package — Supabase client factory, type-safe query helpers, migration runner, schema type exports generated from Supabase.",
       "app": "db",
-      "status": "planned",
+      "status": "in-progress",
       "phase": "1"
     },
     {
@@ -406,7 +358,7 @@
       "name": "Package — @cmsmasters/auth",
       "description": "Finalize packages/auth shared package — auth utilities, session helpers, middleware factories, entitlement hooks, role constants, type exports.",
       "app": "auth",
-      "status": "planned",
+      "status": "in-progress",
       "phase": "1"
     },
     {
@@ -414,7 +366,7 @@
       "name": "Package — @cmsmasters/api-client",
       "description": "Finalize packages/api-client shared package — typed API client for CF Workers API, request/response types, error handling, retry logic, auth header injection.",
       "app": "infra",
-      "status": "planned",
+      "status": "in-progress",
       "phase": "1"
     },
     {
@@ -422,7 +374,7 @@
       "name": "Package — @cmsmasters/validators",
       "description": "Finalize packages/validators shared package — Zod schemas for all domain entities (user, theme, plugin, ticket, order), shared validation utilities, parse helpers.",
       "app": "infra",
-      "status": "planned",
+      "status": "in-progress",
       "phase": "1"
     },
     {
@@ -430,7 +382,7 @@
       "name": "Package — @cmsmasters/email",
       "description": "Finalize packages/email shared package — React Email templates for transactional emails, Resend integration, template registry, preview server.",
       "app": "infra",
-      "status": "planned",
+      "status": "in-progress",
       "phase": "1"
     },
     {
@@ -462,7 +414,7 @@
       "name": "Infra — Nx config and build pipeline",
       "description": "Configure Nx workspace — project.json for all apps and packages, task executors, build/test/lint targets, affected commands, remote caching setup.",
       "app": "infra",
-      "status": "planned",
+      "status": "done",
       "phase": "1"
     },
     {

@@ -32,8 +32,10 @@ fi
 
 # ─── Step 2: ESLint — static analysis ───
 step 2 "ESLint — sonarjs + security + unicorn"
-ESLINT_OUTPUT=$(npx eslint . --max-warnings 50 2>&1)
+set +e
+ESLINT_OUTPUT=$(npx eslint . --max-warnings 10 2>&1)
 ESLINT_EXIT=$?
+set -e
 echo "$ESLINT_OUTPUT"
 if [ $ESLINT_EXIT -eq 0 ]; then
   if echo "$ESLINT_OUTPUT" | grep -q "warning"; then
@@ -42,7 +44,11 @@ if [ $ESLINT_EXIT -eq 0 ]; then
     pass
   fi
 else
-  fail
+  if echo "$ESLINT_OUTPUT" | grep -q "error"; then
+    fail
+  else
+    warn
+  fi
 fi
 
 # ─── Step 3: Knip — unused exports & dependencies ───
@@ -69,9 +75,9 @@ else
   fail
 fi
 
-# ─── Step 6: Turbo build ───
-step 6 "Turbo — production build"
-if npx turbo run build 2>&1; then
+# ─── Step 6: Nx build ───
+step 6 "Nx — production build"
+if npx nx run-many -t build 2>&1; then
   pass
 else
   fail

@@ -3,10 +3,12 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "targets": {
     "dev": {
-      "executor": "@nx/next:dev",
+      "executor": "nx:run-commands",
       "options": {
-        "port": 4000
-      }
+        "command": "npx next dev -p 4000",
+        "cwd": "apps/command-center"
+      },
+      "continuous": true
     },
     "build": {
       "executor": "@nx/next:build",

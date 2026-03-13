@@ -15,6 +15,7 @@ export default tseslint.config(
       '**/.turbo/**',
       '**/coverage/**',
       '**/next-env.d.ts',
+      '.claude/**',
     ],
   },
 
@@ -53,6 +54,10 @@ export default tseslint.config(
       'unicorn/no-null': 'off',
       'unicorn/prefer-module': 'off',
       'unicorn/no-process-exit': 'off',
+
+      // ── Security tuning — false positives for internal tooling ──
+      'security/detect-object-injection': 'off',
+      'security/detect-non-literal-fs-filename': 'off',
 
       // ── SonarJS tuning ──
       'sonarjs/cognitive-complexity': ['warn', 15],

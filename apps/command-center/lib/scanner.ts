@@ -141,71 +141,60 @@ export async function scanContent(useSupabase?: boolean): Promise<ContentScanRes
   return { source: 'placeholder', themes: [], docs: [], counts: { themes: 0, docs: 0 } };
 }
 
-export async function calculateProgress(): Promise<ProgressScanResult> {
-  const allApps: ScannerApp[] = [
-    'portal', 'dashboard', 'support', 'studio', 'admin',
-    'command-center', 'ui', 'infra', 'content', 'api',
-  ];
+const ALL_APPS: ScannerApp[] = [
+  'portal', 'dashboard', 'support', 'studio', 'admin',
+  'command-center', 'ui', 'infra', 'content', 'api',
+];
 
-  const emptyByApp = (): Record<ScannerApp, { total: number; done: number }> =>
-    Object.fromEntries(allApps.map((a) => [a, { total: 0, done: 0 }])) as Record<
-      ScannerApp,
-      { total: number; done: number }
-    >;
+function emptyByApp(): Record<ScannerApp, { total: number; done: number }> {
+  return Object.fromEntries(ALL_APPS.map((a) => [a, { total: 0, done: 0 }])) as Record<
+    ScannerApp,
+    { total: number; done: number }
+  >;
+}
 
-  const empty: ProgressScanResult = {
-    phases: [],
-    byApp: emptyByApp(),
-    overallPercent: 0,
-  };
+function emptyProgress(): ProgressScanResult {
+  return { phases: [], byApp: emptyByApp(), overallPercent: 0 };
+}
 
-  let raw: string;
+async function readPhasesFile(): Promise<Phase[] | null> {
   try {
-    raw = await fs.readFile(PHASES_PATH, 'utf8');
+    const raw = await fs.readFile(PHASES_PATH, 'utf8');
+    const project = JSON.parse(raw) as { phases?: Phase[] };
+    return project.phases ?? [];
   } catch {
-    return empty;
+    return null;
   }
+}
 
-  let project: { phases?: Phase[] };
-  try {
-    project = JSON.parse(raw) as { phases?: Phase[] };
-  } catch {
-    return empty;
-  }
-
-  const phases = project.phases ?? [];
+function tallyPhases(phases: Phase[]): ProgressScanResult {
   const byApp = emptyByApp();
   const phaseSummaries: ProgressScanResult['phases'] = [];
-
   let totalAll = 0;
   let doneAll = 0;
 
   for (const phase of phases) {
     const tasks = phase.tasks ?? [];
-    let phaseTotal = 0;
-    let phaseDone = 0;
+    const phaseDone = tasks.filter((t) => t.status === 'done').length;
 
     for (const task of tasks) {
-      phaseTotal++;
-      totalAll++;
-
-      const isDone = task.status === 'done';
-      if (isDone) {
-        phaseDone++;
-        doneAll++;
-      }
-
       const appKey = task.app as ScannerApp;
       if (byApp[appKey]) {
         byApp[appKey].total++;
-        if (isDone) byApp[appKey].done++;
+        if (task.status === 'done') byApp[appKey].done++;
       }
     }
 
-    phaseSummaries.push({ phaseId: phase.id, total: phaseTotal, done: phaseDone });
+    totalAll += tasks.length;
+    doneAll += phaseDone;
+    phaseSummaries.push({ phaseId: phase.id, total: tasks.length, done: phaseDone });
   }
 
   const overallPercent = totalAll === 0 ? 0 : Math.round((doneAll / totalAll) * 100);
-
   return { phases: phaseSummaries, byApp, overallPercent };
+}
+
+export async function calculateProgress(): Promise<ProgressScanResult> {
+  const phases = await readPhasesFile();
+  return phases ? tallyPhases(phases) : emptyProgress();
 }

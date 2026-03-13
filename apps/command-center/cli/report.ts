@@ -95,6 +95,10 @@ function formatDate(iso: string): string {
   return `${y}-${m}-${day}`;
 }
 
+function safePct(done: number, total: number): number {
+  return total > 0 ? Math.round((done / total) * 100) : 0;
+}
+
 // ─── Classification ────────────────────────────────────────────────────────────
 
 const PRIMITIVE_GROUPS = new Set(['atoms', 'atom', 'primitive', 'primitives', 'tokens', 'design-tokens']);
@@ -118,22 +122,12 @@ function classifyLayer(component: ComponentEntry): 'primitives' | 'domain' | 'la
   return null;
 }
 
-// ─── Report builder ───────────────────────────────────────────────────────────
+// ─── Report section builders ─────────────────────────────────────────────────
 
-function buildReport(workplanDir: string): string {
-  const project = tryReadJson<RawProject>(path.join(workplanDir, 'phases.json'));
-  if (!project) {
-    return 'Error: workplan/phases.json not found. Run cc:scan first.\n';
-  }
-
-  const progressData = tryReadJson<ProgressData>(path.join(workplanDir, 'progress.json'));
-  const componentsData = tryReadJson<ComponentsData>(path.join(workplanDir, 'components.json'));
-  const contentData = tryReadJson<ContentData>(path.join(workplanDir, 'content-status.json'));
-
-  const phases = project.phases ?? [];
-  const projectName = project.name ?? 'CMSMasters Portal';
-  const today = formatDate(new Date().toISOString());
-
+function collectTotals(
+  phases: RawPhase[],
+  progressData: ProgressData | null,
+): { totalDone: number; totalTasks: number } {
   let totalDone = 0;
   let totalTasks = 0;
 
@@ -151,130 +145,156 @@ function buildReport(workplanDir: string): string {
     }
   }
 
-  const overallPct = totalTasks > 0 ? Math.round((totalDone / totalTasks) * 100) : 0;
+  return { totalDone, totalTasks };
+}
 
-  const currentPhaseId = project.currentPhase ?? 0;
+function resolveCurrentPhase(
+  phases: RawPhase[],
+  currentPhaseId: number,
+  progressData: ProgressData | null,
+): { title: string; pct: number } {
   const currentPhase = phases.find(p => String(p.id) === String(currentPhaseId)) ?? phases[0];
-  const currentPhaseTitle = currentPhase?.title ?? `Phase ${currentPhaseId}`;
+  const title = currentPhase?.title ?? `Phase ${currentPhaseId}`;
 
-  let currentPhasePct = 0;
   if (progressData) {
     const pEntry = progressData.phases.find(p => p.phaseId === String(currentPhaseId));
-    if (pEntry) currentPhasePct = Math.round(pEntry.percentComplete);
-  } else if (currentPhase) {
+    return { title, pct: pEntry ? Math.round(pEntry.percentComplete) : 0 };
+  }
+
+  if (currentPhase) {
     const tasks = currentPhase.tasks ?? [];
     const done = tasks.filter(t => t.status === 'done').length;
-    currentPhasePct = tasks.length > 0 ? Math.round((done / tasks.length) * 100) : 0;
+    return { title, pct: safePct(done, tasks.length) };
   }
 
-  const phaseLines: string[] = [];
+  return { title, pct: 0 };
+}
+
+function buildPhaseLines(
+  phases: RawPhase[],
+  progressData: ProgressData | null,
+): string[] {
   const maxTitleLen = Math.max(...phases.map(p => `Phase ${p.id} — ${p.title ?? ''}`.length), 0);
 
-  for (const phase of phases) {
+  return phases.map(phase => {
     const phaseLabel = `Phase ${phase.id} — ${phase.title ?? ''}`;
-    let pct = 0;
-    let done = 0;
-    let total = 0;
-
-    if (progressData) {
-      const pEntry = progressData.phases.find(p => p.phaseId === String(phase.id));
-      if (pEntry) {
-        pct = Math.round(pEntry.percentComplete);
-        done = pEntry.tasksDone;
-        total = pEntry.tasksTotal;
-      }
-    } else {
-      const tasks = phase.tasks ?? [];
-      total = tasks.length;
-      done = tasks.filter(t => t.status === 'done').length;
-      pct = total > 0 ? Math.round((done / total) * 100) : 0;
-    }
-
+    const { done, total, pct } = getPhaseStats(phase, progressData);
     const bar = progressBar(pct);
     const label = pad(phaseLabel, maxTitleLen + 2);
-    phaseLines.push(`  ${label}  ${bar}  ${done}/${total}  (${pct}%)`);
+    return `  ${label}  ${bar}  ${done}/${total}  (${pct}%)`;
+  });
+}
+
+function getPhaseStats(
+  phase: RawPhase,
+  progressData: ProgressData | null,
+): { done: number; total: number; pct: number } {
+  if (progressData) {
+    const pEntry = progressData.phases.find(p => p.phaseId === String(phase.id));
+    if (pEntry) {
+      return { done: pEntry.tasksDone, total: pEntry.tasksTotal, pct: Math.round(pEntry.percentComplete) };
+    }
+    return { done: 0, total: 0, pct: 0 };
   }
 
-  let themesCount = 0;
-  let docsCount = 0;
-  let blogCount = 0;
+  const tasks = phase.tasks ?? [];
+  const done = tasks.filter(t => t.status === 'done').length;
+  return { done, total: tasks.length, pct: safePct(done, tasks.length) };
+}
 
-  if (contentData) {
-    const uniqueThemes = new Set(contentData.entries.map(e => e.themeId));
-    themesCount = uniqueThemes.size;
-    blogCount = contentData.entries.filter(e => e.type === 'blog').length;
-    docsCount = contentData.entries.filter(e => e.type !== 'blog' && e.status === 'approved').length;
-  }
+function buildContentSection(contentData: ContentData | null): { themes: number; docs: number; blog: number } {
+  if (!contentData) return { themes: 0, docs: 0, blog: 0 };
 
-  let primitivesCount = 0;
-  let domainCount = 0;
-  let layoutsCount = 0;
+  const uniqueThemes = new Set(contentData.entries.map(e => e.themeId));
+  return {
+    themes: uniqueThemes.size,
+    blog: contentData.entries.filter(e => e.type === 'blog').length,
+    docs: contentData.entries.filter(e => e.type !== 'blog' && e.status === 'approved').length,
+  };
+}
 
-  if (componentsData) {
-    for (const comp of componentsData.components) {
-      const layer = classifyLayer(comp);
-      switch (layer) {
-        case 'primitives': { primitivesCount++; break; }
-        case 'domain': { domainCount++; break; }
-        case 'layouts': { layoutsCount++; break; }
-        default: { break; }
-      }
+function buildComponentCounts(componentsData: ComponentsData | null): { primitives: number; domain: number; layouts: number } {
+  if (!componentsData) return { primitives: 0, domain: 0, layouts: 0 };
+
+  let primitives = 0;
+  let domain = 0;
+  let layouts = 0;
+
+  for (const comp of componentsData.components) {
+    switch (classifyLayer(comp)) {
+      case 'primitives': { primitives++; break; }
+      case 'domain':     { domain++;     break; }
+      case 'layouts':    { layouts++;    break; }
+      default:           { break; }
     }
   }
 
-  const allTasks: RawTask[] = [];
-  for (const phase of phases) {
-    for (const task of phase.tasks ?? []) {
-      allTasks.push(task);
-    }
-  }
+  return { primitives, domain, layouts };
+}
 
+function buildBlockedSection(phases: RawPhase[]): string {
+  const allTasks = phases.flatMap(phase => phase.tasks ?? []);
   const taskById = new Map<string, RawTask>(allTasks.map(t => [t.id, t]));
-
   const blockedTasks = allTasks.filter(t => t.status === 'blocked');
 
-  const blockedLines: string[] = [];
-  for (const task of blockedTasks) {
+  if (blockedTasks.length === 0) return '  (none)';
+
+  return blockedTasks.map(task => {
     const depIds = task.dependencies ?? task.blockedBy ?? [];
-    if (depIds.length > 0) {
-      const depNames = depIds.map(depId => {
-        const dep = taskById.get(depId);
-        return dep ? dep.title : depId;
-      });
-      blockedLines.push(`  🔴 ${task.title} — blocked by: ${depNames.join(', ')}`);
-    } else {
-      blockedLines.push(`  🔴 ${task.title}`);
-    }
+    if (depIds.length === 0) return `  🔴 ${task.title}`;
+
+    const depNames = depIds.map(depId => taskById.get(depId)?.title ?? depId);
+    return `  🔴 ${task.title} — blocked by: ${depNames.join(', ')}`;
+  }).join('\n');
+}
+
+// ─── Report builder ───────────────────────────────────────────────────────────
+
+function buildReport(workplanDir: string): string {
+  const project = tryReadJson<RawProject>(path.join(workplanDir, 'phases.json'));
+  if (!project) {
+    return 'Error: workplan/phases.json not found. Run cc:scan first.\n';
   }
 
-  const blockedSection = blockedLines.length > 0
-    ? blockedLines.join('\n')
-    : '  (none)';
+  const progressData = tryReadJson<ProgressData>(path.join(workplanDir, 'progress.json'));
+  const componentsData = tryReadJson<ComponentsData>(path.join(workplanDir, 'components.json'));
+  const contentData = tryReadJson<ContentData>(path.join(workplanDir, 'content-status.json'));
 
-  const lines = [
+  const phases = project.phases ?? [];
+  const projectName = project.name ?? 'CMSMasters Portal';
+  const today = formatDate(new Date().toISOString());
+  const currentPhaseId = project.currentPhase ?? 0;
+
+  const { totalDone, totalTasks } = collectTotals(phases, progressData);
+  const overallPct = safePct(totalDone, totalTasks);
+  const currentPhase = resolveCurrentPhase(phases, currentPhaseId, progressData);
+  const phaseLines = buildPhaseLines(phases, progressData);
+  const content = buildContentSection(contentData);
+  const comps = buildComponentCounts(componentsData);
+  const blockedSection = buildBlockedSection(phases);
+
+  return [
     `📊 ${projectName} — Progress Report`,
     today,
     '',
     `OVERALL: ${totalDone}/${totalTasks} done (${overallPct}%)`,
     '',
-    `CURRENT PHASE: Phase ${currentPhaseId} — ${currentPhaseTitle} (${currentPhasePct}%)`,
+    `CURRENT PHASE: Phase ${currentPhaseId} — ${currentPhase.title} (${currentPhase.pct}%)`,
     '',
     'BY PHASE:',
     ...phaseLines,
     '',
     'CONTENT:',
-    `  themes:     ${themesCount}`,
-    `  docs:       ${docsCount}`,
-    `  blog posts: ${blogCount}`,
+    `  themes:     ${content.themes}`,
+    `  docs:       ${content.docs}`,
+    `  blog posts: ${content.blog}`,
     '',
-    `COMPONENTS: ${primitivesCount} primitives | ${domainCount} domain | ${layoutsCount} layouts`,
+    `COMPONENTS: ${comps.primitives} primitives | ${comps.domain} domain | ${comps.layouts} layouts`,
     '',
     'BLOCKED:',
     blockedSection,
     '',
-  ];
-
-  return lines.join('\n');
+  ].join('\n');
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
