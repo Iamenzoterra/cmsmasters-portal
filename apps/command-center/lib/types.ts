@@ -76,12 +76,6 @@ export interface ComponentEntry {
   dependencies?: string[];
 }
 
-export interface ComponentSummary {
-  primitives: number;
-  domain: number;
-  layouts: number;
-}
-
 // ─── packages/validators/src/content-status.ts schema ────────────────────────
 
 export type ContentStatusValue = 'empty' | 'draft' | 'review' | 'approved' | 'published';
@@ -117,10 +111,6 @@ export interface Progress {
   estimatedHours: number;
   actualHours: number;
   percentComplete: number;
-}
-
-export interface ProgressData {
-  byApp: Record<App, number>;
 }
 
 // ─── ADR frontmatter schema ───────────────────────────────────────────────────

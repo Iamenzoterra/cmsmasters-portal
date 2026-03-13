@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import * as fs from 'node:fs';
 import path from 'node:path';
+import { syncPhaseStatuses } from '../lib/phase-sync';
 import type {
   ComponentSummary,
   ComponentStatus,
@@ -37,6 +38,37 @@ interface RawProject {
   [key: string]: unknown;
 }
 
+// ─── Scanignore ──────────────────────────────────────────────────────────────
+
+interface ScanIgnore {
+  apps: Set<string>;
+  groups: Set<string>;
+  ids: Set<string>;
+}
+
+function parseScanIgnore(workplanDir: string): ScanIgnore {
+  const ignore: ScanIgnore = { apps: new Set(), groups: new Set(), ids: new Set() };
+  const filePath = path.join(workplanDir, '.scanignore');
+  if (!fs.existsSync(filePath)) return ignore;
+
+  const lines = fs.readFileSync(filePath, 'utf8').split('\n');
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) continue;
+    if (line.startsWith('app:')) ignore.apps.add(line.slice(4).trim());
+    else if (line.startsWith('group:')) ignore.groups.add(line.slice(6).trim());
+    else ignore.ids.add(line);
+  }
+  return ignore;
+}
+
+function isIgnored(task: RawTask, ignore: ScanIgnore): boolean {
+  if (ignore.ids.has(task.id)) return true;
+  if (ignore.apps.has(task.app ?? 'infra')) return true;
+  if (task.group && ignore.groups.has(task.group)) return true;
+  return false;
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function taskStatusToComponentStatus(status: string | undefined): ComponentStatus {
@@ -63,7 +95,7 @@ function readPhasesJson(workplanDir: string): RawProject {
 
 // ─── Scanner functions ────────────────────────────────────────────────────────
 
-function scanComponents(workplanDir: string): ComponentSummary[] {
+function scanComponents(workplanDir: string, ignore: ScanIgnore): ComponentSummary[] {
   const project = readPhasesJson(workplanDir);
   const phases = project.phases ?? [];
   const components: ComponentSummary[] = [];
@@ -71,6 +103,7 @@ function scanComponents(workplanDir: string): ComponentSummary[] {
   for (const phase of phases) {
     const phaseId = String(phase.id);
     for (const task of phase.tasks ?? []) {
+      if (isIgnored(task, ignore)) continue;
       components.push({
         id: task.id,
         name: task.title,
@@ -85,7 +118,7 @@ function scanComponents(workplanDir: string): ComponentSummary[] {
   return components;
 }
 
-function scanContent(workplanDir: string): ContentStatus[] {
+function scanContent(workplanDir: string, ignore: ScanIgnore): ContentStatus[] {
   const project = readPhasesJson(workplanDir);
   const phases = project.phases ?? [];
   const now = new Date().toISOString();
@@ -93,7 +126,7 @@ function scanContent(workplanDir: string): ContentStatus[] {
 
   for (const phase of phases) {
     const phaseId = String(phase.id);
-    const tasks = phase.tasks ?? [];
+    const tasks = (phase.tasks ?? []).filter(t => !isIgnored(t, ignore));
 
     const appMap = new Map<string, RawTask[]>();
     for (const task of tasks) {
@@ -112,6 +145,7 @@ function scanContent(workplanDir: string): ContentStatus[] {
         themeId: app,
         pageId: phaseId,
         status: deriveContentStatus(appTasks),
+        source: 'placeholder' as const,
         updatedAt: now,
         type: isBlog ? 'blog' : 'doc',
       });
@@ -167,7 +201,7 @@ function calculateProgress(workplanDir: string): ProgressData {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-await (async () => {
+{
   const monorepoRoot = process.cwd();
   const workplanDir = path.join(monorepoRoot, 'workplan');
   fs.mkdirSync(workplanDir, { recursive: true });
@@ -175,9 +209,16 @@ await (async () => {
   const startTime = Date.now();
 
   try {
+    console.log('→ Syncing phase statuses...');
+    const t0 = Date.now();
+    syncPhaseStatuses(monorepoRoot, workplanDir);
+    console.log(`✓ phase sync done (${Date.now() - t0}ms)`);
+
+    const ignore = parseScanIgnore(workplanDir);
+
     console.log('→ Scanning components...');
     const t1 = Date.now();
-    const components = scanComponents(workplanDir);
+    const components = scanComponents(workplanDir, ignore);
     console.log(`✓ components done (${Date.now() - t1}ms)`);
     fs.writeFileSync(
       path.join(workplanDir, 'components.json'),
@@ -186,7 +227,7 @@ await (async () => {
 
     console.log('→ Scanning content...');
     const t2 = Date.now();
-    const entries = scanContent(workplanDir);
+    const entries = scanContent(workplanDir, ignore);
     console.log(`✓ content done (${Date.now() - t2}ms)`);
     fs.writeFileSync(
       path.join(workplanDir, 'content-status.json'),
@@ -207,4 +248,4 @@ await (async () => {
     console.error((error as Error).message);
     process.exitCode = 1;
   }
-})();
+}
