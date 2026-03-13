@@ -101,7 +101,42 @@ async function readJson<T>(filePath: string): Promise<T | null> {
 
 /** Reads workplan/phases.json and returns the typed Project structure. */
 export async function getPhases(): Promise<Project | null> {
-  return readJson<Project>(PHASES_PATH);
+  const raw = await readJson<Record<string, unknown>>(PHASES_PATH);
+  if (!raw) return null;
+
+  // Normalise: phases.json tasks may omit fields that the Task type requires.
+  const phases = ((raw.phases as Record<string, unknown>[]) ?? []).map((p) => {
+    const tasks = ((p.tasks as Record<string, unknown>[]) ?? []).map((t) => ({
+      id:                 (t.id as string) ?? '',
+      title:              (t.title as string) ?? '',
+      description:        (t.description as string) ?? '',
+      owner:              (t.owner as string) ?? 'orchestrator',
+      app:                (t.app as string) ?? 'infra',
+      status:             (t.status as string) ?? 'todo',
+      priority:           (t.priority as string) ?? 'medium',
+      dependencies:       (t.dependencies as string[]) ?? [],
+      estimatedHours:     (t.estimatedHours as number) ?? 0,
+      actualHours:        (t.actualHours as number) ?? undefined,
+      acceptanceCriteria: (t.acceptanceCriteria as string[]) ?? [],
+      notes:              (t.notes as string) ?? undefined,
+      createdAt:          (t.createdAt as string) ?? (raw.started as string) ?? '2025-01-01',
+      completedAt:        (t.completedAt as string) ?? undefined,
+    }));
+    return {
+      id:          String(p.id ?? ''),
+      title:       (p.title as string) ?? '',
+      description: (p.description as string) ?? '',
+      status:      (p.status as string) ?? 'todo',
+      tasks,
+    };
+  });
+
+  return {
+    id:          (raw.name as string) ?? 'project',
+    title:       (raw.name as string) ?? 'Phase Tracker',
+    description: (raw.description as string) ?? `${phases.length} phases`,
+    phases,
+  } as Project;
 }
 
 /** Reads workplan/components.json. Returns null when the file is missing. */

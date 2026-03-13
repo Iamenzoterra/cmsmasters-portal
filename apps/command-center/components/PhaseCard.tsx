@@ -86,62 +86,69 @@ export function PhaseCard({
         </div>
       )}
 
-      {expanded && (
-        <div className="border-t border-border-subtle overflow-hidden">
-          {tasks.length === 0 ? (
-            <p className="px-card py-6 text-center text-sm text-text-muted">No tasks in this phase</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border-default">
-                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-text-muted">ID</th>
-                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-text-muted">Title</th>
-                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-text-muted">Status</th>
-                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-text-muted">Owner</th>
-                    <th className="px-3 py-2.5 text-left text-xs font-semibold text-text-muted">Priority</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tasks.map((task) => (
-                    <tr
-                      key={task.id}
-                      className={cn(
-                        'border-b border-border-default last:border-0 transition-colors',
-                        onTaskSelect && 'hover:bg-surface-hover cursor-pointer'
-                      )}
-                      onClick={onTaskSelect ? () => onTaskSelect(task) : undefined}
-                    >
-                      <td className="px-3 py-2.5 font-mono text-xs text-text-muted">{task.id}</td>
-                      <td className="px-3 py-2.5 text-text-primary">{task.title}</td>
-                      <td className="px-3 py-2.5">
-                        <span
+      <div
+        className={cn(
+          'grid transition-[grid-template-rows] duration-300 ease-in-out',
+          expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+        )}
+      >
+        <div className="overflow-hidden min-h-0">
+          <div className="border-t border-border-subtle">
+            {tasks.length === 0 ? (
+              <p className="px-card py-6 text-center text-sm text-text-muted">No tasks in this phase</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border-default">
+                      <th className="px-3 py-2.5 text-left text-xs font-semibold text-text-muted">ID</th>
+                      <th className="px-3 py-2.5 text-left text-xs font-semibold text-text-muted">Title</th>
+                      <th className="px-3 py-2.5 text-left text-xs font-semibold text-text-muted">Status</th>
+                      <th className="px-3 py-2.5 text-left text-xs font-semibold text-text-muted">Owner</th>
+                      <th className="px-3 py-2.5 text-left text-xs font-semibold text-text-muted">Priority</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tasks.map((task) => (
+                      <tr
+                        key={task.id}
+                        className={cn(
+                          'border-b border-border-default last:border-0 transition-colors',
+                          onTaskSelect && 'hover:bg-surface-hover cursor-pointer'
+                        )}
+                        onClick={onTaskSelect ? () => onTaskSelect(task) : undefined}
+                      >
+                        <td className="px-3 py-2.5 font-mono text-xs text-text-muted">{task.id}</td>
+                        <td className="px-3 py-2.5 text-text-primary">{task.title}</td>
+                        <td className="px-3 py-2.5">
+                          <span
+                            className={cn(
+                              'inline-flex items-center px-1.5 py-0.5 rounded-badge text-xs font-medium',
+                              getStatusColor(task.status),
+                              getStatusBg(task.status)
+                            )}
+                          >
+                            {task.status}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2.5 text-text-secondary lowercase text-xs">{task.owner}</td>
+                        <td
                           className={cn(
-                            'inline-flex items-center px-1.5 py-0.5 rounded-badge text-xs font-medium',
-                            getStatusColor(task.status),
-                            getStatusBg(task.status)
+                            'px-3 py-2.5 text-xs',
+                            PRIORITY_COLOR[task.priority] ?? 'text-zinc-400'
                           )}
                         >
-                          {task.status}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2.5 text-text-secondary lowercase text-xs">{task.owner}</td>
-                      <td
-                        className={cn(
-                          'px-3 py-2.5 text-xs',
-                          PRIORITY_COLOR[task.priority] ?? 'text-zinc-400'
-                        )}
-                      >
-                        {task.priority}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                          {task.priority}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
