@@ -1,0 +1,765 @@
+{
+  "lastScanned": "2026-03-13T00:06:46.350Z",
+  "components": [
+    {
+      "id": "P0-T1",
+      "name": "Nx monorepo init",
+      "description": "Initialize Nx monorepo with workspace configuration, nx.json, and root package.json. Configure apps/ and packages/ directories per ADR-017 V3.",
+      "app": "infra",
+      "status": "planned",
+      "phase": "0"
+    },
+    {
+      "id": "P0-T2",
+      "name": "Folder structure per ADR-017 V3",
+      "description": "Create full monorepo folder structure: apps/portal, apps/dashboard, apps/support, apps/studio, apps/admin, apps/api, packages/ui, packages/db, packages/auth, packages/api-client, packages/validators, packages/email.",
+      "app": "infra",
+      "status": "planned",
+      "phase": "0"
+    },
+    {
+      "id": "P0-T3",
+      "name": "Command Center app setup",
+      "description": "Bootstrap Command Center Next.js 15 app at apps/command-center with App Router, Tailwind CSS 4, TypeScript strict mode, port 4000 configuration.",
+      "app": "command-center",
+      "status": "planned",
+      "phase": "0"
+    },
+    {
+      "id": "P0-T4",
+      "name": "phases.json creation",
+      "description": "Create workplan/phases.json with all 7 phases (0-6), project metadata, and full V2 task list. Serves as the primary data source for Command Center dashboards.",
+      "app": "command-center",
+      "status": "planned",
+      "phase": "0"
+    },
+    {
+      "id": "P0-T5",
+      "name": "22 ADR files",
+      "description": "Create 22 Architecture Decision Record markdown files in workplan/adr/ covering all major architectural decisions: monorepo, auth, DB schema, design system, API strategy, deployment, etc.",
+      "app": "command-center",
+      "status": "planned",
+      "phase": "0"
+    },
+    {
+      "id": "P0-T6",
+      "name": "CLI scanner (cc:scan)",
+      "description": "Implement cc:scan CLI script that traverses the monorepo, collects component counts, ADR status, phase progress, and writes scan results to workplan/scan-results.json.",
+      "app": "command-center",
+      "status": "planned",
+      "phase": "0"
+    },
+    {
+      "id": "P0-T7",
+      "name": "CLI report (cc:report)",
+      "description": "Implement cc:report CLI script that reads scan results and phases.json, then outputs a formatted terminal report showing phase completion, component coverage, and blocking issues.",
+      "app": "command-center",
+      "status": "planned",
+      "phase": "0"
+    },
+    {
+      "id": "P0-T8",
+      "name": "6 CC pages",
+      "description": "Build all 6 Command Center pages: Mission Control (overview), Phase Tracker (phases.json viewer), Components (design system status), Content (ADR/docs), Architecture (dependency graph), Dependencies (package audit).",
+      "app": "command-center",
+      "status": "planned",
+      "phase": "0"
+    },
+    {
+      "id": "P1-T1",
+      "name": "Design tokens — color palette",
+      "description": "Define full color palette in packages/ui/src/tokens/colors.ts — brand, surface, text, border, status, and semantic tokens for light/dark themes.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T2",
+      "name": "Design tokens — typography",
+      "description": "Define typography tokens in packages/ui/src/tokens/typography.ts — font families, sizes, weights, line heights, letter spacing using LINE Seed JP as primary font.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T3",
+      "name": "Design tokens — spacing & radii",
+      "description": "Define spacing scale and border radius tokens in packages/ui/src/tokens/spacing.ts and radii.ts — 4px base grid system consistent with Tailwind v4.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T4",
+      "name": "Design tokens — shadows & elevation",
+      "description": "Define shadow and elevation tokens in packages/ui/src/tokens/shadows.ts — card shadows, modal overlays, dropdown elevations for dark theme.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T5",
+      "name": "Design tokens — animation",
+      "description": "Define animation tokens in packages/ui/src/tokens/animation.ts — easing curves, duration values, transition presets for consistent motion.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T6",
+      "name": "Design tokens — Tailwind config mapping",
+      "description": "Map all design tokens to Tailwind CSS 4 config in packages/ui/tailwind.config.ts — custom color classes, spacing, radii, shadows, typography utilities.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T7",
+      "name": "cn() helper and token utilities",
+      "description": "Implement cn() class composition helper using clsx + tailwind-merge, plus color getter utilities and token accessor functions in packages/ui/src/utils/.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T8",
+      "name": "Primitive — Button",
+      "description": "Build Button primitive using shadcn/ui base — variants (default, destructive, outline, ghost, link), sizes (sm, md, lg), loading state, icon support.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T9",
+      "name": "Primitive — Badge",
+      "description": "Build Badge primitive using shadcn/ui base — variants (default, secondary, destructive, outline), status colors mapped to design tokens.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T10",
+      "name": "Primitive — Dialog",
+      "description": "Build Dialog primitive using shadcn/ui base — accessible modal with header/content/footer slots, overlay backdrop, keyboard dismiss.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T11",
+      "name": "Primitive — Input",
+      "description": "Build Input primitive using shadcn/ui base — text, email, password, number types, error state, label integration, helper text.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T12",
+      "name": "Primitive — Select",
+      "description": "Build Select primitive using shadcn/ui base — single and multi-select, searchable, grouped options, async loading state.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T13",
+      "name": "Primitive — Table",
+      "description": "Build Table primitive using shadcn/ui base — sortable columns, row selection, pagination, empty state, loading skeleton rows.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T14",
+      "name": "Primitive — Tabs",
+      "description": "Build Tabs primitive using shadcn/ui base — horizontal and vertical orientations, keyboard navigation, URL-synced active tab option.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T15",
+      "name": "Primitive — Tooltip",
+      "description": "Build Tooltip primitive using shadcn/ui base — accessible hover/focus trigger, configurable delay, placement options.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T16",
+      "name": "Primitive — Popover",
+      "description": "Build Popover primitive using shadcn/ui base — trigger + content pattern, positioning, click-outside dismiss, focus trap.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T17",
+      "name": "Primitive — Sheet",
+      "description": "Build Sheet primitive using shadcn/ui base — slide-in panels from left/right/top/bottom, overlay, keyboard dismiss, nested sheets.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T18",
+      "name": "Primitive — Card",
+      "description": "Build Card primitive using shadcn/ui base — header/content/footer composition, interactive hover state, bordered and filled variants.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T19",
+      "name": "Primitive — Separator",
+      "description": "Build Separator primitive using shadcn/ui base — horizontal and vertical orientations, decorative vs semantic modes.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T20",
+      "name": "Primitive — Skeleton",
+      "description": "Build Skeleton primitive using shadcn/ui base — shimmer animation, configurable dimensions, compose-able for complex loading states.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T21",
+      "name": "Primitive — Toast",
+      "description": "Build Toast primitive using shadcn/ui base — success/error/warning/info variants, auto-dismiss, action button, stack management.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T22",
+      "name": "Primitive — Progress",
+      "description": "Build Progress primitive using shadcn/ui base — determinate and indeterminate states, configurable color via design tokens, accessible label.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T23",
+      "name": "Domain component — ThemeCard",
+      "description": "Build ThemeCard domain component — displays theme preview thumbnail, name, category, 65-theme support, active/inactive status indicator.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T24",
+      "name": "Domain component — PluginGrid",
+      "description": "Build PluginGrid domain component — responsive grid of plugin cards with icon, name, version, compatibility badge, install/activate actions.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T25",
+      "name": "Domain component — LicenseLock",
+      "description": "Build LicenseLock domain component — gate UI element that shows locked state for premium features, upgrade CTA, entitlement tier display.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T26",
+      "name": "Domain component — PricingComparison",
+      "description": "Build PricingComparison domain component — side-by-side plan comparison table, feature matrix, highlighted recommended plan, billing toggle.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T27",
+      "name": "Domain component — FeatureList",
+      "description": "Build FeatureList domain component — checklist of plan features with included/excluded indicators, entitlement-aware rendering, tooltip explanations.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T28",
+      "name": "Domain component — SearchPanel",
+      "description": "Build SearchPanel domain component — full-text search input with instant results dropdown, recent searches, category filters, keyboard navigation.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T29",
+      "name": "Domain component — ResourceSidebar",
+      "description": "Build ResourceSidebar domain component — contextual right panel showing related docs, quick links, support resources based on current page context.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T30",
+      "name": "Domain component — EntitlementBadge",
+      "description": "Build EntitlementBadge domain component — compact badge showing user's current plan tier (free/pro/agency), upgrade prompt for locked tiers.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T31",
+      "name": "Domain component — TicketPreview",
+      "description": "Build TicketPreview domain component — support ticket card with status, priority, subject, date, assignee — used in ticket lists and sidebars.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T32",
+      "name": "Domain component — UserRow",
+      "description": "Build UserRow domain component — table row for user management — avatar, name, email, role badge, plan tier, last active, action menu.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T33",
+      "name": "Domain component — StatCard",
+      "description": "Build StatCard domain component — KPI card with metric value, label, trend indicator (up/down/neutral), sparkline chart, comparison period.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T34",
+      "name": "Domain component — EmptyState",
+      "description": "Build EmptyState domain component — zero-data state with illustration slot, heading, description, primary CTA button, contextual messaging.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T35",
+      "name": "Domain component — SearchSuggestion",
+      "description": "Build SearchSuggestion domain component — single suggestion item in search dropdown — icon, title, category tag, keyboard shortcut hint.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T36",
+      "name": "Domain component — ThemeStatusIndicator",
+      "description": "Build ThemeStatusIndicator domain component — real-time indicator showing active theme name, version, update availability, one-click update action.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T37",
+      "name": "DB schema — 6 domains, 25+ tables",
+      "description": "Define Supabase PostgreSQL schema per ADR-020 V3 — 6 domains: identity, commerce, content, support, analytics, notifications — 25+ tables with relations, indexes, constraints.",
+      "app": "db",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T38",
+      "name": "DB RLS policies",
+      "description": "Implement Row Level Security policies for all tables — user-scoped data isolation, org-scoped access, admin bypass rules, service-role policies.",
+      "app": "db",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T39",
+      "name": "Auth — Supabase Auth integration per ADR-005 V2",
+      "description": "Implement authentication layer per ADR-005 V2 — Supabase Auth with JWT, session management, email/password and OAuth providers, auth middleware for App Router.",
+      "app": "auth",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T40",
+      "name": "Auth — Entitlement resolvers per ADR-022",
+      "description": "Implement entitlement resolution system per ADR-022 — plan tier lookup, feature flag evaluation, license validation, cached entitlement checks for SSR.",
+      "app": "auth",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T41",
+      "name": "Package — @cmsmasters/ui",
+      "description": "Finalize packages/ui shared package — export all primitives and domain components, configure package.json with proper exports map, build pipeline, Storybook integration.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T42",
+      "name": "Package — @cmsmasters/db",
+      "description": "Finalize packages/db shared package — Supabase client factory, type-safe query helpers, migration runner, schema type exports generated from Supabase.",
+      "app": "db",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T43",
+      "name": "Package — @cmsmasters/auth",
+      "description": "Finalize packages/auth shared package — auth utilities, session helpers, middleware factories, entitlement hooks, role constants, type exports.",
+      "app": "auth",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T44",
+      "name": "Package — @cmsmasters/api-client",
+      "description": "Finalize packages/api-client shared package — typed API client for CF Workers API, request/response types, error handling, retry logic, auth header injection.",
+      "app": "infra",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T45",
+      "name": "Package — @cmsmasters/validators",
+      "description": "Finalize packages/validators shared package — Zod schemas for all domain entities (user, theme, plugin, ticket, order), shared validation utilities, parse helpers.",
+      "app": "infra",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T46",
+      "name": "Package — @cmsmasters/email",
+      "description": "Finalize packages/email shared package — React Email templates for transactional emails, Resend integration, template registry, preview server.",
+      "app": "infra",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T47",
+      "name": "Infra — Vercel Portal deployment",
+      "description": "Configure Vercel deployment for Portal app — project settings, environment variables, preview deployments, production domain, edge runtime config.",
+      "app": "infra",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T48",
+      "name": "Infra — Vercel Static SPAs deployment",
+      "description": "Configure Vercel deployments for static SPA apps (Dashboard, Support, Studio, Admin) — static export builds, routing config, CDN optimization.",
+      "app": "infra",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T49",
+      "name": "Infra — CF Workers API deployment",
+      "description": "Configure Cloudflare Workers deployment for API service — wrangler.toml, D1/KV bindings, custom domain routing, environment variable secrets.",
+      "app": "api",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T50",
+      "name": "Infra — Nx config and build pipeline",
+      "description": "Configure Nx workspace — project.json for all apps and packages, task executors, build/test/lint targets, affected commands, remote caching setup.",
+      "app": "infra",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T51",
+      "name": "Infra — CI/CD pipeline",
+      "description": "Set up GitHub Actions CI/CD — lint, typecheck, test, build workflows, Nx affected optimization, auto-deploy to Vercel and CF Workers on main branch merge.",
+      "app": "infra",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P1-T52",
+      "name": "Infra — Storybook",
+      "description": "Configure Storybook for packages/ui — stories for all primitives and domain components, Tailwind integration, dark theme default, Chromatic visual testing.",
+      "app": "ui",
+      "status": "planned",
+      "phase": "1"
+    },
+    {
+      "id": "P2-T1",
+      "name": "Portal app bootstrap",
+      "description": "Bootstrap Next.js 15 Portal app at apps/portal — App Router, Tailwind v4, shared packages integration, layout shell, metadata config.",
+      "app": "portal",
+      "status": "planned",
+      "phase": "2"
+    },
+    {
+      "id": "P2-T2",
+      "name": "Portal — Theme marketplace",
+      "description": "Build theme marketplace pages — browsable catalog of 65 themes with filters (category, price, rating), search, ThemeCard grid, theme detail page with preview.",
+      "app": "portal",
+      "status": "planned",
+      "phase": "2"
+    },
+    {
+      "id": "P2-T3",
+      "name": "Portal — Plugin marketplace",
+      "description": "Build plugin marketplace pages — plugin catalog with PluginGrid, compatibility filters, plugin detail with screenshots, changelogs, installation guide.",
+      "app": "portal",
+      "status": "planned",
+      "phase": "2"
+    },
+    {
+      "id": "P2-T4",
+      "name": "Portal — Pricing page",
+      "description": "Build pricing page with PricingComparison component — Free/Pro/Agency tiers, FeatureList per plan, billing toggle (monthly/annual), upgrade CTA flows.",
+      "app": "portal",
+      "status": "planned",
+      "phase": "2"
+    },
+    {
+      "id": "P2-T5",
+      "name": "Portal — Authentication flows",
+      "description": "Implement auth flows — sign up, sign in, forgot password, email verification, OAuth (Google, GitHub), session persistence, protected route middleware.",
+      "app": "portal",
+      "status": "planned",
+      "phase": "2"
+    },
+    {
+      "id": "P2-T6",
+      "name": "Portal — Account management",
+      "description": "Build account pages — profile settings, password change, notification preferences, connected accounts, active sessions management, account deletion.",
+      "app": "portal",
+      "status": "planned",
+      "phase": "2"
+    },
+    {
+      "id": "P2-T7",
+      "name": "Portal — License management",
+      "description": "Build license management pages — active licenses list, license key display, domain assignments, renewal flow, LicenseLock gating for premium features.",
+      "app": "portal",
+      "status": "planned",
+      "phase": "2"
+    },
+    {
+      "id": "P2-T8",
+      "name": "Portal — Checkout and billing",
+      "description": "Implement checkout flow — cart, payment method (Stripe), order confirmation, billing history, invoice downloads, subscription management.",
+      "app": "portal",
+      "status": "planned",
+      "phase": "2"
+    },
+    {
+      "id": "P3-T1",
+      "name": "Dashboard app bootstrap",
+      "description": "Bootstrap Dashboard SPA at apps/dashboard — Vite + React 19, Tailwind v4, react-router, auth guard, shared packages integration.",
+      "app": "dashboard",
+      "status": "planned",
+      "phase": "3"
+    },
+    {
+      "id": "P3-T2",
+      "name": "Dashboard — Overview page",
+      "description": "Build main dashboard overview — StatCard grid (themes installed, plugins active, licenses, tickets), recent activity feed, quick action shortcuts.",
+      "app": "dashboard",
+      "status": "planned",
+      "phase": "3"
+    },
+    {
+      "id": "P3-T3",
+      "name": "Dashboard — Installed themes manager",
+      "description": "Build installed themes management — ThemeCard grid, ThemeStatusIndicator, update notifications, activate/deactivate, one-click update flow.",
+      "app": "dashboard",
+      "status": "planned",
+      "phase": "3"
+    },
+    {
+      "id": "P3-T4",
+      "name": "Dashboard — Installed plugins manager",
+      "description": "Build installed plugins management — PluginGrid with status, version tracking, update alerts, bulk update actions, plugin configuration links.",
+      "app": "dashboard",
+      "status": "planned",
+      "phase": "3"
+    },
+    {
+      "id": "P3-T5",
+      "name": "Dashboard — Downloads",
+      "description": "Build downloads section — downloadable files for owned products, version history, changelog viewer, re-download links, download analytics.",
+      "app": "dashboard",
+      "status": "planned",
+      "phase": "3"
+    },
+    {
+      "id": "P3-T6",
+      "name": "Dashboard — Analytics",
+      "description": "Build analytics dashboard — Recharts-powered usage graphs, theme/plugin performance metrics, traffic sources, conversion tracking, date range picker.",
+      "app": "dashboard",
+      "status": "planned",
+      "phase": "3"
+    },
+    {
+      "id": "P3-T7",
+      "name": "Dashboard — Notifications",
+      "description": "Build notifications center — categorized alerts (updates, billing, support), mark read/unread, notification preferences link, real-time badge count.",
+      "app": "dashboard",
+      "status": "planned",
+      "phase": "3"
+    },
+    {
+      "id": "P4-T1",
+      "name": "Support app bootstrap",
+      "description": "Bootstrap Support SPA at apps/support — Vite + React 19, Tailwind v4, react-router, auth integration, shared packages setup.",
+      "app": "support",
+      "status": "planned",
+      "phase": "4"
+    },
+    {
+      "id": "P4-T2",
+      "name": "Support — Ticket list and creation",
+      "description": "Build ticket management — TicketPreview list view, search/filter, create ticket form with category/priority selection, file attachment, status tracking.",
+      "app": "support",
+      "status": "planned",
+      "phase": "4"
+    },
+    {
+      "id": "P4-T3",
+      "name": "Support — Ticket detail and replies",
+      "description": "Build ticket detail page — threaded conversation, markdown rendering, file attachment view, status timeline, escalation flow, satisfaction rating.",
+      "app": "support",
+      "status": "planned",
+      "phase": "4"
+    },
+    {
+      "id": "P4-T4",
+      "name": "Support — Knowledge base",
+      "description": "Build knowledge base — categorized articles, SearchPanel integration, SearchSuggestion results, ResourceSidebar related articles, article rating.",
+      "app": "support",
+      "status": "planned",
+      "phase": "4"
+    },
+    {
+      "id": "P4-T5",
+      "name": "Support — Documentation viewer",
+      "description": "Build documentation viewer — MDX-based docs with navigation sidebar, table of contents, code blocks with syntax highlighting, version selector.",
+      "app": "support",
+      "status": "planned",
+      "phase": "4"
+    },
+    {
+      "id": "P4-T6",
+      "name": "Support — Live chat integration",
+      "description": "Integrate live chat widget — real-time messaging via Supabase Realtime, typing indicators, agent assignment, chat history, offline fallback to ticket.",
+      "app": "support",
+      "status": "planned",
+      "phase": "4"
+    },
+    {
+      "id": "P5-T1",
+      "name": "Studio app bootstrap",
+      "description": "Bootstrap Studio SPA at apps/studio — Vite + React 19, Tailwind v4, react-router, auth guard, canvas rendering setup, shared packages integration.",
+      "app": "studio",
+      "status": "planned",
+      "phase": "5"
+    },
+    {
+      "id": "P5-T2",
+      "name": "Studio — Theme builder canvas",
+      "description": "Build visual theme builder — live preview canvas, CSS variable editor, color picker integration, typography controls, spacing adjustments, real-time preview.",
+      "app": "studio",
+      "status": "planned",
+      "phase": "5"
+    },
+    {
+      "id": "P5-T3",
+      "name": "Studio — Theme export and publish",
+      "description": "Build theme export pipeline — generate theme package, validate output, version bump flow, publish to marketplace, draft/published/archived states.",
+      "app": "studio",
+      "status": "planned",
+      "phase": "5"
+    },
+    {
+      "id": "P5-T4",
+      "name": "Admin app bootstrap",
+      "description": "Bootstrap Admin SPA at apps/admin — Vite + React 19, Tailwind v4, react-router, admin-role auth guard, shared packages integration.",
+      "app": "admin",
+      "status": "planned",
+      "phase": "5"
+    },
+    {
+      "id": "P5-T5",
+      "name": "Admin — User management",
+      "description": "Build user management — UserRow Table with search/filter, user detail modal, role assignment, plan override, account suspension, impersonation.",
+      "app": "admin",
+      "status": "planned",
+      "phase": "5"
+    },
+    {
+      "id": "P5-T6",
+      "name": "Admin — Content management",
+      "description": "Build content management — theme/plugin CRUD, marketplace listing editor, screenshot uploader, pricing configuration, category management.",
+      "app": "admin",
+      "status": "planned",
+      "phase": "5"
+    },
+    {
+      "id": "P5-T7",
+      "name": "Admin — Support queue",
+      "description": "Build admin support queue — all tickets view, agent assignment, bulk actions, SLA tracking, escalation management, canned response library.",
+      "app": "admin",
+      "status": "planned",
+      "phase": "5"
+    },
+    {
+      "id": "P5-T8",
+      "name": "Admin — Analytics dashboard",
+      "description": "Build admin analytics — revenue metrics, user growth charts, product performance, support volume, conversion funnels, exportable reports.",
+      "app": "admin",
+      "status": "planned",
+      "phase": "5"
+    },
+    {
+      "id": "P6-T1",
+      "name": "API service bootstrap",
+      "description": "Bootstrap Cloudflare Workers API service at apps/api — Hono framework, TypeScript, D1 database bindings, KV cache, Zod validation, OpenAPI spec generation.",
+      "app": "api",
+      "status": "planned",
+      "phase": "6"
+    },
+    {
+      "id": "P6-T2",
+      "name": "API — Core domain routes",
+      "description": "Implement core API routes — /themes, /plugins, /licenses, /users, /orders, /tickets — CRUD operations, auth middleware, rate limiting, caching headers.",
+      "app": "api",
+      "status": "planned",
+      "phase": "6"
+    },
+    {
+      "id": "P6-T3",
+      "name": "API — Webhook handlers",
+      "description": "Implement webhook handlers — Stripe payment events, license activation triggers, update notifications, email queue dispatch, signature verification.",
+      "app": "api",
+      "status": "planned",
+      "phase": "6"
+    },
+    {
+      "id": "P6-T4",
+      "name": "Performance optimization",
+      "description": "Performance optimization pass — Core Web Vitals audit, image optimization, bundle analysis, edge caching strategy, database query optimization, load testing.",
+      "app": "infra",
+      "status": "planned",
+      "phase": "6"
+    },
+    {
+      "id": "P6-T5",
+      "name": "Security hardening",
+      "description": "Security hardening — CSP headers, CORS configuration, rate limiting rules, SQL injection audit, XSS prevention, dependency vulnerability scan, pen test.",
+      "app": "infra",
+      "status": "planned",
+      "phase": "6"
+    },
+    {
+      "id": "P6-T6",
+      "name": "Production launch",
+      "description": "Production launch checklist — DNS cutover, SSL certificates, monitoring setup (Sentry, Grafana), runbook documentation, on-call rotation, go-live announcement.",
+      "app": "infra",
+      "status": "planned",
+      "phase": "6"
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "lastUpdated": "2026-03-13T00:06:46.357Z",
+  "phases": [
+    {
+      "phaseId": "0",
+      "tasksTotal": 8,
+      "tasksDone": 0,
+      "tasksInProgress": 0,
+      "tasksBlocked": 0,
+      "estimatedHours": 0,
+      "actualHours": 0,
+      "percentComplete": 0
+    },
+    {
+      "phaseId": "1",
+      "tasksTotal": 52,
+      "tasksDone": 0,
+      "tasksInProgress": 0,
+      "tasksBlocked": 0,
+      "estimatedHours": 0,
+      "actualHours": 0,
+      "percentComplete": 0
+    },
+    {
+      "phaseId": "2",
+      "tasksTotal": 8,
+      "tasksDone": 0,
+      "tasksInProgress": 0,
+      "tasksBlocked": 0,
+      "estimatedHours": 0,
+      "actualHours": 0,
+      "percentComplete": 0
+    },
+    {
+      "phaseId": "3",
+      "tasksTotal": 7,
+      "tasksDone": 0,
+      "tasksInProgress": 0,
+      "tasksBlocked": 0,
+      "estimatedHours": 0,
+      "actualHours": 0,
+      "percentComplete": 0
+    },
+    {
+      "phaseId": "4",
+      "tasksTotal": 6,
+      "tasksDone": 0,
+      "tasksInProgress": 0,
+      "tasksBlocked": 0,
+      "estimatedHours": 0,
+      "actualHours": 0,
+      "percentComplete": 0
+    },
+    {
+      "phaseId": "5",
+      "tasksTotal": 8,
+      "tasksDone": 0,
+      "tasksInProgress": 0,
+      "tasksBlocked": 0,
+      "estimatedHours": 0,
+      "actualHours": 0,
+      "percentComplete": 0
+    },
+    {
+      "phaseId": "6",
+      "tasksTotal": 6,
+      "tasksDone": 0,
+      "tasksInProgress": 0,
+      "tasksBlocked": 0,
+      "estimatedHours": 0,
+      "actualHours": 0,
+      "percentComplete": 0
+    }
+  ]
+}
