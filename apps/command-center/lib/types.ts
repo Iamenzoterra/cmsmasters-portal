@@ -112,6 +112,14 @@ export interface ADRMeta {
 
 export type ADRMetaWithBody = ADRMeta & { body: string };
 
+// ─── InfraChecklist ───────────────────────────────────────────────────────────
+
+export interface InfraItem {
+  label: string;
+  done: boolean;
+  taskTitle?: string;
+}
+
 // ─── Aliases / wrappers ───────────────────────────────────────────────────────
 
 /** Single entry in components.json */
