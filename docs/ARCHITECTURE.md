@@ -133,11 +133,11 @@ All primitives are in `ui/`. They follow these rules:
 
 | Component | Directive | Purpose | Props | Navigates to |
 |-----------|-----------|---------|-------|--------------|
-| `PhaseTimeline` | `'use client'` | Horizontal strip of 7 phase blocks with ChevronRight connectors; active phase gets ring glow | `PhaseTimelineProps { phases, currentPhase, overallLabel }` | `/phases/[id]` (via Next.js `Link`) |
-| `AppCard` | `'use client'` | Per-app status card: bold name, truncated description, color-coded status dot | `AppCardApp { name, description, status, href }` | `app.href` (caller encodes `/phases?app=<id>`) |
-| `DesignSystemProgress` | `'use client'` | Three stacked progress bars for Primitives / Domain / Layouts layers; Storybook link at bottom | `DesignSystemProgressProps { layers: LayerRow[] }` | `/components?layer=<layer>` |
-| `ContentOverview` | `'use client'` | Three KPI tiles (Themes, Docs, Blog Posts) as fraction + ProgressBar; mini list of up to 5 recent themes | `ContentMetrics { themes, docs, blogPosts, recentThemes }` | `/content` (whole-card `useRouter().push`) |
-| `InfraChecklist` | Server Component | 12-item infra readiness checklist in a Card; CheckCircle2 (done) / Circle (pending) Lucide icons | `InfraChecklistProps { items: InfraItem[] }` | No navigation |
+| `PhaseTimeline` | `'use client'` | Horizontal strip of 7 phase blocks with ChevronRight connectors; active phase gets ring glow | `PhaseTimelineProps { phases: PhaseBlock[], overallLabel: string }` | `/phases/[id]` (via Next.js `Link`) |
+| `AppCard` | `'use client'` | Per-app status card: bold name, truncated description, color-coded status dot | `AppCardProps { app: AppCardApp }` | `app.href` (caller encodes `/phases?app=<id>`) |
+| `DesignSystemProgress` | `'use client'` | Three stacked progress bars for Primitives / Domain / Layouts layers; each row is clickable | `DesignSystemProgressProps { layers: LayerRow[] \| null }` | `/components?layer=<layer>` (via `useRouter`) |
+| `ContentOverview` | `'use client'` | Three KPI tiles (Themes, Docs, Blog Posts) as fraction + ProgressBar; mini list of up to 5 recent themes | `ContentOverviewProps { metrics: ContentMetrics, recentThemes: ThemeItem[] }` | `/content` (whole-card `useRouter().push`) |
+| `InfraChecklist` | Server Component | Infra readiness checklist in a Card; CheckCircle2 (done) / Circle (pending) Lucide icons | `InfraChecklistProps { items: InfraItem[] \| null }` | No navigation |
 | `ActivityFeed` | `'use client'` | Top-10 recent task events sorted by timestamp; status icons (CheckCircle / Loader2 / XCircle) | `{ tasks: Task[] }` | `/phases?task={id}` (on row click) |
 
 ---
@@ -211,11 +211,11 @@ All pages are React Server Components by default. `'use client'` is only used wh
 
 | Panel | Component | Props interface | Data source |
 |-------|-----------|-----------------|-------------|
-| Phase strip | `PhaseTimeline` | `PhaseTimelineProps` | `getPhases()` |
-| App status | `AppCard` | `AppCardApp` | `getAppCards()` |
-| Design system | `DesignSystemProgress` | `DesignSystemProgressProps` | `getDesignSystemLayers()` |
-| Content KPIs | `ContentOverview` | `ContentMetrics` | `getContentStatusEntries()` |
-| Infra readiness | `InfraChecklist` | `InfraChecklistProps` | `getInfraItems()` |
+| Phase strip | `PhaseTimeline` | `PhaseTimelineProps { phases: PhaseBlock[], overallLabel }` | `getPhases()` → mapped to `PhaseBlock[]` |
+| App status | `AppCard` (×5) | `AppCardProps { app: AppCardApp }` | `getAppCards()` |
+| Design system | `DesignSystemProgress` | `DesignSystemProgressProps { layers: LayerRow[] \| null }` | `getDesignSystemLayers()` |
+| Content KPIs | `ContentOverview` | `ContentOverviewProps { metrics: ContentMetrics, recentThemes: ThemeItem[] }` | `getContentStatusEntries()` |
+| Infra readiness | `InfraChecklist` | `InfraChecklistProps { items: InfraItem[] \| null }` | `getInfraItems()` |
 | Activity feed | `ActivityFeed` | `{ tasks: Task[] }` | `getPhases()` (all tasks flattened) |
 
 ---
@@ -297,13 +297,13 @@ Paths are resolved with `path.join(process.cwd(), ...)` so they work from any CW
 | Type | Shape | Description |
 |------|-------|-------------|
 | `AppStatus` | `'not-started' \| 'in-progress' \| 'beta' \| 'live'` | Per-app build status |
-| `AppCardApp` | `{ name, description, status: AppStatus, href }` | Prop shape for `AppCard`; `href` is caller-encoded filter URL |
+| `AppCardApp` | `{ id, name, description, status: AppStatus, href }` | Data shape for each app card; `href` is caller-encoded filter URL |
 | `LayerName` | `'Primitives' \| 'Domain' \| 'Layouts'` | Three design-system layer names per ADR-010 |
-| `LayerRow` | `{ layer: LayerName, done, total }` | One row in `DesignSystemProgress` |
-| `ContentMetrics` | `{ themes, docs, blogPosts: { published, total }, recentThemes: ThemeItem[] }` | Aggregated content KPIs for `ContentOverview` |
-| `ThemeItem` | `{ name, updatedAt }` | Single theme entry in `ContentOverview` mini list |
+| `LayerRow` | `{ layer: LayerName, completed: number, total: number, href: string }` | One row in `DesignSystemProgress`; `completed` (not `done`) counts finished components |
+| `ContentMetrics` | `{ themesPublished, themesTotal, docsPublished, docsTarget, blogPosts, blogTarget }` | Flat KPI counts for `ContentOverview` |
+| `ThemeItem` | `{ id, name, lastUpdated }` | Single theme entry in `ContentOverview` recent-themes mini list |
 | `InfraItem` | `{ label, done, taskTitle? }` | Single infra checklist row; `taskTitle` used as native tooltip |
-| `InfraChecklistProps` | `{ items: InfraItem[] }` | Props interface for `InfraChecklist` |
+| `PhaseBlock` | `{ id, name, subtitle, status, progressPct, estimatedWeeks, isCurrent?, href }` | One phase card in `PhaseTimeline`; defined in `components/PhaseTimeline.tsx` |
 
 ### phases.json Schema
 
