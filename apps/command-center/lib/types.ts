@@ -129,3 +129,43 @@ export type ComponentSummary = Component;
 export interface ProgressData {
   phases: Progress[];
 }
+
+// ─── AppCard ──────────────────────────────────────────────────────────────────
+
+export type AppStatus = 'not-started' | 'in-progress' | 'beta' | 'live';
+
+export interface AppCardApp {
+  id: string;
+  name: string;
+  description: string;
+  status: AppStatus;
+  href: string;
+}
+
+// ─── DesignSystemProgress ─────────────────────────────────────────────────────
+
+export type LayerName = 'Primitives' | 'Domain' | 'Layouts';
+
+export interface LayerRow {
+  layer: LayerName;
+  completed: number;
+  total: number;
+  href: string;
+}
+
+// ─── ContentOverview ──────────────────────────────────────────────────────────
+
+export interface ContentMetrics {
+  themesPublished: number;
+  themesTotal: number;
+  docsPublished: number;
+  docsTarget: number;
+  blogPosts: number;
+  blogTarget: number;
+}
+
+export interface ThemeItem {
+  id: string;
+  name: string;
+  lastUpdated: string;
+}
