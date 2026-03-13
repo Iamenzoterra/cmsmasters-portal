@@ -76,7 +76,7 @@ export default async function DependenciesPage(): Promise<React.ReactElement> {
       <div className="mb-6">
         <h1 className="text-text-primary text-2xl font-semibold">Dependencies</h1>
         <p className="text-text-secondary font-mono text-sm mt-1">
-          {phases.length} phase{phases.length !== 1 ? 's' : ''}
+          {phases.length} phase{phases.length === 1 ? '' : 's'}
         </p>
       </div>
 
