@@ -15,6 +15,7 @@ import { DesignSystemProgress } from '@/components/DesignSystemProgress';
 import { ContentOverview } from '@/components/ContentOverview';
 import { InfraChecklist } from '@/components/InfraChecklist';
 import { ActivityFeed } from '@/components/ActivityFeed';
+import { TasksView } from '@/components/TasksView';
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -103,6 +104,14 @@ export default async function Page(): Promise<React.ReactElement> {
         {/* Infrastructure Panel */}
         <InfraChecklist items={infraItems} />
       </div>
+
+      {/* Task Explorer */}
+      {project && (
+        <div>
+          <h2 className="text-text-primary font-semibold text-sm mb-4">Tasks</h2>
+          <TasksView phases={project.phases} />
+        </div>
+      )}
 
       {/* Activity Feed */}
       <Card>
