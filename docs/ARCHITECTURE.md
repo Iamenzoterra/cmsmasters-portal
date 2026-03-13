@@ -38,8 +38,8 @@ apps/command-center/
 │   ├── TaskTable.tsx           # Phase Tracker — sortable task rows with status and metadata columns
 │   ├── TaskFilters.tsx         # Phase Tracker — filter bar (search + 4 dropdowns + active chips)
 │   ├── TaskDetailSheet.tsx     # Phase Tracker — slide-in right panel with full task detail
-│   ├── TaskBrowser.tsx         # Phase Tracker — client composition: filter state + TaskFilters + TaskTable
-│   └── TasksView.tsx           # Phase Tracker — server wrapper that renders TaskBrowser
+│   ├── TaskBrowser.tsx         # Phase Tracker — client composition: filter state + TaskFilters + TaskTable (flat tasks input)
+│   └── TasksView.tsx           # Phase Tracker — client composition: filter state + TaskFilters + TaskTable (Phase[] input)
 ├── ui/                         # Design system atoms
 │   ├── Card.tsx
 │   ├── StatusBadge.tsx
@@ -144,6 +144,7 @@ All primitives are in `ui/`. They follow these rules:
 | `TaskFilters` | `'use client'` | Horizontal filter bar: search `Input` + four `Select` dropdowns (Phase, Status, Owner, App); active non-default filters render as removable chip badges below the bar; fully controlled — parent owns state | `TaskFiltersProps { filters: TaskFilterState, onChange: (f: TaskFilterState) => void, phaseOptions?: string[], appOptions?: App[] }` |
 | `TaskDetailSheet` | `'use client'` | Slide-in right panel (CSS `translateX` transition, `duration-300`); displays Description, Details (owner/app/priority pills), Dependencies (clickable, resolved from `allTasks`), Acceptance Criteria (CheckSquare/Square icons), Notes, Timestamps; backdrop overlay closes on click; Escape key closes via `useEffect` | `TaskDetailSheetProps { task: Task \| null, onClose: () => void, onTaskSelect?: (taskId: string) => void, allTasks?: Task[] }` |
 | `TaskBrowser` | `'use client'` | Composition root for client-side task browsing: owns `TaskFilterState` via `useState`; computes `filteredTasks` via `useMemo` on every filter/search change; renders `TaskFilters` + `TaskTable` wired together | `TaskBrowserProps { tasks: PhaseTask[] }` where `PhaseTask = Task & { phase: string }` |
+| `TasksView` | `'use client'` | Alternative client composition root: owns `TaskFilterState` via `useState`; accepts `Phase[]` directly and flattens tasks internally; renders `TaskFilters` + `TaskTable`; does not use `useMemo` | `TasksViewProps { phases: Phase[] }` |
 
 ### Mission Control Components (`components/`)
 
@@ -242,7 +243,7 @@ All pages are React Server Components by default. `'use client'` is only used wh
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  Filter bar: status chips (SSR form GET) + search input      │
+│  Filter bar: status chip <Link> toggles + <form> search      │
 ├──────────────────────────────────────────────────────────────┤
 │  Phase cards grid (expandable <details> per phase)           │
 │  ┌─────────────────────┐  ┌─────────────────────┐           │
@@ -251,13 +252,7 @@ All pages are React Server Components by default. `'use client'` is only used wh
 │  │  [task rows…]        │  │                     │           │
 │  └─────────────────────┘  └─────────────────────┘           │
 ├──────────────────────────────────────────────────────────────┤
-│  All Tasks (TaskBrowser — client component)                  │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │  TaskFilters: search + Phase / Status / Owner / App  │   │
-│  │  TaskTable: sortable rows, click → TaskDetailSheet   │   │
-│  └──────────────────────────────────────────────────────┘   │
-├──────────────────────────────────────────────────────────────┤
-│  TaskDetailSheet overlay (slide-in from right, URL ?task=id) │
+│  Inline task detail panel (URL ?task=id — server-rendered)   │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -265,37 +260,41 @@ All pages are React Server Components by default. `'use client'` is only used wh
 
 | Panel | Component | Props / State | Data source |
 |-------|-----------|---------------|-------------|
-| Phase cards | `<details>`/`<summary>` HTML (native expand) | `open` attribute — no JS | `getPhases()` |
-| Phase progress | `ProgressBar` (per card) | `{ value: donePct, label: 'X / Y tasks' }` | derived from `phase.tasks` |
-| All Tasks browser | `TaskBrowser` | `{ tasks: PhaseTask[] }` | all tasks flattened from `getPhases()` |
-| Filter bar (inside browser) | `TaskFilters` | controlled via `useState` inside `TaskBrowser` | client state |
-| Task rows | `TaskTable` | filtered via `useMemo` inside `TaskBrowser` | filtered `PhaseTask[]` |
-| Task detail | `TaskDetailSheet` | `{ task, onClose, allTasks }` wired in `TaskBrowser` | selected row |
+| Filter bar | Inline `<Link>` chips + `<form method="get">` | URL params `statuses`, `search` — server-driven, zero JS | URL query string |
+| Phase cards | `<details>`/`<summary>` HTML (native expand) | `open` attribute — in-progress phases expanded by default | `getPhases()` |
+| Phase progress | `ProgressBar` (per card) | `{ value: donePct }` | derived from `phase.tasks` |
+| Phase task rows | Inline `<table>` (5 cols: ID, Status, Title, Owner, Priority) | server-filtered via `filterTasks()` helper | URL-filtered `phase.tasks` |
+| Task detail panel | Inline HTML panel with `@starting-style` slide-in | opens when `?task=id` URL param is present | `allTasks.find(id)` |
 
 ### Filter System
 
-The page uses **two separate filter mechanisms**:
+The page uses **URL-param SSR filtering** only — no client-side filter state:
 
-1. **URL-param SSR filters** (status chips + search form in the phase cards section):
-   - `statuses` query param — comma-separated status values; drives server-side `phase.tasks` filtering for the cards grid
-   - `search` query param — text search on task title; submitted via `<form method="get">` with a hidden `statuses` input to preserve active status chips
-   - `task` query param — task ID; opens `TaskDetailSheet` overlay (also server-rendered as a pre-selected task)
-   - Chevron rotation uses `group-open:rotate-180` via Tailwind `group` on `<details>` — zero JS required
+- `statuses` query param — comma-separated status values (e.g. `done,in-progress`); drives server-side `filterTasks()` call for each phase card's task list
+- `search` query param — text search on task title and ID; submitted via `<form method="get">` with a hidden `statuses` input to preserve active status chips
+- `task` query param — task ID; causes the inline task detail panel to be server-rendered for the selected task
+- Status chips are `<Link>` elements that toggle a status in/out of the `statuses` param — zero JS
+- Chevron rotation uses `group-open:rotate-180` via Tailwind `group` on `<details>` — zero JS required
+- Clearing all filters navigates to `?` (empty query string)
 
-2. **Client-state `TaskBrowser`** (All Tasks section):
-   - `TaskFilterState { phase, status, owner, app, search }` owned via `useState` inside `TaskBrowser`
-   - `filteredTasks` computed via `useMemo` on every filter/search change
-   - Instantly reactive — no URL round-trip needed for the flat task list
+### Task Detail Panel (inline server implementation)
 
-### TaskDetailSheet Slide-in Behavior
+The `/phases` page renders the task detail panel **inline as a Server Component** — it does not use the `TaskDetailSheet` client component. When `?task=id` is set:
 
-`TaskDetailSheet` is a `'use client'` component that uses a CSS `translateX` transition (`duration-300`) controlled by whether `task` prop is non-null:
+- A fixed backdrop `<Link>` navigates to `buildHref({ task: null }, ...)` to close
+- A fixed right panel renders task fields (title, status, owner, app, priority, hours, description, acceptance criteria, dependencies, notes, timestamps)
+- **Open animation:** `@starting-style` CSS rule sets `transform: translateX(100%)` before first paint; then transitions to `translateX(0)` via inline `<style>` tag (scoped to `.task-detail-sheet` class — no Tailwind equivalent)
+- Closing navigates via URL, not JavaScript
 
-- **Open:** `translateX(0)` — panel slides in from the right
-- **Closed:** `translateX(100%)` — panel is off-screen
+### TaskDetailSheet Component (standalone reusable)
+
+`TaskDetailSheet` (`components/TaskDetailSheet.tsx`) is a standalone `'use client'` component usable outside the `/phases` page:
+
+- **Open:** `translate-x-0` — panel slides in from the right
+- **Closed:** `translate-x-full` — panel is off-screen
 - **Backdrop:** fixed overlay behind the panel; click closes via `onClose()`
 - **Keyboard:** `useEffect` adds `keydown` listener; `Escape` fires `onClose()`
-- **Slide-in animation:** `@starting-style` CSS rule in an inline `<style>` tag (scoped to `.task-detail-sheet` class — no Tailwind equivalent)
+- Controlled by whether `task` prop is non-null (`task === null` → closed)
 
 ### Phase Detail Page (`/phases/[id]`)
 
