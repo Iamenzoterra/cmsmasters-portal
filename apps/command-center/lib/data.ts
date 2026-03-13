@@ -8,6 +8,7 @@ import type {
   ProgressData,
   ADRMeta,
   ADRMetaWithBody,
+  InfraItem,
 } from './types';
 
 // ─── Source path constants (relative to monorepo root) ───────────────────────
@@ -106,6 +107,44 @@ export async function getContentStatus(): Promise<ContentStatus | null> {
 /** Reads workplan/progress.json. Returns null when the file is missing. */
 export async function getProgress(): Promise<ProgressData | null> {
   return readJson<ProgressData>(PROGRESS_PATH);
+}
+
+// ─── Infra item mapping ───────────────────────────────────────────────────────
+
+const INFRA_ITEM_DEFS: { label: string; keywords: string[] }[] = [
+  { label: 'Monorepo Nx',        keywords: ['Nx monorepo init'] },
+  { label: 'Vercel Portal',      keywords: ['Vercel Portal deployment'] },
+  { label: 'Vercel Static SPAs', keywords: ['Vercel Static SPAs'] },
+  { label: 'CF Workers API',     keywords: ['CF Workers API deployment'] },
+  { label: 'Supabase Schema',    keywords: ['DB schema — 6 domains'] },
+  { label: 'Auth',               keywords: ['Auth — Supabase Auth'] },
+  { label: 'Meilisearch',        keywords: ['Meilisearch'] },
+  { label: 'R2',                 keywords: ['R2'] },
+  { label: 'Resend',             keywords: ['Resend'] },
+  { label: 'Storybook',          keywords: ['Infra — Storybook'] },
+  { label: 'CI/CD',              keywords: ['CI/CD pipeline'] },
+  { label: 'Domain',             keywords: ['DNS cutover'] },
+];
+
+/**
+ * Derives infrastructure readiness by matching static item keywords against
+ * task titles in phases.json. An item is done when its matched task has
+ * status === 'done'.
+ */
+export async function getInfraItems(): Promise<InfraItem[]> {
+  const project = await getPhases();
+  const allTasks = project?.phases.flatMap((p) => p.tasks) ?? [];
+
+  return INFRA_ITEM_DEFS.map(({ label, keywords }) => {
+    const match = allTasks.find((task) =>
+      keywords.some((kw) => task.title.toLowerCase().includes(kw.toLowerCase())),
+    );
+    return {
+      label,
+      done: match?.status === 'done',
+      taskTitle: match?.title,
+    };
+  });
 }
 
 /**
