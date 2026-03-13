@@ -23,7 +23,10 @@ apps/command-center/
 │   ├── content/
 │   │   └── page.tsx            # Content (/content)
 │   ├── architecture/
-│   │   └── page.tsx            # Architecture (/architecture)
+│   │   ├── page.tsx            # Architecture (/architecture)
+│   │   ├── ArchitectureTabs.tsx # Client tab switcher: ADR Bible · Grand Workplan · Tech Stack
+│   │   └── [id]/
+│   │       └── page.tsx        # ADR Detail (/architecture/[id])
 │   └── dependencies/
 │       └── page.tsx            # Dependencies (/dependencies)
 ├── components/
@@ -39,7 +42,12 @@ apps/command-center/
 │   ├── TaskFilters.tsx         # Phase Tracker — filter bar (search + 4 dropdowns + active chips)
 │   ├── TaskDetailSheet.tsx     # Phase Tracker — slide-in right panel with full task detail
 │   ├── TaskBrowser.tsx         # Phase Tracker — client composition: filter state + TaskFilters + TaskTable (flat tasks input)
-│   └── TasksView.tsx           # Phase Tracker — client composition: filter state + TaskFilters + TaskTable (Phase[] input)
+│   ├── TasksView.tsx           # Phase Tracker — client composition: filter state + TaskFilters + TaskTable (Phase[] input)
+│   ├── PhaseTrackerClient.tsx  # Phase Tracker — client composition root: owns filter state + selectedTask, renders TaskFilters + PhaseCard grid + TaskDetailSheet
+│   ├── BurndownChart.tsx       # Phase Detail — Recharts AreaChart showing cumulative completed-task count over time
+│   ├── ComponentCard.tsx       # Components page — card showing name, layer badge, status badge, app
+│   ├── ADRViewer.tsx           # Architecture page — client two-panel ADR browser with search and markdown rendering
+│   └── ThemeStatusTable.tsx    # Content page — client table with search, filter, status dots, and slide-out detail panel
 ├── ui/                         # Design system atoms
 │   ├── Card.tsx
 │   ├── StatusBadge.tsx
@@ -145,6 +153,8 @@ All primitives are in `ui/`. They follow these rules:
 | `TaskDetailSheet` | `'use client'` | Slide-in right panel (CSS `translateX` transition, `duration-300`); displays Description, Details (owner/app/priority pills), Dependencies (clickable, resolved from `allTasks`), Acceptance Criteria (CheckSquare/Square icons), Notes, Timestamps; backdrop overlay closes on click; Escape key closes via `useEffect` | `TaskDetailSheetProps { task: Task \| null, onClose: () => void, onTaskSelect?: (taskId: string) => void, allTasks?: Task[] }` |
 | `TaskBrowser` | `'use client'` | Composition root for client-side task browsing: owns `TaskFilterState` via `useState`; computes `filteredTasks` via `useMemo` on every filter/search change; renders `TaskFilters` + `TaskTable` wired together | `TaskBrowserProps { tasks: PhaseTask[] }` where `PhaseTask = Task & { phase: string }` |
 | `TasksView` | `'use client'` | Alternative client composition root: owns `TaskFilterState` via `useState`; accepts `Phase[]` directly and flattens tasks internally; renders `TaskFilters` + `TaskTable`; does not use `useMemo` | `TasksViewProps { phases: Phase[] }` |
+| `PhaseTrackerClient` | `'use client'` | Primary composition root for the Phase Tracker page: owns `TaskFilterState` and `selectedTask` via `useState`; flattens all tasks via `useMemo`; computes per-phase filtered lists via `useCallback`; renders page header + `TaskFilters` + `PhaseCard` grid + `TaskDetailSheet` wired together | `PhaseTrackerClientProps { project: Project }` |
+| `BurndownChart` | `'use client'` | Recharts `AreaChart` wrapped in `ResponsiveContainer` (160px height); groups tasks by `completedAt` date and builds cumulative completion data points via `buildCumulativeData()`; shows empty-state paragraph when no completion dates recorded | `BurndownChartProps { tasks: Task[] }` |
 
 ### Mission Control Components (`components/`)
 
@@ -156,6 +166,14 @@ All primitives are in `ui/`. They follow these rules:
 | `ContentOverview` | `'use client'` | Three KPI tiles (Themes, Docs, Blog Posts) as fraction + ProgressBar; mini list of up to 5 recent themes | `ContentOverviewProps { metrics: ContentMetrics, recentThemes: ThemeItem[] }` | `/content` (whole-card `useRouter().push`) |
 | `InfraChecklist` | Server Component | Infra readiness checklist in a Card; CheckCircle2 (done) / Circle (pending) Lucide icons | `InfraChecklistProps { items: InfraItem[] \| null }` | No navigation |
 | `ActivityFeed` | `'use client'` | Top-10 recent task events sorted by timestamp; status icons (CheckCircle / Loader2 / XCircle) | `{ tasks: Task[] }` | `/phases?task={id}` (on row click) |
+
+### Page-Specific Components (`components/`)
+
+| Component | Directive | Purpose | Props interface |
+|-----------|-----------|---------|-----------------|
+| `ComponentCard` | `'use client'` | Card for a single component entry on the Components page: displays name, description (truncated), layer badge (Primitives/Domain/Layouts — color-coded), status badge, and app label in monospace | `{ comp: EnrichedComponent }` (defined inline in `app/components/page.tsx`) |
+| `ADRViewer` | `'use client'` | Two-panel ADR browser: left sidebar (`w-72`) lists all 22 ADRs grouped by the 7 V2 categories with a search `Input`; grouping is built via inline `useMemo` (not `groupBy` util) — each ADR's `category` field is the key; sidebar sections render in `CATEGORY_ORDER` = `['core','access','tech-stack','product','roles-security','tooling','data-future']`; within each section ADRs are sorted by numeric ID (`.toSorted((a, b) => Number(a.id) - Number(b.id))`); section headings use `CATEGORY_LABELS` map (e.g. `'roles-security'` → `'Roles & Security'`, `'data-future'` → `'Data & Future'`); right panel renders the selected ADR's full markdown via `react-markdown + remark-gfm`; clicking a related ADR button (`relatedADRs[]`) navigates within the viewer; search filters by title and body | `ADRViewerProps { adrs: ADRMetaWithBody[] }` |
+| `ThemeStatusTable` | `'use client'` | Searchable, filterable table of theme entries: columns — status dot, name, docs count, plugins count, features count, hero image indicator, last updated; toolbar has a text search input and a `DotColor` filter dropdown (`all`/`green`/`yellow`/`red`); clicking a row opens a 480px slide-out detail panel with status badge, content counts, hero image, last updated, and Supabase link placeholder; `ThemeEntryStatus` values are `'empty' \| 'draft' \| 'published'`; `computeDotColor()` derives dot color: **green** = `status === 'published' && docsCount >= 5 && hasHeroImage`, **yellow** = `status === 'draft' && (docsCount > 0 \|\| pluginsCount > 0 \|\| featuresCount > 0)`, **red** = all other cases | `ThemeStatusTableProps { themes: ThemeEntry[] }` where `ThemeEntry = { slug, name, status: ThemeEntryStatus, docsCount, pluginsCount, featuresCount, hasHeroImage, lastUpdated }` |
 
 ---
 
@@ -202,7 +220,8 @@ Active nav items receive `bg-accent/10 text-accent` classes. Inactive items rece
 | `/phases/[id]` | `app/phases/[id]/page.tsx` | Phase Detail — single phase drill-down |
 | `/components` | `app/components/page.tsx` | Design system atom showcase |
 | `/content` | `app/content/page.tsx` | Content overview |
-| `/architecture` | `app/architecture/page.tsx` | Architecture overview |
+| `/architecture` | `app/architecture/page.tsx` | Architecture overview — ADR Bible, Grand Workplan, Tech Stack tabs |
+| `/architecture/[id]` | `app/architecture/[id]/page.tsx` | ADR Detail — full content of a single ADR |
 | `/dependencies` | `app/dependencies/page.tsx` | Dependencies overview |
 
 All pages are React Server Components by default. `'use client'` is only used when a component requires browser APIs, event handlers, or React hooks.
@@ -317,9 +336,144 @@ The `/phases` page renders the task detail panel **inline as a Server Component*
 
 | Section | Implementation | Notes |
 |---------|---------------|-------|
-| Burndown chart | `buildBurndownSVG()` server helper — cumulative completion area chart as inline SVG string | No Recharts/client bundle; fully server-rendered |
+| Burndown chart | `BurndownChart` client component (`components/BurndownChart.tsx`) — Recharts `AreaChart` with cumulative completed-task data | Replaces earlier `buildBurndownSVG()` SVG approach; requires client bundle |
 | Blocked tasks | Resolves dependency titles from `allTasks`; done/not-done colored dots | Uses `project?.phases.flatMap()` for null safety |
 | Task table | `<table>` grouped by `task.app`; app groups sorted alphabetically via `.toSorted()` | Columns: ID, Status (`StatusBadge`), Title, Priority, Est. Hours |
+
+---
+
+## Components Page
+
+`app/components/page.tsx` — the `/components` route. A pure async Server Component. Reads `workplan/components.json` via `getComponents()`, enriches each entry with a derived `LayerName` (Primitives/Domain/Layouts via keyword matching), `hasStory`, and `hasTests` (both proxied from `status === 'done'`), applies URL-param filters, and renders one of three views. All navigation is done via `<Link>` elements — zero client-side state.
+
+```
+┌────────────────────────────────────────────────────────────┐
+│  Tab bar: Grid View · List View · Coverage View            │
+│  Filter bar: layer chips (All/Primitives/Domain/Layouts)   │
+│              toggle chips (Has Story · Has Tests)          │
+├────────────────────────────────────────────────────────────┤
+│  Grid View:    ComponentCard cards grouped by layer        │
+│  List View:    sortable table (Name/Layer/Story/Tests/…)   │
+│  Coverage View: three DonutCharts (Stories/Tests/App Usage)│
+└────────────────────────────────────────────────────────────┘
+```
+
+### URL Parameters
+
+| Param | Values | Default | Effect |
+|-------|--------|---------|--------|
+| `view` | `grid` \| `list` \| `coverage` | `grid` | Which view to render |
+| `layer` | `all` \| `Primitives` \| `Domain` \| `Layouts` | `all` | Layer filter |
+| `story` | `0` \| `1` | `0` | Filter to components with stories only |
+| `tests` | `0` \| `1` | `0` | Filter to components with tests only |
+| `sort` | `name` \| `layer` \| `usedBy` | `name` | List view sort column |
+| `dir` | `asc` \| `desc` | `asc` | List view sort direction |
+
+### View Breakdown
+
+| View | Implementation | Notes |
+|------|---------------|-------|
+| Grid View | `GridView` — `ComponentCard` cards in a 3-col responsive grid, grouped by layer | Uses derived `LayerName` buckets |
+| List View | `ListView` — `<table>` with `SortHeader` links for Name/Layer/UsedBy columns | Sorted via `Array#toSorted()` |
+| Coverage View | `CoverageView` — three `DonutChart` atoms for story, test, and app-usage percentages | Counts derived from `hasStory`/`hasTests`/`dependencies.length` |
+
+Empty state (card with guidance text) shown when `components.json` is missing or returns `null`.
+
+---
+
+## Content Page
+
+`app/content/page.tsx` — the `/content` route. An async Server Component. Reads `workplan/content-status.json` directly via `fs.readFile` (not through `lib/data.ts`), derives KPI metrics, delegates theme rows to `ThemeStatusTable`, and checks `packages/validators/src/*.ts` for Zod schema file existence. Empty state shown when the file is missing or `source === 'placeholder'`.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  KPI Grid (3 cards): Themes · Docs · Blog Posts          │
+│  Each card: monospace fraction + ProgressBar             │
+├──────────────────────────────────────────────────────────┤
+│  Theme Status section: ThemeStatusTable                  │
+├──────────────────────────────────────────────────────────┤
+│  Zod Schemas checklist (packages/validators/src/*.ts)    │
+│  CheckCircle2 (exists) / Circle (missing) per file       │
+└──────────────────────────────────────────────────────────┘
+```
+
+### Component Breakdown
+
+| Panel | Component / Implementation | Data source |
+|-------|---------------------------|-------------|
+| KPI cards | Inline `<a href="#section">` anchors wrapping `Card` + `ProgressBar` | Derived from `content-status.json` entries |
+| Theme Status | `ThemeStatusTable` | `buildThemeEntries()` helper transforms `ContentStatus[]` → `ThemeEntry[]`, grouping by `themeId` |
+| Schema checklist | `Promise.all(fs.access())` per file in `SCHEMA_FILES` | `packages/validators/src/` — checks `theme.ts`, `doc.ts`, `blog-post.ts`, `plugin.ts`, `collection.ts` |
+
+### Data Transform
+
+`buildThemeEntries(entries: ContentStatus[]): ThemeEntry[]` — groups entries by `themeId` into a `Map`, accumulates `docsCount`, picks the most recent `updatedAt` as `lastUpdated`, maps status via `mapStatus()` (`'published'/'approved'` → `'published'`, `'empty'` → `'empty'`, else `'draft'`). Result is sorted alphabetically by `slug`.
+
+---
+
+## Architecture Page
+
+`app/architecture/page.tsx` — the `/architecture` route. An async Server Component. Loads all 22 ADRs via `getADRList()` + `getADRContent()` (falling back to `{ ...meta, body: '' }` for any failed parse), reads the Grand Workplan markdown file with a try/catch fallback to `null`, and passes everything to `ArchitectureTabs`.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  Tab bar: ADR Bible · Grand Workplan · Tech Stack        │
+├──────────────────────────────────────────────────────────┤
+│  ADR Bible tab:      ADRViewer (two-panel client browser) │
+│  Grand Workplan tab: ReactMarkdown render of .md file     │
+│                      (empty state when file not found)    │
+│  Tech Stack tab:     2×2 grid of layer cards              │
+│                      (Frontend/Data/Services/Infra)       │
+└──────────────────────────────────────────────────────────┘
+```
+
+### ArchitectureTabs (`app/architecture/ArchitectureTabs.tsx`)
+
+`'use client'` component. Owns `activeTab: ActiveTab` state via `useState` (values: `'adr' | 'workplan' | 'techstack'`). Tab buttons call `setActiveTab()` on click.
+
+| Tab | Content |
+|-----|---------|
+| ADR Bible | `<ADRViewer adrs={adrs} />` — full two-panel browser |
+| Grand Workplan | `<ReactMarkdown remarkPlugins={[remarkGfm]}>` with full component mapping (h1–h4, p, code, pre, a, table, ul, ol, li, blockquote, hr, strong); empty state shows missing file path |
+| Tech Stack | 2-column grid of `TechStackLayer` cards — each card has a category heading and a list of `{ name, description }` items |
+
+Props: `ArchitectureTabsProps { adrs: ADRMetaWithBody[], workplanMarkdown: string | null, workplanPath: string, techStackLayers: TechStackLayer[] }`
+
+Exports: `TechStackItem` interface, `TechStackLayer` interface, `ArchitectureTabs` component.
+
+### Tech Stack Layers (hardcoded in `page.tsx`)
+
+| Layer | Key items |
+|-------|-----------|
+| Frontend | Next.js 15, React 19, Tailwind CSS 4, Recharts, Lucide React, react-markdown |
+| Data | JSON files in workplan/, Markdown ADRs in workplan/adr/, Node.js fs, Zero database |
+| Services | cc:scan, cc:report, cc:dev |
+| Infrastructure | Nx Monorepo, TypeScript strict mode, Localhost port 4000, No auth |
+
+---
+
+## Architecture Detail Page (`/architecture/[id]`)
+
+`app/architecture/[id]/page.tsx` — the ADR drill-down route. A pure async Server Component. Awaits `params` (Next.js 15 Promise-based), calls `getADRContent(id)`, and renders the full ADR.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  ← Back to ADRs link                                     │
+│  ADR-NNN  vX  <status>  <category>  <date>               │
+│  Title                                                    │
+├──────────────────────────────────────────────────────────┤
+│  Card body: rendered markdown via renderMarkdown()        │
+│  Supports: h1/h2/h3, li (disc), p, blank-line spacer     │
+│  Inline bold via inlineBold() (**text** → <strong>)       │
+└──────────────────────────────────────────────────────────┘
+```
+
+| Section | Implementation | Notes |
+|---------|---------------|-------|
+| Metadata header | Inline flex row — `ADR-NNN` monospace, version blue pill, status green pill, category zinc pill, date via `formatDate()` | All pills are `text-[10px]` colored rounded-md spans |
+| Card body | `renderMarkdown(body)` — splits body on `\n`, maps each line to a React element by prefix (`###`, `##`, `#`, `- `, blank, else `<p>`) | No external markdown parser — lightweight inline renderer |
+| Inline bold | `inlineBold(text)` — regex-replaces `**text**` with `<strong>` nodes in a `ReactNode[]` | Used by all renderMarkdown line types |
+| Not-found state | Back link + `"ADR not found"` heading when `getADRContent()` returns `null` | Graceful degradation for invalid IDs |
 
 ---
 
