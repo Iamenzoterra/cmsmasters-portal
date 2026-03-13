@@ -18,14 +18,14 @@ export function ProgressBar({ value, onClick, className, showLabel = true }: Pro
     setAnimatedWidth(clamped);
   }, [clamped]);
 
-  const fillColor =
-    clamped < 25
-      ? 'bg-red-500'
-      : clamped < 50
-        ? 'bg-yellow-500'
-        : clamped < 75
-          ? 'bg-blue-500'
-          : 'bg-green-500';
+  let fillColor = 'bg-green-500';
+  if (clamped < 25) {
+    fillColor = 'bg-red-500';
+  } else if (clamped < 50) {
+    fillColor = 'bg-yellow-500';
+  } else if (clamped < 75) {
+    fillColor = 'bg-blue-500';
+  }
 
   return (
     <div

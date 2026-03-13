@@ -3,7 +3,7 @@ import { cn } from '../theme/utils';
 import { Card } from '../ui/Card';
 import type { InfraItem } from '../lib/types';
 
-export type { InfraItem };
+export type { InfraItem } from '../lib/types';
 
 export interface InfraChecklistProps {
   items: InfraItem[] | null;

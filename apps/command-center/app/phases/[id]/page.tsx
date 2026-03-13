@@ -39,7 +39,7 @@ export default async function PhaseDetail({ params }: PhaseDetailPageProps): Pro
       </div>
 
       {Object.entries(tasksByApp)
-        .sort(([a], [b]) => a.localeCompare(b))
+        .toSorted(([a], [b]) => a.localeCompare(b))
         .map(([app, tasks]) => (
           <div key={app} className="mb-6">
             <h2 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-text-muted">

@@ -1,89 +1,103 @@
 {
-  "lastScanned": "2026-03-13T00:06:46.355Z",
+  "lastScanned": "2026-03-13T00:54:19.288Z",
   "entries": [
     {
       "themeId": "infra",
       "pageId": "0",
       "status": "draft",
-      "updatedAt": "2026-03-13T00:06:46.355Z"
+      "updatedAt": "2026-03-13T00:54:19.287Z",
+      "type": "doc"
     },
     {
       "themeId": "command-center",
       "pageId": "0",
       "status": "draft",
-      "updatedAt": "2026-03-13T00:06:46.355Z"
+      "updatedAt": "2026-03-13T00:54:19.287Z",
+      "type": "doc"
     },
     {
       "themeId": "ui",
       "pageId": "1",
       "status": "draft",
-      "updatedAt": "2026-03-13T00:06:46.355Z"
+      "updatedAt": "2026-03-13T00:54:19.287Z",
+      "type": "doc"
     },
     {
       "themeId": "db",
       "pageId": "1",
       "status": "draft",
-      "updatedAt": "2026-03-13T00:06:46.355Z"
+      "updatedAt": "2026-03-13T00:54:19.287Z",
+      "type": "doc"
     },
     {
       "themeId": "auth",
       "pageId": "1",
       "status": "draft",
-      "updatedAt": "2026-03-13T00:06:46.355Z"
+      "updatedAt": "2026-03-13T00:54:19.287Z",
+      "type": "doc"
     },
     {
       "themeId": "infra",
       "pageId": "1",
       "status": "draft",
-      "updatedAt": "2026-03-13T00:06:46.355Z"
+      "updatedAt": "2026-03-13T00:54:19.287Z",
+      "type": "doc"
     },
     {
       "themeId": "api",
       "pageId": "1",
       "status": "draft",
-      "updatedAt": "2026-03-13T00:06:46.355Z"
+      "updatedAt": "2026-03-13T00:54:19.287Z",
+      "type": "doc"
     },
     {
       "themeId": "portal",
       "pageId": "2",
       "status": "draft",
-      "updatedAt": "2026-03-13T00:06:46.355Z"
+      "updatedAt": "2026-03-13T00:54:19.287Z",
+      "type": "doc"
     },
     {
       "themeId": "dashboard",
       "pageId": "3",
       "status": "draft",
-      "updatedAt": "2026-03-13T00:06:46.355Z"
+      "updatedAt": "2026-03-13T00:54:19.287Z",
+      "type": "doc"
     },
     {
       "themeId": "support",
       "pageId": "4",
       "status": "draft",
-      "updatedAt": "2026-03-13T00:06:46.355Z"
+      "updatedAt": "2026-03-13T00:54:19.287Z",
+      "type": "doc"
     },
     {
       "themeId": "studio",
       "pageId": "5",
       "status": "draft",
-      "updatedAt": "2026-03-13T00:06:46.355Z"
+      "updatedAt": "2026-03-13T00:54:19.287Z",
+      "type": "doc"
     },
     {
       "themeId": "admin",
       "pageId": "5",
       "status": "draft",
-      "updatedAt": "2026-03-13T00:06:46.355Z"
+      "updatedAt": "2026-03-13T00:54:19.287Z",
+      "type": "doc"
     },
     {
       "themeId": "api",
       "pageId": "6",
       "status": "draft",
-      "updatedAt": "2026-03-13T00:06:46.355Z"
+      "updatedAt": "2026-03-13T00:54:19.287Z",
+      "type": "doc"
     },
     {
       "themeId": "infra",
       "pageId": "6",
       "status": "draft",
-      "updatedAt": "2026-03-13T00:06:46.355Z"
+      "updatedAt": "2026-03-13T00:54:19.287Z",
+      "type": "doc"
     }
   ]
 }

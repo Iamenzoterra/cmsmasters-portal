@@ -1,0 +1,22 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "workspaces": {
+    ".": {
+      "ignore": ["**/*.d.ts"]
+    },
+    "apps/command-center": {
+      "entry": ["app/**/page.tsx", "app/layout.tsx", "cli/**/*.ts"],
+      "project": ["**/*.{ts,tsx}"],
+      "ignore": ["**/*.d.ts", ".next/**"]
+    },
+    "packages/*": {
+      "entry": ["index.ts"],
+      "project": ["**/*.{ts,tsx}"]
+    }
+  },
+  "ignoreDependencies": [
+    "@tailwindcss/postcss",
+    "autoprefixer",
+    "postcss"
+  ]
+}

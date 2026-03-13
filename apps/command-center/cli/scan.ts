@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from 'node:fs';
+import path from 'node:path';
 import type {
   ComponentSummary,
   ComponentStatus,
@@ -41,11 +41,11 @@ interface RawProject {
 
 function taskStatusToComponentStatus(status: string | undefined): ComponentStatus {
   switch (status as TaskStatus) {
-    case 'done': return 'done';
-    case 'blocked': return 'blocked';
+    case 'done': { return 'done'; }
+    case 'blocked': { return 'blocked'; }
     case 'in-progress':
-    case 'review': return 'in-progress';
-    default: return 'planned';
+    case 'review': { return 'in-progress'; }
+    default: { return 'planned'; }
   }
 }
 
@@ -57,7 +57,7 @@ function deriveContentStatus(tasks: RawTask[]): ContentStatusValue {
 
 function readPhasesJson(workplanDir: string): RawProject {
   const phasesPath = path.join(workplanDir, 'phases.json');
-  const raw = fs.readFileSync(phasesPath, 'utf-8');
+  const raw = fs.readFileSync(phasesPath, 'utf8');
   return JSON.parse(raw) as RawProject;
 }
 
@@ -95,12 +95,15 @@ function scanContent(workplanDir: string): ContentStatus[] {
     const phaseId = String(phase.id);
     const tasks = phase.tasks ?? [];
 
-    // Collect unique apps in this phase
     const appMap = new Map<string, RawTask[]>();
     for (const task of tasks) {
       const app = task.app ?? 'infra';
-      if (!appMap.has(app)) appMap.set(app, []);
-      appMap.get(app)!.push(task);
+      const existing = appMap.get(app);
+      if (existing) {
+        existing.push(task);
+      } else {
+        appMap.set(app, [task]);
+      }
     }
 
     for (const [app, appTasks] of appMap) {
@@ -133,9 +136,13 @@ function calculateProgress(workplanDir: string): ProgressData {
 
     for (const task of tasks) {
       const s = task.status;
-      if (s === 'done') tasksDone++;
-      else if (s === 'in-progress' || s === 'review') tasksInProgress++;
-      else if (s === 'blocked') tasksBlocked++;
+      switch (s) {
+        case 'done': { tasksDone++; break; }
+        case 'in-progress':
+        case 'review': { tasksInProgress++; break; }
+        case 'blocked': { tasksBlocked++; break; }
+        default: { break; }
+      }
       estimatedHours += task.estimatedHours ?? 0;
       actualHours += task.actualHours ?? 0;
     }
@@ -160,7 +167,7 @@ function calculateProgress(workplanDir: string): ProgressData {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-(async () => {
+await (async () => {
   const monorepoRoot = process.cwd();
   const workplanDir = path.join(monorepoRoot, 'workplan');
   fs.mkdirSync(workplanDir, { recursive: true });
@@ -168,7 +175,6 @@ function calculateProgress(workplanDir: string): ProgressData {
   const startTime = Date.now();
 
   try {
-    // Step 1 — Components
     console.log('→ Scanning components...');
     const t1 = Date.now();
     const components = scanComponents(workplanDir);
@@ -178,7 +184,6 @@ function calculateProgress(workplanDir: string): ProgressData {
       JSON.stringify({ lastScanned: new Date().toISOString(), components }, null, 2),
     );
 
-    // Step 2 — Content
     console.log('→ Scanning content...');
     const t2 = Date.now();
     const entries = scanContent(workplanDir);
@@ -188,7 +193,6 @@ function calculateProgress(workplanDir: string): ProgressData {
       JSON.stringify({ lastScanned: new Date().toISOString(), entries }, null, 2),
     );
 
-    // Step 3 — Progress
     console.log('→ Calculating progress...');
     const t3 = Date.now();
     const progressData = calculateProgress(workplanDir);
@@ -199,8 +203,8 @@ function calculateProgress(workplanDir: string): ProgressData {
     );
 
     console.log(`Scan complete in ${((Date.now() - startTime) / 1000).toFixed(2)}s`);
-  } catch (err) {
-    console.error((err as Error).message);
+  } catch (error) {
+    console.error((error as Error).message);
     process.exitCode = 1;
   }
 })();

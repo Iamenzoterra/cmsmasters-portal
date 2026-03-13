@@ -1,5 +1,5 @@
-import fs from 'fs/promises';
-import path from 'path';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 import type { App, Phase } from './types';
 
@@ -72,7 +72,7 @@ async function scanLayer(layer: ComponentLayer): Promise<ComponentEntry[]> {
       const [hasStory, hasTest] = await Promise.all([
         fileExists(path.join(layerDir, `${base}.stories.tsx`)),
         fileExists(path.join(layerDir, `${base}.test.tsx`)).then((t) =>
-          t ? t : fileExists(path.join(layerDir, `${base}.spec.tsx`)),
+          t || fileExists(path.join(layerDir, `${base}.spec.tsx`)),
         ),
       ]);
 
@@ -112,10 +112,10 @@ async function querySupabaseContent(url: string, key: string): Promise<ContentSc
 
 // ─── Exported scanner functions ───────────────────────────────────────────────
 
-/** Scans packages/ui/src/{primitives,domain,layouts} and returns a component inventory. */
 export async function scanComponents(): Promise<ComponentScanSummary> {
   const layers: ComponentLayer[] = ['primitives', 'domain', 'layouts'];
-  const [primitives, domain, layouts] = await Promise.all(layers.map(scanLayer));
+  const results = await Promise.all(layers.map((layer) => scanLayer(layer)));
+  const [primitives, domain, layouts] = results;
 
   const entries = [...primitives, ...domain, ...layouts];
 
@@ -130,11 +130,6 @@ export async function scanComponents(): Promise<ComponentScanSummary> {
   };
 }
 
-/**
- * Returns content health data. When SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY
- * are set and useSupabase is not explicitly false, queries live Supabase tables.
- * Otherwise returns a placeholder with empty arrays.
- */
 export async function scanContent(useSupabase?: boolean): Promise<ContentScanResult> {
   const url = process.env['SUPABASE_URL'];
   const key = process.env['SUPABASE_SERVICE_ROLE_KEY'];
@@ -146,10 +141,6 @@ export async function scanContent(useSupabase?: boolean): Promise<ContentScanRes
   return { source: 'placeholder', themes: [], docs: [], counts: { themes: 0, docs: 0 } };
 }
 
-/**
- * Reads workplan/phases.json and aggregates per-phase and per-app task progress.
- * Returns empty result gracefully when the file is missing or invalid.
- */
 export async function calculateProgress(): Promise<ProgressScanResult> {
   const allApps: ScannerApp[] = [
     'portal', 'dashboard', 'support', 'studio', 'admin',
@@ -170,7 +161,7 @@ export async function calculateProgress(): Promise<ProgressScanResult> {
 
   let raw: string;
   try {
-    raw = await fs.readFile(PHASES_PATH, 'utf-8');
+    raw = await fs.readFile(PHASES_PATH, 'utf8');
   } catch {
     return empty;
   }

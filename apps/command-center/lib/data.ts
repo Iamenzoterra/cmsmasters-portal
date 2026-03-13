@@ -1,6 +1,7 @@
-import fs from 'fs/promises';
-import path from 'path';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
+import type { PhaseBlock } from '../components/PhaseTimeline';
 import type {
   Project,
   ComponentSummary,
@@ -60,21 +61,24 @@ function parseFrontmatter(content: string): { meta: Partial<ADRMeta>; body: stri
           i++;
         }
 
-        if (key === 'relatedADRs') meta.relatedADRs = items;
-        else if (key === 'deciders') meta.deciders = items;
-        else if (key === 'tags') meta.tags = items;
+        switch (key) {
+          case 'relatedADRs': { meta.relatedADRs = items; break; }
+          case 'deciders': { meta.deciders = items; break; }
+          case 'tags': { meta.tags = items; break; }
+          default: { break; }
+        }
 
         continue;
       }
 
       switch (key) {
-        case 'id':       meta.id       = value; break;
-        case 'title':    meta.title    = value; break;
-        case 'status':   meta.status   = value as ADRMeta['status']; break;
-        case 'date':     meta.date     = value; break;
-        case 'version':  meta.version  = Number(value); break;
-        case 'category': meta.category = value; break;
-        default: break;
+        case 'id': { meta.id = value; break; }
+        case 'title': { meta.title = value; break; }
+        case 'status': { meta.status = value as ADRMeta['status']; break; }
+        case 'date': { meta.date = value; break; }
+        case 'version': { meta.version = Number(value); break; }
+        case 'category': { meta.category = value; break; }
+        default: { break; }
       }
     }
 
@@ -86,7 +90,7 @@ function parseFrontmatter(content: string): { meta: Partial<ADRMeta>; body: stri
 
 async function readJson<T>(filePath: string): Promise<T | null> {
   try {
-    const raw = await fs.readFile(filePath, 'utf-8');
+    const raw = await fs.readFile(filePath, 'utf8');
     return JSON.parse(raw) as T;
   } catch {
     return null;
@@ -155,12 +159,13 @@ export async function getInfraItems(): Promise<InfraItem[]> {
 
 // ─── App cards ────────────────────────────────────────────────────────────────
 
-const PORTAL_APP_DEFS: { id: string; name: string }[] = [
-  { id: 'portal',    name: 'Portal'    },
-  { id: 'dashboard', name: 'Dashboard' },
-  { id: 'support',   name: 'Support'   },
-  { id: 'studio',    name: 'Studio'    },
-  { id: 'admin',     name: 'Admin'     },
+const PORTAL_APP_DEFS: { id: string; name: string; description: string }[] = [
+  { id: 'portal',    name: 'Portal',    description: 'Next.js SSG'      },
+  { id: 'dashboard', name: 'Dashboard', description: 'Vite SPA'         },
+  { id: 'support',   name: 'Support',   description: 'Vite SPA'         },
+  { id: 'studio',    name: 'Studio',    description: 'Vite SPA'         },
+  { id: 'admin',     name: 'Admin',     description: 'Vite SPA'         },
+  { id: 'api',       name: 'API',       description: 'Hono CF Workers'  },
 ];
 
 /**
@@ -171,7 +176,7 @@ export async function getAppCards(): Promise<AppCardApp[]> {
   const project = await getPhases();
   const allTasks = project?.phases.flatMap((p) => p.tasks) ?? [];
 
-  return PORTAL_APP_DEFS.map(({ id, name }) => {
+  return PORTAL_APP_DEFS.map(({ id, name, description }) => {
     const appTasks = allTasks.filter((t) => t.app === id);
     const doneTasks = appTasks.filter((t) => t.status === 'done');
 
@@ -183,13 +188,6 @@ export async function getAppCards(): Promise<AppCardApp[]> {
     } else {
       status = 'in-progress';
     }
-
-    const description =
-      project?.phases
-        .filter((p) => p.tasks.some((t) => t.app === id))
-        .map((p) => p.title)
-        .slice(0, 2)
-        .join(' · ') ?? name;
 
     return { id, name, description, status, href: `/phases?app=${id}` };
   });
@@ -297,7 +295,7 @@ export async function getADRList(): Promise<ADRMeta[]> {
   const results = await Promise.all(
     mdFiles.map(async (filename): Promise<ADRMeta | null> => {
       try {
-        const content = await fs.readFile(path.join(ADR_DIR, filename), 'utf-8');
+        const content = await fs.readFile(path.join(ADR_DIR, filename), 'utf8');
         const { meta } = parseFrontmatter(content);
 
         if (!meta.id || !meta.title || !meta.status || !meta.date) return null;
@@ -330,7 +328,7 @@ export async function getADRContent(idOrSlug: string | number): Promise<ADRMetaW
 
   for (const filename of mdFiles) {
     try {
-      const content = await fs.readFile(path.join(ADR_DIR, filename), 'utf-8');
+      const content = await fs.readFile(path.join(ADR_DIR, filename), 'utf8');
       const { meta, body } = parseFrontmatter(content);
 
       const slug = filename.replace(/\.md$/, '');
@@ -348,4 +346,57 @@ export async function getADRContent(idOrSlug: string | number): Promise<ADRMetaW
   }
 
   return null;
+}
+
+// ─── Phase blocks for PhaseTimeline ──────────────────────────────────────────
+
+/**
+ * Derives PhaseBlock[] for the PhaseTimeline component from phases.json.
+ * Returns { phases, overallLabel } or null when phases.json is missing.
+ */
+export async function getPhaseBlocks(): Promise<{
+  phases: PhaseBlock[];
+  overallLabel: string;
+} | null> {
+  const project = await getPhases();
+  if (!project) return null;
+
+  const allTasks = project.phases.flatMap((p) => p.tasks);
+  const totalTasks = allTasks.length;
+  const doneTasks = allTasks.filter((t) => t.status === 'done').length;
+  const overallPct = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+
+  const phases: PhaseBlock[] = project.phases.map((phase) => {
+    const phaseTasks = phase.tasks;
+    const phaseTotal = phaseTasks.length;
+    const phaseDone = phaseTasks.filter((t) => t.status === 'done').length;
+    const progressPct = phaseTotal > 0 ? Math.round((phaseDone / phaseTotal) * 100) : 0;
+
+    // Derive status from tasks if phase.status is missing
+    let status: PhaseBlock['status'] = 'todo';
+    if (phase.status === 'done' || (phaseTotal > 0 && phaseDone === phaseTotal)) {
+      status = 'done';
+    } else if (phase.status === 'in-progress' || phaseDone > 0) {
+      status = 'in-progress';
+    }
+
+    let totalHours = 0;
+    for (const t of phase.tasks) {
+      totalHours += t.estimatedHours ?? 0;
+    }
+    const estimatedWeeks = totalHours > 0 ? Math.ceil(totalHours / 40) : 1;
+
+    return {
+      id: phase.id,
+      name: phase.title,
+      subtitle: `${phaseDone}/${phaseTotal} tasks`,
+      status,
+      progressPct,
+      estimatedWeeks,
+      isCurrent: status === 'in-progress',
+      href: `/phases/${phase.id}`,
+    };
+  });
+
+  return { phases, overallLabel: `${overallPct}%` };
 }

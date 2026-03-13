@@ -52,7 +52,7 @@ export default async function Architecture(): Promise<React.ReactElement> {
       </div>
 
       {Object.entries(adrsByCategory)
-        .sort(([a], [b]) => a.localeCompare(b))
+        .toSorted(([a], [b]) => a.localeCompare(b))
         .map(([category, categoryAdrs]) => (
           <div key={category} className="mb-8">
             <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-text-muted">
@@ -62,7 +62,7 @@ export default async function Architecture(): Promise<React.ReactElement> {
 
             <div className="grid gap-2">
               {[...categoryAdrs]
-                .sort((a, b) => Number(a.id) - Number(b.id))
+                .toSorted((a, b) => Number(a.id) - Number(b.id))
                 .map((adr) => (
                   <Link key={adr.id} href={`/architecture/${adr.id}`}>
                     <Card className="!p-3 group">
@@ -76,11 +76,11 @@ export default async function Architecture(): Promise<React.ReactElement> {
                               v{adr.version ?? '?'}
                             </span>
                             <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
-                              adr.status === 'active'
-                                ? 'bg-green-900 text-green-400'
-                                : adr.status === 'accepted'
-                                  ? 'bg-blue-900 text-blue-400'
-                                  : 'bg-zinc-700 text-zinc-400'
+                              (() => {
+                                if (adr.status === 'active') return 'bg-green-900 text-green-400';
+                                if (adr.status === 'accepted') return 'bg-blue-900 text-blue-400';
+                                return 'bg-zinc-700 text-zinc-400';
+                              })()
                             }`}>
                               {adr.status}
                             </span>

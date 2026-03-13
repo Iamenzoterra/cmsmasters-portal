@@ -51,7 +51,7 @@ export function ActivityFeed({ tasks }: { tasks: Task[] }) {
       status: t.status,
       timestamp: t.completedAt ?? t.updatedAt ?? '',
     }))
-    .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
+    .toSorted((a, b) => b.timestamp.localeCompare(a.timestamp))
     .slice(0, 10);
 
   if (feed.length === 0) {

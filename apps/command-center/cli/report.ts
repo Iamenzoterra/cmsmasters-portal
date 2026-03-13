@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from 'node:fs';
+import path from 'node:path';
 
 // ─── Raw types ────────────────────────────────────────────────────────────────
 
@@ -81,7 +81,7 @@ function pad(str: string, len: number): string {
 
 function tryReadJson<T>(filePath: string): T | null {
   try {
-    return JSON.parse(fs.readFileSync(filePath, 'utf-8')) as T;
+    return JSON.parse(fs.readFileSync(filePath, 'utf8')) as T;
   } catch {
     return null;
   }
@@ -134,8 +134,6 @@ function buildReport(workplanDir: string): string {
   const projectName = project.name ?? 'CMSMasters Portal';
   const today = formatDate(new Date().toISOString());
 
-  // ─── Overall stats from progress.json (or recompute from phases.json) ───────
-
   let totalDone = 0;
   let totalTasks = 0;
 
@@ -155,8 +153,6 @@ function buildReport(workplanDir: string): string {
 
   const overallPct = totalTasks > 0 ? Math.round((totalDone / totalTasks) * 100) : 0;
 
-  // ─── Current phase ───────────────────────────────────────────────────────────
-
   const currentPhaseId = project.currentPhase ?? 0;
   const currentPhase = phases.find(p => String(p.id) === String(currentPhaseId)) ?? phases[0];
   const currentPhaseTitle = currentPhase?.title ?? `Phase ${currentPhaseId}`;
@@ -170,8 +166,6 @@ function buildReport(workplanDir: string): string {
     const done = tasks.filter(t => t.status === 'done').length;
     currentPhasePct = tasks.length > 0 ? Math.round((done / tasks.length) * 100) : 0;
   }
-
-  // ─── By Phase ────────────────────────────────────────────────────────────────
 
   const phaseLines: string[] = [];
   const maxTitleLen = Math.max(...phases.map(p => `Phase ${p.id} — ${p.title ?? ''}`.length), 0);
@@ -201,8 +195,6 @@ function buildReport(workplanDir: string): string {
     phaseLines.push(`  ${label}  ${bar}  ${done}/${total}  (${pct}%)`);
   }
 
-  // ─── Content ─────────────────────────────────────────────────────────────────
-
   let themesCount = 0;
   let docsCount = 0;
   let blogCount = 0;
@@ -214,8 +206,6 @@ function buildReport(workplanDir: string): string {
     docsCount = contentData.entries.filter(e => e.type !== 'blog' && e.status === 'approved').length;
   }
 
-  // ─── Components by layer ──────────────────────────────────────────────────────
-
   let primitivesCount = 0;
   let domainCount = 0;
   let layoutsCount = 0;
@@ -223,13 +213,14 @@ function buildReport(workplanDir: string): string {
   if (componentsData) {
     for (const comp of componentsData.components) {
       const layer = classifyLayer(comp);
-      if (layer === 'primitives') primitivesCount++;
-      else if (layer === 'domain') domainCount++;
-      else if (layer === 'layouts') layoutsCount++;
+      switch (layer) {
+        case 'primitives': { primitivesCount++; break; }
+        case 'domain': { domainCount++; break; }
+        case 'layouts': { layoutsCount++; break; }
+        default: { break; }
+      }
     }
   }
-
-  // ─── Blocked tasks ────────────────────────────────────────────────────────────
 
   const allTasks: RawTask[] = [];
   for (const phase of phases) {
@@ -260,8 +251,6 @@ function buildReport(workplanDir: string): string {
     ? blockedLines.join('\n')
     : '  (none)';
 
-  // ─── Assemble report ──────────────────────────────────────────────────────────
-
   const lines = [
     `📊 ${projectName} — Progress Report`,
     today,
@@ -290,15 +279,15 @@ function buildReport(workplanDir: string): string {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-(async () => {
+await (async () => {
   const monorepoRoot = process.cwd();
   const workplanDir = path.join(monorepoRoot, 'workplan');
 
   try {
     const report = buildReport(workplanDir);
     process.stdout.write(report);
-  } catch (err) {
-    process.stderr.write((err as Error).message + '\n');
+  } catch (error) {
+    process.stderr.write((error as Error).message + '\n');
     process.exitCode = 1;
   }
 })();

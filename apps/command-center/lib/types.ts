@@ -13,7 +13,8 @@ export type App =
   | 'command-center'
   | 'ui'
   | 'infra'
-  | 'content';
+  | 'content'
+  | 'api';
 
 // ─── phases.json schemas ─────────────────────────────────────────────────────
 
