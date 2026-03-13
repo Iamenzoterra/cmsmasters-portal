@@ -10,7 +10,8 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
-    "cc:scan": "npx tsx apps/command-center/cli/scan.ts"
+    "cc:scan": "npx tsx apps/command-center/cli/scan.ts",
+    "cc:report": "npx tsx apps/command-center/cli/report.ts"
   },
   "devDependencies": {
     "turbo": "latest",
