@@ -77,7 +77,7 @@ Console output:
 Scan complete in X.XXs
 ```
 
-Exit code `0` on success, `1` on error (e.g. missing `phases.json`). Output files are overwritten on every run — do not edit by hand.
+Exit code `0` on success, `1` on unhandled error. Output files are overwritten on every run — do not edit by hand.
 
 #### `cc:report`
 
@@ -109,7 +109,7 @@ BLOCKED:
   🔴 Task title — blocked by: Dependency title
 ```
 
-Exit code `0` on success, `1` on error (e.g. missing `phases.json`).
+Exit code `0` in all cases. If `phases.json` is missing, an error message is written to stdout instead of a report. Only an unhandled exception produces exit code `1`.
 
 ## Monorepo Structure
 

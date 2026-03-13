@@ -389,7 +389,7 @@ Self-contained CLI that reads `workplan/phases.json` synchronously and writes th
 Scan complete in X.XXs
 ```
 
-Exit code `0` on success, `1` on unhandled error. Individual scan steps fail silently. Output files are overwritten on every run — do not edit by hand.
+Exit code `0` on success, `1` if `phases.json` is missing or unreadable (caught by the outer handler). All three scan steps share a single error boundary — if `phases.json` is unreadable, all steps fail and only the error message is logged. Output files are overwritten on every run — do not edit by hand.
 
 ### cli/report.ts
 
@@ -418,7 +418,7 @@ Reads the four workplan JSON files and prints a formatted ASCII progress report 
 | COMPONENTS | Count by layer: primitives / domain / layouts |
 | BLOCKED | Each blocked task with dependency names (from `dependencies` or `blockedBy` fields) |
 
-Exit code `0` on success, `1` if `phases.json` is missing or unreadable.
+Exit code `0` in all cases. If `phases.json` is missing, an error message is written to stdout and the process exits cleanly (code `0`). Only an unhandled exception produces exit code `1`.
 
 ---
 
