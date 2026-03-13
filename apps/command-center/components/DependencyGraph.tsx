@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { cn } from '../theme/utils';
 import { tokens } from '../theme/tokens';
 import type { PhaseBlock } from './PhaseTimeline';
+import type { PackageNode, AppNode, DependencyEdge } from '../lib/types';
 
 // Color constants derived from tokens — no inline hex strings in SVG attributes
 const COLOR_NODE_FILL = tokens.surface.card;
@@ -20,48 +21,8 @@ const COLOR_DONE = tokens.status.done;
 const COLOR_CONTENT = tokens.status.orchestrator;
 const COLOR_BG = tokens.surface.app;
 
-interface PackageNode {
-  id: string;
-  label: string;
-  affectedApps: string[];
-}
-
-interface AppNode {
-  id: string;
-  label: string;
-}
-
-interface Edge {
-  from: string;
-  to: string;
-}
-
-const PACKAGES: PackageNode[] = [
-  { id: 'ui', label: '@cms/ui', affectedApps: ['portal', 'dashboard', 'support', 'studio', 'admin', 'command-center'] },
-  { id: 'db', label: '@cms/db', affectedApps: ['api'] },
-  { id: 'auth', label: '@cms/auth', affectedApps: ['portal', 'dashboard', 'support', 'studio', 'admin', 'command-center', 'api'] },
-  { id: 'validators', label: '@cms/validators', affectedApps: ['portal', 'dashboard', 'support', 'studio', 'admin', 'command-center', 'api'] },
-  { id: 'email', label: '@cms/email', affectedApps: ['api'] },
-  { id: 'api-client', label: '@cms/api-client', affectedApps: ['portal', 'dashboard', 'support', 'studio', 'admin', 'command-center'] },
-];
-
-const APPS: AppNode[] = [
-  { id: 'portal', label: 'portal' },
-  { id: 'dashboard', label: 'dashboard' },
-  { id: 'support', label: 'support' },
-  { id: 'studio', label: 'studio' },
-  { id: 'admin', label: 'admin' },
-  { id: 'command-center', label: 'command-center' },
-  { id: 'api', label: 'api' },
-];
-
-const EDGES: Edge[] = PACKAGES.flatMap((pkg) =>
-  pkg.affectedApps.map((appId) => ({ from: pkg.id, to: appId }))
-);
-
 // Package graph layout constants
 const SVG_W = 900;
-const SVG_H = 420;
 const PKG_X = 20;
 const PKG_W = 160;
 const NODE_H = 32;
@@ -83,18 +44,6 @@ const PHASE_BAR_Y = 40;
 const CONTENT_BAR_Y = 110;
 const CONTENT_BAR_H = 28;
 
-const PKG_POSITIONS = PACKAGES.map((pkg, i) => ({
-  ...pkg,
-  x: PKG_X,
-  y: PKG_Y_START + i * PKG_SPACING,
-}));
-
-const APP_POSITIONS = APPS.map((app, i) => ({
-  ...app,
-  x: APP_X,
-  y: APP_Y_START + i * APP_SPACING,
-}));
-
 const MONO_FONT = 'var(--font-mono), ui-monospace, monospace';
 
 function getPhaseFill(status: PhaseBlock['status']): string {
@@ -115,13 +64,35 @@ function getPhaseFillOpacity(status: PhaseBlock['status']): number {
 
 export interface DependencyGraphProps {
   phases: PhaseBlock[];
+  packages: PackageNode[];
+  apps: AppNode[];
+  edges: DependencyEdge[];
 }
 
-export function DependencyGraph({ phases }: DependencyGraphProps): React.ReactElement {
+export function DependencyGraph({ phases, packages, apps, edges }: DependencyGraphProps): React.ReactElement {
   const [activeTab, setActiveTab] = useState<'packages' | 'phases'>('packages');
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
 
-  function getEdgeOpacity(edge: Edge): number {
+  // Derive positions from props
+  const pkgPositions = packages.map((pkg, i) => ({
+    ...pkg,
+    x: PKG_X,
+    y: PKG_Y_START + i * PKG_SPACING,
+  }));
+
+  const appPositions = apps.map((app, i) => ({
+    ...app,
+    x: APP_X,
+    y: APP_Y_START + i * APP_SPACING,
+  }));
+
+  const svgH = Math.max(
+    PKG_Y_START + packages.length * PKG_SPACING + 20,
+    APP_Y_START + apps.length * APP_SPACING + 20,
+    420,
+  );
+
+  function getEdgeOpacity(edge: DependencyEdge): number {
     if (!selectedNode) return 0.3;
     if (edge.from === selectedNode || edge.to === selectedNode) return 1;
     return 0.05;
@@ -135,16 +106,16 @@ export function DependencyGraph({ phases }: DependencyGraphProps): React.ReactEl
   let tooltipTitle = '';
   let tooltipItems: string[] = [];
   if (selectedNode) {
-    const isPkg = PKG_POSITIONS.some((p) => p.id === selectedNode);
+    const isPkg = pkgPositions.some((p) => p.id === selectedNode);
     if (isPkg) {
       tooltipTitle = 'Affects:';
-      tooltipItems = EDGES.filter((e) => e.from === selectedNode).map(
-        (e) => APP_POSITIONS.find((a) => a.id === e.to)?.label ?? e.to
+      tooltipItems = edges.filter((e) => e.from === selectedNode).map(
+        (e) => appPositions.find((a) => a.id === e.to)?.label ?? e.to
       );
     } else {
       tooltipTitle = 'Depends on:';
-      tooltipItems = EDGES.filter((e) => e.to === selectedNode).map(
-        (e) => PKG_POSITIONS.find((p) => p.id === e.from)?.label ?? e.from
+      tooltipItems = edges.filter((e) => e.to === selectedNode).map(
+        (e) => pkgPositions.find((p) => p.id === e.from)?.label ?? e.from
       );
     }
   }
@@ -188,8 +159,8 @@ export function DependencyGraph({ phases }: DependencyGraphProps): React.ReactEl
         <div className="relative">
           <svg
             width={SVG_W}
-            height={SVG_H}
-            viewBox={`0 0 ${SVG_W} ${SVG_H}`}
+            height={svgH}
+            viewBox={`0 0 ${SVG_W} ${svgH}`}
             className="w-full"
             style={{ background: COLOR_BG }}
           >
@@ -202,9 +173,9 @@ export function DependencyGraph({ phases }: DependencyGraphProps): React.ReactEl
             </text>
 
             {/* Edges */}
-            {EDGES.map((edge, i) => {
-              const pkg = PKG_POSITIONS.find((p) => p.id === edge.from);
-              const app = APP_POSITIONS.find((a) => a.id === edge.to);
+            {edges.map((edge, i) => {
+              const pkg = pkgPositions.find((p) => p.id === edge.from);
+              const app = appPositions.find((a) => a.id === edge.to);
               if (!pkg || !app) return null;
               const x1 = pkg.x + PKG_W;
               const y1 = pkg.y + NODE_H / 2;
@@ -223,7 +194,7 @@ export function DependencyGraph({ phases }: DependencyGraphProps): React.ReactEl
             })}
 
             {/* Package nodes */}
-            {PKG_POSITIONS.map((pkg) => {
+            {pkgPositions.map((pkg) => {
               const isSelected = selectedNode === pkg.id;
               return (
                 <g key={pkg.id} onClick={() => handleNodeClick(pkg.id)} style={{ cursor: 'pointer' }}>
@@ -252,7 +223,7 @@ export function DependencyGraph({ phases }: DependencyGraphProps): React.ReactEl
             })}
 
             {/* App nodes */}
-            {APP_POSITIONS.map((app) => {
+            {appPositions.map((app) => {
               const isSelected = selectedNode === app.id;
               return (
                 <g key={app.id} onClick={() => handleNodeClick(app.id)} style={{ cursor: 'pointer' }}>

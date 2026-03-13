@@ -186,3 +186,30 @@ export interface ThemeItem {
   name: string;
   lastUpdated: string;
 }
+
+// ─── DependencyGraph ─────────────────────────────────────────────────────────
+
+export interface PackageNode {
+  id: string;
+  label: string;
+  affectedApps: string[];
+}
+
+export interface AppNode {
+  id: string;
+  label: string;
+}
+
+export interface DependencyEdge {
+  from: string;
+  to: string;
+}
+
+export interface DependencyGraphData {
+  packages: PackageNode[];
+  apps: AppNode[];
+  edges: DependencyEdge[];
+  foundCount: number;
+  totalExpected: number;
+  isFallback: boolean;
+}

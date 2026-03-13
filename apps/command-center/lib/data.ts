@@ -16,6 +16,10 @@ import type {
   LayerRow,
   ContentMetrics,
   ThemeItem,
+  PackageNode,
+  AppNode,
+  DependencyEdge,
+  DependencyGraphData,
 } from './types';
 
 // ─── Source path constants (relative to monorepo root) ───────────────────────
@@ -434,4 +438,119 @@ export async function getPhaseBlocks(): Promise<{
   });
 
   return { phases, overallLabel: `${overallPct}%` };
+}
+
+// ─── Dependency graph (server-side) ──────────────────────────────────────────
+
+const SPEC_APPS = ['command-center', 'portal', 'dashboard', 'support', 'studio', 'admin', 'api'];
+const SPEC_PACKAGES = ['ui', 'db', 'auth', 'api-client', 'validators', 'email'];
+
+interface PkgJson {
+  name?: string;
+  dependencies?: Record<string, string>;
+  devDependencies?: Record<string, string>;
+}
+
+/**
+ * Reads every package.json under apps/ and packages/, extracts @cmsmasters/*
+ * dependency references, and builds the package-dependency graph.  Planned apps
+ * that lack a package.json are derived from phases.json task.app values.
+ */
+export async function loadDependencyGraph(): Promise<DependencyGraphData> {
+  const totalExpected = SPEC_APPS.length + SPEC_PACKAGES.length;
+
+  // ── 1. Read package.json files ──────────────────────────────────────────────
+  const readPkgJson = async (dir: 'apps' | 'packages', name: string): Promise<{ name: string; data: PkgJson | null }> => {
+    const filePath = path.join(MONOREPO_ROOT, dir, name, 'package.json');
+    const data = await readJson<PkgJson>(filePath);
+    return { name, data };
+  };
+
+  const [appResults, pkgResults, project] = await Promise.all([
+    Promise.all(SPEC_APPS.map((n) => readPkgJson('apps', n))),
+    Promise.all(SPEC_PACKAGES.map((n) => readPkgJson('packages', n))),
+    getPhases(),
+  ]);
+
+  const foundCount =
+    appResults.filter((r) => r.data !== null).length +
+    pkgResults.filter((r) => r.data !== null).length;
+
+  // ── 2. Build package nodes from discovered package.json files ───────────────
+  const packages: PackageNode[] = SPEC_PACKAGES.map((id) => {
+    const result = pkgResults.find((r) => r.name === id);
+    const label = result?.data?.name ?? `@cmsmasters/${id}`;
+    return { id, label, affectedApps: [] };
+  });
+
+  // ── 3. Build app nodes: discovered + planned from phases.json ───────────────
+  const plannedApps = new Set<string>(SPEC_APPS);
+  if (project) {
+    for (const phase of project.phases) {
+      for (const task of phase.tasks) {
+        const app = task.app as string;
+        if (app && !['infra', 'ui', 'content'].includes(app)) {
+          plannedApps.add(app);
+        }
+      }
+    }
+  }
+
+  const apps: AppNode[] = [...plannedApps].map((id) => {
+    const result = appResults.find((r) => r.name === id);
+    const label = result?.data?.name ?? id;
+    return { id, label };
+  });
+
+  // ── 4. Build edges from actual @cmsmasters/* dependencies ───────────────────
+  const edges: DependencyEdge[] = [];
+  const pkgIds = new Set(packages.map((p) => p.id));
+
+  for (const appResult of appResults) {
+    if (!appResult.data) continue;
+    const allDeps = {
+      ...appResult.data.dependencies,
+      ...appResult.data.devDependencies,
+    };
+    for (const depName of Object.keys(allDeps)) {
+      if (!depName.startsWith('@cmsmasters/')) continue;
+      const pkgId = depName.replace('@cmsmasters/', '');
+      if (pkgIds.has(pkgId)) {
+        edges.push({ from: pkgId, to: appResult.name });
+      }
+    }
+  }
+
+  // ── 5. When no real edges exist, derive planned edges from phases.json ──────
+  // phases.json tells us which apps are planned; ADR-017 defines that all
+  // frontend apps share ui/auth/validators/api-client, and api uses
+  // db/auth/validators/email.  We derive this from discovered packages +
+  // the app categories present in phases.json.
+  if (edges.length === 0) {
+    const frontendApps = apps.filter((a) => a.id !== 'api').map((a) => a.id);
+    const backendApps = apps.filter((a) => a.id === 'api').map((a) => a.id);
+
+    const frontendPkgs = ['ui', 'auth', 'validators', 'api-client'].filter((id) => pkgIds.has(id));
+    const backendPkgs = ['db', 'auth', 'validators', 'email'].filter((id) => pkgIds.has(id));
+
+    for (const pkgId of frontendPkgs) {
+      for (const appId of frontendApps) {
+        edges.push({ from: pkgId, to: appId });
+      }
+    }
+    for (const pkgId of backendPkgs) {
+      for (const appId of backendApps) {
+        edges.push({ from: pkgId, to: appId });
+      }
+    }
+  }
+
+  // ── 6. Populate affectedApps on each package node ───────────────────────────
+  for (const pkg of packages) {
+    pkg.affectedApps = edges.filter((e) => e.from === pkg.id).map((e) => e.to);
+  }
+
+  const isFallback = foundCount < totalExpected;
+
+  return { packages, apps, edges, foundCount, totalExpected, isFallback };
 }
