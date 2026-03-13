@@ -327,6 +327,101 @@ There is **no `/content` directory**. Structured content (themes, docs, blog pos
 
 ---
 
+## Scanner CLI
+
+The Scanner CLI consists of one library module and two CLI entry points. All scripts use `npx tsx` — no build step required. Run all commands from the monorepo root.
+
+### lib/scanner.ts
+
+A reusable TypeScript module at `apps/command-center/lib/scanner.ts` with three exported async functions.
+
+**Exported types:**
+
+| Type | Description |
+|------|-------------|
+| `ComponentLayer` | `'primitives' \| 'domain' \| 'layouts'` |
+| `ComponentEntry` | `{ name, layer, hasStory, hasTest }` |
+| `ComponentScanSummary` | `{ entries, counts, total }` |
+| `ContentScanResult` | `{ source, themes, docs, counts }` |
+| `ScannerApp` | `App \| 'api'` — extends `types.ts` App union with `'api'` |
+| `ProgressScanResult` | `{ phases, byApp, overallPercent }` |
+
+**Exported functions:**
+
+| Function | Return type | Description |
+|----------|-------------|-------------|
+| `scanComponents()` | `Promise<ComponentScanSummary>` | Scans `packages/ui/src/{primitives,domain,layouts}` for `.tsx` files; checks for co-located `.stories.tsx` and `.test.tsx`/`.spec.tsx` |
+| `scanContent(useSupabase?)` | `Promise<ContentScanResult>` | Queries Supabase `themes` and `docs` tables when `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` env vars are set; returns placeholder with empty arrays otherwise |
+| `calculateProgress()` | `Promise<ProgressScanResult>` | Reads `workplan/phases.json` and aggregates task counts per phase and per app |
+
+All three functions return empty/placeholder results on missing files or network failures — never throw.
+
+### cli/scan.ts
+
+Entry point: `apps/command-center/cli/scan.ts`
+npm script: `cc:scan` → `npx tsx apps/command-center/cli/scan.ts`
+
+Self-contained CLI that reads `workplan/phases.json` synchronously and writes three JSON output files. Scanner logic is implemented inline (independent from `lib/scanner.ts`).
+
+**What it scans:**
+
+- Tasks from `workplan/phases.json` → component inventory (one entry per task)
+- Per-app task groups per phase → content status entries tagged `'blog'` or `'doc'`
+- Task status counts per phase → progress metrics
+
+**Output files written to `workplan/`:**
+
+| File | Top-level keys | Description |
+|------|----------------|-------------|
+| `components.json` | `lastScanned`, `components[]` | One entry per task; maps task status to `ComponentStatus` |
+| `content-status.json` | `lastScanned`, `entries[]` | One entry per app per phase; includes `type: 'blog' \| 'doc'` |
+| `progress.json` | `lastUpdated`, `phases[]` | Per-phase `tasksDone`, `tasksInProgress`, `tasksBlocked`, `percentComplete` |
+
+**Console output:**
+
+```
+→ Scanning components...
+✓ components done (Xms)
+→ Scanning content...
+✓ content done (Xms)
+→ Calculating progress...
+✓ progress done (Xms)
+Scan complete in X.XXs
+```
+
+Exit code `0` on success, `1` if `phases.json` is missing or unreadable (caught by the outer handler). All three scan steps share a single error boundary — if `phases.json` is unreadable, all steps fail and only the error message is logged. Output files are overwritten on every run — do not edit by hand.
+
+### cli/report.ts
+
+Entry point: `apps/command-center/cli/report.ts`
+npm script: `cc:report` → `npx tsx apps/command-center/cli/report.ts`
+
+Reads the four workplan JSON files and prints a formatted ASCII progress report to `stdout`. Falls back to `phases.json` data when `progress.json` is missing.
+
+**Input files:**
+
+| File | Required | Fallback |
+|------|----------|----------|
+| `workplan/phases.json` | Yes | Exits with error |
+| `workplan/progress.json` | No | Recomputes stats from `phases.json` |
+| `workplan/components.json` | No | Shows `0/0/0` for component layer counts |
+| `workplan/content-status.json` | No | Shows `0` for all content counts |
+
+**Report sections:**
+
+| Section | Description |
+|---------|-------------|
+| OVERALL | Total done/total tasks and percentage |
+| CURRENT PHASE | Active phase title and completion percentage |
+| BY PHASE | Per-phase 10-char ASCII progress bar (`█░`), task counts, percentage |
+| CONTENT | themes count, approved docs count, blog posts count (separate lines) |
+| COMPONENTS | Count by layer: primitives / domain / layouts |
+| BLOCKED | Each blocked task with dependency names (from `dependencies` or `blockedBy` fields) |
+
+Exit code `0` in all cases. If `phases.json` is missing, an error message is written to stdout and the process exits cleanly (code `0`). Only an unhandled exception produces exit code `1`.
+
+---
+
 ## lib/utils.ts
 
 Five pure utility functions exported from `apps/command-center/lib/utils.ts`. Zero external dependencies.
