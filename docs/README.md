@@ -44,13 +44,72 @@ Open [http://localhost:4000](http://localhost:4000) in your browser.
 | `build` | `nx run command-center:build` | Production build |
 | `lint` | `nx run-many --target=lint` | Run ESLint across all packages |
 
-### CLI scripts (planned)
+### CLI scripts
 
-| Command | Description |
-|---------|-------------|
-| `cc:dev` | Alias for starting Command Center dev server |
-| `cc:scan` | Scan monorepo and generate workplan data |
-| `cc:report` | Generate progress report |
+| Script | npm command | Description |
+|--------|-------------|-------------|
+| `cc:dev` | `npm run cc:dev` | Alias for starting Command Center dev server |
+| `cc:scan` | `npm run cc:scan` | Scan monorepo and regenerate workplan JSON files |
+| `cc:report` | `npm run cc:report` | Print formatted ASCII progress report to stdout |
+
+#### `cc:scan`
+
+Entry point: `apps/command-center/cli/scan.ts`
+Runner: `npx tsx apps/command-center/cli/scan.ts`
+
+Reads `workplan/phases.json` and writes three JSON files to `workplan/`:
+
+| Output file | Description |
+|-------------|-------------|
+| `workplan/components.json` | Component inventory derived from phases.json tasks |
+| `workplan/content-status.json` | Content coverage status with `type: 'blog' \| 'doc'` per entry |
+| `workplan/progress.json` | Per-phase task progress metrics |
+
+Console output:
+
+```
+→ Scanning components...
+✓ components done (Xms)
+→ Scanning content...
+✓ content done (Xms)
+→ Calculating progress...
+✓ progress done (Xms)
+Scan complete in X.XXs
+```
+
+Exit code `0` on success, `1` on error (e.g. missing `phases.json`). Output files are overwritten on every run — do not edit by hand.
+
+#### `cc:report`
+
+Entry point: `apps/command-center/cli/report.ts`
+Runner: `npx tsx apps/command-center/cli/report.ts`
+
+Reads `workplan/phases.json` (required) plus the three files produced by `cc:scan` (optional — falls back to `phases.json` data when missing). Writes a formatted ASCII report to **stdout**:
+
+```
+📊 CMSMasters Portal — Progress Report
+YYYY-MM-DD
+
+OVERALL: X/Y done (Z%)
+
+CURRENT PHASE: Phase N — Title (Z%)
+
+BY PHASE:
+  Phase 0 — Title  ██████░░░░  X/Y  (Z%)
+  ...
+
+CONTENT:
+  themes:     N
+  docs:       N
+  blog posts: N
+
+COMPONENTS: N primitives | N domain | N layouts
+
+BLOCKED:
+  🔴 Task title — blocked by: Dependency title
+```
+
+Exit code `0` on success, `1` on error (e.g. missing `phases.json`).
 
 ## Monorepo Structure
 
