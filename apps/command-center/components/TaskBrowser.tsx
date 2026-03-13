@@ -41,7 +41,7 @@ export function TaskBrowser({ tasks }: TaskBrowserProps): JSX.Element {
   return (
     <div className="flex flex-col gap-4">
       <TaskFilters filters={filters} onChange={setFilters} />
-      <TaskTable tasks={filteredTasks} onSelect={() => undefined} />
+      <TaskTable tasks={filteredTasks} onSelect={() => {}} />
     </div>
   );
 }

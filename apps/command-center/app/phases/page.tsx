@@ -26,7 +26,7 @@ export default async function PhaseTracker(): Promise<React.ReactElement> {
       app: t.app,
       status: t.status,
       priority: (t.priority === 'critical' ? 'high' : t.priority) as 'high' | 'medium' | 'low',
-      dependencies: t.dependencies,
+      dependencies: t.dependencies ?? [],
       estimatedHours: t.estimatedHours,
       actualHours: t.actualHours ?? 0,
       phase: String(p.id),
