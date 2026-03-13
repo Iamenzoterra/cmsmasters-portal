@@ -239,7 +239,7 @@ All pages are React Server Components by default. `'use client'` is only used wh
 
 ## Phase Tracker Page
 
-`app/phases/page.tsx` — the `/phases` route. A pure async Server Component. Reads `phases.json` via `getPhases()`, parses URL search params (Next.js 15 Promise-based `searchParams`), filters tasks server-side, and renders a grid of collapsible phase cards plus an "All Tasks" browser section.
+`app/phases/page.tsx` — the `/phases` route. A pure async Server Component. Reads `phases.json` via `getPhases()`, parses URL search params (Next.js 15 Promise-based `searchParams`), filters tasks server-side, and renders a grid of collapsible phase cards with an optional inline task detail panel.
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -311,7 +311,7 @@ The `/phases` page renders the task detail panel **inline as a Server Component*
 │  Dependency name + done/not-done colored dot per blocker     │
 ├──────────────────────────────────────────────────────────────┤
 │  Task table grouped by app                                   │
-│  Columns: ID · Title · Status · Owner · Priority             │
+│  Columns: ID · Status · Title · Priority · Hours             │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -319,7 +319,7 @@ The `/phases` page renders the task detail panel **inline as a Server Component*
 |---------|---------------|-------|
 | Burndown chart | `buildBurndownSVG()` server helper — cumulative completion area chart as inline SVG string | No Recharts/client bundle; fully server-rendered |
 | Blocked tasks | Resolves dependency titles from `allTasks`; done/not-done colored dots | Uses `project?.phases.flatMap()` for null safety |
-| Task table | `<table>` grouped by `task.app`; `.toSorted()` for sort | Rows use status dot + `StatusBadge` equivalent |
+| Task table | `<table>` grouped by `task.app`; app groups sorted alphabetically via `.toSorted()` | Columns: ID, Status (`StatusBadge`), Title, Priority, Est. Hours |
 
 ---
 
@@ -427,7 +427,7 @@ Paths are resolved with `path.join(process.cwd(), ...)` so they work from any CW
 | `id` | `string` | Unique task ID, e.g. `P0-T1` |
 | `phase` | `number` | Phase index this task belongs to |
 | `title` | `string` | Short task title |
-| `status` | `string` | `todo` \| `in-progress` \| `done` \| `blocked` |
+| `status` | `string` | `todo` \| `in-progress` \| `review` \| `done` \| `blocked` |
 | `app` | `string` | Target app: `portal`, `dashboard`, `support`, `studio`, `admin`, `api`, `command-center`, `ui`, `infra` |
 | `group` | `string` | Logical task group within the phase |
 | `description` | `string` | Full task description |
