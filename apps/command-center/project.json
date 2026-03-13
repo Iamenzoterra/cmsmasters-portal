@@ -1,0 +1,21 @@
+{
+  "name": "@cmsmasters/command-center",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "targets": {
+    "dev": {
+      "executor": "@nx/next:dev",
+      "options": {
+        "port": 4000
+      }
+    },
+    "build": {
+      "executor": "@nx/next:build",
+      "options": {
+        "outputPath": "dist/apps/command-center"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  }
+}
