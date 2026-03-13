@@ -18,6 +18,7 @@ interface RawTask {
   title: string;
   description?: string;
   app?: string;
+  group?: string;
   status?: string;
   estimatedHours?: number;
   actualHours?: number;
@@ -103,11 +104,13 @@ function scanContent(workplanDir: string): ContentStatus[] {
     }
 
     for (const [app, appTasks] of appMap) {
+      const isBlog = app === 'blog' || appTasks.some(t => t.group?.toLowerCase() === 'blog');
       entries.push({
         themeId: app,
         pageId: phaseId,
         status: deriveContentStatus(appTasks),
         updatedAt: now,
+        type: isBlog ? 'blog' : 'doc',
       });
     }
   }
