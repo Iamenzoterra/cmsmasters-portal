@@ -60,6 +60,7 @@ interface ContentEntry {
   themeId: string;
   pageId: string;
   status: string;
+  type?: 'blog' | 'doc';
 }
 
 interface ContentData {
@@ -204,12 +205,13 @@ function buildReport(workplanDir: string): string {
 
   let themesCount = 0;
   let docsCount = 0;
-  const blogCount = 0;
+  let blogCount = 0;
 
   if (contentData) {
     const uniqueThemes = new Set(contentData.entries.map(e => e.themeId));
     themesCount = uniqueThemes.size;
-    docsCount = contentData.entries.filter(e => e.status === 'approved').length;
+    blogCount = contentData.entries.filter(e => e.type === 'blog').length;
+    docsCount = contentData.entries.filter(e => e.type !== 'blog' && e.status === 'approved').length;
   }
 
   // ─── Components by layer ──────────────────────────────────────────────────────
@@ -271,7 +273,10 @@ function buildReport(workplanDir: string): string {
     'BY PHASE:',
     ...phaseLines,
     '',
-    `CONTENT: ${themesCount} themes | ${docsCount} docs | ${blogCount} blog posts`,
+    'CONTENT:',
+    `  themes:     ${themesCount}`,
+    `  docs:       ${docsCount}`,
+    `  blog posts: ${blogCount}`,
     '',
     `COMPONENTS: ${primitivesCount} primitives | ${domainCount} domain | ${layoutsCount} layouts`,
     '',

@@ -80,6 +80,7 @@ export interface ContentStatus {
   pageId: string;
   status: ContentStatusValue;
   updatedAt: string;
+  type?: 'blog' | 'doc';
 }
 
 // ─── progress.json schema ─────────────────────────────────────────────────────
