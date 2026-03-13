@@ -27,7 +27,13 @@ apps/command-center/
 │   └── dependencies/
 │       └── page.tsx            # Dependencies (/dependencies)
 ├── components/
-│   └── Sidebar.tsx             # Navigation sidebar
+│   ├── Sidebar.tsx             # Navigation sidebar
+│   ├── PhaseTimeline.tsx       # Mission Control — horizontal phase strip
+│   ├── AppCard.tsx             # Mission Control — per-app status card
+│   ├── DesignSystemProgress.tsx # Mission Control — three-layer progress bars
+│   ├── ContentOverview.tsx     # Mission Control — content KPI panel
+│   ├── InfraChecklist.tsx      # Mission Control — infra readiness checklist
+│   └── ActivityFeed.tsx        # Mission Control — recent task event timeline
 ├── ui/                         # Design system atoms
 │   ├── Card.tsx
 │   ├── StatusBadge.tsx
@@ -123,6 +129,17 @@ All primitives are in `ui/`. They follow these rules:
 | `Checkbox` | Checkbox input with dark theme styling |
 | `Modal` | Overlay dialog with backdrop |
 
+### Mission Control Components (`components/`)
+
+| Component | Directive | Purpose | Props | Navigates to |
+|-----------|-----------|---------|-------|--------------|
+| `PhaseTimeline` | `'use client'` | Horizontal strip of 7 phase blocks with ChevronRight connectors; active phase gets ring glow | `PhaseTimelineProps { phases, currentPhase, overallLabel }` | `/phases/[id]` (via Next.js `Link`) |
+| `AppCard` | `'use client'` | Per-app status card: bold name, truncated description, color-coded status dot | `AppCardApp { name, description, status, href }` | `app.href` (caller encodes `/phases?app=<id>`) |
+| `DesignSystemProgress` | `'use client'` | Three stacked progress bars for Primitives / Domain / Layouts layers; Storybook link at bottom | `DesignSystemProgressProps { layers: LayerRow[] }` | `/components?layer=<layer>` |
+| `ContentOverview` | `'use client'` | Three KPI tiles (Themes, Docs, Blog Posts) as fraction + ProgressBar; mini list of up to 5 recent themes | `ContentMetrics { themes, docs, blogPosts, recentThemes }` | `/content` (whole-card `useRouter().push`) |
+| `InfraChecklist` | Server Component | 12-item infra readiness checklist in a Card; CheckCircle2 (done) / Circle (pending) Lucide icons | `InfraChecklistProps { items: InfraItem[] }` | No navigation |
+| `ActivityFeed` | `'use client'` | Top-10 recent task events sorted by timestamp; status icons (CheckCircle / Loader2 / XCircle) | `{ tasks: Task[] }` | `/phases?task={id}` (on row click) |
+
 ---
 
 ## Sidebar Layout
@@ -172,6 +189,34 @@ Active nav items receive `bg-accent/10 text-accent` classes. Inactive items rece
 | `/dependencies` | `app/dependencies/page.tsx` | Dependencies overview |
 
 All pages are React Server Components by default. `'use client'` is only used when a component requires browser APIs, event handlers, or React hooks.
+
+---
+
+## Mission Control Page
+
+`app/page.tsx` — the root route (`/`). A pure async Server Component. Fetches all data sources in parallel via `Promise.all` and renders three sections in a vertical `space-y-8` layout:
+
+```
+┌──────────────────────────────────────────────────────┐
+│  PhaseTimeline   (full-width horizontal phase strip) │
+├────────────────┬─────────────────────────────────────┤
+│  AppCard grid  │  DesignSystemProgress               │
+│  (2×2 or list) │  ContentOverview                    │
+├────────────────┴─────────────────────────────────────┤
+│  ActivityFeed  (full-width event timeline)           │
+└──────────────────────────────────────────────────────┘
+```
+
+### Component Breakdown
+
+| Panel | Component | Props interface | Data source |
+|-------|-----------|-----------------|-------------|
+| Phase strip | `PhaseTimeline` | `PhaseTimelineProps` | `getPhases()` |
+| App status | `AppCard` | `AppCardApp` | `getAppCards()` |
+| Design system | `DesignSystemProgress` | `DesignSystemProgressProps` | `getDesignSystemLayers()` |
+| Content KPIs | `ContentOverview` | `ContentMetrics` | `getContentStatusEntries()` |
+| Infra readiness | `InfraChecklist` | `InfraChecklistProps` | `getInfraItems()` |
+| Activity feed | `ActivityFeed` | `{ tasks: Task[] }` | `getPhases()` (all tasks flattened) |
 
 ---
 
@@ -240,6 +285,25 @@ Paths are resolved with `path.join(process.cwd(), ...)` so they work from any CW
 | `getProgress()` | `Promise<ProgressData \| null>` | Reads `workplan/progress.json` |
 | `getADRList()` | `Promise<ADRMeta[]>` | Lists all ADR files, parses frontmatter |
 | `getADRContent(idOrSlug)` | `Promise<ADRMetaWithBody \| null>` | Returns single ADR frontmatter + body |
+| `getAppCards()` | `Promise<AppCardApp[]>` | Derives per-app status from `phases.json` task groups |
+| `getDesignSystemLayers()` | `Promise<LayerRow[]>` | Reads `components.json` wrapper object and groups entries by layer |
+| `getContentStatusEntries()` | `Promise<ContentMetrics>` | Reads `content-status.json` wrapper object and aggregates KPI totals |
+| `getInfraItems()` | `Promise<InfraItem[]>` | Matches 12 static infra definitions against `phases.json` task titles |
+
+> **Runtime caveat — wrapper objects:** `components.json` and `content-status.json` are written by `cli/scan.ts` as wrapper objects `{ lastScanned, components: [] }` and `{ lastScanned, entries: [] }` respectively. The legacy functions `getComponents()` and `getContentStatus()` have incorrect generic types at runtime. The new functions `getDesignSystemLayers()` and `getContentStatusEntries()` read the wrapper shape directly via `readJson<{ components: ComponentSummary[] }>` / `readJson<{ entries: ContentStatus[] }>` to avoid mistyping. Do not edit the output files by hand — they are regenerated on every `cc:scan` run.
+
+### Mission Control Types (lib/types.ts)
+
+| Type | Shape | Description |
+|------|-------|-------------|
+| `AppStatus` | `'not-started' \| 'in-progress' \| 'beta' \| 'live'` | Per-app build status |
+| `AppCardApp` | `{ name, description, status: AppStatus, href }` | Prop shape for `AppCard`; `href` is caller-encoded filter URL |
+| `LayerName` | `'Primitives' \| 'Domain' \| 'Layouts'` | Three design-system layer names per ADR-010 |
+| `LayerRow` | `{ layer: LayerName, done, total }` | One row in `DesignSystemProgress` |
+| `ContentMetrics` | `{ themes, docs, blogPosts: { published, total }, recentThemes: ThemeItem[] }` | Aggregated content KPIs for `ContentOverview` |
+| `ThemeItem` | `{ name, updatedAt }` | Single theme entry in `ContentOverview` mini list |
+| `InfraItem` | `{ label, done, taskTitle? }` | Single infra checklist row; `taskTitle` used as native tooltip |
+| `InfraChecklistProps` | `{ items: InfraItem[] }` | Props interface for `InfraChecklist` |
 
 ### phases.json Schema
 
