@@ -9,6 +9,12 @@ import type {
   ADRMeta,
   ADRMetaWithBody,
   InfraItem,
+  AppCardApp,
+  AppStatus,
+  LayerName,
+  LayerRow,
+  ContentMetrics,
+  ThemeItem,
 } from './types';
 
 // ─── Source path constants (relative to monorepo root) ───────────────────────
@@ -145,6 +151,131 @@ export async function getInfraItems(): Promise<InfraItem[]> {
       taskTitle: match?.title,
     };
   });
+}
+
+// ─── App cards ────────────────────────────────────────────────────────────────
+
+const PORTAL_APP_DEFS: { id: string; name: string }[] = [
+  { id: 'portal',    name: 'Portal'    },
+  { id: 'dashboard', name: 'Dashboard' },
+  { id: 'support',   name: 'Support'   },
+  { id: 'studio',    name: 'Studio'    },
+  { id: 'admin',     name: 'Admin'     },
+];
+
+/**
+ * Derives AppCardApp[] for the five portal apps from phases.json task data.
+ * Status is 'not-started' (0 done), 'in-progress' (some done), 'live' (all done).
+ */
+export async function getAppCards(): Promise<AppCardApp[]> {
+  const project = await getPhases();
+  const allTasks = project?.phases.flatMap((p) => p.tasks) ?? [];
+
+  return PORTAL_APP_DEFS.map(({ id, name }) => {
+    const appTasks = allTasks.filter((t) => t.app === id);
+    const doneTasks = appTasks.filter((t) => t.status === 'done');
+
+    let status: AppStatus;
+    if (appTasks.length === 0 || doneTasks.length === 0) {
+      status = 'not-started';
+    } else if (doneTasks.length === appTasks.length) {
+      status = 'live';
+    } else {
+      status = 'in-progress';
+    }
+
+    const description =
+      project?.phases
+        .filter((p) => p.tasks.some((t) => t.app === id))
+        .map((p) => p.title)
+        .slice(0, 2)
+        .join(' · ') ?? name;
+
+    return { id, name, description, status, href: `/phases?app=${id}` };
+  });
+}
+
+// ─── Design system layers ─────────────────────────────────────────────────────
+
+const PRIMITIVE_KEYWORDS = ['primitive', 'token', 'atom', 'color', 'font', 'spacing', 'icon'];
+const DOMAIN_KEYWORDS = [
+  'domain', 'button', 'badge', 'input', 'card', 'modal', 'select', 'checkbox', 'progress',
+];
+
+/**
+ * Buckets components from components.json into three design-system layers and
+ * returns LayerRow[] with completion counts. Returns null when the file is missing.
+ */
+export async function getDesignSystemLayers(): Promise<LayerRow[] | null> {
+  const data = await readJson<{ components: ComponentSummary[] }>(COMPONENTS_PATH);
+  const components = data?.components;
+  if (!components) return null;
+
+  const buckets: Record<LayerName, ComponentSummary[]> = {
+    Primitives: [],
+    Domain:     [],
+    Layouts:    [],
+  };
+
+  for (const comp of components) {
+    const lower = comp.name.toLowerCase();
+    if (PRIMITIVE_KEYWORDS.some((kw) => lower.includes(kw))) {
+      buckets.Primitives.push(comp);
+    } else if (DOMAIN_KEYWORDS.some((kw) => lower.includes(kw))) {
+      buckets.Domain.push(comp);
+    } else {
+      buckets.Layouts.push(comp);
+    }
+  }
+
+  const layers: LayerName[] = ['Primitives', 'Domain', 'Layouts'];
+  return layers.map((layer) => {
+    const comps = buckets[layer];
+    const completed = comps.filter((c) => c.status === 'done').length;
+    return { layer, completed, total: comps.length, href: '/components' };
+  });
+}
+
+// ─── Content status entries ───────────────────────────────────────────────────
+
+/**
+ * Reads content-status.json and derives ContentMetrics plus up to 10 distinct
+ * ThemeItem values. Returns null when the file is missing.
+ */
+export async function getContentStatusEntries(): Promise<{
+  metrics: ContentMetrics;
+  recentThemes: ThemeItem[];
+} | null> {
+  const data = await readJson<{ entries: ContentStatus[] }>(CONTENT_STATUS_PATH);
+  if (!data?.entries) return null;
+
+  const entries = data.entries;
+  const docs  = entries.filter((e) => e.type === 'doc');
+  const blogs = entries.filter((e) => e.type === 'blog');
+
+  const seenIds = new Set<string>();
+  const recentThemes: ThemeItem[] = [];
+  for (const entry of entries) {
+    if (!seenIds.has(entry.themeId) && recentThemes.length < 10) {
+      seenIds.add(entry.themeId);
+      recentThemes.push({
+        id:          entry.themeId,
+        name:        entry.themeId,
+        lastUpdated: entry.updatedAt.slice(0, 10),
+      });
+    }
+  }
+
+  const metrics: ContentMetrics = {
+    themesPublished: entries.filter((e) => e.status === 'published').length,
+    themesTotal:     seenIds.size,
+    docsPublished:   docs.filter((e)  => e.status === 'published').length,
+    docsTarget:      docs.length,
+    blogPosts:       blogs.filter((e) => e.status === 'published').length,
+    blogTarget:      blogs.length,
+  };
+
+  return { metrics, recentThemes };
 }
 
 /**
