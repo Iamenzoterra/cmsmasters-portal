@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckCircle, Loader2, XCircle } from 'lucide-react';
+import { CheckCircle, Circle, Loader2, XCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '../theme/utils';
 import { getRelativeTime } from '../lib/utils';
@@ -34,7 +34,7 @@ function StatusIcon({ status }: { status: string }) {
     return <Loader2 className="w-4 h-4 mt-0.5 flex-shrink-0 text-status-active animate-spin" />;
   }
   if (status === 'blocked') {
-    return <XCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-status-danger" />;
+    return <Circle className="w-4 h-4 mt-0.5 flex-shrink-0 fill-current text-status-danger" />;
   }
   return <XCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-text-muted" />;
 }
