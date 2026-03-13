@@ -1,0 +1,89 @@
+{
+  "lastScanned": "2026-03-13T00:06:46.355Z",
+  "entries": [
+    {
+      "themeId": "infra",
+      "pageId": "0",
+      "status": "draft",
+      "updatedAt": "2026-03-13T00:06:46.355Z"
+    },
+    {
+      "themeId": "command-center",
+      "pageId": "0",
+      "status": "draft",
+      "updatedAt": "2026-03-13T00:06:46.355Z"
+    },
+    {
+      "themeId": "ui",
+      "pageId": "1",
+      "status": "draft",
+      "updatedAt": "2026-03-13T00:06:46.355Z"
+    },
+    {
+      "themeId": "db",
+      "pageId": "1",
+      "status": "draft",
+      "updatedAt": "2026-03-13T00:06:46.355Z"
+    },
+    {
+      "themeId": "auth",
+      "pageId": "1",
+      "status": "draft",
+      "updatedAt": "2026-03-13T00:06:46.355Z"
+    },
+    {
+      "themeId": "infra",
+      "pageId": "1",
+      "status": "draft",
+      "updatedAt": "2026-03-13T00:06:46.355Z"
+    },
+    {
+      "themeId": "api",
+      "pageId": "1",
+      "status": "draft",
+      "updatedAt": "2026-03-13T00:06:46.355Z"
+    },
+    {
+      "themeId": "portal",
+      "pageId": "2",
+      "status": "draft",
+      "updatedAt": "2026-03-13T00:06:46.355Z"
+    },
+    {
+      "themeId": "dashboard",
+      "pageId": "3",
+      "status": "draft",
+      "updatedAt": "2026-03-13T00:06:46.355Z"
+    },
+    {
+      "themeId": "support",
+      "pageId": "4",
+      "status": "draft",
+      "updatedAt": "2026-03-13T00:06:46.355Z"
+    },
+    {
+      "themeId": "studio",
+      "pageId": "5",
+      "status": "draft",
+      "updatedAt": "2026-03-13T00:06:46.355Z"
+    },
+    {
+      "themeId": "admin",
+      "pageId": "5",
+      "status": "draft",
+      "updatedAt": "2026-03-13T00:06:46.355Z"
+    },
+    {
+      "themeId": "api",
+      "pageId": "6",
+      "status": "draft",
+      "updatedAt": "2026-03-13T00:06:46.355Z"
+    },
+    {
+      "themeId": "infra",
+      "pageId": "6",
+      "status": "draft",
+      "updatedAt": "2026-03-13T00:06:46.355Z"
+    }
+  ]
+}
