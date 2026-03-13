@@ -112,6 +112,14 @@ export interface ADRMeta {
 
 export type ADRMetaWithBody = ADRMeta & { body: string };
 
+// ─── InfraChecklist ───────────────────────────────────────────────────────────
+
+export interface InfraItem {
+  label: string;
+  done: boolean;
+  taskTitle?: string;
+}
+
 // ─── Aliases / wrappers ───────────────────────────────────────────────────────
 
 /** Single entry in components.json */
@@ -120,4 +128,44 @@ export type ComponentSummary = Component;
 /** Shape of progress.json */
 export interface ProgressData {
   phases: Progress[];
+}
+
+// ─── AppCard ──────────────────────────────────────────────────────────────────
+
+export type AppStatus = 'not-started' | 'in-progress' | 'beta' | 'live';
+
+export interface AppCardApp {
+  id: string;
+  name: string;
+  description: string;
+  status: AppStatus;
+  href: string;
+}
+
+// ─── DesignSystemProgress ─────────────────────────────────────────────────────
+
+export type LayerName = 'Primitives' | 'Domain' | 'Layouts';
+
+export interface LayerRow {
+  layer: LayerName;
+  completed: number;
+  total: number;
+  href: string;
+}
+
+// ─── ContentOverview ──────────────────────────────────────────────────────────
+
+export interface ContentMetrics {
+  themesPublished: number;
+  themesTotal: number;
+  docsPublished: number;
+  docsTarget: number;
+  blogPosts: number;
+  blogTarget: number;
+}
+
+export interface ThemeItem {
+  id: string;
+  name: string;
+  lastUpdated: string;
 }
