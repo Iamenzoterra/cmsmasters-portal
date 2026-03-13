@@ -33,7 +33,13 @@ apps/command-center/
 │   ├── DesignSystemProgress.tsx # Mission Control — three-layer progress bars
 │   ├── ContentOverview.tsx     # Mission Control — content KPI panel
 │   ├── InfraChecklist.tsx      # Mission Control — infra readiness checklist
-│   └── ActivityFeed.tsx        # Mission Control — recent task event timeline
+│   ├── ActivityFeed.tsx        # Mission Control — recent task event timeline
+│   ├── PhaseCard.tsx           # Phase Tracker — collapsible phase card with progress + task table
+│   ├── TaskTable.tsx           # Phase Tracker — sortable task rows with status and metadata columns
+│   ├── TaskFilters.tsx         # Phase Tracker — filter bar (search + 4 dropdowns + active chips)
+│   ├── TaskDetailSheet.tsx     # Phase Tracker — slide-in right panel with full task detail
+│   ├── TaskBrowser.tsx         # Phase Tracker — client composition: filter state + TaskFilters + TaskTable (flat tasks input)
+│   └── TasksView.tsx           # Phase Tracker — client composition: filter state + TaskFilters + TaskTable (Phase[] input)
 ├── ui/                         # Design system atoms
 │   ├── Card.tsx
 │   ├── StatusBadge.tsx
@@ -129,6 +135,17 @@ All primitives are in `ui/`. They follow these rules:
 | `Checkbox` | Checkbox input with dark theme styling |
 | `Modal` | Overlay dialog with backdrop |
 
+### Phase Tracker Components (`components/`)
+
+| Component | Directive | Purpose | Props interface |
+|-----------|-----------|---------|-----------------|
+| `PhaseCard` | `'use client'` | Collapsible phase card: header shows phase number badge, title, description; `ProgressBar` with `X / Y tasks` count; optional estimatedWeeks/startDate/endDate metadata; clicking header toggles inline task table; `in-progress` phases get blue ring glow | `PhaseCardProps { phase: Phase, tasks: Task[], defaultExpanded?: boolean, estimatedWeeks?: number, startDate?: string, endDate?: string, onTaskSelect?: (task: Task) => void }` |
+| `TaskTable` | `'use client'` | Sortable table with 9 columns (Status, ID, Title, Owner, App, Priority, Dependencies, Est. Hours, Act. Hours); sort headers toggle asc/desc; status cells render colored dots via `bg-status-*` tokens; rows fire `onSelect(id)` on click; shows empty state when tasks array is empty | `TaskTableProps { tasks: Task[], onSelect: (id: string) => void, initialSortColumn?: SortColumn, initialSortDirection?: 'asc' \| 'desc' }` |
+| `TaskFilters` | `'use client'` | Horizontal filter bar: search `Input` + four `Select` dropdowns (Phase, Status, Owner, App); active non-default filters render as removable chip badges below the bar; fully controlled — parent owns state | `TaskFiltersProps { filters: TaskFilterState, onChange: (f: TaskFilterState) => void, phaseOptions?: string[], appOptions?: App[] }` |
+| `TaskDetailSheet` | `'use client'` | Slide-in right panel (CSS `translateX` transition, `duration-300`); displays Description, Details (owner/app/priority pills), Dependencies (clickable, resolved from `allTasks`), Acceptance Criteria (CheckSquare/Square icons), Notes, Timestamps; backdrop overlay closes on click; Escape key closes via `useEffect` | `TaskDetailSheetProps { task: Task \| null, onClose: () => void, onTaskSelect?: (taskId: string) => void, allTasks?: Task[] }` |
+| `TaskBrowser` | `'use client'` | Composition root for client-side task browsing: owns `TaskFilterState` via `useState`; computes `filteredTasks` via `useMemo` on every filter/search change; renders `TaskFilters` + `TaskTable` wired together | `TaskBrowserProps { tasks: PhaseTask[] }` where `PhaseTask = Task & { phase: string }` |
+| `TasksView` | `'use client'` | Alternative client composition root: owns `TaskFilterState` via `useState`; accepts `Phase[]` directly and flattens tasks internally; renders `TaskFilters` + `TaskTable`; does not use `useMemo` | `TasksViewProps { phases: Phase[] }` |
+
 ### Mission Control Components (`components/`)
 
 | Component | Directive | Purpose | Props | Navigates to |
@@ -217,6 +234,92 @@ All pages are React Server Components by default. `'use client'` is only used wh
 | Content KPIs | `ContentOverview` | `ContentOverviewProps { metrics: ContentMetrics, recentThemes: ThemeItem[] }` | `getContentStatusEntries()` |
 | Infra readiness | `InfraChecklist` | `InfraChecklistProps { items: InfraItem[] \| null }` | `getInfraItems()` |
 | Activity feed | `ActivityFeed` | `{ tasks: Task[] }` | `getPhases()` (all tasks flattened) |
+
+---
+
+## Phase Tracker Page
+
+`app/phases/page.tsx` — the `/phases` route. A pure async Server Component. Reads `phases.json` via `getPhases()`, parses URL search params (Next.js 15 Promise-based `searchParams`), filters tasks server-side, and renders a grid of collapsible phase cards plus an "All Tasks" browser section.
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Filter bar: status chip <Link> toggles + <form> search      │
+├──────────────────────────────────────────────────────────────┤
+│  Phase cards grid (expandable <details> per phase)           │
+│  ┌─────────────────────┐  ┌─────────────────────┐           │
+│  │  Phase 0 ▼          │  │  Phase 1 ▶           │           │
+│  │  ████████░░ 80%      │  │  ░░░░░░░░ 0%         │           │
+│  │  [task rows…]        │  │                     │           │
+│  └─────────────────────┘  └─────────────────────┘           │
+├──────────────────────────────────────────────────────────────┤
+│  Inline task detail panel (URL ?task=id — server-rendered)   │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### Component Breakdown
+
+| Panel | Component | Props / State | Data source |
+|-------|-----------|---------------|-------------|
+| Filter bar | Inline `<Link>` chips + `<form method="get">` | URL params `statuses`, `search` — server-driven, zero JS | URL query string |
+| Phase cards | `<details>`/`<summary>` HTML (native expand) | `open` attribute — in-progress phases expanded by default | `getPhases()` |
+| Phase progress | `ProgressBar` (per card) | `{ value: donePct }` | derived from `phase.tasks` |
+| Phase task rows | Inline `<table>` (5 cols: ID, Status, Title, Owner, Priority) | server-filtered via `filterTasks()` helper | URL-filtered `phase.tasks` |
+| Task detail panel | Inline HTML panel with `@starting-style` slide-in | opens when `?task=id` URL param is present | `allTasks.find(id)` |
+
+### Filter System
+
+The page uses **URL-param SSR filtering** only — no client-side filter state:
+
+- `statuses` query param — comma-separated status values (e.g. `done,in-progress`); drives server-side `filterTasks()` call for each phase card's task list
+- `search` query param — text search on task title and ID; submitted via `<form method="get">` with a hidden `statuses` input to preserve active status chips
+- `task` query param — task ID; causes the inline task detail panel to be server-rendered for the selected task
+- Status chips are `<Link>` elements that toggle a status in/out of the `statuses` param — zero JS
+- Chevron rotation uses `group-open:rotate-180` via Tailwind `group` on `<details>` — zero JS required
+- Clearing all filters navigates to `?` (empty query string)
+
+### Task Detail Panel (inline server implementation)
+
+The `/phases` page renders the task detail panel **inline as a Server Component** — it does not use the `TaskDetailSheet` client component. When `?task=id` is set:
+
+- A fixed backdrop `<Link>` navigates to `buildHref({ task: null }, ...)` to close
+- A fixed right panel renders task fields (title, status, owner, app, priority, hours, description, acceptance criteria, dependencies, notes, timestamps)
+- **Open animation:** `@starting-style` CSS rule sets `transform: translateX(100%)` before first paint; then transitions to `translateX(0)` via inline `<style>` tag (scoped to `.task-detail-sheet` class — no Tailwind equivalent)
+- Closing navigates via URL, not JavaScript
+
+### TaskDetailSheet Component (standalone reusable)
+
+`TaskDetailSheet` (`components/TaskDetailSheet.tsx`) is a standalone `'use client'` component usable outside the `/phases` page:
+
+- **Open:** `translate-x-0` — panel slides in from the right
+- **Closed:** `translate-x-full` — panel is off-screen
+- **Backdrop:** fixed overlay behind the panel; click closes via `onClose()`
+- **Keyboard:** `useEffect` adds `keydown` listener; `Escape` fires `onClose()`
+- Controlled by whether `task` prop is non-null (`task === null` → closed)
+
+### Phase Detail Page (`/phases/[id]`)
+
+`app/phases/[id]/page.tsx` — the phase drill-down route. A pure async Server Component.
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Header: P{n} badge · Phase title · Description              │
+│  Large monospace progress % · full-width ProgressBar         │
+├──────────────────────────────────────────────────────────────┤
+│  Burndown chart (inline SVG — server-generated)              │
+├──────────────────────────────────────────────────────────────┤
+│  Blocked tasks section                                       │
+│  Dependency name + done/not-done colored dot per blocker     │
+├──────────────────────────────────────────────────────────────┤
+│  Task table grouped by app                                   │
+│  Columns: ID · Title · Status · Owner · Priority             │
+└──────────────────────────────────────────────────────────────┘
+```
+
+| Section | Implementation | Notes |
+|---------|---------------|-------|
+| Burndown chart | `buildBurndownSVG()` server helper — cumulative completion area chart as inline SVG string | No Recharts/client bundle; fully server-rendered |
+| Blocked tasks | Resolves dependency titles from `allTasks`; done/not-done colored dots | Uses `project?.phases.flatMap()` for null safety |
+| Task table | `<table>` grouped by `task.app`; `.toSorted()` for sort | Rows use status dot + `StatusBadge` equivalent |
 
 ---
 
