@@ -4,6 +4,7 @@ import { getPhases } from '@/lib/data';
 import { calculateProgress } from '@/lib/utils';
 import { Card } from '@/ui/Card';
 import { ProgressBar } from '@/ui/ProgressBar';
+import { TaskBrowser, type PhaseTask } from '@/components/TaskBrowser';
 
 export default async function PhaseTracker(): Promise<React.ReactElement> {
   const project = await getPhases();
@@ -16,6 +17,21 @@ export default async function PhaseTracker(): Promise<React.ReactElement> {
       </div>
     );
   }
+
+  const allTasks: PhaseTask[] = project.phases.flatMap((p) =>
+    p.tasks.map((t) => ({
+      id: t.id,
+      title: t.title,
+      owner: t.owner,
+      app: t.app,
+      status: t.status,
+      priority: (t.priority === 'critical' ? 'high' : t.priority) as 'high' | 'medium' | 'low',
+      dependencies: t.dependencies,
+      estimatedHours: t.estimatedHours,
+      actualHours: t.actualHours ?? 0,
+      phase: String(p.id),
+    }))
+  );
 
   return (
     <div>
@@ -69,6 +85,11 @@ export default async function PhaseTracker(): Promise<React.ReactElement> {
             </Link>
           );
         })}
+      </div>
+
+      <div>
+        <h2 className="mb-4 text-lg font-bold text-text-primary">All Tasks</h2>
+        <TaskBrowser tasks={allTasks} />
       </div>
     </div>
   );
