@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import { JetBrains_Mono } from 'next/font/google';
-import Script from 'next/script';
 import './globals.css';
 import { Sidebar } from '@/components/Sidebar';
 import { GlobalSearch, type SearchEntry } from '@/components/GlobalSearch';
+import { KeyboardShortcuts } from '@/components/KeyboardShortcuts';
 import { getPhases, getComponents, getContentStatusEntries, getADRList } from '@/lib/data';
 
 const jetbrainsMono = JetBrains_Mono({
@@ -129,21 +129,7 @@ export default async function RootLayout({
           </main>
         </div>
         <GlobalSearch searchIndex={searchIndex} />
-        <Script id="keyboard-shortcuts" strategy="afterInteractive">{`
-          (function () {
-            var ROUTE_MAP = { '1': '/', '2': '/phases', '3': '/components', '4': '/content', '5': '/architecture', '6': '/dependencies' };
-            document.addEventListener('keydown', function (e) {
-              var target = e.target;
-              if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
-              if (e.metaKey || e.ctrlKey || e.altKey) return;
-              var route = ROUTE_MAP[e.key];
-              if (route) {
-                e.preventDefault();
-                window.location.assign(route);
-              }
-            });
-          })();
-        `}</Script>
+        <KeyboardShortcuts />
       </body>
     </html>
   );
