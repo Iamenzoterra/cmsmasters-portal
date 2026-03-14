@@ -11,7 +11,7 @@ Command Center is the first app in the CMSMasters Portal monorepo. It is an inte
 ```
 apps/command-center/
 ├── app/                        # Next.js App Router
-│   ├── layout.tsx              # Root layout: fonts, body bg, Sidebar
+│   ├── layout.tsx              # Root layout (async): fonts, body bg, server-side search index, Sidebar + GlobalSearch
 │   ├── page.tsx                # Mission Control (/)
 │   ├── globals.css             # Tailwind v4 entry (@import + @config)
 │   ├── phases/
@@ -47,7 +47,9 @@ apps/command-center/
 │   ├── BurndownChart.tsx       # Phase Detail — Recharts AreaChart showing cumulative completed-task count over time
 │   ├── ComponentCard.tsx       # Components page — card showing name, layer badge, status badge, app
 │   ├── ADRViewer.tsx           # Architecture page — client two-panel ADR browser with search and markdown rendering
-│   └── ThemeStatusTable.tsx    # Content page — client table with search, filter, status dots, and slide-out detail panel
+│   ├── ThemeStatusTable.tsx    # Content page — client table with search, filter, status dots, and slide-out detail panel
+│   ├── DependencyGraph.tsx     # Dependencies page — SVG package/phase dependency viewer with two tabs
+│   └── GlobalSearch.tsx        # Global command palette — Cmd/Ctrl+K overlay with type-grouped results
 ├── ui/                         # Design system atoms
 │   ├── Card.tsx
 │   ├── StatusBadge.tsx
@@ -208,6 +210,51 @@ function isActive(href: string): boolean {
 ```
 
 Active nav items receive `bg-accent/10 text-accent` classes. Inactive items receive `text-text-secondary hover:bg-surface-hover hover:text-text-primary`.
+
+---
+
+## Root Layout
+
+`app/layout.tsx` — shared root layout wrapping all routes. An **async** Server Component.
+
+**Data loading:** Four sources fetched in parallel via `Promise.all`:
+
+| Source | Function | Used for |
+|--------|----------|----------|
+| Phase data | `getPhases()` | Task entries in the global search index |
+| Component data | `getComponents()` | Component entries in the global search index |
+| Content data | `getContentStatusEntries()` | Theme entries in the global search index |
+| ADR list | `getADRList()` | ADR entries in the global search index |
+
+**Search index construction:** A flat `SearchItem[]` array is assembled from all four sources:
+
+| Type | Derived from | `name` | `context` | `href` |
+|------|-------------|--------|-----------|--------|
+| `task` | `project.phases[].tasks[]` | `task.title` | `Phase {n} • {status}` | `/phases/{phase.id}` |
+| `component` | `components[]` | `comp.name` | `comp.description` | `/components` |
+| `theme` | `contentData.recentThemes[]` | `theme.name` | `Last updated: {date}` | `/content` |
+| `adr` | `adrs[]` | `adr.title` | `{status} • {date}` | `/architecture` |
+
+The assembled `searchIndex` is passed as a prop to `GlobalSearch`, which filters entirely client-side.
+
+**Render tree:**
+
+```
+<html lang="en" className="dark">
+  <head>
+    <link> — LINE Seed JP from Google Fonts
+  </head>
+  <body className="... bg-surface-app text-text-primary">
+    <GlobalSearch searchIndex={searchIndex} />   ← always mounted, hidden when closed
+    <div className="flex h-screen">
+      <Sidebar />
+      <main className="flex-1 overflow-y-auto px-8 py-6">
+        {children}
+      </main>
+    </div>
+  </body>
+</html>
+```
 
 ---
 
@@ -474,6 +521,109 @@ Exports: `TechStackItem` interface, `TechStackLayer` interface, `ArchitectureTab
 | Card body | `renderMarkdown(body)` — splits body on `\n`, maps each line to a React element by prefix (`###`, `##`, `#`, `- `, blank, else `<p>`) | No external markdown parser — lightweight inline renderer |
 | Inline bold | `inlineBold(text)` — regex-replaces `**text**` with `<strong>` nodes in a `ReactNode[]` | Used by all renderMarkdown line types |
 | Not-found state | Back link + `"ADR not found"` heading when `getADRContent()` returns `null` | Graceful degradation for invalid IDs |
+
+---
+
+## Dependencies Page
+
+`app/dependencies/page.tsx` — the `/dependencies` route. An async Server Component.
+
+**Data loading:** Two sources fetched in parallel via `Promise.all`:
+
+| Source | Function | Returns |
+|--------|----------|---------|
+| Phase blocks | `getPhaseBlocks()` | `PhaseBlock[] \| null` |
+| Dependency graph | `loadDependencyGraph()` | `{ packages, apps, edges, foundCount, totalExpected, isFallback }` |
+
+**States:**
+
+| Condition | UI |
+|-----------|-----|
+| `phaseData === null && graphData.foundCount === 0` | Centered empty-state card — instructions to run `cc:scan` or create `package.json` files |
+| `graphData.isFallback` | Amber left-bordered notice showing `{foundCount}` of `{totalExpected}` package.json files found |
+| Normal | Page header with phase count subtitle + `DependencyGraph` client component |
+
+The `DependencyGraph` client component receives `phases`, `packages`, `apps`, and `edges` and owns its own tab state.
+
+### DependencyGraph (`components/DependencyGraph.tsx`)
+
+`'use client'` component. Renders an SVG dependency visualization with two switchable tabs.
+
+**Props:**
+
+```ts
+interface DependencyGraphProps {
+  phases: PhaseBlock[];
+  packages: PackageNode[];
+  apps: AppNode[];
+  edges: DependencyEdge[];
+}
+```
+
+**Tab: Package Dependencies (default)**
+
+900px-wide SVG. Packages column at x=20 (left), Apps column at x=720 (right). Edges are right-angle polylines routing through a midpoint at x=450. Clicking a node selects it: its connected edges become fully opaque, all others fade to 5% opacity. A tooltip card below the SVG lists "Affects:" (package nodes) or "Depends on:" (app nodes) with the related node labels.
+
+**Tab: Phase Dependencies**
+
+860×180px SVG. Phase bars are sized proportionally by `estimatedWeeks` relative to total weeks. Bar colors:
+
+| Status | Fill | Stroke |
+|--------|------|--------|
+| `done` | green at 20% opacity | green |
+| `in-progress` | blue at 20% opacity | blue |
+| `todo` | zinc (opaque) | zinc |
+
+A full-width "Content" track spans all phases below the phase bars. Arrow markers (`<marker id="arrow">`) connect consecutive phase bars when bar gap ≥ 4px. Empty-state paragraph shown when `phases.length === 0`.
+
+All color values are derived from `tokens.ts` via module-level `COLOR_*` constants — no inline hex strings in SVG attributes.
+
+---
+
+## Global Search
+
+`GlobalSearch` (`components/GlobalSearch.tsx`) — a `'use client'` command palette rendered in `app/layout.tsx`. Available on every page without re-mounting.
+
+**Props:**
+
+```ts
+interface GlobalSearchProps {
+  searchIndex: SearchItem[];
+}
+```
+
+**Exported types:**
+
+```ts
+export type SearchItemType = 'task' | 'component' | 'theme' | 'adr';
+
+export interface SearchItem {
+  id: string;
+  type: SearchItemType;
+  name: string;     // display name (title row)
+  context: string;  // subtitle / secondary info
+  href: string;     // navigation target on click
+}
+```
+
+**Keyboard triggers:**
+
+| Key | Condition | Effect |
+|-----|-----------|--------|
+| `Cmd/Ctrl+K` | Any | Toggles open/closed |
+| `/` | Focused element is not `input`, `textarea`, or `contenteditable` | Opens |
+| `Escape` | Open | Closes and clears query |
+| Backdrop click | Open | Closes and clears query |
+
+**Behavior:**
+
+- Fixed overlay (`z-50`) centered horizontally, positioned 15vh from the top with a `bg-black/60` backdrop.
+- Auto-focuses the search input on open via `useEffect`.
+- Filters `searchIndex` client-side via `useMemo`; matches on `item.name` or `item.context` (case-insensitive).
+- Results grouped by type in `TYPE_ORDER = ['task', 'component', 'theme', 'adr']` order; each group capped at 5 items.
+- "No results" message shown only when `query.trim() !== ''` to avoid false empties on initial open.
+- On item click: `useRouter().push(item.href)` then close.
+- Returns `null` (renders nothing) when closed — zero DOM overhead.
 
 ---
 
