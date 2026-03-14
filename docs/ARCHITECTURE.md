@@ -11,7 +11,7 @@ Command Center is the first app in the CMSMasters Portal monorepo. It is an inte
 ```
 apps/command-center/
 ├── app/                        # Next.js App Router
-│   ├── layout.tsx              # Root layout: fonts, body bg, Sidebar
+│   ├── layout.tsx              # Root layout: async, search index, GlobalSearch + Sidebar
 │   ├── page.tsx                # Mission Control (/)
 │   ├── globals.css             # Tailwind v4 entry (@import + @config)
 │   ├── phases/
@@ -47,6 +47,8 @@ apps/command-center/
 │   ├── BurndownChart.tsx       # Phase Detail — Recharts AreaChart showing cumulative completed-task count over time
 │   ├── ComponentCard.tsx       # Components page — card showing name, layer badge, status badge, app
 │   ├── ADRViewer.tsx           # Architecture page — client two-panel ADR browser with search and markdown rendering
+│   ├── DependencyGraph.tsx     # Dependencies page — 'use client' two-tab SVG component (Package Dependencies + Phase Dependencies)
+│   ├── GlobalSearch.tsx        # Global command palette — 'use client' keyboard-triggered search overlay
 │   └── ThemeStatusTable.tsx    # Content page — client table with search, filter, status dots, and slide-out detail panel
 ├── ui/                         # Design system atoms
 │   ├── Card.tsx
@@ -174,6 +176,7 @@ All primitives are in `ui/`. They follow these rules:
 | `ComponentCard` | `'use client'` | Card for a single component entry on the Components page: displays name, description (truncated), layer badge (Primitives/Domain/Layouts — color-coded), status badge, and app label in monospace | `{ comp: EnrichedComponent }` (defined inline in `app/components/page.tsx`) |
 | `ADRViewer` | `'use client'` | Two-panel ADR browser: left sidebar (`w-72`) lists all 22 ADRs grouped by the 7 V2 categories with a search `Input`; grouping is built via inline `useMemo` (not `groupBy` util) — each ADR's `category` field is the key; sidebar sections render in `CATEGORY_ORDER` = `['core','access','tech-stack','product','roles-security','tooling','data-future']`; within each section ADRs are sorted by numeric ID (`.toSorted((a, b) => Number(a.id) - Number(b.id))`); section headings use `CATEGORY_LABELS` map (e.g. `'roles-security'` → `'Roles & Security'`, `'data-future'` → `'Data & Future'`); right panel renders the selected ADR's full markdown via `react-markdown + remark-gfm`; clicking a related ADR button (`relatedADRs[]`) navigates within the viewer; search filters by title and body | `ADRViewerProps { adrs: ADRMetaWithBody[] }` |
 | `ThemeStatusTable` | `'use client'` | Searchable, filterable table of theme entries: columns — status dot, name, docs count, plugins count, features count, hero image indicator, last updated; toolbar has a text search input and a `DotColor` filter dropdown (`all`/`green`/`yellow`/`red`); clicking a row opens a 480px slide-out detail panel with status badge, content counts, hero image, last updated, and Supabase link placeholder; `ThemeEntryStatus` values are `'empty' \| 'draft' \| 'published'`; `computeDotColor()` derives dot color: **green** = `status === 'published' && docsCount >= 5 && hasHeroImage`, **yellow** = `status === 'draft' && (docsCount > 0 \|\| pluginsCount > 0 \|\| featuresCount > 0)`, **red** = all other cases | `ThemeStatusTableProps { themes: ThemeEntry[] }` where `ThemeEntry = { slug, name, status: ThemeEntryStatus, docsCount, pluginsCount, featuresCount, hasHeroImage, lastUpdated }` |
+| `DependencyGraph` | `'use client'` | Two-tab SVG visualization component for the Dependencies page. **Package Dependencies tab:** bipartite graph with PACKAGES column on the left and APPS column on the right, connected by polyline edges routed through a midpoint; clicking a node highlights its edges and shows a tooltip listing affected apps (for package nodes) or dependent packages (for app nodes). **Phase Dependencies tab:** proportional horizontal bar chart of phases scaled by `estimatedWeeks`, with status-colored fills (done/in-progress/todo) and consecutive arrow connectors; a full-width Content track bar is rendered beneath the phase bars. | `DependencyGraphProps { phases: PhaseBlock[], packages: PackageNode[], apps: AppNode[], edges: DependencyEdge[] }` |
 
 ---
 
@@ -208,6 +211,46 @@ function isActive(href: string): boolean {
 ```
 
 Active nav items receive `bg-accent/10 text-accent` classes. Inactive items receive `text-text-secondary hover:bg-surface-hover hover:text-text-primary`.
+
+---
+
+## Root Layout
+
+`app/layout.tsx` — the async Server Component that wraps every page. It fetches all data needed for the global search index in a single `Promise.all`, constructs the `SearchItem[]` array, then renders `GlobalSearch` **outside** the flex shell so it overlays all content.
+
+**Data fetch:**
+
+```ts
+const [project, rawComponents, contentData, adrs] = await Promise.all([
+  getPhases(),
+  getComponents(),
+  getContentStatusEntries(),
+  getADRList(),
+]);
+```
+
+**Search index construction (4 item types):**
+
+| Item type | Source | `context` field |
+|-----------|--------|-----------------|
+| `task` | `project.phases[].tasks[]` | `Phase {id} • {status}` |
+| `component` | `rawComponents[]` | `comp.description` |
+| `theme` | `contentData.recentThemes[]` | `Last updated: {date}` |
+| `adr` | `adrs[]` | `{status} • {date}` |
+
+**Body render tree:**
+
+```
+<body>
+  <GlobalSearch searchIndex={searchIndex} />   ← outside flex, overlays all content
+  <div class="flex h-screen">
+    <Sidebar />
+    <main class="flex-1 overflow-y-auto px-8 py-6">
+      {children}
+    </main>
+  </div>
+</body>
+```
 
 ---
 
@@ -477,6 +520,78 @@ Exports: `TechStackItem` interface, `TechStackLayer` interface, `ArchitectureTab
 
 ---
 
+## Dependencies Page
+
+`app/dependencies/page.tsx` — the `/dependencies` route. A pure async Server Component. Fetches both data sources in parallel via `Promise.all` and delegates rendering to `DependencyGraph`.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  Page header: "Dependencies" title · phase count         │
+├──────────────────────────────────────────────────────────┤
+│  Fallback notice (amber) — shown when isFallback is true │
+├──────────────────────────────────────────────────────────┤
+│  DependencyGraph (client component)                      │
+│  ┌──────────────────────────────────────────────────┐    │
+│  │  [Package Dependencies]  [Phase Dependencies]    │    │
+│  ├──────────────────────────────────────────────────┤    │
+│  │  SVG visualization for selected tab              │    │
+│  └──────────────────────────────────────────────────┘    │
+└──────────────────────────────────────────────────────────┘
+```
+
+### Component Breakdown
+
+| Panel | Component / Implementation | Data source |
+|-------|---------------------------|-------------|
+| Page header | Inline `<h1>` + phase count | `phaseData?.phases.length` |
+| Fallback notice | Inline amber `<div>` with warning icon | `graphData.isFallback` — true when fewer package.json files exist than expected |
+| Graph | `DependencyGraph` | `getPhaseBlocks()` + `loadDependencyGraph()` |
+
+**Empty state condition:** shown when `phaseData === null && graphData.foundCount === 0` — renders a centered card with instructions to run `cc:scan` or create package.json files.
+
+**Fallback notice condition:** shown when `graphData.isFallback === true` — displays counts of found vs. expected package.json files.
+
+---
+
+## GlobalSearch Command Palette
+
+`components/GlobalSearch.tsx` — a `'use client'` component rendered at the body level in `app/layout.tsx`. It provides a keyboard-triggered command palette for searching all tracked entities.
+
+**Exports:** `SearchItemType`, `SearchItem`, `GlobalSearch`
+
+**Keyboard triggers:**
+
+| Key | Condition | Action |
+|-----|-----------|--------|
+| `Cmd+K` / `Ctrl+K` | always | toggle open/closed |
+| `/` | active element is not `input`/`textarea`/`contenteditable` | open |
+| `Escape` | palette is open | close |
+
+**Result grouping:**
+
+Results are grouped by type in `TYPE_ORDER = ['task', 'component', 'theme', 'adr']`. Each group shows at most 5 results. Empty groups are hidden. Matching is case-insensitive substring on `name` and `context` fields.
+
+| Type | Label | Lucide icon |
+|------|-------|-------------|
+| `task` | Tasks | `ListChecks` |
+| `component` | Components | `Blocks` |
+| `theme` | Themes | `Palette` |
+| `adr` | ADRs | `FileText` |
+
+**Overlay layout:**
+
+```
+fixed inset-0 z-50  bg-black/60 pt-[15vh]   ← backdrop (click to close)
+  └── max-w-xl  rounded-card  bg-surface-card
+        ├── Header row: Search icon · input · X button
+        └── Results (max-h-96, scrollable)
+              ├── Group: TYPE_LABELS heading (uppercase, muted)
+              │     └── Result rows: icon · name + context · type badge
+              └── "No results" empty state
+```
+
+---
+
 ## Tailwind CSS v4
 
 Command Center uses Tailwind CSS v4. Key differences from v3:
@@ -546,6 +661,8 @@ Paths are resolved with `path.join(process.cwd(), ...)` so they work from any CW
 | `getDesignSystemLayers()` | `Promise<LayerRow[]>` | Reads `components.json` wrapper object and groups entries by layer |
 | `getContentStatusEntries()` | `Promise<ContentMetrics>` | Reads `content-status.json` wrapper object and aggregates KPI totals |
 | `getInfraItems()` | `Promise<InfraItem[]>` | Matches 12 static infra definitions against `phases.json` task titles |
+| `getPhaseBlocks()` | `Promise<{ phases: PhaseBlock[], overallLabel: string } \| null>` | Derives `PhaseBlock[]` for `PhaseTimeline` and `DependencyGraph` from `phases.json`; returns `null` when file is missing |
+| `loadDependencyGraph()` | `Promise<DependencyGraphData>` | Reads `package.json` files under `apps/` and `packages/` directories, extracts `@cmsmasters/*` dependency references, and builds the bipartite graph; planned apps without a `package.json` are derived from `phases.json` task `.app` values; always returns a valid `DependencyGraphData` (never throws) |
 
 > **Runtime caveat — wrapper objects:** `components.json` and `content-status.json` are written by `cli/scan.ts` as wrapper objects `{ lastScanned, components: [] }` and `{ lastScanned, entries: [] }` respectively. The legacy functions `getComponents()` and `getContentStatus()` have incorrect generic types at runtime. The new functions `getDesignSystemLayers()` and `getContentStatusEntries()` read the wrapper shape directly via `readJson<{ components: ComponentSummary[] }>` / `readJson<{ entries: ContentStatus[] }>` to avoid mistyping. Do not edit the output files by hand — they are regenerated on every `cc:scan` run.
 
@@ -561,6 +678,10 @@ Paths are resolved with `path.join(process.cwd(), ...)` so they work from any CW
 | `ThemeItem` | `{ id, name, lastUpdated }` | Single theme entry in `ContentOverview` recent-themes mini list |
 | `InfraItem` | `{ label, done, taskTitle? }` | Single infra checklist row; `taskTitle` used as native tooltip |
 | `PhaseBlock` | `{ id, name, subtitle, status, progressPct, estimatedWeeks, isCurrent?, href }` | One phase card in `PhaseTimeline`; defined in `components/PhaseTimeline.tsx` |
+| `PackageNode` | `{ id, label, affectedApps: string[] }` | One shared package node in `DependencyGraph` (e.g. `@cmsmasters/ui`) |
+| `AppNode` | `{ id, label }` | One app node in `DependencyGraph` (e.g. `command-center`, `portal`) |
+| `DependencyEdge` | `{ from: string, to: string }` | Directed edge from a `PackageNode.id` to an `AppNode.id` |
+| `DependencyGraphData` | `{ packages, apps, edges, foundCount, totalExpected, isFallback }` | Full dependency graph payload returned by `loadDependencyGraph()`; `isFallback` is true when fewer `package.json` files exist than expected |
 
 ### phases.json Schema
 
