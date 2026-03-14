@@ -36,6 +36,14 @@ const TYPE_ICONS: Record<SearchItemType, React.ComponentType<{ size?: number; cl
   adr: FileText,
 };
 
+const PAGE_SHORTCUTS: Record<string, string> = {
+  '1': '/',
+  '2': '/phases',
+  '3': '/components',
+  '4': '/architecture',
+  '5': '/dependencies',
+};
+
 export function GlobalSearch({ searchIndex }: GlobalSearchProps): JSX.Element | null {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -53,6 +61,15 @@ export function GlobalSearch({ searchIndex }: GlobalSearchProps): JSX.Element | 
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent): void {
+      if (!isOpen && PAGE_SHORTCUTS[e.key]) {
+        const target = e.target as HTMLElement;
+        const tag = target.tagName.toLowerCase();
+        if (tag === 'input' || tag === 'textarea' || target.isContentEditable) return;
+        e.preventDefault();
+        router.push(PAGE_SHORTCUTS[e.key]);
+        return;
+      }
+
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setIsOpen((prev) => !prev);
@@ -75,7 +92,7 @@ export function GlobalSearch({ searchIndex }: GlobalSearchProps): JSX.Element | 
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, open, close]);
+  }, [isOpen, open, close, router]);
 
   useEffect(() => {
     if (isOpen) {
@@ -121,7 +138,7 @@ export function GlobalSearch({ searchIndex }: GlobalSearchProps): JSX.Element | 
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 pt-[15vh]"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-surface-app/80 pt-[15vh]"
       onClick={close}
     >
       <div

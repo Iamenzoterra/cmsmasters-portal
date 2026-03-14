@@ -1,12 +1,20 @@
 {
-  "lastScanned": "2026-03-13T22:29:44.719Z",
+  "lastScanned": "2026-03-14T14:41:25.039Z",
   "entries": [
     {
       "themeId": "infra",
       "pageId": "0",
       "status": "approved",
       "source": "placeholder",
-      "updatedAt": "2026-03-13T22:29:44.719Z",
+      "updatedAt": "2026-03-14T14:41:25.038Z",
+      "type": "doc"
+    },
+    {
+      "themeId": "command-center",
+      "pageId": "0",
+      "status": "approved",
+      "source": "placeholder",
+      "updatedAt": "2026-03-14T14:41:25.038Z",
       "type": "doc"
     },
     {
@@ -14,7 +22,7 @@
       "pageId": "1",
       "status": "review",
       "source": "placeholder",
-      "updatedAt": "2026-03-13T22:29:44.719Z",
+      "updatedAt": "2026-03-14T14:41:25.038Z",
       "type": "doc"
     },
     {
@@ -22,7 +30,7 @@
       "pageId": "1",
       "status": "review",
       "source": "placeholder",
-      "updatedAt": "2026-03-13T22:29:44.719Z",
+      "updatedAt": "2026-03-14T14:41:25.038Z",
       "type": "doc"
     },
     {
@@ -30,7 +38,7 @@
       "pageId": "1",
       "status": "review",
       "source": "placeholder",
-      "updatedAt": "2026-03-13T22:29:44.719Z",
+      "updatedAt": "2026-03-14T14:41:25.038Z",
       "type": "doc"
     },
     {
@@ -38,7 +46,7 @@
       "pageId": "1",
       "status": "approved",
       "source": "placeholder",
-      "updatedAt": "2026-03-13T22:29:44.719Z",
+      "updatedAt": "2026-03-14T14:41:25.038Z",
       "type": "doc"
     },
     {
@@ -46,7 +54,7 @@
       "pageId": "1",
       "status": "draft",
       "source": "placeholder",
-      "updatedAt": "2026-03-13T22:29:44.719Z",
+      "updatedAt": "2026-03-14T14:41:25.038Z",
       "type": "doc"
     },
     {
@@ -54,7 +62,7 @@
       "pageId": "2",
       "status": "draft",
       "source": "placeholder",
-      "updatedAt": "2026-03-13T22:29:44.719Z",
+      "updatedAt": "2026-03-14T14:41:25.038Z",
       "type": "doc"
     },
     {
@@ -62,7 +70,7 @@
       "pageId": "3",
       "status": "draft",
       "source": "placeholder",
-      "updatedAt": "2026-03-13T22:29:44.719Z",
+      "updatedAt": "2026-03-14T14:41:25.038Z",
       "type": "doc"
     },
     {
@@ -70,7 +78,7 @@
       "pageId": "4",
       "status": "draft",
       "source": "placeholder",
-      "updatedAt": "2026-03-13T22:29:44.719Z",
+      "updatedAt": "2026-03-14T14:41:25.038Z",
       "type": "doc"
     },
     {
@@ -78,7 +86,7 @@
       "pageId": "5",
       "status": "draft",
       "source": "placeholder",
-      "updatedAt": "2026-03-13T22:29:44.719Z",
+      "updatedAt": "2026-03-14T14:41:25.038Z",
       "type": "doc"
     },
     {
@@ -86,7 +94,7 @@
       "pageId": "5",
       "status": "draft",
       "source": "placeholder",
-      "updatedAt": "2026-03-13T22:29:44.719Z",
+      "updatedAt": "2026-03-14T14:41:25.038Z",
       "type": "doc"
     },
     {
@@ -94,7 +102,7 @@
       "pageId": "6",
       "status": "draft",
       "source": "placeholder",
-      "updatedAt": "2026-03-13T22:29:44.719Z",
+      "updatedAt": "2026-03-14T14:41:25.038Z",
       "type": "doc"
     },
     {
@@ -102,7 +110,7 @@
       "pageId": "6",
       "status": "draft",
       "source": "placeholder",
-      "updatedAt": "2026-03-13T22:29:44.719Z",
+      "updatedAt": "2026-03-14T14:41:25.038Z",
       "type": "doc"
     }
   ]

@@ -1,5 +1,5 @@
 {
-  "lastScanned": "2026-03-13T22:29:44.711Z",
+  "lastScanned": "2026-03-14T14:41:25.029Z",
   "components": [
     {
       "id": "P0-T1",
@@ -15,6 +15,54 @@
       "description": "Create full monorepo folder structure: apps/portal, apps/dashboard, apps/support, apps/studio, apps/admin, apps/api, packages/ui, packages/db, packages/auth, packages/api-client, packages/validators, packages/email.",
       "app": "infra",
       "status": "in-progress",
+      "phase": "0"
+    },
+    {
+      "id": "P0-T3",
+      "name": "Command Center app setup",
+      "description": "Bootstrap Command Center Next.js 15 app at apps/command-center with App Router, Tailwind CSS 4, TypeScript strict mode, port 4000 configuration.",
+      "app": "command-center",
+      "status": "done",
+      "phase": "0"
+    },
+    {
+      "id": "P0-T4",
+      "name": "phases.json creation",
+      "description": "Create workplan/phases.json with all 7 phases (0-6), project metadata, and full V2 task list. Serves as the primary data source for Command Center dashboards.",
+      "app": "command-center",
+      "status": "done",
+      "phase": "0"
+    },
+    {
+      "id": "P0-T5",
+      "name": "22 ADR files",
+      "description": "Create 22 Architecture Decision Record markdown files in workplan/adr/ covering all major architectural decisions: monorepo, auth, DB schema, design system, API strategy, deployment, etc.",
+      "app": "command-center",
+      "status": "done",
+      "phase": "0"
+    },
+    {
+      "id": "P0-T6",
+      "name": "CLI scanner (cc:scan)",
+      "description": "Implement cc:scan CLI script that traverses the monorepo, collects component counts, ADR status, phase progress, and writes scan results to workplan/scan-results.json.",
+      "app": "command-center",
+      "status": "done",
+      "phase": "0"
+    },
+    {
+      "id": "P0-T7",
+      "name": "CLI report (cc:report)",
+      "description": "Implement cc:report CLI script that reads scan results and phases.json, then outputs a formatted terminal report showing phase completion, component coverage, and blocking issues.",
+      "app": "command-center",
+      "status": "done",
+      "phase": "0"
+    },
+    {
+      "id": "P0-T8",
+      "name": "6 CC pages",
+      "description": "Build all 6 Command Center pages: Mission Control (overview), Phase Tracker (phases.json viewer), Components (design system status), Content (ADR/docs), Architecture (dependency graph), Dependencies (package audit).",
+      "app": "command-center",
+      "status": "done",
       "phase": "0"
     },
     {

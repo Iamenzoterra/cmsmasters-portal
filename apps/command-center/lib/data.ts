@@ -493,11 +493,12 @@ export async function loadDependencyGraph(): Promise<DependencyGraphData> {
 
   // ── 3. Build app nodes: discovered + planned from phases.json ───────────────
   const plannedApps = new Set<string>(SPEC_APPS);
+  const pkgIdSet = new Set(SPEC_PACKAGES);
   if (project) {
     for (const phase of project.phases) {
       for (const task of phase.tasks) {
         const app = task.app as string;
-        if (app && !['infra', 'ui', 'content'].includes(app)) {
+        if (app && !['infra', 'content'].includes(app) && !pkgIdSet.has(app)) {
           plannedApps.add(app);
         }
       }
