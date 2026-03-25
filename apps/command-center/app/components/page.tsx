@@ -8,6 +8,7 @@ import { cn } from '@/theme/utils';
 
 // ─── Layer keyword buckets (mirrored from data.ts) ────────────────────────────
 
+const INFRA_APPS = new Set(['infra', 'command-center', 'db', 'auth', 'email', 'validators', 'api-client']);
 const PRIMITIVE_KEYWORDS = ['primitive', 'token', 'atom', 'color', 'font', 'spacing', 'icon'];
 const DOMAIN_KEYWORDS = [
   'domain', 'button', 'badge', 'input', 'card', 'modal', 'select', 'checkbox', 'progress',
@@ -49,6 +50,7 @@ function buildHref(current: PageParams, overrides: Partial<PageParams>): string 
 // ─── Derivation helpers ───────────────────────────────────────────────────────
 
 function deriveLayer(comp: ComponentSummary): LayerName {
+  if (INFRA_APPS.has(comp.app)) return 'Infrastructure';
   const lower = comp.name.toLowerCase();
   if (PRIMITIVE_KEYWORDS.some((kw) => lower.includes(kw))) return 'Primitives';
   if (DOMAIN_KEYWORDS.some((kw) => lower.includes(kw))) return 'Domain';
@@ -69,12 +71,13 @@ type EnrichedComponent = ComponentSummary & {
   hasTests: boolean;
 };
 
-const LAYER_ORDER: Record<LayerName, number> = { Primitives: 0, Domain: 1, Layouts: 2 };
+const LAYER_ORDER: Record<LayerName, number> = { Primitives: 0, Domain: 1, Layouts: 2, Infrastructure: 3 };
 
 const LAYER_BADGE: Record<LayerName, string> = {
-  Primitives: 'bg-blue-500/20 text-blue-400',
-  Domain:     'bg-purple-500/20 text-purple-400',
-  Layouts:    'bg-amber-500/20 text-amber-400',
+  Primitives:     'bg-blue-500/20 text-blue-400',
+  Domain:         'bg-purple-500/20 text-purple-400',
+  Layouts:        'bg-amber-500/20 text-amber-400',
+  Infrastructure: 'bg-zinc-500/20 text-zinc-400',
 };
 
 const STATUS_BADGE: Record<string, string> = {
@@ -117,10 +120,11 @@ function TabBar({ params }: { params: PageParams }): React.ReactElement {
 
 function FilterBar({ params }: { params: PageParams }): React.ReactElement {
   const layers: { label: string; value: string }[] = [
-    { label: 'All',        value: 'all'        },
-    { label: 'Primitives', value: 'Primitives' },
-    { label: 'Domain',     value: 'Domain'     },
-    { label: 'Layouts',    value: 'Layouts'    },
+    { label: 'All',            value: 'all'            },
+    { label: 'Primitives',     value: 'Primitives'     },
+    { label: 'Domain',         value: 'Domain'         },
+    { label: 'Layouts',        value: 'Layouts'        },
+    { label: 'Infrastructure', value: 'Infrastructure' },
   ];
 
   return (
@@ -199,7 +203,7 @@ function ComponentCard({ comp }: { comp: EnrichedComponent }): React.ReactElemen
 // ─── GridView ─────────────────────────────────────────────────────────────────
 
 function GridView({ components }: { components: EnrichedComponent[] }): React.ReactElement {
-  const layers: LayerName[] = ['Primitives', 'Domain', 'Layouts'];
+  const layers: LayerName[] = ['Primitives', 'Domain', 'Layouts', 'Infrastructure'];
   const buckets = Object.fromEntries(
     layers.map((layer) => [layer, components.filter((c) => c.derivedLayer === layer)]),
   ) as Record<LayerName, EnrichedComponent[]>;

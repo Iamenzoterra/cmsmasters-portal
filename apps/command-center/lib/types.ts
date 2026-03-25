@@ -53,7 +53,7 @@ export interface Project {
 // ─── packages/validators/src/components.ts schema ────────────────────────────
 
 export type ComponentStatus = 'planned' | 'in-progress' | 'done' | 'blocked';
-export type ComponentLayer = 'primitives' | 'domain' | 'layouts';
+export type ComponentLayer = 'primitives' | 'domain' | 'layouts' | 'infrastructure';
 
 export interface Component {
   id: string;
@@ -161,7 +161,7 @@ export interface AppCardApp {
 
 // ─── DesignSystemProgress ─────────────────────────────────────────────────────
 
-export type LayerName = 'Primitives' | 'Domain' | 'Layouts';
+export type LayerName = 'Primitives' | 'Domain' | 'Layouts' | 'Infrastructure';
 
 export interface LayerRow {
   layer: LayerName;

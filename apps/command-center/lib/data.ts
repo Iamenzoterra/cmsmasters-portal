@@ -242,14 +242,16 @@ export async function getAppCards(): Promise<AppCardApp[]> {
 
 // ─── Design system layers ─────────────────────────────────────────────────────
 
+const INFRA_APPS = new Set(['infra', 'command-center', 'db', 'auth', 'email', 'validators', 'api-client']);
 const PRIMITIVE_KEYWORDS = ['primitive', 'token', 'atom', 'color', 'font', 'spacing', 'icon'];
 const DOMAIN_KEYWORDS = [
   'domain', 'button', 'badge', 'input', 'card', 'modal', 'select', 'checkbox', 'progress',
 ];
 
 /**
- * Buckets components from components.json into three design-system layers and
- * returns LayerRow[] with completion counts. Returns null when the file is missing.
+ * Buckets components from components.json into four layers (infrastructure +
+ * three design-system layers) and returns LayerRow[] with completion counts.
+ * Returns null when the file is missing.
  */
 export async function getDesignSystemLayers(): Promise<LayerRow[] | null> {
   const data = await readJson<{ components: ComponentSummary[] }>(COMPONENTS_PATH);
@@ -257,12 +259,17 @@ export async function getDesignSystemLayers(): Promise<LayerRow[] | null> {
   if (!components) return null;
 
   const buckets: Record<LayerName, ComponentSummary[]> = {
-    Primitives: [],
-    Domain:     [],
-    Layouts:    [],
+    Primitives:     [],
+    Domain:         [],
+    Layouts:        [],
+    Infrastructure: [],
   };
 
   for (const comp of components) {
+    if (INFRA_APPS.has(comp.app)) {
+      buckets.Infrastructure.push(comp);
+      continue;
+    }
     const lower = comp.name.toLowerCase();
     if (PRIMITIVE_KEYWORDS.some((kw) => lower.includes(kw))) {
       buckets.Primitives.push(comp);
@@ -273,6 +280,7 @@ export async function getDesignSystemLayers(): Promise<LayerRow[] | null> {
     }
   }
 
+  // Only return design-system layers — infrastructure is excluded
   const layers: LayerName[] = ['Primitives', 'Domain', 'Layouts'];
   return layers.map((layer) => {
     const comps = buckets[layer];

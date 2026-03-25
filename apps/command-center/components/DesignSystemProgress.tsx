@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '../theme/utils';
 import { ProgressBar } from '../ui/ProgressBar';
 
-export type LayerName = 'Primitives' | 'Domain' | 'Layouts';
+export type LayerName = 'Primitives' | 'Domain' | 'Layouts' | 'Infrastructure';
 
 export interface LayerRow {
   layer: LayerName;
