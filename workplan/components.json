@@ -1,5 +1,5 @@
 {
-  "lastScanned": "2026-03-26T21:09:54.628Z",
+  "lastScanned": "2026-03-26T21:24:59.371Z",
   "components": [
     {
       "id": "ui-primitives-button",
@@ -15,7 +15,7 @@
       "usedBy": [],
       "loc": 219,
       "filePath": "packages/ui/src/primitives/button.tsx",
-      "propsInterface": "type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> &\n  VariantProps<typeof buttonVariants> & {\n    asChild?: boolean"
+      "propsInterface": "type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> &\n  VariantProps<typeof buttonVariants> & {\n    asChild?: boolean;\n    loading?: boolean;\n    size?: 'mini' | 'sm' | 'default' | 'lg' | 'xl' | null;\n  }"
     },
     {
       "id": "P0-T1",

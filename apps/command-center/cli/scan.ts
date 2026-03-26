@@ -118,7 +118,8 @@ function extractPropsInterface(filePath: string): string | null {
   if (ifaceMatch) return ifaceMatch[0];
 
   // Try type alias: type ButtonProps = ... & { ... };
-  const typeMatch = content.match(/(?:export\s+)?type\s+(\w+Props)\s*=\s*([\s\S]*?);/);
+  // Use \}; to match closing brace+semicolon (skips inner prop semicolons)
+  const typeMatch = content.match(/(?:export\s+)?type\s+(\w+Props)\s*=\s*([\s\S]*?\});/);
   if (typeMatch) return `type ${typeMatch[1]} = ${typeMatch[2].trim()}`;
 
   return null;
