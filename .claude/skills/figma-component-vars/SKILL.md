@@ -228,11 +228,47 @@ Examples:
 
 ## Critical rules
 
-1. **Always read actual values first** — never guess component dimensions
-2. **Alias general tokens** when an exact match exists (spacing, radii, typography)
-3. **Direct values** only when no general token matches
-4. **One variable per unique value** — if sm/default/lg share the same font-size, use one variable without size suffix
-5. **Colors are separate** — managed in Portal DS Semantic collection, not here
-6. **After creating vars → run `/sync-tokens`** to get them into tokens.css
-7. **Skip properties already bound** — don't overwrite existing bindings
-8. **Report before binding** — show the gap table to the user, get confirmation before creating/binding
+### ⛔ NEVER GUESS — ALWAYS READ FROM FIGMA
+
+1. **NEVER invent, assume, or hardcode values** — every number (height, padding, font-size, radius, gap, opacity) MUST come from a Figma API read
+2. **NEVER map CSS variables by guessing** — read `boundVariables` from Figma nodes to get exact variable names, then apply naming rules to convert to CSS custom property names
+3. **If a value is unclear, re-read Figma** — do another `use_figma` call, don't estimate
+
+### Color bindings workflow
+When creating a component in code that uses Figma variables for colors:
+1. Read ALL variant×state combinations via `use_figma` Plugin API
+2. For each variant/state, extract `boundVariables.fills` (bg), `boundVariables.strokes` (border), text node `boundVariables.fills` (text color), and `opacity`
+3. Convert Figma variable names to CSS custom property names using naming rules from `/sync-tokens`
+4. Verify EVERY converted name exists in `tokens.css` before using it
+5. If a variable is missing from tokens.css — run `/sync-tokens` first, don't add it manually
+
+### Opacity matters
+Figma stores opacity on fills separately. Ghost buttons have `opacity: 0.0001` (essentially transparent), Outline has `opacity: 0.1`. These must be reflected in code:
+```
+Ghost default:  bg-[hsl(var(--ghost)/0.0001)]     ← opacity from Figma
+Ghost hover:    bg-[hsl(var(--ghost-hover)/0.05)]  ← opacity from Figma
+Outline default: bg-[hsl(var(--outline)/0.1)]      ← opacity from Figma
+```
+
+### Dark mode on CC
+Command Center has `.dark` class on `<html>` which overrides `:root` CSS vars. When previewing portal components in CC, the `LightModeWrapper` in `component-preview.tsx` re-applies `:root` values. If tokens.css is updated, the `LIGHT_MODE_OVERRIDES` object in `component-preview.tsx` MUST also be updated.
+
+### Other rules
+4. **Alias general tokens** when an exact match exists (spacing, radii, typography)
+5. **Direct values** only when no general token matches
+6. **One variable per unique value** — if sm/default/lg share the same font-size, use one variable without size suffix
+7. **Colors are separate** — managed via `boundVariables` on component, not created here
+8. **After creating vars → run `/sync-tokens`** to get them into tokens.css
+9. **Skip properties already bound** — don't overwrite existing bindings
+10. **Report before binding** — show the gap table to the user, get confirmation before creating/binding
+
+## Lessons learned (real bugs from past sessions)
+
+| Bug | Root cause | Fix |
+|-----|-----------|-----|
+| Ghost button invisible on white | Used `bg-transparent` instead of reading Figma opacity (~0%) | Always read `opacity` from Figma fills |
+| Secondary button dark on CC | `.dark` CSS overrides `:root` vars | LightModeWrapper with explicit `:root` values |
+| Outline border wrong color | Used `--border` instead of `--border-3` | Read `boundVariables.strokes` to get exact var name |
+| Destructive focus ring wrong | Used `--ring` instead of `--ring-error` | Read `effects` binding — destructive uses `focus/ring error` |
+| Font sizes not applying | Tailwind v4 `text-[--var]` interprets as color | Use inline styles for sizing OR `text-[length:var(--x)]` |
+| TW v4 bare `h-[--var]` broken | Tailwind skips class generation for bare CSS custom properties | Use inline `style={{ height: 'var(--x)' }}` for sizing |

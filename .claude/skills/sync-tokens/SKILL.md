@@ -173,11 +173,30 @@ Output path: `packages/ui/src/theme/tokens.css`
 
 ## Critical rules
 
-1. **DO NOT touch** `apps/command-center/` theme — CC has its own tokens
-2. **tokens.css is for portal apps only**: portal, dashboard, support, studio, admin
-3. **HSL format**: `228 54% 20%` — NO `hsl()` wrapper, NO commas — shadcn convention
-4. **Sizing in px**: `--button-height-sm: 32px` not just `32`
-5. **Font-weight stays numeric**: 400, 500, 600 — no px suffix
-6. **Skip**: raw colors collection, hacks*, obra-shadcn-docs/*
-7. **Preserve order**: keep sections grouped logically, shadcn vars first
-8. **Verify after write**: count vars in output, compare with previous count, report delta
+### ⛔ NEVER GUESS — ALWAYS READ FROM FIGMA
+
+1. **EVERY value in tokens.css MUST come from a Figma API read** — no hardcoded values, no estimates
+2. **If a `use_figma` call is truncated or fails** — re-run with smaller batches, don't fill in gaps from memory
+3. **After writing tokens.css, verify** by diffing against the previous version — every change must trace to a Figma variable
+
+### Format rules
+4. **DO NOT touch** `apps/command-center/` theme — CC has its own tokens
+5. **tokens.css is for portal apps only**: portal, dashboard, support, studio, admin
+6. **HSL format**: `228 54% 20%` — NO `hsl()` wrapper, NO commas — shadcn convention
+7. **Sizing in px**: `--button-height-sm: 32px` not just `32`
+8. **Font-weight stays numeric**: 400, 500, 600 — no px suffix
+9. **Skip**: raw colors collection, hacks*, obra-shadcn-docs/*
+10. **Preserve order**: keep sections grouped logically, shadcn vars first
+11. **Verify after write**: count vars in output, compare with previous count, report delta
+
+### Post-sync: update LightModeWrapper
+After updating tokens.css, check if any `:root` values used in `apps/command-center/app/components/[id]/component-preview.tsx` → `LIGHT_MODE_OVERRIDES` have changed. If yes, update the inline overrides to match. This ensures CC preview shows correct light-mode portal colors.
+
+## Lessons learned
+
+| Issue | Fix |
+|-------|-----|
+| STRING vars (font-family) return empty from Plugin API | Use `resolveForConsumer()` or hardcode known fonts from collection metadata |
+| Typography needs separate pass | Obra typography collection has headings/paragraphs/caption/monospace — read ALL of them |
+| Component tokens (Button/*) mixed across collections | Button/* sizing lives in spacing/typography/radii collections, not in a separate "Button" collection |
+| Truncated output from `use_figma` | Split reads by collection — one API call per collection to avoid truncation |
