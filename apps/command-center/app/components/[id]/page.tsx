@@ -4,7 +4,7 @@ import { getComponents } from '@/lib/data';
 import type { ComponentSummary, LayerName } from '@/lib/types';
 import { StatusDots } from '@/ui/StatusDots';
 import { cn } from '@/theme/utils';
-import { ComponentPreview } from './component-preview';
+import { ComponentPreview, LightModeWrapper } from './component-preview';
 
 // ─── Layer derivation (shared with page.tsx — extract in Phase 5) ────────────
 
@@ -142,9 +142,9 @@ function PreviewPanel({ comp, isUiComponent }: { comp: ComponentSummary; isUiCom
     <div className="bg-surface-card rounded-card p-6">
       <h2 className="text-text-primary font-semibold text-sm mb-3">Preview</h2>
       <div className="rounded-lg border border-border overflow-hidden">
-        <div className="bg-white p-8 min-h-[200px]">
+        <LightModeWrapper>
           <ComponentPreview componentId={comp.id} />
-        </div>
+        </LightModeWrapper>
       </div>
       {comp.filePath && (
         <p className="font-mono text-xs text-text-muted mt-2">{comp.filePath}</p>

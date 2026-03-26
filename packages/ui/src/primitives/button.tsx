@@ -15,43 +15,55 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        // Figma: fills=general/primary, text=general/primary foreground
+        // Figma: Default fills=general/primary, text=general/primary foreground
+        //        Hover  fills=unofficial/primary hover
+        //        Focus  effects=focus/ring
+        //        Disabled opacity 50%
         primary: [
           'bg-[hsl(var(--primary))]',
           'text-[hsl(var(--primary-foreground))]',
           'hover:bg-[hsl(var(--primary-hover))]',
-          'focus-visible:ring-[hsl(var(--primary))]',
+          'focus-visible:ring-[hsl(var(--ring))]',
         ],
-        // Figma: fills=general/secondary, text=general/secondary foreground
+        // Figma: Default fills=general/secondary, text=general/secondary foreground
+        //        Hover  fills=unofficial/secondary hover
         secondary: [
           'bg-[hsl(var(--secondary))]',
           'text-[hsl(var(--secondary-foreground))]',
           'hover:bg-[hsl(var(--secondary-hover))]',
-          'focus-visible:ring-[hsl(var(--secondary))]',
-        ],
-        // Figma: fills=unofficial/outline, text=general/foreground, strokes=unofficial/border 3
-        outline: [
-          'border border-[hsl(var(--border))]',
-          'text-[hsl(var(--foreground))]',
-          'bg-[hsl(var(--outline))]',
-          'hover:bg-[hsl(var(--outline-hover)/0.03)]',
-          'focus-visible:ring-[hsl(var(--border))]',
-        ],
-        // Figma: fills=unofficial/ghost (transparent), text=unofficial/ghost foreground
-        ghost: [
-          'text-[hsl(var(--ghost-foreground))]',
-          'bg-transparent',
-          'hover:bg-[hsl(var(--ghost-hover)/0.05)]',
           'focus-visible:ring-[hsl(var(--ring))]',
         ],
-        // Figma: fills=general/destructive, text=general/destructive foreground
+        // Figma: Default fills=unofficial/outline (opacity 10%), strokes=unofficial/border 3, text=general/foreground
+        //        Hover  fills=unofficial/outline hover (opacity 3.3%), strokes=unofficial/border 3
+        //        Focus  strokes=unofficial/border 4, effects=focus/ring
+        outline: [
+          'border border-[hsl(var(--border-3))]',
+          'bg-[hsl(var(--outline)/0.1)]',
+          'text-[hsl(var(--foreground))]',
+          'hover:bg-[hsl(var(--outline-hover)/0.03)]',
+          'focus-visible:border-[hsl(var(--border-4))]',
+          'focus-visible:ring-[hsl(var(--ring))]',
+        ],
+        // Figma: Default fills=unofficial/ghost (opacity ~0%), text=unofficial/ghost foreground
+        //        Hover  fills=unofficial/ghost hover (opacity 5%), text=general/foreground
+        //        Focus  effects=focus/ring
+        ghost: [
+          'bg-[hsl(var(--ghost)/0.0001)]',
+          'text-[hsl(var(--ghost-foreground))]',
+          'hover:bg-[hsl(var(--ghost-hover)/0.05)]',
+          'hover:text-[hsl(var(--foreground))]',
+          'focus-visible:ring-[hsl(var(--ring))]',
+        ],
+        // Figma: Default fills=general/destructive, text=general/destructive foreground
+        //        Hover  same fills (no change in Figma)
+        //        Focus  effects=focus/ring error
         destructive: [
           'bg-[hsl(var(--destructive))]',
           'text-[hsl(var(--destructive-foreground))]',
           'hover:bg-[hsl(var(--destructive)/0.9)]',
-          'focus-visible:ring-[hsl(var(--destructive))]',
+          'focus-visible:ring-[hsl(var(--ring-error))]',
         ],
-        // Portal DS branded CTA
+        // Portal DS: Button/cta-bg, Button/cta-fg (not in Obra)
         cta: [
           'bg-[hsl(var(--button-cta-bg))]',
           'text-[hsl(var(--button-cta-fg))]',
