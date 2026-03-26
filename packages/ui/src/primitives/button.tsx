@@ -4,6 +4,8 @@ import { cva, type VariantProps } from 'class-variance-authority';
 
 import { cn } from '../lib/utils';
 
+// Colors stay as Tailwind classes (hsl(var()) works fine)
+// Sizing uses inline styles (bare --var syntax broken in TW v4)
 const buttonVariants = cva(
   [
     'inline-flex items-center justify-center whitespace-nowrap font-medium',
@@ -52,80 +54,82 @@ const buttonVariants = cva(
           'focus-visible:ring-[hsl(var(--button-cta-bg))]',
         ],
       },
-      size: {
-        mini: [
-          'h-[--button-height-mini]',
-          'px-[--button-padding-x-mini]',
-          'py-[--button-padding-y-mini]',
-        ],
-        sm: [
-          'h-[--button-height-sm]',
-          'px-[--button-padding-x-sm]',
-          'py-[--button-padding-y-sm]',
-        ],
-        default: [
-          'h-[--button-height-default]',
-          'px-[--button-padding-x-default]',
-          'py-[--button-padding-y-default]',
-        ],
-        lg: [
-          'h-[--button-height-lg]',
-          'px-[--button-padding-x-lg]',
-          'py-[--button-padding-y-lg]',
-        ],
-        xl: [
-          'h-[--button-height-xl]',
-          'px-[--button-padding-x-xl]',
-          'py-[--button-padding-y-xl]',
-        ],
-      },
       roundness: {
-        default: 'rounded-[--button-radius]',
-        pill: 'rounded-[--button-radius-pill]',
+        default: '',
+        pill: '',
       },
     },
     defaultVariants: {
       variant: 'primary',
-      size: 'default',
       roundness: 'default',
     },
   },
 );
 
-// Font-size, line-height, gap can't use bare CSS var syntax in Tailwind v4.
-// We apply them via inline style keyed by size.
+// All sizing applied via inline styles — Tailwind v4 bare var syntax is broken
 const SIZE_STYLES: Record<string, React.CSSProperties> = {
   mini: {
+    height: 'var(--button-height-mini)',
+    paddingLeft: 'var(--button-padding-x-mini)',
+    paddingRight: 'var(--button-padding-x-mini)',
+    paddingTop: 'var(--button-padding-y-mini)',
+    paddingBottom: 'var(--button-padding-y-mini)',
     fontSize: 'var(--button-font-size-mini)',
     lineHeight: 'var(--button-line-height-mini)',
     gap: 'var(--button-gap-sm)',
   },
   sm: {
+    height: 'var(--button-height-sm)',
+    paddingLeft: 'var(--button-padding-x-sm)',
+    paddingRight: 'var(--button-padding-x-sm)',
+    paddingTop: 'var(--button-padding-y-sm)',
+    paddingBottom: 'var(--button-padding-y-sm)',
     fontSize: 'var(--button-font-size)',
     lineHeight: 'var(--button-line-height)',
     gap: 'var(--button-gap-sm)',
   },
   default: {
+    height: 'var(--button-height-default)',
+    paddingLeft: 'var(--button-padding-x-default)',
+    paddingRight: 'var(--button-padding-x-default)',
+    paddingTop: 'var(--button-padding-y-default)',
+    paddingBottom: 'var(--button-padding-y-default)',
     fontSize: 'var(--button-font-size)',
     lineHeight: 'var(--button-line-height)',
     gap: 'var(--button-gap)',
   },
   lg: {
+    height: 'var(--button-height-lg)',
+    paddingLeft: 'var(--button-padding-x-lg)',
+    paddingRight: 'var(--button-padding-x-lg)',
+    paddingTop: 'var(--button-padding-y-lg)',
+    paddingBottom: 'var(--button-padding-y-lg)',
     fontSize: 'var(--button-font-size)',
     lineHeight: 'var(--button-line-height)',
     gap: 'var(--button-gap)',
   },
   xl: {
+    height: 'var(--button-height-xl)',
+    paddingLeft: 'var(--button-padding-x-xl)',
+    paddingRight: 'var(--button-padding-x-xl)',
+    paddingTop: 'var(--button-padding-y-xl)',
+    paddingBottom: 'var(--button-padding-y-xl)',
     fontSize: 'var(--button-font-size-xl)',
     lineHeight: 'var(--button-line-height-xl)',
     gap: 'var(--button-gap)',
   },
 };
 
+const ROUNDNESS_STYLES: Record<string, React.CSSProperties> = {
+  default: { borderRadius: 'var(--button-radius)' },
+  pill: { borderRadius: 'var(--button-radius-pill)' },
+};
+
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean;
     loading?: boolean;
+    size?: 'mini' | 'sm' | 'default' | 'lg' | 'xl' | null;
   };
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -146,15 +150,21 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ) => {
     const Comp = asChild ? Slot : 'button';
     const sizeKey = size ?? 'default';
-    const sizeStyle = SIZE_STYLES[sizeKey] ?? SIZE_STYLES.default;
+    const roundnessKey = roundness ?? 'default';
+
+    const tokenStyle: React.CSSProperties = {
+      ...(SIZE_STYLES[sizeKey] ?? SIZE_STYLES.default),
+      ...(ROUNDNESS_STYLES[roundnessKey] ?? ROUNDNESS_STYLES.default),
+      ...style,
+    };
 
     return (
       <Comp
-        className={cn(buttonVariants({ variant, size, roundness, className }))}
+        className={cn(buttonVariants({ variant, roundness, className }))}
         ref={ref}
         disabled={disabled || loading}
         aria-busy={loading || undefined}
-        style={{ ...sizeStyle, ...style }}
+        style={tokenStyle}
         {...props}
       >
         {loading && (
