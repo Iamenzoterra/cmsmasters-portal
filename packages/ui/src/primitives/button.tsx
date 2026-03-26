@@ -15,38 +15,43 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
+        // Figma: fills=general/primary, text=general/primary foreground
         primary: [
-          'bg-[hsl(var(--button-primary-bg))]',
-          'text-[hsl(var(--button-primary-fg))]',
-          'hover:bg-[hsl(var(--button-primary-hover))]',
-          'focus-visible:ring-[hsl(var(--button-primary-bg))]',
+          'bg-[hsl(var(--primary))]',
+          'text-[hsl(var(--primary-foreground))]',
+          'hover:bg-[hsl(var(--primary-hover))]',
+          'focus-visible:ring-[hsl(var(--primary))]',
         ],
+        // Figma: fills=general/secondary, text=general/secondary foreground
         secondary: [
-          'bg-[hsl(var(--button-secondary-bg))]',
-          'text-[hsl(var(--button-secondary-fg))]',
-          'hover:bg-[hsl(var(--button-secondary-hover))]',
-          'focus-visible:ring-[hsl(var(--button-secondary-bg))]',
+          'bg-[hsl(var(--secondary))]',
+          'text-[hsl(var(--secondary-foreground))]',
+          'hover:bg-[hsl(var(--secondary-hover))]',
+          'focus-visible:ring-[hsl(var(--secondary))]',
         ],
+        // Figma: fills=unofficial/outline, text=general/foreground, strokes=unofficial/border 3
         outline: [
-          'border border-[hsl(var(--button-outline-border))]',
-          'text-[hsl(var(--button-outline-fg))]',
-          'bg-transparent',
-          'hover:bg-[hsl(var(--button-outline-border)/0.08)]',
-          'focus-visible:ring-[hsl(var(--button-outline-border))]',
-        ],
-        ghost: [
+          'border border-[hsl(var(--border))]',
           'text-[hsl(var(--foreground))]',
+          'bg-[hsl(var(--outline))]',
+          'hover:bg-[hsl(var(--outline-hover)/0.03)]',
+          'focus-visible:ring-[hsl(var(--border))]',
+        ],
+        // Figma: fills=unofficial/ghost (transparent), text=unofficial/ghost foreground
+        ghost: [
+          'text-[hsl(var(--ghost-foreground))]',
           'bg-transparent',
-          'hover:bg-[hsl(var(--accent))]',
-          'hover:text-[hsl(var(--accent-foreground))]',
+          'hover:bg-[hsl(var(--ghost-hover)/0.05)]',
           'focus-visible:ring-[hsl(var(--ring))]',
         ],
+        // Figma: fills=general/destructive, text=general/destructive foreground
         destructive: [
           'bg-[hsl(var(--destructive))]',
           'text-[hsl(var(--destructive-foreground))]',
           'hover:bg-[hsl(var(--destructive)/0.9)]',
           'focus-visible:ring-[hsl(var(--destructive))]',
         ],
+        // Portal DS branded CTA
         cta: [
           'bg-[hsl(var(--button-cta-bg))]',
           'text-[hsl(var(--button-cta-fg))]',
