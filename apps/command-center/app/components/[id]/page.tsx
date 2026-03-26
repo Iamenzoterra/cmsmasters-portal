@@ -4,6 +4,7 @@ import { getComponents } from '@/lib/data';
 import type { ComponentSummary, LayerName } from '@/lib/types';
 import { StatusDots } from '@/ui/StatusDots';
 import { cn } from '@/theme/utils';
+import { ComponentPreview } from './component-preview';
 
 // ─── Layer derivation (shared with page.tsx — extract in Phase 5) ────────────
 
@@ -141,13 +142,8 @@ function PreviewPanel({ comp, isUiComponent }: { comp: ComponentSummary; isUiCom
     <div className="bg-surface-card rounded-card p-6">
       <h2 className="text-text-primary font-semibold text-sm mb-3">Preview</h2>
       <div className="rounded-lg border border-border overflow-hidden">
-        <div className="bg-white p-8 flex items-center justify-center min-h-[200px]">
-          <div className="text-center">
-            <p className="text-zinc-500 text-sm">Component preview will render here</p>
-            <p className="text-zinc-400 text-xs mt-1">
-              Waiting for packages/ui/src/{comp.layer ?? 'primitives'}/{comp.id.toLowerCase()}.tsx
-            </p>
-          </div>
+        <div className="bg-white p-8 min-h-[200px]">
+          <ComponentPreview componentId={comp.id} />
         </div>
       </div>
       {comp.filePath && (
