@@ -238,7 +238,7 @@ function FilterBar({ params }: { params: PageParams }): React.ReactElement {
 
 function ComponentCard({ comp }: { comp: EnrichedComponent }): React.ReactElement {
   return (
-    <div className="bg-surface-card rounded-card p-4 flex flex-col gap-2">
+    <Link href={`/components/${comp.id}`} className="bg-surface-card rounded-card p-4 flex flex-col gap-2 hover:bg-surface-hover transition-colors">
       <div className="flex items-start justify-between gap-2">
         <span className="text-text-primary font-medium text-sm leading-tight">{comp.name}</span>
         <span
@@ -267,7 +267,7 @@ function ComponentCard({ comp }: { comp: EnrichedComponent }): React.ReactElemen
           )}
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -374,7 +374,11 @@ function ListView({
               key={comp.id}
               className="border-b border-border/50 hover:bg-surface-hover/30 transition-colors"
             >
-              <td className="py-2 pr-4 text-text-primary">{comp.name}</td>
+              <td className="py-2 pr-4">
+                <Link href={`/components/${comp.id}`} className="text-text-primary hover:text-blue-400 transition-colors">
+                  {comp.name}
+                </Link>
+              </td>
               <td className="py-2 pr-4">
                 <span className={cn('text-xs px-2 py-0.5 rounded-badge', LAYER_BADGE[comp.derivedLayer])}>
                   {comp.derivedLayer}
