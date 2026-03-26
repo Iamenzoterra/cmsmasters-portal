@@ -34,6 +34,7 @@ Command Center **imports** tokens.css only to render `@cmsmasters/ui` components
 - **Color in Tailwind**: `bg-[hsl(var(--button-primary-bg))]` — need `hsl()` wrapper in class because token stores raw HSL triplet
 - **STRING variables in Figma**: need `resolveForConsumer` or separate fetch — Plugin API returns empty for font-family otherwise
 - **Aliases matter**: component vars (Button/radius) should alias general tokens (rounded-lg), not duplicate values
+- **Tailwind v4 bare var syntax**: `h-[--button-height-sm]` NOT `h-[var(--button-height-sm)]` — var() wrapper causes TW to skip class generation
 
 ## Figma Token Sync
 Use the `/sync-tokens` skill. It automates the full pipeline:
