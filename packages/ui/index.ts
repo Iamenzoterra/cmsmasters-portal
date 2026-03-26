@@ -1,2 +1,1 @@
-// @cmsmasters/ui — barrel export
-// Components are re-exported here as they are implemented in Phase C.
+export { Button, buttonVariants, type ButtonProps } from './src/primitives/button';
