@@ -1,6 +1,22 @@
 {
-  "lastScanned": "2026-03-26T12:44:58.410Z",
+  "lastScanned": "2026-03-26T19:10:36.159Z",
   "components": [
+    {
+      "id": "ui-primitives-button",
+      "name": "Button",
+      "description": "primitives component",
+      "app": "ui",
+      "status": "done",
+      "phase": "C",
+      "source": "filesystem",
+      "layer": "primitives",
+      "hasStory": true,
+      "hasTests": false,
+      "usedBy": [],
+      "loc": 173,
+      "filePath": "packages/ui/src/primitives/button.tsx",
+      "propsInterface": null
+    },
     {
       "id": "P0-T1",
       "name": "Nx monorepo init",
@@ -141,7 +157,7 @@
       "name": "Primitive — Button",
       "description": "Build Button primitive using shadcn/ui base — variants (default, destructive, outline, ghost, link), sizes (sm, md, lg), loading state, icon support.",
       "app": "ui",
-      "status": "planned",
+      "status": "done",
       "phase": "1",
       "source": "phases-json"
     },

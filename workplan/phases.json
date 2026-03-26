@@ -36,7 +36,7 @@
           "app": "command-center",
           "group": "setup",
           "description": "Bootstrap Command Center Next.js 15 app at apps/command-center with App Router, Tailwind CSS 4, TypeScript strict mode, port 4000 configuration.",
-          "completedAt": "2026-03-26T12:41:17.038Z"
+          "completedAt": "2026-03-26T17:49:22.726Z"
         },
         {
           "id": "P0-T4",
@@ -46,7 +46,7 @@
           "app": "command-center",
           "group": "data",
           "description": "Create workplan/phases.json with all 7 phases (0-6), project metadata, and full V2 task list. Serves as the primary data source for Command Center dashboards.",
-          "completedAt": "2026-03-26T12:21:18.571Z"
+          "completedAt": "2026-03-26T12:44:58.405Z"
         },
         {
           "id": "P0-T5",
@@ -86,7 +86,7 @@
           "app": "command-center",
           "group": "pages",
           "description": "Build all 6 Command Center pages: Mission Control (overview), Phase Tracker (phases.json viewer), Components (design system status), Content (ADR/docs), Architecture (dependency graph), Dependencies (package audit).",
-          "completedAt": "2026-03-26T12:44:41.626Z"
+          "completedAt": "2026-03-26T18:55:31.547Z"
         }
       ],
       "status": "in-progress"
@@ -163,10 +163,11 @@
           "id": "P1-T8",
           "phase": 1,
           "title": "Primitive — Button",
-          "status": "todo",
+          "status": "done",
           "app": "ui",
           "group": "primitives",
-          "description": "Build Button primitive using shadcn/ui base — variants (default, destructive, outline, ghost, link), sizes (sm, md, lg), loading state, icon support."
+          "description": "Build Button primitive using shadcn/ui base — variants (default, destructive, outline, ghost, link), sizes (sm, md, lg), loading state, icon support.",
+          "completedAt": "2026-03-26T17:48:40.828Z"
         },
         {
           "id": "P1-T9",
@@ -464,7 +465,7 @@
           "app": "ui",
           "group": "packages",
           "description": "Finalize packages/ui shared package — export all primitives and domain components, configure package.json with proper exports map, build pipeline, Storybook integration.",
-          "completedAt": "2026-03-26T12:18:12.454Z"
+          "completedAt": "2026-03-26T17:48:07.807Z"
         },
         {
           "id": "P1-T42",
