@@ -57,41 +57,26 @@ const buttonVariants = cva(
           'h-[--button-height-mini]',
           'px-[--button-padding-x-mini]',
           'py-[--button-padding-y-mini]',
-          'gap-[--button-gap-sm]',
-          'text-[length:--button-font-size-mini]',
-          'leading-[--button-line-height-mini]',
         ],
         sm: [
           'h-[--button-height-sm]',
           'px-[--button-padding-x-sm]',
           'py-[--button-padding-y-sm]',
-          'gap-[--button-gap-sm]',
-          'text-[length:--button-font-size]',
-          'leading-[--button-line-height]',
         ],
         default: [
           'h-[--button-height-default]',
           'px-[--button-padding-x-default]',
           'py-[--button-padding-y-default]',
-          'gap-[--button-gap]',
-          'text-[length:--button-font-size]',
-          'leading-[--button-line-height]',
         ],
         lg: [
           'h-[--button-height-lg]',
           'px-[--button-padding-x-lg]',
           'py-[--button-padding-y-lg]',
-          'gap-[--button-gap]',
-          'text-[length:--button-font-size]',
-          'leading-[--button-line-height]',
         ],
         xl: [
           'h-[--button-height-xl]',
           'px-[--button-padding-x-xl]',
           'py-[--button-padding-y-xl]',
-          'gap-[--button-gap]',
-          'text-[length:--button-font-size-xl]',
-          'leading-[--button-line-height-xl]',
         ],
       },
       roundness: {
@@ -106,6 +91,36 @@ const buttonVariants = cva(
     },
   },
 );
+
+// Font-size, line-height, gap can't use bare CSS var syntax in Tailwind v4.
+// We apply them via inline style keyed by size.
+const SIZE_STYLES: Record<string, React.CSSProperties> = {
+  mini: {
+    fontSize: 'var(--button-font-size-mini)',
+    lineHeight: 'var(--button-line-height-mini)',
+    gap: 'var(--button-gap-sm)',
+  },
+  sm: {
+    fontSize: 'var(--button-font-size)',
+    lineHeight: 'var(--button-line-height)',
+    gap: 'var(--button-gap-sm)',
+  },
+  default: {
+    fontSize: 'var(--button-font-size)',
+    lineHeight: 'var(--button-line-height)',
+    gap: 'var(--button-gap)',
+  },
+  lg: {
+    fontSize: 'var(--button-font-size)',
+    lineHeight: 'var(--button-line-height)',
+    gap: 'var(--button-gap)',
+  },
+  xl: {
+    fontSize: 'var(--button-font-size-xl)',
+    lineHeight: 'var(--button-line-height-xl)',
+    gap: 'var(--button-gap)',
+  },
+};
 
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> &
   VariantProps<typeof buttonVariants> & {
@@ -124,11 +139,14 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       loading = false,
       disabled,
       children,
+      style,
       ...props
     },
     ref,
   ) => {
     const Comp = asChild ? Slot : 'button';
+    const sizeKey = size ?? 'default';
+    const sizeStyle = SIZE_STYLES[sizeKey] ?? SIZE_STYLES.default;
 
     return (
       <Comp
@@ -136,6 +154,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={disabled || loading}
         aria-busy={loading || undefined}
+        style={{ ...sizeStyle, ...style }}
         {...props}
       >
         {loading && (
