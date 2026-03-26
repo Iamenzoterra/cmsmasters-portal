@@ -5,6 +5,7 @@ import { syncPhaseStatuses } from '../lib/phase-sync';
 import type {
   ComponentSummary,
   ComponentStatus,
+  ComponentLayer,
   ContentStatus,
   ContentStatusValue,
   Progress,
@@ -93,9 +94,111 @@ function readPhasesJson(workplanDir: string): RawProject {
   return JSON.parse(raw) as RawProject;
 }
 
-// ─── Scanner functions ────────────────────────────────────────────────────────
+// ─── UI package scanner helpers ──────────────────────────────────────────────
 
-function scanComponents(workplanDir: string, ignore: ScanIgnore): ComponentSummary[] {
+const LAYER_DIRS: { dir: string; layer: ComponentLayer }[] = [
+  { dir: 'primitives', layer: 'primitives' },
+  { dir: 'domain',     layer: 'domain' },
+  { dir: 'layouts',    layer: 'layouts' },
+];
+
+function kebabToPascal(kebab: string): string {
+  return kebab.replace(/(^|-)([a-z])/g, (_, __, c: string) => c.toUpperCase());
+}
+
+function countLines(filePath: string): number {
+  return fs.readFileSync(filePath, 'utf8').split('\n').length;
+}
+
+function extractPropsInterface(filePath: string): string | null {
+  const content = fs.readFileSync(filePath, 'utf8');
+  const match = content.match(/(?:export\s+)?interface\s+\w+Props\s*\{[^}]*\}/);
+  return match ? match[0] : null;
+}
+
+function hasImportOf(dir: string, componentName: string): boolean {
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (entry.name === 'node_modules' || entry.name === '.next' || entry.name === 'dist') continue;
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (hasImportOf(fullPath, componentName)) return true;
+    } else if (entry.name.endsWith('.ts') || entry.name.endsWith('.tsx')) {
+      const content = fs.readFileSync(fullPath, 'utf8');
+      if (content.includes('@cmsmasters/ui') && content.includes(componentName)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function detectUsedBy(componentName: string, monorepoRoot: string): string[] {
+  const appsDir = path.join(monorepoRoot, 'apps');
+  const usedBy: string[] = [];
+  if (!fs.existsSync(appsDir)) return usedBy;
+  const appDirs = fs.readdirSync(appsDir, { withFileTypes: true })
+    .filter(d => d.isDirectory() && d.name !== 'command-center');
+  for (const appDir of appDirs) {
+    if (hasImportOf(path.join(appsDir, appDir.name), componentName)) {
+      usedBy.push(appDir.name);
+    }
+  }
+  return usedBy;
+}
+
+// ─── UI component filesystem scanner ────────────────────────────────────────
+
+function scanUIComponents(monorepoRoot: string): ComponentSummary[] {
+  const uiPkgSrc = path.join(monorepoRoot, 'packages', 'ui', 'src');
+  const components: ComponentSummary[] = [];
+
+  for (const { dir, layer } of LAYER_DIRS) {
+    const layerDir = path.join(uiPkgSrc, dir);
+    if (!fs.existsSync(layerDir)) continue;
+
+    const files = fs.readdirSync(layerDir).filter(f =>
+      f.endsWith('.tsx') &&
+      !f.endsWith('.stories.tsx') &&
+      !f.endsWith('.test.tsx') &&
+      !f.startsWith('_')
+    );
+
+    for (const file of files) {
+      const filePath = path.join(layerDir, file);
+      const baseName = file.replace(/\.tsx$/, '');
+      const componentName = kebabToPascal(baseName);
+      const relativePath = path.relative(monorepoRoot, filePath).replace(/\\/g, '/');
+
+      const hasStory = fs.existsSync(path.join(layerDir, `${baseName}.stories.tsx`));
+      const hasTests = fs.existsSync(path.join(layerDir, `${baseName}.test.tsx`))
+                    || fs.existsSync(path.join(layerDir, '__tests__', `${baseName}.test.tsx`));
+
+      components.push({
+        id: `ui-${dir}-${baseName}`,
+        name: componentName,
+        description: `${layer} component`,
+        app: 'ui' as ComponentSummary['app'],
+        status: 'done' as ComponentStatus,
+        phase: 'C',
+        source: 'filesystem',
+        layer,
+        hasStory,
+        hasTests,
+        usedBy: detectUsedBy(componentName, monorepoRoot),
+        loc: countLines(filePath),
+        filePath: relativePath,
+        propsInterface: extractPropsInterface(filePath),
+      });
+    }
+  }
+
+  return components;
+}
+
+// ─── Legacy phases.json scanner ─────────────────────────────────────────────
+
+function scanLegacyTasks(workplanDir: string, ignore: ScanIgnore): ComponentSummary[] {
   const project = readPhasesJson(workplanDir);
   const phases = project.phases ?? [];
   const components: ComponentSummary[] = [];
@@ -111,11 +214,20 @@ function scanComponents(workplanDir: string, ignore: ScanIgnore): ComponentSumma
         app: (task.app ?? 'infra') as ComponentSummary['app'],
         status: taskStatusToComponentStatus(task.status),
         phase: phaseId,
+        source: 'phases-json',
       });
     }
   }
 
   return components;
+}
+
+// ─── Combined scanner ───────────────────────────────────────────────────────
+
+function scanComponents(monorepoRoot: string, workplanDir: string, ignore: ScanIgnore): ComponentSummary[] {
+  const uiComponents = scanUIComponents(monorepoRoot);
+  const legacyTasks = scanLegacyTasks(workplanDir, ignore);
+  return [...uiComponents, ...legacyTasks];
 }
 
 function scanContent(workplanDir: string, ignore: ScanIgnore): ContentStatus[] {
@@ -218,8 +330,11 @@ function calculateProgress(workplanDir: string): ProgressData {
 
     console.log('→ Scanning components...');
     const t1 = Date.now();
-    const components = scanComponents(workplanDir, ignore);
+    const components = scanComponents(monorepoRoot, workplanDir, ignore);
     console.log(`✓ components done (${Date.now() - t1}ms)`);
+    const uiCount = components.filter(c => c.source === 'filesystem').length;
+    const legacyCount = components.filter(c => c.source === 'phases-json').length;
+    console.log(`  → ${uiCount} UI components (filesystem), ${legacyCount} legacy tasks (phases.json)`);
     fs.writeFileSync(
       path.join(workplanDir, 'components.json'),
       JSON.stringify({ lastScanned: new Date().toISOString(), components }, null, 2),

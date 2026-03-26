@@ -63,6 +63,22 @@ export interface Component {
   status: ComponentStatus;
   phase: string;
   dependencies?: string[];
+  /** Where this entry came from */
+  source: 'filesystem' | 'phases-json';
+  /** Design system layer, derived from directory */
+  layer?: ComponentLayer;
+  /** Adjacent .stories.tsx exists */
+  hasStory?: boolean;
+  /** Adjacent .test.tsx exists */
+  hasTests?: boolean;
+  /** Apps that import this component */
+  usedBy?: string[];
+  /** Lines of code */
+  loc?: number;
+  /** Relative path from monorepo root */
+  filePath?: string;
+  /** Raw TypeScript props interface text */
+  propsInterface?: string | null;
 }
 
 export interface ComponentEntry {
@@ -74,6 +90,13 @@ export interface ComponentEntry {
   layer: ComponentLayer;
   phase: string;
   dependencies?: string[];
+  source: 'filesystem' | 'phases-json';
+  hasStory?: boolean;
+  hasTests?: boolean;
+  usedBy?: string[];
+  loc?: number;
+  filePath?: string;
+  propsInterface?: string | null;
 }
 
 // ─── packages/validators/src/content-status.ts schema ────────────────────────
