@@ -254,6 +254,64 @@ function CodeExample({ comp, isUiComponent }: { comp: ComponentSummary; isUiComp
   );
 }
 
+// ─── DesignSystemPanel ───────────────────────────────────────────────────────
+
+function DesignSystemPanel({ comp, isUiComponent }: { comp: ComponentSummary; isUiComponent: boolean }): React.ReactElement | null {
+  if (!isUiComponent) return null;
+
+  const componentName = comp.name;
+  const varPrefix = `--${componentName.toLowerCase()}`;
+
+  return (
+    <div className="bg-surface-card rounded-card p-6 lg:col-span-2">
+      <h2 className="text-text-primary font-semibold text-sm mb-4">Design System</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Token source */}
+        <div>
+          <h3 className="text-xs font-medium text-text-muted mb-2">Token source</h3>
+          <p className="text-sm text-text-secondary">
+            Colors from <span className="font-mono text-xs text-blue-400">Portal DS</span>,
+            sizing from <span className="font-mono text-xs text-blue-400">Obra</span> Figma variables.
+          </p>
+          <p className="text-sm text-text-secondary mt-1">
+            CSS vars: <code className="text-xs bg-zinc-800 px-1.5 py-0.5 rounded">{varPrefix}-*</code> in{' '}
+            <code className="text-xs bg-zinc-800 px-1.5 py-0.5 rounded">tokens.css</code>
+          </p>
+        </div>
+
+        {/* Update instructions */}
+        <div>
+          <h3 className="text-xs font-medium text-text-muted mb-2">How to update</h3>
+          <div className="flex flex-col gap-2 text-sm text-text-secondary">
+            <div className="flex items-start gap-2">
+              <span className="text-text-muted shrink-0">1.</span>
+              <span>Change values in Figma (<code className="text-xs bg-zinc-800 px-1 py-0.5 rounded">{`${componentName}/*`}</code> variables)</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-text-muted shrink-0">2.</span>
+              <span>
+                Run <code className="text-xs bg-zinc-800 text-blue-400 px-1.5 py-0.5 rounded">/sync-tokens</code> to pull tokens to CSS
+              </span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-text-muted shrink-0">3.</span>
+              <span>
+                Run <code className="text-xs bg-zinc-800 text-blue-400 px-1.5 py-0.5 rounded">/figma-component-vars</code> to create/bind new Figma variables
+              </span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-text-muted shrink-0">4.</span>
+              <span>
+                Run <code className="text-xs bg-zinc-800 text-blue-400 px-1.5 py-0.5 rounded">npm run cc:scan</code> to refresh component data
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -307,6 +365,7 @@ export default async function ComponentDetailPage({ params }: Props): Promise<Re
           <PropsTable comp={comp} isUiComponent={isUiComponent} />
           <CodeExample comp={comp} isUiComponent={isUiComponent} />
         </div>
+        <DesignSystemPanel comp={comp} isUiComponent={isUiComponent} />
       </div>
     </main>
   );

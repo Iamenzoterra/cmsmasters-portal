@@ -112,8 +112,16 @@ function countLines(filePath: string): number {
 
 function extractPropsInterface(filePath: string): string | null {
   const content = fs.readFileSync(filePath, 'utf8');
-  const match = content.match(/(?:export\s+)?interface\s+\w+Props\s*\{[^}]*\}/);
-  return match ? match[0] : null;
+
+  // Try interface first: interface ButtonProps { ... }
+  const ifaceMatch = content.match(/(?:export\s+)?interface\s+\w+Props\s*\{[^}]*\}/);
+  if (ifaceMatch) return ifaceMatch[0];
+
+  // Try type alias: type ButtonProps = ... & { ... };
+  const typeMatch = content.match(/(?:export\s+)?type\s+(\w+Props)\s*=\s*([\s\S]*?);/);
+  if (typeMatch) return `type ${typeMatch[1]} = ${typeMatch[2].trim()}`;
+
+  return null;
 }
 
 function hasImportOf(dir: string, componentName: string): boolean {
