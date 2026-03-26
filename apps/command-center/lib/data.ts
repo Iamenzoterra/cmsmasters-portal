@@ -151,9 +151,12 @@ export async function getPhases(): Promise<Project | null> {
   } as Project;
 }
 
-/** Reads workplan/components.json. Returns null when the file is missing. */
+/** Reads workplan/components.json. Unwraps `{ components }` wrapper if present. */
 export async function getComponents(): Promise<ComponentSummary[] | null> {
-  return readJson<ComponentSummary[]>(COMPONENTS_PATH);
+  const raw = await readJson<{ components: ComponentSummary[] } | ComponentSummary[]>(COMPONENTS_PATH);
+  if (Array.isArray(raw)) return raw;
+  if (raw && 'components' in raw && Array.isArray(raw.components)) return raw.components;
+  return null;
 }
 
 /** Reads workplan/content-status.json. Returns null when the file is missing. */
@@ -265,7 +268,18 @@ export async function getDesignSystemLayers(): Promise<LayerRow[] | null> {
     Infrastructure: [],
   };
 
+  const LAYER_TO_DISPLAY: Record<string, LayerName> = {
+    primitives: 'Primitives', domain: 'Domain',
+    layouts: 'Layouts', infrastructure: 'Infrastructure',
+  };
+
   for (const comp of components) {
+    // Filesystem entries: use real layer from scanner
+    if (comp.source === 'filesystem' && comp.layer) {
+      const mapped = LAYER_TO_DISPLAY[comp.layer];
+      if (mapped) { buckets[mapped].push(comp); continue; }
+    }
+    // Legacy fallback: keyword heuristic
     if (INFRA_APPS.has(comp.app)) {
       buckets.Infrastructure.push(comp);
       continue;

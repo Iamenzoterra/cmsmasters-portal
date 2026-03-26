@@ -4,6 +4,8 @@ import { ChevronUp, ChevronDown } from 'lucide-react';
 import { getComponents } from '@/lib/data';
 import type { ComponentSummary, LayerName } from '@/lib/types';
 import { DonutChart } from '@/ui/DonutChart';
+import { StatusDots } from '@/ui/StatusDots';
+import { TokenCoveragePanel } from '@/ui/TokenCoveragePanel';
 import { cn } from '@/theme/utils';
 
 // ─── Layer keyword buckets (mirrored from data.ts) ────────────────────────────
@@ -47,9 +49,17 @@ function buildHref(current: PageParams, overrides: Partial<PageParams>): string 
   return `/components?${params.toString()}`;
 }
 
-// ─── Derivation helpers ───────────────────────────────────────────────────────
+// ─── Layer derivation ────────────────────────────────────────────────────────
+
+const LAYER_MAP: Record<string, LayerName> = {
+  primitives: 'Primitives', domain: 'Domain',
+  layouts: 'Layouts', infrastructure: 'Infrastructure',
+};
 
 function deriveLayer(comp: ComponentSummary): LayerName {
+  // Filesystem entries: use real layer from scanner
+  if (comp.source === 'filesystem' && comp.layer) return LAYER_MAP[comp.layer] ?? 'Layouts';
+  // Legacy phases-json entries: keyword heuristic fallback
   if (INFRA_APPS.has(comp.app)) return 'Infrastructure';
   const lower = comp.name.toLowerCase();
   if (PRIMITIVE_KEYWORDS.some((kw) => lower.includes(kw))) return 'Primitives';
@@ -57,18 +67,11 @@ function deriveLayer(comp: ComponentSummary): LayerName {
   return 'Layouts';
 }
 
-function deriveHasStory(comp: ComponentSummary): boolean {
-  return comp.status === 'done';
-}
-
-function deriveHasTests(comp: ComponentSummary): boolean {
-  return comp.status === 'done';
-}
-
 type EnrichedComponent = ComponentSummary & {
   derivedLayer: LayerName;
   hasStory: boolean;
   hasTests: boolean;
+  hasCode: boolean;
 };
 
 const LAYER_ORDER: Record<LayerName, number> = { Primitives: 0, Domain: 1, Layouts: 2, Infrastructure: 3 };
@@ -190,11 +193,21 @@ function ComponentCard({ comp }: { comp: EnrichedComponent }): React.ReactElemen
         </span>
       </div>
       <p className="text-text-muted text-xs truncate">{comp.description}</p>
+      <StatusDots hasCode={comp.hasCode} hasStory={comp.hasStory} hasTests={comp.hasTests} />
       <div className="flex items-center justify-between mt-auto pt-1">
         <span className={cn('text-xs px-2 py-0.5 rounded-badge', LAYER_BADGE[comp.derivedLayer])}>
           {comp.derivedLayer}
         </span>
-        <span className="font-mono text-xs text-text-muted">{comp.app}</span>
+        <div className="flex items-center gap-2">
+          {(comp.usedBy?.length ?? 0) > 0 && (
+            <span className="font-mono text-xs text-text-muted" title={`Used by: ${comp.usedBy?.join(', ')}`}>
+              {comp.usedBy?.length} app{(comp.usedBy?.length ?? 0) === 1 ? '' : 's'}
+            </span>
+          )}
+          {comp.loc != null && (
+            <span className="font-mono text-xs text-text-muted">{comp.loc} loc</span>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -291,7 +304,10 @@ function ListView({
             <th className="pb-2 pr-4 font-medium">
               <SortHeader col="usedBy" label="UsedBy" params={params} />
             </th>
-            <th className="pb-2 font-medium text-text-muted">Modified</th>
+            <th className="pb-2 pr-4 font-medium">
+              <SortHeader col="loc" label="LoC" params={params} />
+            </th>
+            <th className="pb-2 font-medium text-text-muted">Phase</th>
           </tr>
         </thead>
         <tbody>
@@ -317,7 +333,10 @@ function ListView({
                   : <span className="text-zinc-600">—</span>}
               </td>
               <td className="py-2 pr-4 font-mono text-xs text-text-muted">
-                {comp.dependencies?.length ?? 0}
+                {comp.usedBy?.length ?? 0}
+              </td>
+              <td className="py-2 pr-4 font-mono text-xs text-text-muted">
+                {comp.loc ?? '—'}
               </td>
               <td className="py-2 font-mono text-xs text-text-muted">{comp.phase}</td>
             </tr>
@@ -334,7 +353,7 @@ function CoverageView({ components }: { components: EnrichedComponent[] }): Reac
   const total = components.length;
   const storyCount = components.filter((c) => c.hasStory).length;
   const testCount  = components.filter((c) => c.hasTests).length;
-  const appCount   = components.filter((c) => (c.dependencies?.length ?? 0) > 0).length;
+  const appCount   = components.filter((c) => (c.usedBy?.length ?? 0) > 0).length;
 
   const storyCoverage = total > 0 ? Math.round((storyCount / total) * 100) : 0;
   const testCoverage  = total > 0 ? Math.round((testCount  / total) * 100) : 0;
@@ -365,17 +384,9 @@ export default async function ComponentsPage({
 }: {
   searchParams: Promise<Record<string, string>>;
 }): Promise<React.ReactElement> {
-  const raw = await getComponents();
+  const components = await getComponents();
 
-  let components: ComponentSummary[] | null = null;
-  if (Array.isArray(raw)) {
-    components = raw;
-  } else if (raw !== null && typeof raw === 'object' && 'components' in (raw as object)) {
-    const nested = (raw as { components?: ComponentSummary[] }).components;
-    if (Array.isArray(nested)) components = nested;
-  }
-
-  if (components === null) {
+  if (!components || components.length === 0) {
     return (
       <main className="p-section flex items-center justify-center min-h-[60vh]">
         <div className="bg-surface-card rounded-card p-8 max-w-md text-center flex flex-col gap-3">
@@ -404,8 +415,9 @@ export default async function ComponentsPage({
   const enriched: EnrichedComponent[] = components.map((comp) => ({
     ...comp,
     derivedLayer: deriveLayer(comp),
-    hasStory:     deriveHasStory(comp),
-    hasTests:     deriveHasTests(comp),
+    hasStory:     comp.hasStory ?? false,
+    hasTests:     comp.hasTests ?? false,
+    hasCode:      comp.source === 'filesystem',
   }));
 
   // Apply filters
@@ -426,7 +438,8 @@ export default async function ComponentsPage({
     switch (params.sort) {
       case 'name':   { cmp = a.name.localeCompare(b.name); break; }
       case 'layer':  { cmp = LAYER_ORDER[a.derivedLayer] - LAYER_ORDER[b.derivedLayer]; break; }
-      case 'usedBy': { cmp = (b.dependencies?.length ?? 0) - (a.dependencies?.length ?? 0); break; }
+      case 'usedBy': { cmp = (b.usedBy?.length ?? 0) - (a.usedBy?.length ?? 0); break; }
+      case 'loc':    { cmp = (a.loc ?? 0) - (b.loc ?? 0); break; }
       default: { break; }
     }
     return params.dir === 'desc' ? -cmp : cmp;
@@ -440,6 +453,7 @@ export default async function ComponentsPage({
         <h1 className="text-2xl font-semibold text-text-primary">Components</h1>
         <p className="text-text-muted font-mono text-sm mt-1">{components.length} components</p>
       </div>
+      <TokenCoveragePanel />
       <TabBar params={params} />
       <FilterBar params={params} />
       {activeView === 'grid'     && <GridView components={filtered} />}
