@@ -25,26 +25,32 @@ type PageParams = {
   layer: string;
   story: string;
   tests: string;
+  source: string;
+  status: string;
 };
 
 const DEFAULTS: PageParams = {
-  view:  'grid',
-  sort:  'name',
-  dir:   'asc',
-  layer: 'all',
-  story: '0',
-  tests: '0',
+  view:   'grid',
+  sort:   'name',
+  dir:    'asc',
+  layer:  'all',
+  story:  '0',
+  tests:  '0',
+  source: 'all',
+  status: 'all',
 };
 
 function buildHref(current: PageParams, overrides: Partial<PageParams>): string {
   const merged = { ...current, ...overrides };
   const params = new URLSearchParams({
-    view:  merged.view,
-    sort:  merged.sort,
-    dir:   merged.dir,
-    layer: merged.layer,
-    story: merged.story,
-    tests: merged.tests,
+    view:   merged.view,
+    sort:   merged.sort,
+    dir:    merged.dir,
+    layer:  merged.layer,
+    story:  merged.story,
+    tests:  merged.tests,
+    source: merged.source,
+    status: merged.status,
   });
   return `/components?${params.toString()}`;
 }
@@ -130,47 +136,99 @@ function FilterBar({ params }: { params: PageParams }): React.ReactElement {
     { label: 'Infrastructure', value: 'Infrastructure' },
   ];
 
+  const sources: { label: string; value: string }[] = [
+    { label: 'All Sources',    value: 'all'    },
+    { label: 'UI Components',  value: 'ui'     },
+    { label: 'Legacy Tasks',   value: 'legacy' },
+  ];
+
+  const statuses: { label: string; value: string }[] = [
+    { label: 'All',         value: 'all'         },
+    { label: 'Done',        value: 'done'        },
+    { label: 'In Progress', value: 'in-progress' },
+    { label: 'Planned',     value: 'planned'     },
+  ];
+
   return (
-    <div className="flex flex-wrap gap-3 mb-6 items-center">
-      <div className="flex gap-1">
-        {layers.map(({ label, value }) => (
+    <div className="flex flex-col gap-3 mb-6">
+      {/* Row 1: layers + story/tests */}
+      <div className="flex flex-wrap gap-3 items-center">
+        <div className="flex gap-1">
+          {layers.map(({ label, value }) => (
+            <Link
+              key={value}
+              href={buildHref(params, { layer: value })}
+              className={cn(
+                'px-3 py-1 text-sm rounded-badge transition-colors',
+                params.layer === value
+                  ? 'bg-surface-card border border-zinc-600 text-text-primary'
+                  : 'text-text-muted hover:text-text-secondary',
+              )}
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+        <div className="flex gap-2 ml-auto">
           <Link
-            key={value}
-            href={buildHref(params, { layer: value })}
+            href={buildHref(params, { story: params.story === '1' ? '0' : '1' })}
             className={cn(
-              'px-3 py-1 text-sm rounded-badge transition-colors',
-              params.layer === value
-                ? 'bg-surface-card border border-zinc-600 text-text-primary'
-                : 'text-text-muted hover:text-text-secondary',
+              'px-3 py-1 text-sm rounded-badge border transition-colors',
+              params.story === '1'
+                ? 'bg-surface-card border-zinc-600 text-text-primary'
+                : 'border-border text-text-muted hover:text-text-secondary',
             )}
           >
-            {label}
+            Has Story
           </Link>
-        ))}
+          <Link
+            href={buildHref(params, { tests: params.tests === '1' ? '0' : '1' })}
+            className={cn(
+              'px-3 py-1 text-sm rounded-badge border transition-colors',
+              params.tests === '1'
+                ? 'bg-surface-card border-zinc-600 text-text-primary'
+                : 'border-border text-text-muted hover:text-text-secondary',
+            )}
+          >
+            Has Tests
+          </Link>
+        </div>
       </div>
-      <div className="flex gap-2 ml-auto">
-        <Link
-          href={buildHref(params, { story: params.story === '1' ? '0' : '1' })}
-          className={cn(
-            'px-3 py-1 text-sm rounded-badge border transition-colors',
-            params.story === '1'
-              ? 'bg-surface-card border-zinc-600 text-text-primary'
-              : 'border-border text-text-muted hover:text-text-secondary',
-          )}
-        >
-          Has Story
-        </Link>
-        <Link
-          href={buildHref(params, { tests: params.tests === '1' ? '0' : '1' })}
-          className={cn(
-            'px-3 py-1 text-sm rounded-badge border transition-colors',
-            params.tests === '1'
-              ? 'bg-surface-card border-zinc-600 text-text-primary'
-              : 'border-border text-text-muted hover:text-text-secondary',
-          )}
-        >
-          Has Tests
-        </Link>
+      {/* Row 2: source + status */}
+      <div className="flex flex-wrap gap-3 items-center">
+        <div className="flex gap-1">
+          {sources.map(({ label, value }) => (
+            <Link
+              key={`src-${value}`}
+              href={buildHref(params, { source: value })}
+              className={cn(
+                'px-3 py-1 text-sm rounded-badge transition-colors',
+                params.source === value
+                  ? 'bg-surface-card border border-zinc-600 text-text-primary'
+                  : 'text-text-muted hover:text-text-secondary',
+              )}
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+        <div className="w-px h-5 bg-border mx-1" />
+        <div className="flex gap-1">
+          {statuses.map(({ label, value }) => (
+            <Link
+              key={`st-${value}`}
+              href={buildHref(params, { status: value })}
+              className={cn(
+                'px-3 py-1 text-sm rounded-badge transition-colors',
+                params.status === value
+                  ? 'bg-surface-card border border-zinc-600 text-text-primary'
+                  : 'text-text-muted hover:text-text-secondary',
+              )}
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -347,31 +405,134 @@ function ListView({
   );
 }
 
+// ─── LayerCoverageTable ───────────────────────────────────────────────────────
+
+function LayerCoverageTable({ components }: { components: EnrichedComponent[] }): React.ReactElement {
+  const layers: LayerName[] = ['Primitives', 'Domain', 'Layouts'];
+
+  const rows = layers.map((layer) => {
+    const comps = components.filter((c) => c.derivedLayer === layer);
+    const total = comps.length;
+    const stories = comps.filter((c) => c.hasStory).length;
+    const tests = comps.filter((c) => c.hasTests).length;
+    const avgLoc = total > 0 ? Math.round(comps.reduce((sum, c) => sum + (c.loc ?? 0), 0) / total) : 0;
+    return { layer, total, stories, tests, avgLoc };
+  });
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm max-w-xl mx-auto">
+        <thead>
+          <tr className="border-b border-border text-left">
+            <th className="pb-2 pr-4 font-medium text-text-muted">Layer</th>
+            <th className="pb-2 pr-4 font-medium text-text-muted text-right">Components</th>
+            <th className="pb-2 pr-4 font-medium text-text-muted text-right">Stories</th>
+            <th className="pb-2 pr-4 font-medium text-text-muted text-right">Tests</th>
+            <th className="pb-2 font-medium text-text-muted text-right">Avg LoC</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(({ layer, total, stories, tests, avgLoc }) => (
+            <tr key={layer} className="border-b border-border/50">
+              <td className="py-2 pr-4">
+                <span className={cn('text-xs px-2 py-0.5 rounded-badge', LAYER_BADGE[layer])}>
+                  {layer}
+                </span>
+              </td>
+              <td className="py-2 pr-4 font-mono text-xs text-text-primary text-right">{total}</td>
+              <td className="py-2 pr-4 font-mono text-xs text-right">
+                {total > 0 ? (
+                  <span className={stories === total ? 'text-status-success' : 'text-text-muted'}>
+                    {stories}/{total}
+                  </span>
+                ) : (
+                  <span className="text-zinc-600">&mdash;</span>
+                )}
+              </td>
+              <td className="py-2 pr-4 font-mono text-xs text-right">
+                {total > 0 ? (
+                  <span className={tests === total ? 'text-status-success' : 'text-text-muted'}>
+                    {tests}/{total}
+                  </span>
+                ) : (
+                  <span className="text-zinc-600">&mdash;</span>
+                )}
+              </td>
+              <td className="py-2 font-mono text-xs text-text-muted text-right">{avgLoc}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 // ─── CoverageView ─────────────────────────────────────────────────────────────
 
 function CoverageView({ components }: { components: EnrichedComponent[] }): React.ReactElement {
-  const total = components.length;
-  const storyCount = components.filter((c) => c.hasStory).length;
-  const testCount  = components.filter((c) => c.hasTests).length;
-  const appCount   = components.filter((c) => (c.usedBy?.length ?? 0) > 0).length;
+  const uiComponents = components.filter((c) => c.source === 'filesystem');
+  const legacyTasks  = components.filter((c) => c.source === 'phases-json');
 
-  const storyCoverage = total > 0 ? Math.round((storyCount / total) * 100) : 0;
-  const testCoverage  = total > 0 ? Math.round((testCount  / total) * 100) : 0;
-  const appUsage      = total > 0 ? Math.round((appCount   / total) * 100) : 0;
+  // UI metrics (only real components)
+  const uiTotal    = uiComponents.length;
+  const storyCount = uiComponents.filter((c) => c.hasStory).length;
+  const testCount  = uiComponents.filter((c) => c.hasTests).length;
+  const appCount   = uiComponents.filter((c) => (c.usedBy?.length ?? 0) > 0).length;
+
+  const storyCoverage = uiTotal > 0 ? Math.round((storyCount / uiTotal) * 100) : 0;
+  const testCoverage  = uiTotal > 0 ? Math.round((testCount  / uiTotal) * 100) : 0;
+  const appUsage      = uiTotal > 0 ? Math.round((appCount   / uiTotal) * 100) : 0;
+
+  // Legacy progress
+  const legacyTotal = legacyTasks.length;
+  const legacyDone  = legacyTasks.filter((c) => c.status === 'done').length;
+  const legacyPct   = legacyTotal > 0 ? Math.round((legacyDone / legacyTotal) * 100) : 0;
 
   return (
-    <div className="flex flex-wrap gap-8 justify-center py-8">
-      <div className="flex flex-col items-center gap-2">
-        <DonutChart value={storyCoverage} label="Stories" color="#3b82f6" />
-        <p className="font-mono text-xs text-text-muted">{storyCount} / {total} components</p>
+    <div className="flex flex-col gap-8 py-8">
+      {/* UI Component Coverage */}
+      <div>
+        <h3 className="text-text-primary font-semibold text-sm mb-4">
+          UI Component Coverage
+          <span className="text-text-muted font-normal ml-2">({uiTotal} components)</span>
+        </h3>
+        {uiTotal === 0 ? (
+          <p className="text-text-muted text-sm italic">
+            No UI components yet — Phase C will deliver primitives to packages/ui/src/
+          </p>
+        ) : (
+          <div className="flex flex-wrap gap-8 justify-center">
+            <div className="flex flex-col items-center gap-2">
+              <DonutChart value={storyCoverage} label="Stories" color="#3b82f6" />
+              <p className="font-mono text-xs text-text-muted">{storyCount} / {uiTotal}</p>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <DonutChart value={testCoverage} label="Tests" color="#22c55e" />
+              <p className="font-mono text-xs text-text-muted">{testCount} / {uiTotal}</p>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <DonutChart value={appUsage} label="App Usage" color="#f59e0b" />
+              <p className="font-mono text-xs text-text-muted">{appCount} / {uiTotal}</p>
+            </div>
+          </div>
+        )}
       </div>
-      <div className="flex flex-col items-center gap-2">
-        <DonutChart value={testCoverage} label="Tests" color="#22c55e" />
-        <p className="font-mono text-xs text-text-muted">{testCount} / {total} components</p>
-      </div>
-      <div className="flex flex-col items-center gap-2">
-        <DonutChart value={appUsage} label="App Usage" color="#f59e0b" />
-        <p className="font-mono text-xs text-text-muted">{appCount} / {total} components</p>
+
+      {/* Per-Layer Breakdown */}
+      {uiTotal > 0 && <LayerCoverageTable components={uiComponents} />}
+
+      {/* Legacy Task Progress */}
+      <div>
+        <h3 className="text-text-primary font-semibold text-sm mb-4">
+          Project Task Progress
+          <span className="text-text-muted font-normal ml-2">({legacyTotal} tasks)</span>
+        </h3>
+        <div className="flex flex-wrap gap-8 justify-center">
+          <div className="flex flex-col items-center gap-2">
+            <DonutChart value={legacyPct} label="Done" color="#a78bfa" />
+            <p className="font-mono text-xs text-text-muted">{legacyDone} / {legacyTotal}</p>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -404,12 +565,14 @@ export default async function ComponentsPage({
 
   const sp = await searchParams;
   const params: PageParams = {
-    view:  sp['view']  ?? DEFAULTS.view,
-    sort:  sp['sort']  ?? DEFAULTS.sort,
-    dir:   sp['dir']   ?? DEFAULTS.dir,
-    layer: sp['layer'] ?? DEFAULTS.layer,
-    story: sp['story'] ?? DEFAULTS.story,
-    tests: sp['tests'] ?? DEFAULTS.tests,
+    view:   sp['view']   ?? DEFAULTS.view,
+    sort:   sp['sort']   ?? DEFAULTS.sort,
+    dir:    sp['dir']    ?? DEFAULTS.dir,
+    layer:  sp['layer']  ?? DEFAULTS.layer,
+    story:  sp['story']  ?? DEFAULTS.story,
+    tests:  sp['tests']  ?? DEFAULTS.tests,
+    source: sp['source'] ?? DEFAULTS.source,
+    status: sp['status'] ?? DEFAULTS.status,
   };
 
   const enriched: EnrichedComponent[] = components.map((comp) => ({
@@ -431,6 +594,14 @@ export default async function ComponentsPage({
   if (params.tests === '1') {
     filtered = filtered.filter((c) => c.hasTests);
   }
+  if (params.source === 'ui') {
+    filtered = filtered.filter((c) => c.source === 'filesystem');
+  } else if (params.source === 'legacy') {
+    filtered = filtered.filter((c) => c.source === 'phases-json');
+  }
+  if (params.status !== 'all') {
+    filtered = filtered.filter((c) => c.status === params.status);
+  }
 
   // Sort for ListView
   const sorted = filtered.toSorted((a, b) => {
@@ -446,12 +617,22 @@ export default async function ComponentsPage({
   });
 
   const activeView = ['grid', 'list', 'coverage'].includes(params.view) ? params.view : 'grid';
+  const uiCount = enriched.filter((c) => c.source === 'filesystem').length;
 
   return (
     <main className="p-section">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-text-primary">Components</h1>
-        <p className="text-text-muted font-mono text-sm mt-1">{components.length} components</p>
+        <p className="text-text-muted font-mono text-sm mt-1">
+          {filtered.length === enriched.length
+            ? `${enriched.length} items`
+            : `${filtered.length} / ${enriched.length} items`}
+          {uiCount > 0 && (
+            <span className="ml-2 text-blue-400">
+              ({uiCount} UI component{uiCount === 1 ? '' : 's'})
+            </span>
+          )}
+        </p>
       </div>
       <TokenCoveragePanel />
       <TabBar params={params} />
