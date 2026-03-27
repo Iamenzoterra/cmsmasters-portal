@@ -79,6 +79,17 @@ export interface Component {
   filePath?: string;
   /** Raw TypeScript props interface text */
   propsInterface?: string | null;
+  /** CSS custom properties referenced via var(--...) */
+  cssVars?: string[];
+  /** Structured props extracted from cva variants + type definition */
+  structuredProps?: Array<{
+    name: string;
+    type: string;
+    required: boolean;
+    default?: string;
+  }>;
+  /** Auto-generated usage examples from cva variants */
+  usageExamples?: string[];
 }
 
 export interface ComponentEntry {

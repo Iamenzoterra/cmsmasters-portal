@@ -125,6 +125,135 @@ function extractPropsInterface(filePath: string): string | null {
   return null;
 }
 
+/** Extract all CSS custom property references: var(--foo) → ['--foo', ...] */
+function extractCssVars(filePath: string): string[] {
+  const content = fs.readFileSync(filePath, 'utf8');
+  const matches = content.matchAll(/var\((--.+?)\)/g);
+  const vars = new Set<string>();
+  for (const m of matches) {
+    // Strip opacity modifiers: var(--ghost/0.05) → --ghost
+    const raw = m[1].split('/')[0].trim();
+    vars.add(raw);
+  }
+  return [...vars].sort();
+}
+
+/** Extract structured props from cva variants + type definition */
+function extractStructuredProps(filePath: string): Array<{
+  name: string;
+  type: string;
+  required: boolean;
+  default?: string;
+}> {
+  const content = fs.readFileSync(filePath, 'utf8');
+  const props: Array<{ name: string; type: string; required: boolean; default?: string }> = [];
+
+  // 1. Extract cva variant keys + values
+  const variantsBlock = content.match(/variants:\s*\{([\s\S]*?)\n\s{4}\},/);
+  const defaultsBlock = content.match(/defaultVariants:\s*\{([\s\S]*?)\}/);
+
+  const defaults: Record<string, string> = {};
+  if (defaultsBlock) {
+    for (const dm of defaultsBlock[1].matchAll(/(\w+):\s*'([^']+)'/g)) {
+      defaults[dm[1]] = dm[2];
+    }
+  }
+
+  if (variantsBlock) {
+    // Find top-level variant groups: "variant: {", "roundness: {"
+    // Each group's keys are at 8-space indent, group ends with 6-space closing }
+    const groupMatches = [...variantsBlock[1].matchAll(/^(\s{6})(\w+):\s*\{/gm)];
+    for (let i = 0; i < groupMatches.length; i++) {
+      const variantName = groupMatches[i][2];
+      const startIdx = (groupMatches[i].index ?? 0) + groupMatches[i][0].length;
+      // Slice until next group or end
+      const endIdx = i + 1 < groupMatches.length ? (groupMatches[i + 1].index ?? variantsBlock[1].length) : variantsBlock[1].length;
+      const sub = variantsBlock[1].slice(startIdx, endIdx);
+      const keys: string[] = [];
+      for (const km of sub.matchAll(/^\s{8}(\w+):/gm)) {
+        keys.push(km[1]);
+      }
+      if (keys.length > 0) {
+        props.push({
+          name: variantName,
+          type: keys.map(k => `'${k}'`).join(' | '),
+          required: false,
+          default: defaults[variantName] ? `'${defaults[variantName]}'` : undefined,
+        });
+      }
+    }
+  }
+
+  // 2. Extract explicit props from type definition: { asChild?: boolean; loading?: boolean; }
+  const typeBlock = content.match(/VariantProps[\s\S]*?&\s*\{([\s\S]*?)\};/);
+  if (typeBlock) {
+    for (const pm of typeBlock[1].matchAll(/(\w+)(\??):\s*([^;]+)/g)) {
+      const name = pm[1];
+      const optional = pm[2] === '?';
+      const type = pm[3].trim();
+      // Skip if already added from cva (like 'size')
+      if (!props.some(p => p.name === name)) {
+        props.push({ name, type, required: !optional });
+      }
+    }
+  }
+
+  return props;
+}
+
+/** Generate usage examples from cva variant keys */
+function extractUsageExamples(filePath: string, componentName: string): string[] {
+  const content = fs.readFileSync(filePath, 'utf8');
+  const examples: string[] = [];
+
+  // Basic import
+  examples.push(`import { ${componentName} } from '@cmsmasters/ui';`);
+  examples.push('');
+
+  // Extract variant keys for showcase
+  const variantsBlock = content.match(/variants:\s*\{([\s\S]*?)\n\s{4}\},/);
+  const defaultsBlock = content.match(/defaultVariants:\s*\{([\s\S]*?)\}/);
+
+  const defaults: Record<string, string> = {};
+  if (defaultsBlock) {
+    for (const dm of defaultsBlock[1].matchAll(/(\w+):\s*'([^']+)'/g)) {
+      defaults[dm[1]] = dm[2];
+    }
+  }
+
+  if (variantsBlock) {
+    const groupMatches = [...variantsBlock[1].matchAll(/^(\s{6})(\w+):\s*\{/gm)];
+    for (let i = 0; i < groupMatches.length; i++) {
+      const variantName = groupMatches[i][2];
+      const startIdx = (groupMatches[i].index ?? 0) + groupMatches[i][0].length;
+      const endIdx = i + 1 < groupMatches.length ? (groupMatches[i + 1].index ?? variantsBlock[1].length) : variantsBlock[1].length;
+      const sub = variantsBlock[1].slice(startIdx, endIdx);
+      const keys: string[] = [];
+      for (const km of sub.matchAll(/^\s{8}(\w+):/gm)) {
+        keys.push(km[1]);
+      }
+      // Show non-default variants as examples
+      const nonDefault = keys.filter(k => k !== defaults[variantName]);
+      if (nonDefault.length > 0) {
+        examples.push(`// ${variantName} variants:`);
+        for (const key of nonDefault.slice(0, 3)) {
+          examples.push(`<${componentName} ${variantName}="${key}">${key}</${componentName}>`);
+        }
+        examples.push('');
+      }
+    }
+  }
+
+  // Loading/disabled states
+  if (content.includes('loading')) {
+    examples.push(`// States:`);
+    examples.push(`<${componentName} loading>Loading...</${componentName}>`);
+    examples.push(`<${componentName} disabled>Disabled</${componentName}>`);
+  }
+
+  return examples;
+}
+
 function hasImportOf(dir: string, componentName: string): boolean {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   for (const entry of entries) {
@@ -198,6 +327,9 @@ function scanUIComponents(monorepoRoot: string): ComponentSummary[] {
         loc: countLines(filePath),
         filePath: relativePath,
         propsInterface: extractPropsInterface(filePath),
+        cssVars: extractCssVars(filePath),
+        structuredProps: extractStructuredProps(filePath),
+        usageExamples: extractUsageExamples(filePath, componentName),
       });
     }
   }

@@ -165,7 +165,10 @@ function PropsTable({ comp, isUiComponent }: { comp: ComponentSummary; isUiCompo
     );
   }
 
-  const props = parsePropsInterface(comp.propsInterface);
+  // Prefer structuredProps (enriched), fallback to regex parse
+  const structured = comp.structuredProps ?? [];
+  const fallback = parsePropsInterface(comp.propsInterface);
+  const props = structured.length > 0 ? structured : fallback;
 
   if (props.length === 0) {
     return (
@@ -178,6 +181,8 @@ function PropsTable({ comp, isUiComponent }: { comp: ComponentSummary; isUiCompo
     );
   }
 
+  const hasDefaults = props.some((p) => 'default' in p && p.default);
+
   return (
     <div className="bg-surface-card rounded-card p-6">
       <h2 className="text-text-primary font-semibold text-sm mb-3">Props</h2>
@@ -187,6 +192,7 @@ function PropsTable({ comp, isUiComponent }: { comp: ComponentSummary; isUiCompo
             <tr className="border-b border-border text-left">
               <th className="pb-2 pr-4 font-medium text-text-muted">Name</th>
               <th className="pb-2 pr-4 font-medium text-text-muted">Type</th>
+              {hasDefaults && <th className="pb-2 pr-4 font-medium text-text-muted">Default</th>}
               <th className="pb-2 font-medium text-text-muted">Required</th>
             </tr>
           </thead>
@@ -194,7 +200,12 @@ function PropsTable({ comp, isUiComponent }: { comp: ComponentSummary; isUiCompo
             {props.map((prop) => (
               <tr key={prop.name} className="border-b border-border/50">
                 <td className="py-2 pr-4 font-mono text-xs text-text-primary">{prop.name}</td>
-                <td className="py-2 pr-4 font-mono text-xs text-blue-400">{prop.type}</td>
+                <td className="py-2 pr-4 font-mono text-xs text-blue-400 max-w-[300px] truncate">{prop.type}</td>
+                {hasDefaults && (
+                  <td className="py-2 pr-4 font-mono text-xs text-status-success">
+                    {'default' in prop && (prop as { default?: string }).default ? (prop as { default?: string }).default : '—'}
+                  </td>
+                )}
                 <td className="py-2 text-xs">
                   {prop.required
                     ? <span className="text-status-warning">required</span>
@@ -231,18 +242,23 @@ function CodeExample({ comp, isUiComponent }: { comp: ComponentSummary; isUiComp
     );
   }
 
+  // Prefer auto-generated examples from scanner, fallback to basic template
+  const hasGenerated = comp.usageExamples && comp.usageExamples.length > 0;
+
   const pascalName = comp.name
     .split(/[\s-]+/)
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
     .join('');
 
-  const example = [
-    `import { ${pascalName} } from '@cmsmasters/ui';`,
-    '',
-    'export default function Example() {',
-    `  return <${pascalName} />;`,
-    '}',
-  ].join('\n');
+  const example = hasGenerated
+    ? (comp.usageExamples ?? []).join('\n')
+    : [
+        `import { ${pascalName} } from '@cmsmasters/ui';`,
+        '',
+        'export default function Example() {',
+        `  return <${pascalName} />;`,
+        '}',
+      ].join('\n');
 
   return (
     <div className="bg-surface-card rounded-card p-6">
@@ -260,23 +276,47 @@ function DesignSystemPanel({ comp, isUiComponent }: { comp: ComponentSummary; is
   if (!isUiComponent) return null;
 
   const componentName = comp.name;
-  const varPrefix = `--${componentName.toLowerCase()}`;
+  const cssVars = comp.cssVars ?? [];
+
+  // Group CSS vars by prefix
+  const colorVars = cssVars.filter((v) => !v.includes('height') && !v.includes('padding') && !v.includes('font') && !v.includes('line-height') && !v.includes('gap') && !v.includes('radius'));
+  const sizingVars = cssVars.filter((v) => v.includes('height') || v.includes('padding') || v.includes('font') || v.includes('line-height') || v.includes('gap') || v.includes('radius'));
 
   return (
     <div className="bg-surface-card rounded-card p-6 lg:col-span-2">
       <h2 className="text-text-primary font-semibold text-sm mb-4">Design System</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Token source */}
-        <div>
-          <h3 className="text-xs font-medium text-text-muted mb-2">Token source</h3>
-          <p className="text-sm text-text-secondary">
-            Colors from <span className="font-mono text-xs text-blue-400">Portal DS</span>,
-            sizing from <span className="font-mono text-xs text-blue-400">Obra</span> Figma variables.
-          </p>
-          <p className="text-sm text-text-secondary mt-1">
-            CSS vars: <code className="text-xs bg-zinc-800 px-1.5 py-0.5 rounded">{varPrefix}-*</code> in{' '}
-            <code className="text-xs bg-zinc-800 px-1.5 py-0.5 rounded">tokens.css</code>
-          </p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* CSS vars used */}
+        <div className="md:col-span-2">
+          <h3 className="text-xs font-medium text-text-muted mb-2">
+            CSS Variables ({cssVars.length})
+          </h3>
+          {cssVars.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {colorVars.length > 0 && (
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-text-muted mb-1">Colors</p>
+                  <div className="flex flex-wrap gap-1">
+                    {colorVars.map((v) => (
+                      <code key={v} className="text-[10px] bg-zinc-800 px-1.5 py-0.5 rounded text-blue-400">{v}</code>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {sizingVars.length > 0 && (
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-text-muted mb-1">Sizing</p>
+                  <div className="flex flex-wrap gap-1">
+                    {sizingVars.map((v) => (
+                      <code key={v} className="text-[10px] bg-zinc-800 px-1.5 py-0.5 rounded text-green-400">{v}</code>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-text-muted italic">No CSS variables detected</p>
+          )}
         </div>
 
         {/* Update instructions */}
@@ -285,25 +325,19 @@ function DesignSystemPanel({ comp, isUiComponent }: { comp: ComponentSummary; is
           <div className="flex flex-col gap-2 text-sm text-text-secondary">
             <div className="flex items-start gap-2">
               <span className="text-text-muted shrink-0">1.</span>
-              <span>Change values in Figma (<code className="text-xs bg-zinc-800 px-1 py-0.5 rounded">{`${componentName}/*`}</code> variables)</span>
+              <span>Change in Figma (<code className="text-xs bg-zinc-800 px-1 py-0.5 rounded">{`${componentName}/*`}</code>)</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="text-text-muted shrink-0">2.</span>
-              <span>
-                Run <code className="text-xs bg-zinc-800 text-blue-400 px-1.5 py-0.5 rounded">/sync-tokens</code> to pull tokens to CSS
-              </span>
+              <span><code className="text-xs bg-zinc-800 text-blue-400 px-1.5 py-0.5 rounded">/sync-tokens</code></span>
             </div>
             <div className="flex items-start gap-2">
               <span className="text-text-muted shrink-0">3.</span>
-              <span>
-                Run <code className="text-xs bg-zinc-800 text-blue-400 px-1.5 py-0.5 rounded">/figma-component-vars</code> to create/bind new Figma variables
-              </span>
+              <span><code className="text-xs bg-zinc-800 text-blue-400 px-1.5 py-0.5 rounded">/figma-component-vars</code></span>
             </div>
             <div className="flex items-start gap-2">
               <span className="text-text-muted shrink-0">4.</span>
-              <span>
-                Run <code className="text-xs bg-zinc-800 text-blue-400 px-1.5 py-0.5 rounded">npm run cc:scan</code> to refresh component data
-              </span>
+              <span><code className="text-xs bg-zinc-800 text-blue-400 px-1.5 py-0.5 rounded">npm run cc:scan</code></span>
             </div>
           </div>
         </div>

@@ -1,5 +1,5 @@
 {
-  "lastScanned": "2026-03-26T21:24:59.371Z",
+  "lastScanned": "2026-03-27T07:47:04.914Z",
   "components": [
     {
       "id": "ui-primitives-button",
@@ -15,7 +15,98 @@
       "usedBy": [],
       "loc": 219,
       "filePath": "packages/ui/src/primitives/button.tsx",
-      "propsInterface": "type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> &\n  VariantProps<typeof buttonVariants> & {\n    asChild?: boolean;\n    loading?: boolean;\n    size?: 'mini' | 'sm' | 'default' | 'lg' | 'xl' | null;\n  }"
+      "propsInterface": "type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> &\n  VariantProps<typeof buttonVariants> & {\n    asChild?: boolean;\n    loading?: boolean;\n    size?: 'mini' | 'sm' | 'default' | 'lg' | 'xl' | null;\n  }",
+      "cssVars": [
+        "--border-3",
+        "--border-4",
+        "--button-cta-bg",
+        "--button-cta-fg",
+        "--button-font-size",
+        "--button-font-size-mini",
+        "--button-font-size-xl",
+        "--button-gap",
+        "--button-gap-sm",
+        "--button-height-default",
+        "--button-height-lg",
+        "--button-height-mini",
+        "--button-height-sm",
+        "--button-height-xl",
+        "--button-line-height",
+        "--button-line-height-mini",
+        "--button-line-height-xl",
+        "--button-padding-x-default",
+        "--button-padding-x-lg",
+        "--button-padding-x-mini",
+        "--button-padding-x-sm",
+        "--button-padding-x-xl",
+        "--button-padding-y-default",
+        "--button-padding-y-lg",
+        "--button-padding-y-mini",
+        "--button-padding-y-sm",
+        "--button-padding-y-xl",
+        "--button-radius",
+        "--button-radius-pill",
+        "--destructive",
+        "--destructive-foreground",
+        "--foreground",
+        "--ghost",
+        "--ghost-foreground",
+        "--ghost-hover",
+        "--outline",
+        "--outline-hover",
+        "--primary",
+        "--primary-foreground",
+        "--primary-hover",
+        "--ring",
+        "--ring-error",
+        "--secondary",
+        "--secondary-foreground",
+        "--secondary-hover"
+      ],
+      "structuredProps": [
+        {
+          "name": "variant",
+          "type": "'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive' | 'cta'",
+          "required": false,
+          "default": "'primary'"
+        },
+        {
+          "name": "roundness",
+          "type": "'default' | 'pill'",
+          "required": false,
+          "default": "'default'"
+        },
+        {
+          "name": "asChild",
+          "type": "boolean",
+          "required": false
+        },
+        {
+          "name": "loading",
+          "type": "boolean",
+          "required": false
+        },
+        {
+          "name": "size",
+          "type": "'mini' | 'sm' | 'default' | 'lg' | 'xl' | null",
+          "required": false
+        }
+      ],
+      "usageExamples": [
+        "import { Button } from '@cmsmasters/ui';",
+        "",
+        "// variant variants:",
+        "<Button variant=\"secondary\">secondary</Button>",
+        "<Button variant=\"outline\">outline</Button>",
+        "<Button variant=\"ghost\">ghost</Button>",
+        "",
+        "// roundness variants:",
+        "<Button roundness=\"pill\">pill</Button>",
+        "",
+        "// States:",
+        "<Button loading>Loading...</Button>",
+        "<Button disabled>Disabled</Button>"
+      ]
     },
     {
       "id": "P0-T1",
