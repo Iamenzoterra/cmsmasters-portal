@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Content Studio — App Shell</title>
+
+  <!-- Google Fonts: Manrope -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Tailwind CSS v3 CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Manrope', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            page:       'rgb(250,248,247)',
+            surface:    'rgb(255,255,255)',
+            'surface-alt': 'rgb(241,241,241)',
+            navy:       'rgb(21,31,79)',
+            'navy-hover':'rgb(28,40,100)',
+            txt: {
+              primary:   'rgb(24,24,24)',
+              secondary: 'rgb(84,84,84)',
+              muted:     'rgb(170,161,146)',
+              link:      'rgb(41,81,220)',
+            },
+            border:     'rgb(234,229,224)',
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+  <!-- Figma Capture -->
+  <script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
+
+  <style>
+    /* Reset */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Manrope', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+
+    /* Active nav item left border accent */
+    .nav-active {
+      position: relative;
+      background-color: rgba(250, 248, 247, 1);
+      font-weight: 500;
+      color: rgb(24, 24, 24);
+    }
+    .nav-active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 4px;
+      bottom: 4px;
+      width: 3px;
+      border-radius: 0 2px 2px 0;
+      background-color: rgb(21, 31, 79);
+    }
+
+    /* Nav item hover */
+    .nav-item:not(.nav-active):hover {
+      background-color: rgba(250, 248, 247, 0.6);
+      color: rgb(24, 24, 24);
+    }
+
+    /* User dropdown hover */
+    .user-trigger:hover {
+      background-color: rgba(250, 248, 247, 0.8);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== Frame 1440x900 ===== -->
+  <div
+    id="app-shell"
+    style="width: 1440px; height: 900px;"
+    class="overflow-hidden bg-page flex flex-col"
+  >
+
+    <!-- ===== TOP BAR (56px) ===== -->
+    <header
+      class="flex items-center justify-between bg-surface border-b border-border px-5 shrink-0"
+      style="height: 56px;"
+    >
+      <!-- Left: Logo + App Name -->
+      <div class="flex items-center gap-3">
+        <!-- Navy rounded square with "C" -->
+        <div
+          class="flex items-center justify-center bg-navy text-white font-bold shrink-0"
+          style="width: 28px; height: 28px; border-radius: 7px; font-size: 15px; line-height: 1;"
+        >C</div>
+        <span class="text-txt-primary font-semibold" style="font-size: 15px;">Content Studio</span>
+      </div>
+
+      <!-- Right: Avatar + Name + Chevron -->
+      <button class="user-trigger flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 transition-colors duration-150">
+        <!-- Avatar circle -->
+        <div
+          class="flex items-center justify-center rounded-full bg-surface-alt text-txt-muted font-medium shrink-0"
+          style="width: 30px; height: 30px; font-size: 12px; line-height: 1;"
+        >DS</div>
+        <span class="text-txt-primary font-medium" style="font-size: 14px;">Designer</span>
+        <i data-lucide="chevron-down" class="text-txt-muted" style="width: 16px; height: 16px;"></i>
+      </button>
+    </header>
+
+    <!-- ===== BODY: Sidebar + Content ===== -->
+    <div class="flex flex-1 min-h-0">
+
+      <!-- ===== SIDEBAR (220px) ===== -->
+      <aside
+        class="flex flex-col bg-surface border-r border-border shrink-0"
+        style="width: 220px;"
+      >
+        <!-- Top nav group -->
+        <nav class="flex flex-col py-3 px-3 gap-0.5 flex-1">
+          <!-- Themes (active) -->
+          <a
+            href="#"
+            class="nav-item nav-active flex items-center gap-3 rounded-md px-3 transition-colors duration-150"
+            style="height: 38px; font-size: 14px;"
+          >
+            <i data-lucide="layout-grid" style="width: 18px; height: 18px;" class="shrink-0"></i>
+            <span>Themes</span>
+          </a>
+
+          <!-- Media (inactive) -->
+          <a
+            href="#"
+            class="nav-item flex items-center gap-3 rounded-md px-3 text-txt-secondary transition-colors duration-150"
+            style="height: 38px; font-size: 14px; font-weight: 400;"
+          >
+            <i data-lucide="image" style="width: 18px; height: 18px;" class="shrink-0"></i>
+            <span>Media</span>
+          </a>
+        </nav>
+
+        <!-- Separator -->
+        <div class="mx-3">
+          <div class="border-t border-border"></div>
+        </div>
+
+        <!-- Bottom nav group -->
+        <nav class="flex flex-col py-3 px-3 gap-0.5">
+          <!-- Help -->
+          <a
+            href="#"
+            class="nav-item flex items-center gap-3 rounded-md px-3 text-txt-secondary transition-colors duration-150"
+            style="height: 38px; font-size: 14px; font-weight: 400;"
+          >
+            <i data-lucide="help-circle" style="width: 18px; height: 18px;" class="shrink-0"></i>
+            <span>Help</span>
+          </a>
+
+          <!-- Logout -->
+          <a
+            href="#"
+            class="nav-item flex items-center gap-3 rounded-md px-3 text-txt-secondary transition-colors duration-150"
+            style="height: 38px; font-size: 14px; font-weight: 400;"
+          >
+            <i data-lucide="log-out" style="width: 18px; height: 18px;" class="shrink-0"></i>
+            <span>Logout</span>
+          </a>
+        </nav>
+      </aside>
+
+      <!-- ===== MAIN CONTENT ===== -->
+      <main class="flex-1 min-w-0 bg-page" style="padding: 40px 48px;">
+        <!-- Page heading -->
+        <h1
+          class="text-txt-primary font-bold"
+          style="font-size: 32px; line-height: 1.2; margin-bottom: 8px;"
+        >Themes</h1>
+
+        <!-- Page description -->
+        <p
+          class="text-txt-secondary"
+          style="font-size: 16px; line-height: 1.5; font-weight: 400;"
+        >Manage your WordPress theme catalog</p>
+      </main>
+
+    </div><!-- /body -->
+  </div><!-- /frame -->
+
+  <!-- Initialize Lucide icons -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+    });
+  </script>
+
+</body>
+</html>

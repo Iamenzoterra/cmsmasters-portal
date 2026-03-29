@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Content Studio — Login States</title>
+
+  <!-- Google Fonts: Manrope -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Tailwind CSS v3 CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Manrope', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            page:       'rgb(250,248,247)',
+            surface:    'rgb(255,255,255)',
+            navy:       'rgb(21,31,79)',
+            'navy-hover':'rgb(28,40,100)',
+            txt: {
+              primary:   'rgb(24,24,24)',
+              secondary: 'rgb(84,84,84)',
+              muted:     'rgb(170,161,146)',
+              link:      'rgb(41,81,220)',
+            },
+            border:     'rgb(234,229,224)',
+            success: {
+              bg:        'rgb(224,245,222)',
+              fg:        'rgb(34,135,34)',
+            },
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+  <!-- Figma Capture -->
+  <script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
+
+  <style>
+    /* Smooth focus ring */
+    input:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(41, 81, 220, 0.15);
+      border-color: rgb(41, 81, 220);
+    }
+
+    /* Subtle card shadow */
+    .card-shadow {
+      box-shadow:
+        0 1px 3px rgba(24, 24, 24, 0.04),
+        0 8px 32px rgba(24, 24, 24, 0.06);
+    }
+
+    /* Button shadow */
+    .btn-shadow {
+      box-shadow:
+        0 1px 2px rgba(21, 31, 79, 0.12),
+        0 4px 12px rgba(21, 31, 79, 0.16);
+    }
+
+    .btn-shadow:hover {
+      box-shadow:
+        0 1px 2px rgba(21, 31, 79, 0.16),
+        0 6px 20px rgba(21, 31, 79, 0.22);
+    }
+
+    /* Logo shadow */
+    .logo-shadow {
+      box-shadow:
+        0 2px 8px rgba(21, 31, 79, 0.18),
+        0 1px 3px rgba(21, 31, 79, 0.10);
+    }
+
+    /* Success circle glow */
+    .success-glow {
+      box-shadow:
+        0 0 0 8px rgba(34, 135, 34, 0.06),
+        0 0 0 16px rgba(34, 135, 34, 0.03);
+    }
+  </style>
+</head>
+
+<body class="bg-neutral-100 font-sans antialiased">
+
+  <!-- Horizontal flex container: both states side by side -->
+  <div class="flex items-start gap-10 p-10 overflow-x-auto">
+
+    <!-- ============================================================ -->
+    <!-- STATE 1: Login Default                                        -->
+    <!-- ============================================================ -->
+    <div class="flex-shrink-0">
+      <!-- Label -->
+      <div class="mb-3 text-sm font-semibold tracking-wide text-txt-secondary uppercase">
+        State 1 — Login Default
+      </div>
+
+      <!-- Frame -->
+      <div
+        class="relative flex items-center justify-center bg-page rounded-xl overflow-hidden"
+        style="width: 1440px; height: 900px;"
+      >
+        <!-- Subtle decorative dots pattern (top-right) -->
+        <div class="absolute top-0 right-0 w-80 h-80 opacity-[0.025]"
+             style="background-image: radial-gradient(circle, rgb(21,31,79) 1px, transparent 1px); background-size: 24px 24px;">
+        </div>
+
+        <!-- Card -->
+        <div class="bg-surface rounded-2xl border border-border card-shadow w-[420px] p-10">
+          <!-- Logo -->
+          <div class="flex justify-center mb-8">
+            <div class="w-14 h-14 rounded-xl bg-navy logo-shadow flex items-center justify-center">
+              <span class="text-white text-2xl font-bold tracking-tight" style="font-size: 26px; line-height: 1;">C</span>
+            </div>
+          </div>
+
+          <!-- Title -->
+          <h1 class="text-center text-txt-primary font-bold mb-1.5" style="font-size: 28px; line-height: 1.2;">
+            Content Studio
+          </h1>
+
+          <!-- Subtitle -->
+          <p class="text-center text-txt-secondary text-[15px] mb-8">
+            Sign in to manage themes
+          </p>
+
+          <!-- Form -->
+          <div class="space-y-5">
+            <!-- Email field -->
+            <div>
+              <label class="block text-sm font-medium text-txt-primary mb-2">
+                Email address
+              </label>
+              <input
+                type="email"
+                placeholder="you@company.com"
+                class="w-full h-11 px-3.5 rounded-lg border border-border bg-surface text-txt-primary text-[15px] placeholder:text-txt-muted transition-all duration-150"
+              />
+            </div>
+
+            <!-- Button -->
+            <button
+              class="w-full h-11 rounded-lg bg-navy text-white font-semibold text-[15px] btn-shadow hover:bg-navy-hover transition-all duration-150 cursor-pointer"
+            >
+              Send Magic Link
+            </button>
+          </div>
+
+          <!-- Footer -->
+          <p class="text-center text-txt-muted text-[13px] mt-6">
+            We'll send a login link — no password needed
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- STATE 2: Link Sent                                            -->
+    <!-- ============================================================ -->
+    <div class="flex-shrink-0">
+      <!-- Label -->
+      <div class="mb-3 text-sm font-semibold tracking-wide text-txt-secondary uppercase">
+        State 2 — Link Sent
+      </div>
+
+      <!-- Frame -->
+      <div
+        class="relative flex items-center justify-center bg-page rounded-xl overflow-hidden"
+        style="width: 1440px; height: 900px;"
+      >
+        <!-- Subtle decorative dots pattern (top-right) -->
+        <div class="absolute top-0 right-0 w-80 h-80 opacity-[0.025]"
+             style="background-image: radial-gradient(circle, rgb(21,31,79) 1px, transparent 1px); background-size: 24px 24px;">
+        </div>
+
+        <!-- Card -->
+        <div class="bg-surface rounded-2xl border border-border card-shadow w-[420px] p-10">
+          <!-- Success icon -->
+          <div class="flex justify-center mb-7">
+            <div class="w-16 h-16 rounded-full bg-success-bg success-glow flex items-center justify-center">
+              <i data-lucide="mail" class="text-success-fg" style="width: 28px; height: 28px; stroke-width: 1.75;"></i>
+            </div>
+          </div>
+
+          <!-- Title -->
+          <h1 class="text-center text-txt-primary font-bold mb-2" style="font-size: 28px; line-height: 1.2;">
+            Check your email
+          </h1>
+
+          <!-- Description -->
+          <p class="text-center text-txt-secondary text-[15px] leading-relaxed mb-7">
+            We sent a magic link to<br />
+            <span class="font-semibold text-txt-primary">designer@cmsmasters.net</span>
+          </p>
+
+          <!-- Divider -->
+          <div class="border-t border-border mb-6"></div>
+
+          <!-- Resend row -->
+          <div class="flex items-center justify-center gap-1.5 text-[14px]">
+            <span class="text-txt-muted">Didn't receive it?</span>
+            <button class="text-txt-link font-medium hover:underline cursor-pointer bg-transparent border-none p-0">
+              Resend in 54s
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Initialize Lucide icons -->
+  <script>
+    lucide.createIcons();
+  </script>
+
+</body>
+</html>
