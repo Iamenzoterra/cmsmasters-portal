@@ -1,5 +1,5 @@
 {
-  "name": "@cmsmasters/validators",
+  "name": "@cmsmasters/api-client",
   "version": "0.0.0",
   "private": true,
   "main": "./src/index.ts",
@@ -8,6 +8,6 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "zod": "^4"
+    "hono": "^4"
   }
 }
