@@ -2,3 +2,4 @@
 .env.local
 .mcp.json
 .dev.vars
+.wrangler/
