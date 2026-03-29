@@ -1,0 +1,6 @@
+# Supabase project configuration (placeholder)
+# CLI not installed — this file exists for project reference only.
+# Install supabase CLI when local dev with Docker is needed.
+
+[project]
+id = "yxcqtwuyktbjxstahfqj"
