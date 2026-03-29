@@ -1,0 +1,28 @@
+{
+  "name": "@cmsmasters/api",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "targets": {
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx wrangler dev",
+        "cwd": "apps/api"
+      },
+      "continuous": true
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx wrangler deploy --dry-run",
+        "cwd": "apps/api"
+      }
+    },
+    "deploy": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx wrangler deploy",
+        "cwd": "apps/api"
+      }
+    }
+  }
+}

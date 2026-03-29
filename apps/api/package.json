@@ -1,0 +1,20 @@
+{
+  "name": "@cmsmasters/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "wrangler deploy --dry-run",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "hono": "^4",
+    "@supabase/supabase-js": "^2",
+    "@cmsmasters/db": "*"
+  },
+  "devDependencies": {
+    "wrangler": "^3",
+    "@cloudflare/workers-types": "^4"
+  }
+}

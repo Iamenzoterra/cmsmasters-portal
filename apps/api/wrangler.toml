@@ -1,0 +1,16 @@
+name = "cmsmasters-api"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+SUPABASE_URL = ""
+
+# Secrets (set via `wrangler secret put <NAME>`):
+# SUPABASE_SERVICE_KEY  — Supabase service_role key
+# SUPABASE_JWT_SECRET   — Supabase JWT secret (Settings → API → JWT Secret)
+#
+# For local dev, create apps/api/.dev.vars (gitignored) with:
+#   SUPABASE_URL=https://your-project.supabase.co
+#   SUPABASE_SERVICE_KEY=eyJ...
+#   SUPABASE_JWT_SECRET=your-jwt-secret
