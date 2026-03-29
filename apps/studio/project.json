@@ -1,0 +1,28 @@
+{
+  "name": "@cmsmasters/studio",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "targets": {
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx vite --port 5173",
+        "cwd": "apps/studio"
+      },
+      "continuous": true
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx vite build",
+        "cwd": "apps/studio"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx tsc --noEmit",
+        "cwd": "apps/studio"
+      }
+    }
+  }
+}

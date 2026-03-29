@@ -1,0 +1,36 @@
+{
+  "name": "@cmsmasters/studio",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5173",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7",
+    "react-hook-form": "^7",
+    "@hookform/resolvers": "^3",
+    "lucide-react": "^0.468.0",
+    "@cmsmasters/auth": "*",
+    "@cmsmasters/db": "*",
+    "@cmsmasters/validators": "*",
+    "@cmsmasters/api-client": "*",
+    "@cmsmasters/ui": "*"
+  },
+  "devDependencies": {
+    "vite": "^6",
+    "@vitejs/plugin-react": "^4",
+    "tailwindcss": "^4",
+    "@tailwindcss/postcss": "^4",
+    "postcss": "^8",
+    "autoprefixer": "^10",
+    "typescript": "^5",
+    "@types/react": "^19",
+    "@types/react-dom": "^19"
+  }
+}
