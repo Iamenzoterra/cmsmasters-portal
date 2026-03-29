@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Content Studio — Theme Editor</title>
+
+  <!-- Google Fonts: Manrope -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Tailwind CSS v3 CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Manrope', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            page:       'rgb(250,248,247)',
+            surface:    'rgb(255,255,255)',
+            'surface-alt': 'rgb(241,241,241)',
+            navy:       'rgb(21,31,79)',
+            'navy-hover':'rgb(28,40,100)',
+            'outline-border': 'rgb(39,43,83)',
+            txt: {
+              primary:   'rgb(24,24,24)',
+              secondary: 'rgb(84,84,84)',
+              muted:     'rgb(170,161,146)',
+              link:      'rgb(41,81,220)',
+            },
+            border: {
+              DEFAULT:   'rgb(234,229,224)',
+              light:     'rgb(221,221,221)',
+            },
+            tag: {
+              bg:        'rgb(250,248,247)',
+              fg:        'rgb(84,84,84)',
+              border:    'rgb(234,229,224)',
+              teal:      'rgb(76,200,222)',
+            },
+            status: {
+              'success-bg': 'rgb(224,245,222)',
+              'success-fg': 'rgb(34,135,34)',
+              'warn-bg':    'rgb(255,251,235)',
+              'warn-fg':    'rgb(217,119,6)',
+            },
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+  <!-- Figma Capture -->
+  <script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Manrope', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+
+    /* Card subtle shadow */
+    .card-shadow {
+      box-shadow:
+        0 1px 3px rgba(24, 24, 24, 0.04),
+        0 4px 16px rgba(24, 24, 24, 0.03);
+    }
+
+    /* Footer shadow (upward) */
+    .footer-shadow {
+      box-shadow: 0 -2px 12px rgba(24, 24, 24, 0.06);
+    }
+
+    /* Input focus ring */
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(41, 81, 220, 0.12);
+      border-color: rgb(41, 81, 220) !important;
+    }
+
+    /* Button hover transitions */
+    .btn-primary { transition: background-color 0.15s ease, box-shadow 0.15s ease; }
+    .btn-primary:hover { background-color: rgb(28, 40, 100); }
+
+    .btn-outline { transition: background-color 0.15s ease, border-color 0.15s ease; }
+    .btn-outline:hover { background-color: rgb(250, 248, 247); }
+
+    .btn-ghost { transition: color 0.15s ease; }
+    .btn-ghost:hover { color: rgb(24, 24, 24); }
+
+    /* Thumbnail placeholder */
+    .thumb-placeholder {
+      background-color: rgb(245, 243, 240);
+      background-image:
+        linear-gradient(45deg, rgba(0,0,0,0.02) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(0,0,0,0.02) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(0,0,0,0.02) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(0,0,0,0.02) 75%);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+    }
+
+    /* Dashed add-feature button */
+    .btn-dashed {
+      border: 1.5px dashed rgb(234, 229, 224);
+      transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+    }
+    .btn-dashed:hover {
+      border-color: rgb(170, 161, 146);
+      background-color: rgb(250, 248, 247);
+    }
+
+    /* Drag handle cursor */
+    .drag-handle { cursor: grab; }
+    .drag-handle:active { cursor: grabbing; }
+
+    /* Delete button */
+    .delete-btn { transition: color 0.15s ease, background-color 0.15s ease; }
+    .delete-btn:hover { color: rgb(220, 38, 38); background-color: rgb(254, 242, 242); }
+
+    /* Google preview card */
+    .google-preview {
+      font-family: Arial, sans-serif;
+    }
+
+    /* Section collapse arrow */
+    .section-toggle { transition: transform 0.2s ease; }
+    .section-toggle.collapsed { transform: rotate(-90deg); }
+
+    /* Character counter colors */
+    .char-ok { color: rgb(34, 135, 34); }
+    .char-warn { color: rgb(217, 119, 6); }
+    .char-over { color: rgb(220, 38, 38); }
+
+    /* Separator */
+    .meta-separator {
+      height: 1px;
+      background-color: rgb(234, 229, 224);
+    }
+  </style>
+</head>
+<body>
+
+<!-- =====================================================================
+     OUTER FRAME: 1220 x 1200, overflow hidden, page background
+     ===================================================================== -->
+<div
+  id="frame"
+  style="width: 1220px; height: 1200px; overflow: hidden;"
+  class="bg-page relative flex flex-col"
+>
+
+  <!-- ===================================================================
+       PAGE HEADER
+       =================================================================== -->
+  <header class="bg-surface border-b border-border flex items-center justify-between px-8 py-4 shrink-0">
+    <!-- Left: Back link + Title -->
+    <div class="flex items-center gap-4">
+      <a href="#" class="flex items-center gap-1.5 text-txt-muted hover:text-txt-secondary transition-colors text-sm font-medium">
+        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+        Back to Themes
+      </a>
+      <div class="w-px h-5 bg-border"></div>
+      <h1 class="text-lg font-semibold text-txt-primary">Flavor Theme</h1>
+    </div>
+    <!-- Right: More menu -->
+    <button class="w-8 h-8 flex items-center justify-center rounded-lg text-txt-muted hover:text-txt-secondary hover:bg-page transition-colors">
+      <i data-lucide="more-horizontal" class="w-5 h-5"></i>
+    </button>
+  </header>
+
+  <!-- ===================================================================
+       SCROLLABLE CONTENT AREA (main + sidebar)
+       =================================================================== -->
+  <div class="flex-1 overflow-y-auto">
+    <div class="flex gap-6 px-8 pt-6 pb-28">
+
+      <!-- =================================================================
+           LEFT COLUMN — 65% — form sections
+           ================================================================= -->
+      <div class="flex-1 min-w-0 flex flex-col gap-6" style="max-width: 65%;">
+
+        <!-- ─── BASIC INFO ─── -->
+        <section class="bg-surface rounded-xl border border-border card-shadow">
+          <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border">
+            <h2 class="text-lg font-semibold text-txt-primary">Basic Info</h2>
+            <button class="section-toggle w-6 h-6 flex items-center justify-center text-txt-muted hover:text-txt-secondary rounded transition-colors">
+              <i data-lucide="chevron-down" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <div class="px-6 py-5 flex flex-col gap-5">
+            <!-- Name -->
+            <div class="flex flex-col gap-1.5">
+              <label class="text-sm font-medium text-txt-secondary">Name</label>
+              <input
+                type="text"
+                value="Flavor Theme"
+                class="w-full h-9 px-3 text-sm text-txt-primary bg-surface border border-border rounded-lg placeholder:text-txt-muted"
+              />
+            </div>
+            <!-- Tagline -->
+            <div class="flex flex-col gap-1.5">
+              <label class="text-sm font-medium text-txt-secondary">Tagline</label>
+              <input
+                type="text"
+                value="Creative Multipurpose WordPress Theme"
+                class="w-full h-9 px-3 text-sm text-txt-primary bg-surface border border-border rounded-lg placeholder:text-txt-muted"
+              />
+            </div>
+            <!-- Description -->
+            <div class="flex flex-col gap-1.5">
+              <label class="text-sm font-medium text-txt-secondary">Description</label>
+              <textarea
+                rows="4"
+                class="w-full px-3 py-2 text-sm text-txt-primary bg-surface border border-border rounded-lg placeholder:text-txt-muted resize-none leading-relaxed"
+              >A stunning, feature-rich WordPress theme designed for creative professionals. Flavor comes with 15+ demo layouts, drag-and-drop page builder compatibility, WooCommerce support, and a powerful theme options panel that makes customization effortless.</textarea>
+            </div>
+          </div>
+        </section>
+
+        <!-- ─── LINKS ─── -->
+        <section class="bg-surface rounded-xl border border-border card-shadow">
+          <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border">
+            <h2 class="text-lg font-semibold text-txt-primary">Links</h2>
+            <button class="section-toggle w-6 h-6 flex items-center justify-center text-txt-muted hover:text-txt-secondary rounded transition-colors">
+              <i data-lucide="chevron-down" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <div class="px-6 py-5 flex flex-col gap-5">
+            <!-- Demo URL -->
+            <div class="flex flex-col gap-1.5">
+              <label class="text-sm font-medium text-txt-secondary">Demo URL</label>
+              <input
+                type="url"
+                value="https://flavor.developer.starter.com"
+                class="w-full h-9 px-3 text-sm text-txt-primary bg-surface border border-border rounded-lg placeholder:text-txt-muted"
+              />
+            </div>
+            <!-- ThemeForest URL -->
+            <div class="flex flex-col gap-1.5">
+              <label class="text-sm font-medium text-txt-secondary">ThemeForest URL</label>
+              <input
+                type="url"
+                value="https://themeforest.net/item/flavor/24452857"
+                class="w-full h-9 px-3 text-sm text-txt-primary bg-surface border border-border rounded-lg placeholder:text-txt-muted"
+              />
+            </div>
+            <!-- ThemeForest ID -->
+            <div class="flex flex-col gap-1.5">
+              <label class="text-sm font-medium text-txt-secondary">ThemeForest ID</label>
+              <input
+                type="text"
+                value="24452857"
+                class="w-full h-9 px-3 text-sm text-txt-primary bg-surface border border-border rounded-lg placeholder:text-txt-muted"
+                style="max-width: 200px;"
+              />
+            </div>
+          </div>
+        </section>
+
+        <!-- ─── FEATURES (repeater) ─── -->
+        <section class="bg-surface rounded-xl border border-border card-shadow">
+          <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border">
+            <h2 class="text-lg font-semibold text-txt-primary">Features</h2>
+            <button class="section-toggle w-6 h-6 flex items-center justify-center text-txt-muted hover:text-txt-secondary rounded transition-colors">
+              <i data-lucide="chevron-down" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <div class="px-6 py-5 flex flex-col gap-3">
+
+            <!-- Feature Row 1 -->
+            <div class="flex items-start gap-3 p-3 rounded-lg border border-border" style="background-color: rgba(250,248,247,0.5);">
+              <!-- Drag handle -->
+              <div class="drag-handle flex items-center justify-center w-6 h-9 text-txt-muted shrink-0">
+                <i data-lucide="grip-vertical" class="w-4 h-4"></i>
+              </div>
+              <!-- Icon field -->
+              <div class="flex flex-col gap-1 shrink-0" style="width: 100px;">
+                <label class="text-xs font-medium text-txt-muted">Icon</label>
+                <input
+                  type="text"
+                  value="layout"
+                  class="w-full h-8 px-2.5 text-xs text-txt-primary bg-surface border border-border rounded-md"
+                />
+              </div>
+              <!-- Title field -->
+              <div class="flex flex-col gap-1 flex-1 min-w-0">
+                <label class="text-xs font-medium text-txt-muted">Title</label>
+                <input
+                  type="text"
+                  value="Page Builder Ready"
+                  class="w-full h-8 px-2.5 text-xs text-txt-primary bg-surface border border-border rounded-md"
+                />
+              </div>
+              <!-- Description field -->
+              <div class="flex flex-col gap-1 flex-1 min-w-0">
+                <label class="text-xs font-medium text-txt-muted">Description</label>
+                <input
+                  type="text"
+                  value="Works with Elementor, WPBakery, and Gutenberg"
+                  class="w-full h-8 px-2.5 text-xs text-txt-primary bg-surface border border-border rounded-md"
+                />
+              </div>
+              <!-- Delete -->
+              <button class="delete-btn flex items-center justify-center w-7 h-8 mt-[18px] rounded-md text-txt-muted shrink-0">
+                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+
+            <!-- Feature Row 2 -->
+            <div class="flex items-start gap-3 p-3 rounded-lg border border-border" style="background-color: rgba(250,248,247,0.5);">
+              <!-- Drag handle -->
+              <div class="drag-handle flex items-center justify-center w-6 h-9 text-txt-muted shrink-0">
+                <i data-lucide="grip-vertical" class="w-4 h-4"></i>
+              </div>
+              <!-- Icon field -->
+              <div class="flex flex-col gap-1 shrink-0" style="width: 100px;">
+                <label class="text-xs font-medium text-txt-muted">Icon</label>
+                <input
+                  type="text"
+                  value="shopping-cart"
+                  class="w-full h-8 px-2.5 text-xs text-txt-primary bg-surface border border-border rounded-md"
+                />
+              </div>
+              <!-- Title field -->
+              <div class="flex flex-col gap-1 flex-1 min-w-0">
+                <label class="text-xs font-medium text-txt-muted">Title</label>
+                <input
+                  type="text"
+                  value="WooCommerce Integration"
+                  class="w-full h-8 px-2.5 text-xs text-txt-primary bg-surface border border-border rounded-md"
+                />
+              </div>
+              <!-- Description field -->
+              <div class="flex flex-col gap-1 flex-1 min-w-0">
+                <label class="text-xs font-medium text-txt-muted">Description</label>
+                <input
+                  type="text"
+                  value="Full eCommerce support with custom shop layouts"
+                  class="w-full h-8 px-2.5 text-xs text-txt-primary bg-surface border border-border rounded-md"
+                />
+              </div>
+              <!-- Delete -->
+              <button class="delete-btn flex items-center justify-center w-7 h-8 mt-[18px] rounded-md text-txt-muted shrink-0">
+                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+
+            <!-- Add Feature Button -->
+            <button class="btn-dashed flex items-center justify-center gap-2 w-full h-10 rounded-lg text-sm font-medium text-txt-muted mt-1">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              Add Feature
+            </button>
+          </div>
+        </section>
+
+        <!-- ─── SEO ─── -->
+        <section class="bg-surface rounded-xl border border-border card-shadow">
+          <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border">
+            <h2 class="text-lg font-semibold text-txt-primary">SEO</h2>
+            <button class="section-toggle w-6 h-6 flex items-center justify-center text-txt-muted hover:text-txt-secondary rounded transition-colors">
+              <i data-lucide="chevron-down" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <div class="px-6 py-5 flex flex-col gap-5">
+            <!-- SEO Title -->
+            <div class="flex flex-col gap-1.5">
+              <div class="flex items-center justify-between">
+                <label class="text-sm font-medium text-txt-secondary">SEO Title</label>
+                <span class="text-xs font-medium char-ok">52 / 70</span>
+              </div>
+              <input
+                type="text"
+                value="Flavor Theme — Creative Multipurpose WordPress Theme"
+                class="w-full h-9 px-3 text-sm text-txt-primary bg-surface border border-border rounded-lg placeholder:text-txt-muted"
+                maxlength="70"
+              />
+            </div>
+            <!-- SEO Description -->
+            <div class="flex flex-col gap-1.5">
+              <div class="flex items-center justify-between">
+                <label class="text-sm font-medium text-txt-secondary">SEO Description</label>
+                <span class="text-xs font-medium char-ok">142 / 160</span>
+              </div>
+              <textarea
+                rows="3"
+                class="w-full px-3 py-2 text-sm text-txt-primary bg-surface border border-border rounded-lg placeholder:text-txt-muted resize-none leading-relaxed"
+                maxlength="160"
+              >Build stunning websites with Flavor, a premium WordPress theme featuring 15+ demos, drag-and-drop builders, WooCommerce, and unlimited customization options.</textarea>
+            </div>
+
+            <!-- Google Preview -->
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-medium text-txt-muted uppercase tracking-wider">Google Preview</label>
+              <div class="google-preview border border-border rounded-lg p-4 bg-surface">
+                <!-- URL breadcrumb -->
+                <div class="flex items-center gap-1 text-xs" style="color: #202124;">
+                  <span style="color: #4d5156;">cmsmasters.net</span>
+                  <span style="color: #4d5156;">></span>
+                  <span style="color: #4d5156;">themes</span>
+                  <span style="color: #4d5156;">></span>
+                  <span style="color: #4d5156;">flavor</span>
+                </div>
+                <!-- Title -->
+                <div class="mt-1 text-xl leading-snug" style="color: #1a0dab; font-family: Arial, sans-serif;">
+                  Flavor Theme — Creative Multipurpose WordPress Theme
+                </div>
+                <!-- Description -->
+                <div class="mt-1 text-sm leading-relaxed" style="color: #4d5156; font-family: Arial, sans-serif;">
+                  Build stunning websites with Flavor, a premium WordPress theme featuring 15+ demos, drag-and-drop builders, WooCommerce, and unlimited customization options.
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+      <!-- END LEFT COLUMN -->
+
+      <!-- =================================================================
+           RIGHT COLUMN — 35% — sidebar metadata
+           ================================================================= -->
+      <aside class="shrink-0" style="width: 35%;">
+        <div class="bg-surface rounded-xl border border-border card-shadow sticky top-6">
+          <div class="p-6 flex flex-col gap-6">
+
+            <!-- Thumbnail -->
+            <div class="flex flex-col gap-2">
+              <label class="text-sm font-medium text-txt-secondary">Thumbnail</label>
+              <div class="thumb-placeholder rounded-lg border border-border flex items-center justify-center" style="aspect-ratio: 16 / 10;">
+                <div class="flex flex-col items-center gap-2 text-txt-muted">
+                  <i data-lucide="image" class="w-8 h-8 opacity-40"></i>
+                  <span class="text-xs font-medium">1600 x 1000</span>
+                </div>
+              </div>
+              <button class="text-xs font-medium text-txt-link hover:underline self-start mt-0.5">
+                Upload image
+              </button>
+            </div>
+
+            <!-- Status -->
+            <div class="flex flex-col gap-2">
+              <label class="text-sm font-medium text-txt-secondary">Status</label>
+              <div class="flex items-center gap-2">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-status-success-bg text-status-success-fg">
+                  <span class="w-1.5 h-1.5 rounded-full bg-status-success-fg"></span>
+                  Published
+                </span>
+              </div>
+            </div>
+
+            <!-- Category -->
+            <div class="flex flex-col gap-1.5">
+              <label class="text-sm font-medium text-txt-secondary">Category</label>
+              <div class="relative">
+                <select class="w-full h-9 px-3 pr-8 text-sm text-txt-primary bg-surface border border-border rounded-lg appearance-none cursor-pointer">
+                  <option value="creative" selected>Creative</option>
+                  <option value="business">Business</option>
+                  <option value="blog">Blog</option>
+                  <option value="portfolio">Portfolio</option>
+                  <option value="ecommerce">eCommerce</option>
+                </select>
+                <div class="absolute inset-y-0 right-2.5 flex items-center pointer-events-none text-txt-muted">
+                  <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- Price -->
+            <div class="flex flex-col gap-1.5">
+              <label class="text-sm font-medium text-txt-secondary">Price</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-3 flex items-center text-sm text-txt-muted font-medium">$</span>
+                <input
+                  type="text"
+                  value="59"
+                  class="w-full h-9 pl-7 pr-3 text-sm text-txt-primary bg-surface border border-border rounded-lg"
+                  style="max-width: 140px;"
+                />
+              </div>
+            </div>
+
+            <!-- Separator -->
+            <div class="meta-separator"></div>
+
+            <!-- Meta info -->
+            <div class="flex flex-col gap-3">
+              <h3 class="text-xs font-semibold text-txt-muted uppercase tracking-wider">Meta</h3>
+              <div class="flex flex-col gap-2.5">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm text-txt-muted">Created</span>
+                  <span class="text-sm font-medium text-txt-primary">15 Jan 2026</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-sm text-txt-muted">Updated</span>
+                  <span class="text-sm font-medium text-txt-primary">2h ago</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-sm text-txt-muted">By</span>
+                  <span class="text-sm font-medium text-txt-primary">Designer</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </aside>
+      <!-- END RIGHT COLUMN -->
+
+    </div>
+  </div>
+  <!-- END SCROLLABLE CONTENT -->
+
+  <!-- ===================================================================
+       STICKY FOOTER
+       =================================================================== -->
+  <footer class="absolute bottom-0 left-0 right-0 bg-surface border-t border-border footer-shadow flex items-center justify-between px-8 py-3.5 z-10">
+    <!-- Left: Discard -->
+    <button class="btn-ghost text-sm font-medium text-txt-muted">
+      Discard Changes
+    </button>
+    <!-- Right: Save Draft + Publish -->
+    <div class="flex items-center gap-3">
+      <button class="btn-outline h-9 px-5 text-sm font-semibold rounded-lg border border-outline-border text-navy bg-surface">
+        Save Draft
+      </button>
+      <button class="btn-primary h-9 px-5 text-sm font-semibold rounded-lg bg-navy text-white">
+        Publish
+      </button>
+    </div>
+  </footer>
+
+</div>
+<!-- END FRAME -->
+
+<!-- Initialize Lucide icons -->
+<script>
+  lucide.createIcons();
+</script>
+
+</body>
+</html>
