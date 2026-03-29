@@ -91,4 +91,4 @@ Temp file `_integration-test.ts` created, run, deleted.
 None.
 
 ## Git
-- Commit: (pending)
+- Commit: `20915951` — `verify: Layer 0 integration smoke test [WP-002 phase 5]`

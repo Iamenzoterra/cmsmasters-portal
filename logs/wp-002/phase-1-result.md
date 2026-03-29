@@ -63,4 +63,4 @@ None.
 | M2: updateProfile rejects role | ✅ TS2353: 'role' does not exist in type 'SafeProfileUpdate' |
 
 ## Git
-- Commit: (pending)
+- Commit: `895a8e17` — `feat: supabase schema + @cmsmasters/db package [WP-002 phase 1]`

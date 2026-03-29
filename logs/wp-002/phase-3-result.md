@@ -67,4 +67,5 @@ None.
 | Protected route bad token → 401 | ✅ `Invalid or expired token` |
 
 ## Git
-- Commit: (pending)
+- Commit: `c80969aa` — `feat: Hono API skeleton — JWT middleware, health/revalidate/upload routes [WP-002 phase 3]`
+- Commit: `ee45ff59` — `fix: remove wrangler artifacts from tracking, add .wrangler/ to gitignore`

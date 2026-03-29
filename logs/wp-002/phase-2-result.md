@@ -58,4 +58,4 @@ None.
 | .gitkeep removed | ✅ |
 
 ## Git
-- Commit: (pending)
+- Commit: `1b983efa` — `feat: @cmsmasters/auth package — PKCE client, hooks, route guard [WP-002 phase 2]`
