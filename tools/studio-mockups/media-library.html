@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1220" />
+  <title>Content Studio — Media Library</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Manrope', sans-serif;
+      background: rgb(250, 248, 247);
+      color: rgb(24, 24, 24);
+      width: 1220px;
+      min-height: 844px;
+      padding: 40px 48px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .header h1 {
+      font-size: 32px;
+      font-weight: 700;
+      line-height: 1.2;
+      color: rgb(24, 24, 24);
+    }
+
+    .btn-upload {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 40px;
+      padding: 0 20px;
+      background: rgb(21, 31, 79);
+      color: #fff;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn-upload:hover { opacity: 0.9; }
+    .btn-upload svg { width: 18px; height: 18px; }
+
+    .subtitle {
+      font-size: 15px;
+      font-weight: 500;
+      color: rgb(84, 84, 84);
+      margin-bottom: 24px;
+    }
+
+    /* ── Drop zone ── */
+    .drop-zone {
+      width: 100%;
+      height: 120px;
+      border: 2px dashed rgb(234, 229, 224);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 32px;
+      background: rgba(255, 255, 255, 0.5);
+      transition: border-color 0.15s, background 0.15s;
+      cursor: pointer;
+    }
+    .drop-zone:hover {
+      border-color: rgb(170, 161, 146);
+      background: rgba(255, 255, 255, 0.8);
+    }
+    .drop-zone svg {
+      width: 32px;
+      height: 32px;
+      color: rgb(170, 161, 146);
+    }
+    .drop-zone span {
+      font-size: 14px;
+      font-weight: 500;
+      color: rgb(170, 161, 146);
+    }
+
+    /* ── Grid ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: rgb(255, 255, 255);
+      border: 1px solid rgb(234, 229, 224);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: box-shadow 0.15s;
+    }
+    .card:hover {
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    }
+
+    .card-thumb {
+      aspect-ratio: 1 / 1;
+      background: rgb(241, 241, 241);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card-thumb svg {
+      width: 32px;
+      height: 32px;
+      color: rgb(170, 161, 146);
+    }
+
+    .card-body {
+      padding: 12px 14px 14px;
+    }
+
+    .card-filename {
+      font-size: 13px;
+      font-weight: 600;
+      color: rgb(24, 24, 24);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 4px;
+    }
+
+    .card-meta {
+      font-size: 12px;
+      font-weight: 400;
+      color: rgb(170, 161, 146);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <h1>Media Library</h1>
+    <button class="btn-upload">
+      <i data-lucide="upload"></i>
+      Upload
+    </button>
+  </div>
+
+  <p class="subtitle">24 files</p>
+
+  <!-- Drop zone -->
+  <div class="drop-zone">
+    <i data-lucide="upload-cloud"></i>
+    <span>Drag &amp; drop files here or click to browse</span>
+  </div>
+
+  <!-- Image grid -->
+  <div class="grid">
+
+    <div class="card">
+      <div class="card-thumb"><i data-lucide="image"></i></div>
+      <div class="card-body">
+        <div class="card-filename">hero-flavor.jpg</div>
+        <div class="card-meta">2.4 MB · Mar 12, 2026</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-thumb"><i data-lucide="image"></i></div>
+      <div class="card-body">
+        <div class="card-filename">preview-01.png</div>
+        <div class="card-meta">1.8 MB · Mar 11, 2026</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-thumb"><i data-lucide="image"></i></div>
+      <div class="card-body">
+        <div class="card-filename">preview-02.png</div>
+        <div class="card-meta">1.2 MB · Mar 10, 2026</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-thumb"><i data-lucide="image"></i></div>
+      <div class="card-body">
+        <div class="card-filename">thumbnail.jpg</div>
+        <div class="card-meta">245 KB · Mar 9, 2026</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-thumb"><i data-lucide="image"></i></div>
+      <div class="card-body">
+        <div class="card-filename">banner-wide.jpg</div>
+        <div class="card-meta">3.1 MB · Mar 8, 2026</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-thumb"><i data-lucide="image"></i></div>
+      <div class="card-body">
+        <div class="card-filename">icon-set.svg</div>
+        <div class="card-meta">48 KB · Mar 7, 2026</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-thumb"><i data-lucide="image"></i></div>
+      <div class="card-body">
+        <div class="card-filename">mockup-device.png</div>
+        <div class="card-meta">890 KB · Mar 6, 2026</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-thumb"><i data-lucide="image"></i></div>
+      <div class="card-body">
+        <div class="card-filename">og-image.jpg</div>
+        <div class="card-meta">156 KB · Mar 5, 2026</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Lucide icons init -->
+  <script>lucide.createIcons();</script>
+
+  <!-- Figma capture script -->
+  <script>
+    // Figma HTML-to-image capture helper
+    // Usage: call window.__figmaCapture() from Figma plugin or dev console
+    window.__figmaCapture = async function () {
+      const { default: htmlToImage } = await import('https://esm.sh/html-to-image@1.11.11');
+      const node = document.body;
+      const dataUrl = await htmlToImage.toPng(node, {
+        width: 1220,
+        height: 844,
+        canvasWidth: 1220,
+        canvasHeight: 844,
+        pixelRatio: 2,
+      });
+      // Copy to clipboard as blob
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      console.log('[Figma capture] PNG copied to clipboard (1220x844 @2x)');
+      return dataUrl;
+    };
+  </script>
+
+</body>
+</html>
