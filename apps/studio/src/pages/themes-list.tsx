@@ -52,7 +52,7 @@ export function ThemesList() {
 
     if (search.trim()) {
       const q = search.trim().toLowerCase()
-      result = result.filter((t) => t.name.toLowerCase().includes(q))
+      result = result.filter((t) => t.meta.name.toLowerCase().includes(q))
     }
 
     if (statusFilter !== 'all') {

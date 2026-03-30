@@ -52,16 +52,16 @@ export function ThemesTable({ themes, onThemeClick }: ThemesTableProps) {
             }}
           >
             <td style={{ ...cellStyle, fontSize: 'var(--text-sm-font-size)', fontWeight: 600, color: 'hsl(var(--text-primary))' }}>
-              {theme.name}
+              {theme.meta.name}
             </td>
             <td style={{ ...cellStyle, fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-secondary))' }}>
-              {theme.category ?? '—'}
+              {theme.meta.category ?? '—'}
             </td>
             <td style={cellStyle}>
               <StatusBadge status={theme.status} />
             </td>
             <td style={{ ...cellStyle, fontSize: 'var(--text-sm-font-size)', fontWeight: 600, color: 'hsl(var(--text-primary))' }}>
-              {formatPrice(theme.price)}
+              {formatPrice(theme.meta.price ?? null)}
             </td>
             <td style={{ ...cellStyle, fontSize: '12px', color: 'hsl(var(--text-muted))' }}>
               {timeAgo(theme.updated_at)}

@@ -28,10 +28,10 @@ export function ThemeCard({ theme, onClick }: ThemeCardProps) {
           backgroundColor: 'hsl(var(--bg-surface-alt))',
         }}
       >
-        {theme.thumbnail_url ? (
+        {theme.meta.thumbnail_url ? (
           <img
-            src={theme.thumbnail_url}
-            alt={theme.name}
+            src={theme.meta.thumbnail_url}
+            alt={theme.meta.name}
             className="h-full w-full object-cover"
           />
         ) : (
@@ -66,11 +66,11 @@ export function ThemeCard({ theme, onClick }: ThemeCardProps) {
             margin: 0,
           }}
         >
-          {theme.name}
+          {theme.meta.name}
         </p>
 
         {/* Tagline */}
-        {theme.tagline && (
+        {theme.meta.tagline && (
           <p
             className="truncate"
             style={{
@@ -81,13 +81,13 @@ export function ThemeCard({ theme, onClick }: ThemeCardProps) {
               margin: 0,
             }}
           >
-            {theme.tagline}
+            {theme.meta.tagline}
           </p>
         )}
 
         {/* Tags row */}
         <div className="flex items-start" style={{ gap: 'var(--spacing-xs)' }}>
-          {theme.category && (
+          {theme.meta.category && (
             <span
               className="shrink-0"
               style={{
@@ -102,7 +102,7 @@ export function ThemeCard({ theme, onClick }: ThemeCardProps) {
                 fontFamily: "'Manrope', sans-serif",
               }}
             >
-              {theme.category}
+              {theme.meta.category}
             </span>
           )}
           <StatusBadge status={theme.status} />
@@ -119,7 +119,7 @@ export function ThemeCard({ theme, onClick }: ThemeCardProps) {
               fontFamily: "'Manrope', sans-serif",
             }}
           >
-            {formatPrice(theme.price)}
+            {formatPrice(theme.meta.price ?? null)}
           </span>
           <span
             style={{

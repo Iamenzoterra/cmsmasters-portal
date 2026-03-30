@@ -52,14 +52,14 @@ const RESOURCE_PREMIUM = ['priority-support', 'megakit-access']
 
 export function EditorSidebar({ control, register, watch, setValue, existingTheme }: EditorSidebarProps) {
   const status = watch('status')
-  const thumbnailUrl = watch('thumbnail_url')
+  const thumbnailUrl = watch('meta.thumbnail_url')
 
-  const { field: ratingField } = useController({ control, name: 'rating' })
-  const { field: trustField } = useController({ control, name: 'trust_badges' })
-  const { field: compatField } = useController({ control, name: 'compatible_plugins' })
-  const { field: resPubField } = useController({ control, name: 'resources.public' })
-  const { field: resLicField } = useController({ control, name: 'resources.licensed' })
-  const { field: resPreField } = useController({ control, name: 'resources.premium' })
+  const { field: ratingField } = useController({ control, name: 'meta.rating' })
+  const { field: trustField } = useController({ control, name: 'meta.trust_badges' })
+  const { field: compatField } = useController({ control, name: 'meta.compatible_plugins' })
+  const { field: resPubField } = useController({ control, name: 'meta.resources.public' })
+  const { field: resLicField } = useController({ control, name: 'meta.resources.licensed' })
+  const { field: resPreField } = useController({ control, name: 'meta.resources.premium' })
 
   return (
     <div
@@ -90,7 +90,7 @@ export function EditorSidebar({ control, register, watch, setValue, existingThem
           )}
         </div>
         <input
-          {...register('thumbnail_url')}
+          {...register('meta.thumbnail_url')}
           type="text"
           placeholder="Image URL"
           className="w-full outline-none"
@@ -124,7 +124,7 @@ export function EditorSidebar({ control, register, watch, setValue, existingThem
       <div className="flex flex-col" style={{ gap: 'var(--spacing-xs)' }}>
         <span style={labelStyle}>Category</span>
         <select
-          {...register('category')}
+          {...register('meta.category')}
           className="w-full appearance-none outline-none"
           style={inputStyle}
         >
@@ -149,7 +149,7 @@ export function EditorSidebar({ control, register, watch, setValue, existingThem
             type="number"
             min={0}
             step={1}
-            {...register('price', { setValueAs: nanToUndefined })}
+            {...register('meta.price', { setValueAs: nanToUndefined })}
             placeholder="0"
             className="w-full outline-none"
             style={{ ...inputStyle, paddingLeft: '28px' }}
@@ -170,7 +170,7 @@ export function EditorSidebar({ control, register, watch, setValue, existingThem
           type="number"
           min={0}
           step={1}
-          {...register('sales', { setValueAs: nanToUndefined })}
+          {...register('meta.sales', { setValueAs: nanToUndefined })}
           placeholder="0"
           className="w-full outline-none"
           style={inputStyle}
