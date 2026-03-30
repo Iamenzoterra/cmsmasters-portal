@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { useForm, useWatch } from 'react-hook-form'
+import { useForm, useFieldArray, useWatch, useController } from 'react-hook-form'
+import type { Control, UseFormRegister } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { themeSchema, type ThemeFormData } from '@cmsmasters/validators'
 import type { Theme } from '@cmsmasters/db'
 import { upsertTheme, logAction, themeRowToFormData, formDataToThemeInsert } from '@cmsmasters/db'
-import { AlertTriangle, ChevronLeft } from 'lucide-react'
+import { SECTION_LABELS, CORE_SECTION_TYPES, SECTION_REGISTRY } from '@cmsmasters/validators'
+import type { SectionType } from '@cmsmasters/db'
+import { AlertTriangle, ChevronLeft, ChevronUp, ChevronDown, Plus, X } from 'lucide-react'
 import { Button } from '@cmsmasters/ui'
 import { fetchThemeBySlug, deleteTheme } from '../lib/queries'
 import { supabase } from '../lib/supabase'
@@ -64,6 +67,7 @@ export function ThemeEditor() {
   })
 
   const { register, control, reset, formState: { errors, isDirty } } = form
+  const sectionsArray = useFieldArray({ control, name: 'sections' })
 
   // Fetch existing theme
   useEffect(() => {
@@ -397,8 +401,18 @@ export function ThemeEditor() {
             </Field>
           </FormSection>
 
-          {/* Sections: Hero, Features, Plugins, Custom Sections — removed in Phase 3.
-             Phase 4 rebuilds these as section-based editors using the registry. */}
+          {/* Section Builder */}
+          <SectionsList
+            fields={sectionsArray.fields}
+            control={control}
+            register={register}
+            onRemove={sectionsArray.remove}
+            onSwap={sectionsArray.swap}
+            onAppend={(type: SectionType) => {
+              const entry = SECTION_REGISTRY[type]
+              sectionsArray.append({ type, data: { ...entry.defaultData } })
+            }}
+          />
 
           {/* SEO */}
           <FormSection title="SEO">
@@ -457,6 +471,403 @@ function Field({ label, error, trailing, children }: { label: string; error?: st
       </div>
       {children}
       {error && <span style={errorStyle}>{error}</span>}
+    </div>
+  )
+}
+
+/* ── Section Builder ── */
+
+const sectionHeaderStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  padding: 'var(--spacing-md) var(--spacing-xl)',
+  cursor: 'pointer',
+  userSelect: 'none',
+}
+
+const controlBtnStyle: React.CSSProperties = {
+  background: 'transparent',
+  border: 0,
+  padding: '2px',
+  cursor: 'pointer',
+  color: 'hsl(var(--text-muted))',
+  display: 'flex',
+  alignItems: 'center',
+}
+
+interface SectionsListProps {
+  fields: Array<{ id: string; type: string; data: Record<string, unknown> }>
+  control: Control<ThemeFormData>
+  register: UseFormRegister<ThemeFormData>
+  onRemove: (index: number) => void
+  onSwap: (a: number, b: number) => void
+  onAppend: (type: SectionType) => void
+}
+
+function SectionsList({ fields, control, register, onRemove, onSwap, onAppend }: SectionsListProps) {
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(0)
+  const [showPicker, setShowPicker] = useState(false)
+
+  return (
+    <div
+      style={{
+        border: '1px solid hsl(var(--border-default))',
+        borderRadius: 'var(--rounded-xl)',
+        backgroundColor: 'hsl(var(--bg-surface))',
+        overflow: 'hidden',
+      }}
+    >
+      <div style={{ padding: 'var(--spacing-md) var(--spacing-xl)', borderBottom: '1px solid hsl(var(--border-default))' }}>
+        <span style={{ fontSize: 'var(--text-sm-font-size)', fontWeight: 600, color: 'hsl(var(--text-primary))', fontFamily: "'Manrope', sans-serif" }}>
+          Sections ({fields.length})
+        </span>
+      </div>
+
+      {fields.map((field, index) => (
+        <div key={field.id} style={{ borderBottom: '1px solid hsl(var(--border-default))' }}>
+          <div
+            style={sectionHeaderStyle}
+            onClick={() => setExpandedIndex(expandedIndex === index ? null : index)}
+          >
+            <span style={{ fontSize: 'var(--text-sm-font-size)', fontWeight: 500, color: 'hsl(var(--text-primary))', fontFamily: "'Manrope', sans-serif" }}>
+              {expandedIndex === index ? '\u25BC' : '\u25B6'}{' '}
+              {SECTION_LABELS[field.type as SectionType] ?? field.type}
+            </span>
+            <div className="flex items-center" style={{ gap: '2px' }}>
+              <button
+                type="button"
+                style={{ ...controlBtnStyle, opacity: index === 0 ? 0.3 : 1 }}
+                disabled={index === 0}
+                onClick={(e) => { e.stopPropagation(); onSwap(index, index - 1) }}
+              >
+                <ChevronUp size={14} />
+              </button>
+              <button
+                type="button"
+                style={{ ...controlBtnStyle, opacity: index === fields.length - 1 ? 0.3 : 1 }}
+                disabled={index === fields.length - 1}
+                onClick={(e) => { e.stopPropagation(); onSwap(index, index + 1) }}
+              >
+                <ChevronDown size={14} />
+              </button>
+              <button
+                type="button"
+                style={controlBtnStyle}
+                onClick={(e) => { e.stopPropagation(); window.confirm('Remove this section?') && onRemove(index) }}
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+
+          {expandedIndex === index && (
+            <div style={{ padding: '0 var(--spacing-xl) var(--spacing-xl)' }}>
+              <SectionEditor index={index} type={field.type as SectionType} control={control} register={register} />
+            </div>
+          )}
+        </div>
+      ))}
+
+      <div style={{ padding: 'var(--spacing-md) var(--spacing-xl)' }}>
+        {showPicker ? (
+          <div className="flex flex-wrap items-center" style={{ gap: 'var(--spacing-xs)' }}>
+            {CORE_SECTION_TYPES.map((type) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => { onAppend(type); setShowPicker(false) }}
+                className="border bg-transparent"
+                style={{
+                  padding: 'var(--spacing-xs) var(--spacing-sm)',
+                  borderColor: 'hsl(var(--border-default))',
+                  borderRadius: 'var(--rounded-lg)',
+                  fontSize: 'var(--text-xs-font-size)',
+                  fontFamily: "'Manrope', sans-serif",
+                  color: 'hsl(var(--text-link))',
+                  cursor: 'pointer',
+                }}
+              >
+                {SECTION_LABELS[type]}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setShowPicker(false)}
+              className="border-0 bg-transparent"
+              style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))', cursor: 'pointer', fontFamily: "'Manrope', sans-serif" }}
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowPicker(true)}
+            className="flex w-full items-center justify-center border border-dashed bg-transparent"
+            style={{
+              padding: 'var(--spacing-sm)',
+              borderColor: 'hsl(var(--border-default))',
+              borderRadius: 'var(--rounded-lg)',
+              color: 'hsl(var(--text-link))',
+              fontSize: 'var(--text-sm-font-size)',
+              fontFamily: "'Manrope', sans-serif",
+              cursor: 'pointer',
+              gap: '4px',
+            }}
+          >
+            <Plus size={14} /> Add Section
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/* ── Section Editor Router ── */
+
+function SectionEditor({ index, type, control, register }: { index: number; type: SectionType; control: Control<ThemeFormData>; register: UseFormRegister<ThemeFormData> }) {
+  switch (type) {
+    case 'theme-hero':
+      return <HeroEditor index={index} control={control} register={register} />
+    case 'feature-grid':
+      return <FeatureGridEditor index={index} control={control} register={register} />
+    case 'plugin-comparison':
+      return <PluginComparisonEditor index={index} control={control} register={register} />
+    case 'trust-strip':
+      return <TrustStripInfo />
+    case 'related-themes':
+      return <RelatedThemesEditor index={index} register={register} />
+    default:
+      return <StubEditor index={index} control={control} />
+  }
+}
+
+/* ── Core Section Editors ── */
+
+function HeroEditor({ index, control, register }: { index: number; control: any; register: any }) {
+  const screenshots = useFieldArray({ control, name: `sections.${index}.data.screenshots` as any })
+
+  return (
+    <div className="flex flex-col" style={{ gap: 'var(--spacing-md)' }}>
+      <Field label="Headline">
+        <input
+          {...register(`sections.${index}.data.headline`)}
+          className="w-full outline-none"
+          style={inputStyle}
+          placeholder="Override default hero text"
+        />
+      </Field>
+      <Field label="Screenshots">
+        <div className="flex flex-col" style={{ gap: 'var(--spacing-xs)' }}>
+          {screenshots.fields.map((field, i) => (
+            <div key={field.id} className="flex items-center" style={{ gap: 'var(--spacing-xs)' }}>
+              <input
+                {...register(`sections.${index}.data.screenshots.${i}`)}
+                className="flex-1 outline-none"
+                style={inputStyle}
+                placeholder="Screenshot URL"
+              />
+              <button type="button" onClick={() => screenshots.remove(i)} className="flex shrink-0 items-center border-0 bg-transparent" style={{ color: 'hsl(var(--text-muted))', cursor: 'pointer' }}>
+                <X size={16} />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => screenshots.append('' as any)}
+            className="flex items-center border border-dashed bg-transparent"
+            style={{
+              padding: 'var(--spacing-xs) var(--spacing-sm)',
+              borderColor: 'hsl(var(--border-default))',
+              borderRadius: 'var(--rounded-lg)',
+              color: 'hsl(var(--text-link))',
+              fontSize: 'var(--text-xs-font-size)',
+              fontFamily: "'Manrope', sans-serif",
+              cursor: 'pointer',
+              gap: '4px',
+            }}
+          >
+            <Plus size={12} /> Add Screenshot
+          </button>
+        </div>
+      </Field>
+    </div>
+  )
+}
+
+function FeatureGridEditor({ index, control, register }: { index: number; control: any; register: any }) {
+  const features = useFieldArray({ control, name: `sections.${index}.data.features` as any })
+
+  return (
+    <div className="flex flex-col" style={{ gap: 'var(--spacing-md)' }}>
+      {features.fields.map((field, i) => (
+        <div key={field.id} className="flex items-start" style={{ gap: 'var(--spacing-xs)' }}>
+          <input {...register(`sections.${index}.data.features.${i}.icon`)} className="outline-none" style={{ ...inputStyle, width: '80px' }} placeholder="Icon" />
+          <input {...register(`sections.${index}.data.features.${i}.title`)} className="flex-1 outline-none" style={inputStyle} placeholder="Title" />
+          <input {...register(`sections.${index}.data.features.${i}.description`)} className="flex-[2] outline-none" style={inputStyle} placeholder="Description" />
+          <button type="button" onClick={() => features.remove(i)} className="flex shrink-0 items-center border-0 bg-transparent" style={{ color: 'hsl(var(--text-muted))', cursor: 'pointer', marginTop: '8px' }}>
+            <X size={16} />
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={() => features.append({ icon: '', title: '', description: '' })}
+        className="flex items-center border border-dashed bg-transparent"
+        style={{
+          padding: 'var(--spacing-sm)',
+          borderColor: 'hsl(var(--border-default))',
+          borderRadius: 'var(--rounded-lg)',
+          color: 'hsl(var(--text-link))',
+          fontSize: 'var(--text-sm-font-size)',
+          fontFamily: "'Manrope', sans-serif",
+          cursor: 'pointer',
+          gap: '4px',
+          justifyContent: 'center',
+        }}
+      >
+        <Plus size={14} /> Add Feature
+      </button>
+    </div>
+  )
+}
+
+function PluginComparisonEditor({ index, control, register }: { index: number; control: any; register: any }) {
+  const plugins = useFieldArray({ control, name: `sections.${index}.data.included_plugins` as any })
+  const watchedPlugins = useWatch({ control, name: `sections.${index}.data.included_plugins` as any }) ?? []
+  const total = watchedPlugins.reduce((sum: number, p: any) => sum + (p?.value ?? 0), 0)
+
+  return (
+    <div className="flex flex-col" style={{ gap: 'var(--spacing-md)' }}>
+      {plugins.fields.length > 0 && (
+        <div className="flex" style={{ gap: 'var(--spacing-xs)', fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))', fontFamily: "'Manrope', sans-serif" }}>
+          <span className="flex-1">NAME</span>
+          <span className="flex-1">SLUG</span>
+          <span style={{ width: '80px' }}>VALUE $</span>
+          <span className="flex-1">ICON URL</span>
+          <span style={{ width: '24px' }} />
+        </div>
+      )}
+      {plugins.fields.map((field, i) => (
+        <div key={field.id} className="flex items-start" style={{ gap: 'var(--spacing-xs)' }}>
+          <input {...register(`sections.${index}.data.included_plugins.${i}.name`)} className="flex-1 outline-none" style={inputStyle} placeholder="Name" />
+          <input {...register(`sections.${index}.data.included_plugins.${i}.slug`)} className="flex-1 outline-none" style={inputStyle} placeholder="slug" />
+          <input {...register(`sections.${index}.data.included_plugins.${i}.value`, { setValueAs: nanToUndefined })} type="number" className="outline-none" style={{ ...inputStyle, width: '80px' }} placeholder="$" />
+          <input {...register(`sections.${index}.data.included_plugins.${i}.icon_url`)} className="flex-1 outline-none" style={inputStyle} placeholder="Icon URL" />
+          <button type="button" onClick={() => plugins.remove(i)} className="flex shrink-0 items-center border-0 bg-transparent" style={{ color: 'hsl(var(--text-muted))', cursor: 'pointer', marginTop: '8px' }}>
+            <X size={16} />
+          </button>
+        </div>
+      ))}
+      {plugins.fields.length > 0 && (
+        <div className="flex justify-end">
+          <span style={{ fontSize: 'var(--text-sm-font-size)', fontWeight: 600, color: 'hsl(var(--text-primary))', fontFamily: "'Manrope', sans-serif" }}>
+            Total value: ${total}
+          </span>
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={() => plugins.append({ name: '', slug: '', value: undefined, icon_url: '' } as any)}
+        className="flex items-center border border-dashed bg-transparent"
+        style={{
+          padding: 'var(--spacing-sm)',
+          borderColor: 'hsl(var(--border-default))',
+          borderRadius: 'var(--rounded-lg)',
+          color: 'hsl(var(--text-link))',
+          fontSize: 'var(--text-sm-font-size)',
+          fontFamily: "'Manrope', sans-serif",
+          cursor: 'pointer',
+          gap: '4px',
+          justifyContent: 'center',
+        }}
+      >
+        <Plus size={14} /> Add Plugin
+      </button>
+    </div>
+  )
+}
+
+function TrustStripInfo() {
+  return (
+    <p style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-muted))', fontFamily: "'Manrope', sans-serif", margin: 0 }}>
+      Trust strip renders from the Trust Badges field in the sidebar. No additional data needed.
+    </p>
+  )
+}
+
+function RelatedThemesEditor({ index, register }: { index: number; register: any }) {
+  return (
+    <div className="flex flex-col" style={{ gap: 'var(--spacing-md)' }}>
+      <Field label="Category Override">
+        <input
+          {...register(`sections.${index}.data.category`)}
+          className="w-full outline-none"
+          style={inputStyle}
+          placeholder="Leave empty for same category"
+        />
+      </Field>
+      <Field label="Limit">
+        <input
+          {...register(`sections.${index}.data.limit`, { setValueAs: nanToUndefined })}
+          type="number"
+          min={1}
+          max={12}
+          className="w-full outline-none"
+          style={inputStyle}
+          placeholder="4"
+        />
+      </Field>
+    </div>
+  )
+}
+
+function StubEditor({ index, control }: { index: number; control: any }) {
+  const sectionData = useWatch({ control, name: `sections.${index}.data` as any })
+  const [jsonText, setJsonText] = useState(() =>
+    sectionData && typeof sectionData === 'object' && Object.keys(sectionData).length > 0
+      ? JSON.stringify(sectionData, null, 2)
+      : '{}'
+  )
+  const [jsonError, setJsonError] = useState<string | null>(null)
+  const { field } = useController({ control, name: `sections.${index}.data` as any })
+
+  function handleBlur() {
+    try {
+      const parsed = JSON.parse(jsonText)
+      if (typeof parsed !== 'object' || Array.isArray(parsed)) {
+        setJsonError('Must be a JSON object')
+        return
+      }
+      field.onChange(parsed)
+      setJsonError(null)
+    } catch (e) {
+      setJsonError(e instanceof Error ? e.message : 'Invalid JSON')
+    }
+  }
+
+  return (
+    <div className="flex flex-col" style={{ gap: 'var(--spacing-xs)' }}>
+      <textarea
+        rows={6}
+        value={jsonText}
+        onChange={(e) => setJsonText(e.target.value)}
+        onBlur={handleBlur}
+        className="w-full resize-y outline-none"
+        style={{
+          ...inputStyle,
+          height: 'auto',
+          padding: 'var(--spacing-sm)',
+          fontFamily: 'monospace',
+          fontSize: 'var(--text-xs-font-size)',
+          borderColor: jsonError ? 'hsl(var(--status-error-fg))' : undefined,
+        }}
+      />
+      {jsonError && <span style={errorStyle}>{jsonError}</span>}
+      <p style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))', margin: 0, fontFamily: "'Manrope', sans-serif" }}>
+        JSON data for this section type. Full editor coming in a future update.
+      </p>
     </div>
   )
 }
