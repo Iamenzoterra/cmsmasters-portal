@@ -6,9 +6,10 @@ export type {
   UserRole,
   ThemeStatus,
   LicenseType,
-  ThemeFeature,
-  ThemePlugin,
-  CustomSection,
+  ThemeMeta,
+  SectionType,
+  ThemeSection,
+  ThemeSEO,
   Profile,
   ProfileInsert,
   ProfileUpdate,
@@ -21,6 +22,7 @@ export type {
   AuditEntryInsert,
 } from './types'
 
+export { themeRowToFormData, formDataToThemeInsert } from './mappers'
 export { getThemes, getThemeBySlug, upsertTheme } from './queries/themes'
 export { getProfile, updateProfile } from './queries/profiles'
 export { logAction } from './queries/audit'

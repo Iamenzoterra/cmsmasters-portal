@@ -8,6 +8,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@cmsmasters/validators": "*",
     "@supabase/supabase-js": "^2"
   }
 }

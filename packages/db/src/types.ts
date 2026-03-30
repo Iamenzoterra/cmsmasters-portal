@@ -1,21 +1,53 @@
-// JSONB sub-types (match seed data shapes in migration)
+// ── Theme meta (stored in themes.meta jsonb) ──
 
-export interface ThemeFeature {
-  icon: string
-  title: string
-  description: string
-}
-
-export interface ThemePlugin {
+export interface ThemeMeta {
   name: string
-  slug: string
-  value?: number
-  icon_url?: string
+  tagline?: string
+  description?: string
+  category?: string
+  price?: number
+  demo_url?: string
+  themeforest_url?: string
+  themeforest_id?: string
+  thumbnail_url?: string
+  preview_images?: string[]
+  rating?: number
+  sales?: number
+  compatible_plugins?: string[]
+  trust_badges?: string[]
+  resources?: {
+    public: string[]
+    licensed: string[]
+    premium: string[]
+  }
 }
 
-export interface CustomSection {
-  type: string
+// ── Section types (stored in themes.sections jsonb array) ──
+
+export type SectionType =
+  | 'theme-hero'
+  | 'feature-grid'
+  | 'plugin-comparison'
+  | 'trust-strip'
+  | 'related-themes'
+  | 'before-after'
+  | 'video-demo'
+  | 'testimonials'
+  | 'faq'
+  | 'cta-banner'
+  | 'stats-counter'
+  | 'resource-sidebar'
+
+export interface ThemeSection {
+  type: SectionType
   data: Record<string, unknown>
+}
+
+// ── SEO (stored in themes.seo jsonb) ──
+
+export interface ThemeSEO {
+  title?: string
+  description?: string
 }
 
 // Constrained column unions (match CHECK constraints in migration)
@@ -31,7 +63,7 @@ export type ThemeStatus = 'draft' | 'published' | 'archived'
 
 export type LicenseType = 'regular' | 'extended'
 
-// Database type (column-for-column from 001_initial_schema.sql)
+// Database type (column-for-column from 002_section_architecture migration)
 
 export type Database = {
   public: {
@@ -69,22 +101,10 @@ export type Database = {
         Row: {
           id: string
           slug: string
-          name: string
-          tagline: string | null
-          description: string | null
-          category: string | null
-          price: number | null
-          demo_url: string | null
-          themeforest_url: string | null
-          themeforest_id: string | null
-          thumbnail_url: string | null
-          preview_images: string[] | null
-          features: ThemeFeature[] | null
-          included_plugins: ThemePlugin[] | null
-          custom_sections: CustomSection[] | null
-          seo_title: string | null
-          seo_description: string | null
           status: ThemeStatus
+          meta: ThemeMeta
+          sections: ThemeSection[]
+          seo: ThemeSEO | null
           created_by: string | null
           created_at: string
           updated_at: string
@@ -92,22 +112,10 @@ export type Database = {
         Insert: {
           id?: string
           slug: string
-          name: string
-          tagline?: string | null
-          description?: string | null
-          category?: string | null
-          price?: number | null
-          demo_url?: string | null
-          themeforest_url?: string | null
-          themeforest_id?: string | null
-          thumbnail_url?: string | null
-          preview_images?: string[] | null
-          features?: ThemeFeature[] | null
-          included_plugins?: ThemePlugin[] | null
-          custom_sections?: CustomSection[] | null
-          seo_title?: string | null
-          seo_description?: string | null
           status?: ThemeStatus
+          meta: ThemeMeta
+          sections?: ThemeSection[]
+          seo?: ThemeSEO | null
           created_by?: string | null
           created_at?: string
           updated_at?: string
@@ -115,22 +123,10 @@ export type Database = {
         Update: {
           id?: string
           slug?: string
-          name?: string
-          tagline?: string | null
-          description?: string | null
-          category?: string | null
-          price?: number | null
-          demo_url?: string | null
-          themeforest_url?: string | null
-          themeforest_id?: string | null
-          thumbnail_url?: string | null
-          preview_images?: string[] | null
-          features?: ThemeFeature[] | null
-          included_plugins?: ThemePlugin[] | null
-          custom_sections?: CustomSection[] | null
-          seo_title?: string | null
-          seo_description?: string | null
           status?: ThemeStatus
+          meta?: ThemeMeta
+          sections?: ThemeSection[]
+          seo?: ThemeSEO | null
           created_by?: string | null
           updated_at?: string
         }
