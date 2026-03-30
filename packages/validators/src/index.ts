@@ -2,27 +2,27 @@ export {
   themeSchema,
   metaSchema,
   seoSchema,
-  sectionSchema,
-  sectionsSchema,
-  sectionTypeEnum,
+  blockSchema,
+  blocksSchema,
 } from './theme'
+export { blockIdEnum } from '@cmsmasters/blocks'
 export type { ThemeFormData } from './theme'
 
-// Section registry
+// Block registry (canonical from @cmsmasters/blocks)
 export {
-  SECTION_REGISTRY,
-  SECTION_TYPES,
-  SECTION_LABELS,
-  CORE_SECTION_TYPES,
-  getDefaultSections,
-  validateSectionData,
-  validateSections,
-} from './sections'
-export type { SectionRegistryEntry } from './sections'
+  BLOCK_REGISTRY,
+  BLOCK_IDS,
+  BLOCK_LABELS,
+  CORE_BLOCK_IDS,
+  getDefaultBlocks,
+  validateBlockData,
+  validateBlocks,
+} from '@cmsmasters/blocks'
+export type { BlockRegistryEntry } from '@cmsmasters/blocks'
 
-// Core section data types (for typed section editors in Studio)
-export { themeHeroDataSchema, type ThemeHeroData } from './sections/theme-hero'
-export { featureGridDataSchema, type FeatureGridData } from './sections/feature-grid'
-export { pluginComparisonDataSchema, type PluginComparisonData } from './sections/plugin-comparison'
-export { trustStripDataSchema, type TrustStripData } from './sections/trust-strip'
-export { relatedThemesDataSchema, type RelatedThemesData } from './sections/related-themes'
+// Core block data types (for typed block editors in Studio)
+export { themeHeroDataSchema, type ThemeHeroData } from '@cmsmasters/blocks'
+export { featureGridDataSchema, type FeatureGridData } from '@cmsmasters/blocks'
+export { pluginComparisonDataSchema, type PluginComparisonData } from '@cmsmasters/blocks'
+export { trustStripDataSchema, type TrustStripData } from '@cmsmasters/blocks'
+export { relatedThemesDataSchema, type RelatedThemesData } from '@cmsmasters/blocks'

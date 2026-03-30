@@ -22,24 +22,13 @@ export interface ThemeMeta {
   }
 }
 
-// ── Section types (stored in themes.sections jsonb array) ──
+// ── Block types (stored in themes.sections jsonb array) ──
 
-export type SectionType =
-  | 'theme-hero'
-  | 'feature-grid'
-  | 'plugin-comparison'
-  | 'trust-strip'
-  | 'related-themes'
-  | 'before-after'
-  | 'video-demo'
-  | 'testimonials'
-  | 'faq'
-  | 'cta-banner'
-  | 'stats-counter'
-  | 'resource-sidebar'
+import type { BlockId } from '@cmsmasters/blocks'
+export type { BlockId }
 
-export interface ThemeSection {
-  type: SectionType
+export interface ThemeBlock {
+  block: BlockId
   data: Record<string, unknown>
 }
 
@@ -103,7 +92,7 @@ export type Database = {
           slug: string
           status: ThemeStatus
           meta: ThemeMeta
-          sections: ThemeSection[]
+          sections: ThemeBlock[]
           seo: ThemeSEO | null
           created_by: string | null
           created_at: string
@@ -114,7 +103,7 @@ export type Database = {
           slug: string
           status?: ThemeStatus
           meta: ThemeMeta
-          sections?: ThemeSection[]
+          sections?: ThemeBlock[]
           seo?: ThemeSEO | null
           created_by?: string | null
           created_at?: string
@@ -125,7 +114,7 @@ export type Database = {
           slug?: string
           status?: ThemeStatus
           meta?: ThemeMeta
-          sections?: ThemeSection[]
+          sections?: ThemeBlock[]
           seo?: ThemeSEO | null
           created_by?: string | null
           updated_at?: string

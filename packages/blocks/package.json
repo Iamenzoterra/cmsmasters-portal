@@ -1,5 +1,5 @@
 {
-  "name": "@cmsmasters/db",
+  "name": "@cmsmasters/blocks",
   "version": "0.0.0",
   "private": true,
   "main": "./src/index.ts",
@@ -8,8 +8,6 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@cmsmasters/blocks": "*",
-    "@cmsmasters/validators": "*",
-    "@supabase/supabase-js": "^2"
+    "zod": "^4"
   }
 }

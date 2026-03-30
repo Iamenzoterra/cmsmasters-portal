@@ -1,21 +1,5 @@
 import { z } from 'zod'
-
-// ── Section type enum (mirrors SectionType in @cmsmasters/db) ──
-
-export const sectionTypeEnum = z.enum([
-  'theme-hero',
-  'feature-grid',
-  'plugin-comparison',
-  'trust-strip',
-  'related-themes',
-  'before-after',
-  'video-demo',
-  'testimonials',
-  'faq',
-  'cta-banner',
-  'stats-counter',
-  'resource-sidebar',
-])
+import { blockIdEnum } from '@cmsmasters/blocks'
 
 // ── Meta schema ──
 
@@ -48,22 +32,22 @@ export const seoSchema = z.object({
   description: z.string().max(160).optional().default(''),
 })
 
-// ── Section schema (permissive for form binding) ──
-// Per-type data validation uses validateSections() from ./sections at save boundary.
+// ── Block schema (permissive for form binding) ──
+// Per-block data validation uses validateBlocks() from @cmsmasters/blocks at save boundary.
 
-export const sectionSchema = z.object({
-  type: sectionTypeEnum,
+export const blockSchema = z.object({
+  block: blockIdEnum,
   data: z.record(z.string(), z.unknown()),
 })
 
-export const sectionsSchema = z.array(sectionSchema).default([])
+export const blocksSchema = z.array(blockSchema).default([])
 
 // ── Top-level theme form schema (nested — mirrors DB shape) ──
 
 export const themeSchema = z.object({
   slug: z.string().regex(/^[a-z0-9-]+$/).min(2).max(100),
   meta: metaSchema,
-  sections: sectionsSchema,
+  sections: blocksSchema,
   seo: seoSchema,
   status: z.enum(['draft', 'published', 'archived']).default('draft'),
 })

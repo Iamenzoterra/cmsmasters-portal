@@ -9,7 +9,8 @@
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "paths": {
-      "@cmsmasters/validators": ["../validators/src/index.ts"]
+      "@cmsmasters/validators": ["../validators/src/index.ts"],
+      "@cmsmasters/blocks": ["../blocks/src/index.ts"]
     }
   },
   "include": ["src/**/*.ts"],

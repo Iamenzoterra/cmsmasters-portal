@@ -1,5 +1,5 @@
 import { themeRowToFormData, formDataToThemeInsert } from '../mappers'
-import { sectionSchema } from '@cmsmasters/validators'
+import { blockSchema } from '@cmsmasters/validators'
 import type { Theme } from '../types'
 
 let pass = 0
@@ -86,8 +86,8 @@ const filledRow: Theme = {
     },
   },
   sections: [
-    { type: 'theme-hero', data: { headline: 'Build with Growth Hive', screenshots: ['s1.jpg'] } },
-    { type: 'feature-grid', data: { features: [{ icon: '🚀', title: 'Fast', description: 'Blazing' }] } },
+    { block: 'theme-hero', data: { headline: 'Build with Growth Hive', screenshots: ['s1.jpg'] } },
+    { block: 'feature-grid', data: { features: [{ icon: '🚀', title: 'Fast', description: 'Blazing' }] } },
   ],
   seo: { title: 'Growth Hive - Business Theme', description: 'A modern business WP theme' },
   created_by: 'user-uuid',
@@ -107,7 +107,7 @@ assert('meta.compatible_plugins survives', JSON.stringify(filledInsert.meta.comp
 assert('meta.trust_badges survives', JSON.stringify(filledInsert.meta.trust_badges) === '["Power Elite","Starter"]')
 assert('meta.resources.licensed survives', JSON.stringify(filledInsert.meta.resources?.licensed) === '["download","child-theme"]')
 assert('sections length preserved', filledInsert.sections?.length === 2)
-assert('sections[0].type preserved', filledInsert.sections?.[0]?.type === 'theme-hero')
+assert('sections[0].block preserved', filledInsert.sections?.[0]?.block === 'theme-hero')
 assert('sections[1].data preserved', JSON.stringify(filledInsert.sections?.[1]?.data).includes('Fast'))
 assert('seo.title survives', filledInsert.seo?.title === 'Growth Hive - Business Theme')
 assert('seo.description survives', filledInsert.seo?.description === 'A modern business WP theme')
@@ -115,18 +115,18 @@ assert('slug preserved', filledInsert.slug === 'growth-hive')
 assert('status preserved', filledInsert.status === 'published')
 assert('id preserved', filledInsert.id === 'filled-uuid')
 
-// ── Scenario 3: SectionType enforcement ──
+// ── Scenario 3: BlockId enforcement ──
 
-console.log('\n=== Scenario 3: SectionType Enforcement ===')
+console.log('\n=== Scenario 3: BlockId Enforcement ===')
 
-const validSection = sectionSchema.safeParse({ type: 'theme-hero', data: { headline: 'Hi' } })
-assert('valid section type accepted', validSection.success)
+const validSection = blockSchema.safeParse({ block: 'theme-hero', data: { headline: 'Hi' } })
+assert('valid block id accepted', validSection.success)
 
-const bogusSection = sectionSchema.safeParse({ type: 'bogus-type', data: {} })
-assert('bogus section type rejected', !bogusSection.success)
+const bogusSection = blockSchema.safeParse({ block: 'bogus-type', data: {} })
+assert('bogus block id rejected', !bogusSection.success)
 
-const emptyType = sectionSchema.safeParse({ type: '', data: {} })
-assert('empty string section type rejected', !emptyType.success)
+const emptyBlock = blockSchema.safeParse({ block: '', data: {} })
+assert('empty string block id rejected', !emptyBlock.success)
 
 // ── Summary ──
 

@@ -6,8 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { themeSchema, type ThemeFormData } from '@cmsmasters/validators'
 import type { Theme } from '@cmsmasters/db'
 import { upsertTheme, logAction, themeRowToFormData, formDataToThemeInsert } from '@cmsmasters/db'
-import { SECTION_LABELS, CORE_SECTION_TYPES, SECTION_REGISTRY } from '@cmsmasters/validators'
-import type { SectionType } from '@cmsmasters/db'
+import { BLOCK_LABELS, CORE_BLOCK_IDS, BLOCK_REGISTRY } from '@cmsmasters/validators'
+import type { BlockId } from '@cmsmasters/db'
 import { AlertTriangle, ChevronLeft, ChevronUp, ChevronDown, Plus, X } from 'lucide-react'
 import { Button } from '@cmsmasters/ui'
 import { fetchThemeBySlug, deleteTheme } from '../lib/queries'
@@ -408,9 +408,9 @@ export function ThemeEditor() {
             register={register}
             onRemove={sectionsArray.remove}
             onSwap={sectionsArray.swap}
-            onAppend={(type: SectionType) => {
-              const entry = SECTION_REGISTRY[type]
-              sectionsArray.append({ type, data: { ...entry.defaultData } })
+            onAppend={(block: BlockId) => {
+              const entry = BLOCK_REGISTRY[block]
+              sectionsArray.append({ block, data: { ...entry.defaultData } })
             }}
           />
 
@@ -502,7 +502,7 @@ interface SectionsListProps {
   register: UseFormRegister<ThemeFormData>
   onRemove: (index: number) => void
   onSwap: (a: number, b: number) => void
-  onAppend: (type: SectionType) => void
+  onAppend: (block: BlockId) => void
 }
 
 function SectionsList({ fields, control, register, onRemove, onSwap, onAppend }: SectionsListProps) {
@@ -532,7 +532,7 @@ function SectionsList({ fields, control, register, onRemove, onSwap, onAppend }:
           >
             <span style={{ fontSize: 'var(--text-sm-font-size)', fontWeight: 500, color: 'hsl(var(--text-primary))', fontFamily: "'Manrope', sans-serif" }}>
               {expandedIndex === index ? '\u25BC' : '\u25B6'}{' '}
-              {SECTION_LABELS[field.type as SectionType] ?? field.type}
+              {BLOCK_LABELS[field.block as BlockId] ?? field.block}
             </span>
             <div className="flex items-center" style={{ gap: '2px' }}>
               <button
@@ -563,7 +563,7 @@ function SectionsList({ fields, control, register, onRemove, onSwap, onAppend }:
 
           {expandedIndex === index && (
             <div style={{ padding: '0 var(--spacing-xl) var(--spacing-xl)' }}>
-              <SectionEditor index={index} type={field.type as SectionType} control={control} register={register} />
+              <SectionEditor index={index} block={field.block as BlockId} control={control} register={register} />
             </div>
           )}
         </div>
@@ -572,11 +572,11 @@ function SectionsList({ fields, control, register, onRemove, onSwap, onAppend }:
       <div style={{ padding: 'var(--spacing-md) var(--spacing-xl)' }}>
         {showPicker ? (
           <div className="flex flex-wrap items-center" style={{ gap: 'var(--spacing-xs)' }}>
-            {CORE_SECTION_TYPES.map((type) => (
+            {CORE_BLOCK_IDS.map((block) => (
               <button
-                key={type}
+                key={block}
                 type="button"
-                onClick={() => { onAppend(type); setShowPicker(false) }}
+                onClick={() => { onAppend(block); setShowPicker(false) }}
                 className="border bg-transparent"
                 style={{
                   padding: 'var(--spacing-xs) var(--spacing-sm)',
@@ -588,7 +588,7 @@ function SectionsList({ fields, control, register, onRemove, onSwap, onAppend }:
                   cursor: 'pointer',
                 }}
               >
-                {SECTION_LABELS[type]}
+                {BLOCK_LABELS[block]}
               </button>
             ))}
             <button
@@ -626,8 +626,8 @@ function SectionsList({ fields, control, register, onRemove, onSwap, onAppend }:
 
 /* ── Section Editor Router ── */
 
-function SectionEditor({ index, type, control, register }: { index: number; type: SectionType; control: Control<ThemeFormData>; register: UseFormRegister<ThemeFormData> }) {
-  switch (type) {
+function SectionEditor({ index, block, control, register }: { index: number; block: BlockId; control: Control<ThemeFormData>; register: UseFormRegister<ThemeFormData> }) {
+  switch (block) {
     case 'theme-hero': {
       return <HeroEditor index={index} control={control} register={register} />
     }

@@ -1,10 +1,10 @@
 import type { ThemeFormData } from '@cmsmasters/validators'
-import { getDefaultSections } from '@cmsmasters/validators'
+import { getDefaultBlocks } from '@cmsmasters/validators'
 
 /**
  * Default form values for a new theme.
  * Plain typed literal — no themeSchema.parse() (slug/name min constraints would throw).
- * Sections from getDefaultSections() (canonical registry source).
+ * Sections from getDefaultBlocks() (canonical registry source).
  */
 export function getDefaults(): ThemeFormData {
   return {
@@ -23,7 +23,7 @@ export function getDefaults(): ThemeFormData {
       trust_badges: [],
       resources: { public: [], licensed: [], premium: [] },
     },
-    sections: getDefaultSections(),
+    sections: getDefaultBlocks(),
     seo: { title: '', description: '' },
     status: 'draft',
   }
