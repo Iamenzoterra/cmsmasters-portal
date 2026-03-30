@@ -48,7 +48,8 @@ export const seoSchema = z.object({
   description: z.string().max(160).optional().default(''),
 })
 
-// ── Section schema ──
+// ── Section schema (permissive for form binding) ──
+// Per-type data validation uses validateSections() from ./sections at save boundary.
 
 export const sectionSchema = z.object({
   type: sectionTypeEnum,
