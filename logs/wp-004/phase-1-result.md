@@ -45,5 +45,20 @@ None.
 | SectionType enforcement | 3/3 pass (valid accepted, bogus rejected, empty rejected) |
 | Migration SQL saved | `supabase/migrations/002_section_architecture.sql` exists |
 
+## Acceptance Criteria
+| Criterion | Result |
+|-----------|--------|
+| Live DB has 9 columns | 9/9 return 200 via REST |
+| 0 flat content columns remain | 21/21 return 400 via REST |
+| ThemeMeta, ThemeSection, ThemeSEO exported | Confirmed in index.ts:9,11,12 |
+| SectionType is literal union of 12 | Confirmed — not bare string |
+| themeSchema is nested | `{ slug, meta, sections, seo, status }` |
+| ThemeFormData inferred | `z.infer<typeof themeSchema>` |
+| Mapper pair exists | packages/db/src/mappers.ts |
+| Round-trip proof passes | 38/38 (sparse + filled + enforcement) |
+| packages/db compiles | 0 errors |
+| packages/validators compiles | 0 errors |
+| Migration SQL saved | supabase/migrations/002_section_architecture.sql |
+
 ## Git
-- Commit: (below)
+- Commit: `7be83f9e` — `feat: section architecture — DB migration + types + validators + mappers [WP-004 phase 1]`
