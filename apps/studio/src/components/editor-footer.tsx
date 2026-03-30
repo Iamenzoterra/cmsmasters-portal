@@ -4,10 +4,25 @@ interface EditorFooterProps {
   onDiscard: () => void
   onSaveDraft: () => void
   onPublish: () => void
+  onDelete?: () => void
   isDirty: boolean
+  isSaving: boolean
+  isPublishing: boolean
+  isDeleting: boolean
 }
 
-export function EditorFooter({ onDiscard, onSaveDraft, onPublish, isDirty }: EditorFooterProps) {
+export function EditorFooter({
+  onDiscard,
+  onSaveDraft,
+  onPublish,
+  onDelete,
+  isDirty,
+  isSaving,
+  isPublishing,
+  isDeleting,
+}: EditorFooterProps) {
+  const busy = isSaving || isPublishing || isDeleting
+
   return (
     <div
       className="flex shrink-0 items-center justify-between border-t"
@@ -18,28 +33,62 @@ export function EditorFooter({ onDiscard, onSaveDraft, onPublish, isDirty }: Edi
         backgroundColor: 'hsl(var(--bg-surface))',
       }}
     >
-      <button
-        type="button"
-        onClick={onDiscard}
-        disabled={!isDirty}
-        className="border-0 bg-transparent disabled:opacity-40"
-        style={{
-          color: 'hsl(var(--text-secondary))',
-          fontSize: 'var(--text-sm-font-size)',
-          fontWeight: 500,
-          fontFamily: "'Manrope', sans-serif",
-          cursor: isDirty ? 'pointer' : 'default',
-          padding: 0,
-        }}
-      >
-        Discard Changes
-      </button>
+      <div className="flex items-center" style={{ gap: 'var(--spacing-md)' }}>
+        <button
+          type="button"
+          onClick={onDiscard}
+          disabled={!isDirty || busy}
+          className="border-0 bg-transparent disabled:opacity-40"
+          style={{
+            color: 'hsl(var(--text-secondary))',
+            fontSize: 'var(--text-sm-font-size)',
+            fontWeight: 500,
+            fontFamily: "'Manrope', sans-serif",
+            cursor: isDirty && !busy ? 'pointer' : 'default',
+            padding: 0,
+          }}
+        >
+          Discard Changes
+        </button>
+
+        {/* M6: Delete only for existing themes with real id */}
+        {onDelete && (
+          <button
+            type="button"
+            onClick={onDelete}
+            disabled={busy}
+            className="border-0 bg-transparent disabled:opacity-40"
+            style={{
+              color: 'hsl(var(--status-error-fg))',
+              fontSize: 'var(--text-sm-font-size)',
+              fontWeight: 500,
+              fontFamily: "'Manrope', sans-serif",
+              cursor: busy ? 'default' : 'pointer',
+              padding: 0,
+            }}
+          >
+            {isDeleting ? 'Deleting...' : 'Delete'}
+          </button>
+        )}
+      </div>
+
       <div className="flex items-center" style={{ gap: 'var(--spacing-sm)' }}>
-        {/* Phase 4 will wire these to Supabase */}
-        <Button variant="outline" size="sm" onClick={onSaveDraft}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onSaveDraft}
+          disabled={busy}
+          loading={isSaving}
+        >
           Save Draft
         </Button>
-        <Button variant="primary" size="sm" onClick={onPublish}>
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={onPublish}
+          disabled={busy}
+          loading={isPublishing}
+        >
           Publish
         </Button>
       </div>

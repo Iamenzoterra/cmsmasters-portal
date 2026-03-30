@@ -4,10 +4,13 @@ import { useForm, useFieldArray, useWatch, useController } from 'react-hook-form
 import { zodResolver } from '@hookform/resolvers/zod'
 import { themeSchema, type ThemeFormData } from '@cmsmasters/validators'
 import type { Theme } from '@cmsmasters/db'
+import { upsertTheme, logAction } from '@cmsmasters/db'
 import { ChevronLeft, Plus, X } from 'lucide-react'
 import { Button } from '@cmsmasters/ui'
-import { fetchThemeBySlug } from '../lib/queries'
-import { getDefaults, themeToFormData, nameToSlug } from '../lib/form-defaults'
+import { fetchThemeBySlug, deleteTheme } from '../lib/queries'
+import { supabase } from '../lib/supabase'
+import { getDefaults, themeToFormData, formDataToUpsert, nameToSlug } from '../lib/form-defaults'
+import { useToast } from '../components/toast'
 import { FormSection } from '../components/form-section'
 import { CharCounter } from '../components/char-counter'
 import { ChipSelect } from '../components/chip-select'
@@ -111,10 +114,146 @@ export function ThemeEditor() {
   const seoDesc = useWatch({ control, name: 'seo_description' }) ?? ''
   const formSlug = useWatch({ control, name: 'slug' })
 
-  // Phase 4 placeholders
-  function handleSaveDraft() { /* Phase 4 */ }
-  function handlePublish() { /* Phase 4 */ }
-  function handleDiscard() { reset() }
+  const { toast } = useToast()
+  const [saving, setSaving] = useState(false)
+  const [publishing, setPublishing] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  // M5: beforeunload only when dirty, cleanup in return
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (isDirty) { e.preventDefault(); e.returnValue = '' }
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [isDirty])
+
+  // ── Save Draft ──
+  async function handleSaveDraft() {
+    const valid = await form.trigger()
+    if (!valid) { toast({ type: 'error', message: 'Fix validation errors before saving' }); return }
+
+    const data = form.getValues()
+    setSaving(true)
+    try {
+      const payload = formDataToUpsert(data, existingTheme?.id)
+      const saved = await upsertTheme(supabase, payload)
+
+      // M2: audit non-blocking with explicit marker
+      try {
+        await logAction(supabase, {
+          action: existingTheme ? 'theme.updated' : 'theme.created',
+          target_type: 'theme',
+          target_id: saved.id,
+          details: { slug: saved.slug, status: saved.status },
+        })
+      } catch (auditErr) {
+        console.warn('AUDIT_LOG_FAILED', existingTheme ? 'theme.updated' : 'theme.created', saved.slug, auditErr)
+      }
+
+      // M4: create flow → navigate first, then data resets from route change
+      if (!existingTheme) {
+        navigate(`/themes/${saved.slug}`, { replace: true })
+      } else {
+        setExistingTheme(saved)
+        reset(themeToFormData(saved))
+      }
+      toast({ type: 'success', message: 'Theme saved' })
+    } catch (err) {
+      toast({ type: 'error', message: err instanceof Error ? err.message : 'Save failed' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // ── Publish ──
+  async function handlePublish() {
+    const valid = await form.trigger()
+    if (!valid) { toast({ type: 'error', message: 'Fix validation errors before publishing' }); return }
+
+    const data = form.getValues()
+    setPublishing(true)
+    try {
+      // M3: force status at payload level, not relying on form state
+      const payload = formDataToUpsert(data, existingTheme?.id)
+      payload.status = 'published'
+      const saved = await upsertTheme(supabase, payload)
+
+      try {
+        await logAction(supabase, {
+          action: 'theme.published',
+          target_type: 'theme',
+          target_id: saved.id,
+          details: { slug: saved.slug },
+        })
+      } catch (auditErr) {
+        console.warn('AUDIT_LOG_FAILED', 'theme.published', saved.slug, auditErr)
+      }
+
+      // Fire-and-forget revalidation (stub endpoint, non-fatal)
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8787'
+        await fetch(`${apiUrl}/api/content/revalidate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ slug: saved.slug }),
+        })
+      } catch {
+        console.warn('Revalidation failed — Portal will update via ISR')
+      }
+
+      if (!existingTheme) {
+        navigate(`/themes/${saved.slug}`, { replace: true })
+      } else {
+        setExistingTheme(saved)
+        reset(themeToFormData(saved))
+      }
+      toast({ type: 'success', message: 'Theme published' })
+    } catch (err) {
+      toast({ type: 'error', message: err instanceof Error ? err.message : 'Publish failed' })
+    } finally {
+      setPublishing(false)
+    }
+  }
+
+  // ── Delete (M6: only for existing themes) ──
+  async function handleDelete() {
+    if (!existingTheme) return
+    const confirmed = window.confirm(`Delete "${existingTheme.name}"? This cannot be undone.`)
+    if (!confirmed) return
+
+    setDeleting(true)
+    try {
+      await deleteTheme(existingTheme.id)
+
+      try {
+        await logAction(supabase, {
+          action: 'theme.deleted',
+          target_type: 'theme',
+          target_id: existingTheme.id,
+          details: { slug: existingTheme.slug, name: existingTheme.name },
+        })
+      } catch (auditErr) {
+        console.warn('AUDIT_LOG_FAILED', 'theme.deleted', existingTheme.slug, auditErr)
+      }
+
+      toast({ type: 'success', message: 'Theme deleted' })
+      navigate('/', { replace: true })
+    } catch (err) {
+      toast({ type: 'error', message: err instanceof Error ? err.message : 'Delete failed' })
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  // ── Discard: reset to last persisted state, not empty defaults ──
+  function handleDiscard() {
+    if (existingTheme) {
+      reset(themeToFormData(existingTheme))
+    } else {
+      reset(getDefaults())
+    }
+  }
 
   if (loading) {
     return (
@@ -354,9 +493,13 @@ export function ThemeEditor() {
       {/* ── Footer ── */}
       <EditorFooter
         isDirty={isDirty}
+        isSaving={saving}
+        isPublishing={publishing}
+        isDeleting={deleting}
         onDiscard={handleDiscard}
         onSaveDraft={handleSaveDraft}
         onPublish={handlePublish}
+        onDelete={existingTheme ? handleDelete : undefined}
       />
     </div>
   )
