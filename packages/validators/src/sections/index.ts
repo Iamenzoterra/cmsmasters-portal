@@ -135,8 +135,8 @@ export function validateSectionData(
 export function validateSections(
   sections: Array<{ type: string; data: unknown }>
 ): { success: true } | { success: false; index: number; error: string } {
-  for (let i = 0; i < sections.length; i++) {
-    const result = validateSectionData(sections[i])
+  for (const [i, section] of sections.entries()) {
+    const result = validateSectionData(section)
     if (!result.success) {
       return { success: false, index: i, error: result.error }
     }

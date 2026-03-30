@@ -50,7 +50,7 @@ const RESOURCE_PUBLIC = ['docs', 'changelog', 'faq', 'demos']
 const RESOURCE_LICENSED = ['download', 'child-theme', 'psd', 'support']
 const RESOURCE_PREMIUM = ['priority-support', 'megakit-access']
 
-export function EditorSidebar({ control, register, watch, setValue, existingTheme }: EditorSidebarProps) {
+export function EditorSidebar({ control, register, watch, setValue: _setValue, existingTheme }: EditorSidebarProps) {
   const status = watch('status')
   const thumbnailUrl = watch('meta.thumbnail_url')
 

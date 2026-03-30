@@ -85,8 +85,8 @@ export function ThemeEditor() {
         setExistingTheme(theme)
         reset(themeRowToFormData(theme))
       })
-      .catch((err) => {
-        if (!cancelled) setFetchError(err instanceof Error ? err.message : 'Failed to load theme')
+      .catch((error) => {
+        if (!cancelled) setFetchError(error instanceof Error ? error.message : 'Failed to load theme')
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -142,20 +142,20 @@ export function ThemeEditor() {
           target_id: saved.id,
           details: { slug: saved.slug, status: saved.status },
         })
-      } catch (auditErr) {
-        console.warn('AUDIT_LOG_FAILED', existingTheme ? 'theme.updated' : 'theme.created', saved.slug, auditErr)
+      } catch {
+        console.warn('AUDIT_LOG_FAILED', existingTheme ? 'theme.updated' : 'theme.created', saved.slug)
       }
 
       // M4: create flow → navigate first, then data resets from route change
-      if (!existingTheme) {
-        navigate(`/themes/${saved.slug}`, { replace: true })
-      } else {
+      if (existingTheme) {
         setExistingTheme(saved)
         reset(themeRowToFormData(saved))
+      } else {
+        navigate(`/themes/${saved.slug}`, { replace: true })
       }
       toast({ type: 'success', message: 'Theme saved' })
-    } catch (err) {
-      toast({ type: 'error', message: err instanceof Error ? err.message : 'Save failed' })
+    } catch (error) {
+      toast({ type: 'error', message: error instanceof Error ? error.message : 'Save failed' })
     } finally {
       setSaving(false)
     }
@@ -181,8 +181,8 @@ export function ThemeEditor() {
           target_id: saved.id,
           details: { slug: saved.slug },
         })
-      } catch (auditErr) {
-        console.warn('AUDIT_LOG_FAILED', 'theme.published', saved.slug, auditErr)
+      } catch {
+        console.warn('AUDIT_LOG_FAILED', 'theme.published', saved.slug)
       }
 
       // Fire-and-forget revalidation (stub endpoint, non-fatal)
@@ -197,15 +197,15 @@ export function ThemeEditor() {
         console.warn('Revalidation failed — Portal will update via ISR')
       }
 
-      if (!existingTheme) {
-        navigate(`/themes/${saved.slug}`, { replace: true })
-      } else {
+      if (existingTheme) {
         setExistingTheme(saved)
         reset(themeRowToFormData(saved))
+      } else {
+        navigate(`/themes/${saved.slug}`, { replace: true })
       }
       toast({ type: 'success', message: 'Theme published' })
-    } catch (err) {
-      toast({ type: 'error', message: err instanceof Error ? err.message : 'Publish failed' })
+    } catch (error) {
+      toast({ type: 'error', message: error instanceof Error ? error.message : 'Publish failed' })
     } finally {
       setPublishing(false)
     }
@@ -214,7 +214,7 @@ export function ThemeEditor() {
   // ── Delete (M6: only for existing themes) ──
   async function handleDelete() {
     if (!existingTheme) return
-    const confirmed = window.confirm(`Delete "${existingTheme.meta.name}"? This cannot be undone.`)
+    const confirmed = globalThis.confirm(`Delete "${existingTheme.meta.name}"? This cannot be undone.`)
     if (!confirmed) return
 
     setDeleting(true)
@@ -228,14 +228,14 @@ export function ThemeEditor() {
           target_id: existingTheme.id,
           details: { slug: existingTheme.slug, name: existingTheme.meta.name },
         })
-      } catch (auditErr) {
-        console.warn('AUDIT_LOG_FAILED', 'theme.deleted', existingTheme.slug, auditErr)
+      } catch {
+        console.warn('AUDIT_LOG_FAILED', 'theme.deleted', existingTheme.slug)
       }
 
       toast({ type: 'success', message: 'Theme deleted' })
       navigate('/', { replace: true })
-    } catch (err) {
-      toast({ type: 'error', message: err instanceof Error ? err.message : 'Delete failed' })
+    } catch (error) {
+      toast({ type: 'error', message: error instanceof Error ? error.message : 'Delete failed' })
     } finally {
       setDeleting(false)
     }
@@ -554,7 +554,7 @@ function SectionsList({ fields, control, register, onRemove, onSwap, onAppend }:
               <button
                 type="button"
                 style={controlBtnStyle}
-                onClick={(e) => { e.stopPropagation(); window.confirm('Remove this section?') && onRemove(index) }}
+                onClick={(e) => { e.stopPropagation(); if (globalThis.confirm('Remove this section?')) onRemove(index) }}
               >
                 <X size={14} />
               </button>
@@ -628,18 +628,24 @@ function SectionsList({ fields, control, register, onRemove, onSwap, onAppend }:
 
 function SectionEditor({ index, type, control, register }: { index: number; type: SectionType; control: Control<ThemeFormData>; register: UseFormRegister<ThemeFormData> }) {
   switch (type) {
-    case 'theme-hero':
+    case 'theme-hero': {
       return <HeroEditor index={index} control={control} register={register} />
-    case 'feature-grid':
+    }
+    case 'feature-grid': {
       return <FeatureGridEditor index={index} control={control} register={register} />
-    case 'plugin-comparison':
+    }
+    case 'plugin-comparison': {
       return <PluginComparisonEditor index={index} control={control} register={register} />
-    case 'trust-strip':
+    }
+    case 'trust-strip': {
       return <TrustStripInfo />
-    case 'related-themes':
+    }
+    case 'related-themes': {
       return <RelatedThemesEditor index={index} register={register} />
-    default:
+    }
+    default: {
       return <StubEditor index={index} control={control} />
+    }
   }
 }
 
@@ -842,8 +848,8 @@ function StubEditor({ index, control }: { index: number; control: any }) {
       }
       field.onChange(parsed)
       setJsonError(null)
-    } catch (e) {
-      setJsonError(e instanceof Error ? e.message : 'Invalid JSON')
+    } catch (error) {
+      setJsonError(error instanceof Error ? error.message : 'Invalid JSON')
     }
   }
 
