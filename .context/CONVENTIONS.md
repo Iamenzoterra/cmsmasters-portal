@@ -213,3 +213,30 @@ R2_BUCKET_NAME
 - Version 4 — `z.record(z.string(), z.unknown())` requires 2 args (not 1 like v3)
 - `safeParse()` returns `{ success, data?, error? }`
 - `ThemeFormData = z.infer<typeof themeSchema>`
+
+### Section registry pattern (WP-004)
+
+Single source of truth: `packages/validators/src/sections/index.ts`
+
+- `SECTION_REGISTRY` — Record<SectionType, { schema, label, defaultData }>
+- `SECTION_TYPES` — derived from registry keys (never hardcoded separately)
+- `SECTION_LABELS` — derived from registry entries
+- `CORE_SECTION_TYPES` — 5 types shown in add-section picker
+- `getDefaultSections()` — factory, returns fresh array each call (mutation-safe)
+- `validateSectionData(section)` — per-type validation at save boundary
+- `validateSections(sections[])` — array validation
+
+Adding a new section type: create file in `packages/validators/src/sections/{type}.ts`, add to `SECTION_REGISTRY`. Types auto-propagate. No mapper changes needed.
+
+### Boundary mapper pattern (WP-004)
+
+`packages/db/src/mappers.ts` — the ONLY boundary between DB and form:
+- `themeRowToFormData()` — DB row to form state (null to default)
+- `formDataToThemeInsert()` — form to DB insert (empty to undefined)
+- Thin: form shape mirrors DB shape. No field-by-field translation.
+
+### Nested form convention (WP-004)
+
+Form shape mirrors DB shape: `{ slug, meta: {...}, sections: [...], seo: {...}, status }`.
+react-hook-form paths: `register('meta.name')`, `useFieldArray({ name: 'sections' })`, `register('sections.${i}.data.headline')`.
+`as any` casts needed for dynamic section data paths — expected, safe.
