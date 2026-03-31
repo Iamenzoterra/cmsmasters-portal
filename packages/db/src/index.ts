@@ -34,3 +34,22 @@ export { themeRowToFormData, formDataToThemeInsert } from './mappers'
 export { getThemes, getThemeBySlug, upsertTheme } from './queries/themes'
 export { getProfile, updateProfile } from './queries/profiles'
 export { logAction } from './queries/audit'
+
+export {
+  getBlocks,
+  getBlockById,
+  getBlockBySlug,
+  createBlock,
+  updateBlock,
+  deleteBlock,
+  getBlockUsage,
+} from './queries/blocks'
+
+export {
+  getTemplates,
+  getTemplateById,
+  createTemplate,
+  updateTemplate,
+  deleteTemplate,
+  getTemplateUsage,
+} from './queries/templates'
