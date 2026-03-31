@@ -5,9 +5,10 @@ interface PaginationProps {
   totalItems: number
   itemsPerPage: number
   onPageChange: (page: number) => void
+  itemLabel?: string
 }
 
-export function Pagination({ page, totalItems, itemsPerPage, onPageChange }: PaginationProps) {
+export function Pagination({ page, totalItems, itemsPerPage, onPageChange, itemLabel = 'items' }: PaginationProps) {
   const totalPages = Math.ceil(totalItems / itemsPerPage)
   if (totalPages <= 1) return null
 
@@ -23,7 +24,7 @@ export function Pagination({ page, totalItems, itemsPerPage, onPageChange }: Pag
           fontFamily: "'Manrope', sans-serif",
         }}
       >
-        Showing {start}–{end} of {totalItems} themes
+        Showing {start}–{end} of {totalItems} {itemLabel}
       </span>
       <div className="flex items-center" style={{ gap: 'var(--spacing-xs)' }}>
         <Button

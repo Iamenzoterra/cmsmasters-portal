@@ -250,6 +250,7 @@ export function ThemesList() {
           totalItems={filteredThemes.length}
           itemsPerPage={ITEMS_PER_PAGE}
           onPageChange={setPage}
+          itemLabel="themes"
         />
       )}
     </>

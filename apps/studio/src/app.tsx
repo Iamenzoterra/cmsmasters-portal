@@ -1,5 +1,6 @@
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import { Routes, Route, useNavigate } from 'react-router-dom'
 import { RequireAuth } from '@cmsmasters/auth'
+import { Agentation } from 'agentation'
 import { supabase } from './lib/supabase'
 import { AppLayout } from './layouts/app-layout'
 import { AuthLayout } from './layouts/auth-layout'
@@ -8,6 +9,10 @@ import { AuthCallback } from './pages/auth-callback'
 import { ThemesList } from './pages/themes-list'
 import { ThemeEditor } from './pages/theme-editor'
 import { MediaPage } from './pages/media'
+import { BlocksList } from './pages/blocks-list'
+import { BlockEditor } from './pages/block-editor'
+import { NotFound } from './pages/not-found'
+import { ErrorBoundary } from './components/error-boundary'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
@@ -30,7 +35,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 export function App() {
   return (
-    <Routes>
+    <>
+      {process.env.NODE_ENV === 'development' && (
+        <Agentation endpoint="http://localhost:4747" />
+      )}
+      <Routes>
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
@@ -38,7 +47,9 @@ export function App() {
       <Route
         element={
           <ProtectedRoute>
-            <AppLayout />
+            <ErrorBoundary>
+              <AppLayout />
+            </ErrorBoundary>
           </ProtectedRoute>
         }
       >
@@ -46,8 +57,12 @@ export function App() {
         <Route path="/themes/new" element={<ThemeEditor />} />
         <Route path="/themes/:slug" element={<ThemeEditor />} />
         <Route path="/media" element={<MediaPage />} />
+        <Route path="/blocks" element={<BlocksList />} />
+        <Route path="/blocks/new" element={<BlockEditor />} />
+        <Route path="/blocks/:id" element={<BlockEditor />} />
       </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
+    </>
   )
 }

@@ -1,10 +1,11 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutGrid, Image, HelpCircle, LogOut } from 'lucide-react'
+import { LayoutGrid, Boxes, Image, HelpCircle, LogOut } from 'lucide-react'
 import { signOut } from '@cmsmasters/auth'
 import { supabase } from '../lib/supabase'
 
 const navItems = [
   { to: '/', label: 'Themes', icon: LayoutGrid },
+  { to: '/blocks', label: 'Blocks', icon: Boxes },
   { to: '/media', label: 'Media', icon: Image },
 ]
 
