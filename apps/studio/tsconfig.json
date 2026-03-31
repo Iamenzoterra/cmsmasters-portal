@@ -10,7 +10,14 @@
     "jsx": "react-jsx",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@cmsmasters/auth": ["../../packages/auth/src/index.ts"],
+      "@cmsmasters/db": ["../../packages/db/src/index.ts"],
+      "@cmsmasters/validators": ["../../packages/validators/src/index.ts"],
+      "@cmsmasters/api-client": ["../../packages/api-client/src/index.ts"],
+      "@cmsmasters/ui": ["../../packages/ui/index.ts"]
+    }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "vite-env.d.ts"],
   "exclude": ["node_modules", "dist"]

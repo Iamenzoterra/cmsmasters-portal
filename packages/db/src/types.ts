@@ -22,14 +22,31 @@ export interface ThemeMeta {
   }
 }
 
-// ── Block types (stored in themes.sections jsonb array) ──
+// ── Block (stored in blocks table) ──
 
-import type { BlockId } from '@cmsmasters/blocks'
-export type { BlockId }
+export interface BlockHooks {
+  price?: { selector: string }
+  links?: Array<{ selector: string; field: string; label?: string }>
+}
 
-export interface ThemeBlock {
-  block: BlockId
-  data: Record<string, unknown>
+export interface BlockMetadata {
+  alt?: string
+  figma_node?: string
+  [key: string]: unknown
+}
+
+// ── Template position ──
+
+export interface TemplatePosition {
+  position: number
+  block_id: string | null
+}
+
+// ── Theme block fill (per-theme additions to template) ──
+
+export interface ThemeBlockFill {
+  position: number
+  block_id: string
 }
 
 // ── SEO (stored in themes.seo jsonb) ──
@@ -92,7 +109,8 @@ export type Database = {
           slug: string
           status: ThemeStatus
           meta: ThemeMeta
-          sections: ThemeBlock[]
+          template_id: string | null
+          block_fills: ThemeBlockFill[]
           seo: ThemeSEO | null
           created_by: string | null
           created_at: string
@@ -103,7 +121,8 @@ export type Database = {
           slug: string
           status?: ThemeStatus
           meta: ThemeMeta
-          sections?: ThemeBlock[]
+          template_id?: string | null
+          block_fills?: ThemeBlockFill[]
           seo?: ThemeSEO | null
           created_by?: string | null
           created_at?: string
@@ -114,8 +133,82 @@ export type Database = {
           slug?: string
           status?: ThemeStatus
           meta?: ThemeMeta
-          sections?: ThemeBlock[]
+          template_id?: string | null
+          block_fills?: ThemeBlockFill[]
           seo?: ThemeSEO | null
+          created_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      blocks: {
+        Row: {
+          id: string
+          slug: string
+          name: string
+          html: string
+          css: string
+          hooks: BlockHooks
+          metadata: BlockMetadata
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          slug: string
+          name: string
+          html: string
+          css?: string
+          hooks?: BlockHooks
+          metadata?: BlockMetadata
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          slug?: string
+          name?: string
+          html?: string
+          css?: string
+          hooks?: BlockHooks
+          metadata?: BlockMetadata
+          created_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      templates: {
+        Row: {
+          id: string
+          slug: string
+          name: string
+          description: string | null
+          positions: TemplatePosition[]
+          max_positions: number
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          slug: string
+          name: string
+          description?: string
+          positions?: TemplatePosition[]
+          max_positions?: number
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          slug?: string
+          name?: string
+          description?: string
+          positions?: TemplatePosition[]
+          max_positions?: number
           created_by?: string | null
           updated_at?: string
         }
@@ -216,6 +309,14 @@ export type ThemeUpdate = Database['public']['Tables']['themes']['Update']
 
 export type License = Database['public']['Tables']['licenses']['Row']
 export type LicenseInsert = Database['public']['Tables']['licenses']['Insert']
+
+export type Block = Database['public']['Tables']['blocks']['Row']
+export type BlockInsert = Database['public']['Tables']['blocks']['Insert']
+export type BlockUpdate = Database['public']['Tables']['blocks']['Update']
+
+export type Template = Database['public']['Tables']['templates']['Row']
+export type TemplateInsert = Database['public']['Tables']['templates']['Insert']
+export type TemplateUpdate = Database['public']['Tables']['templates']['Update']
 
 export type AuditEntry = Database['public']['Tables']['audit_log']['Row']
 export type AuditEntryInsert = Database['public']['Tables']['audit_log']['Insert']

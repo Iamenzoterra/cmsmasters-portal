@@ -1,5 +1,5 @@
 import { themeRowToFormData, formDataToThemeInsert } from '../mappers'
-import { blockSchema } from '@cmsmasters/validators'
+import { themeSchema } from '@cmsmasters/validators'
 import type { Theme } from '../types'
 
 let pass = 0
@@ -10,7 +10,7 @@ function assert(label: string, ok: boolean) {
   else { fail++; console.log(`  ❌ ${label}`) }
 }
 
-// ── Scenario 1: Sparse row (null seo, empty sections, partial meta) ──
+// ── Scenario 1: Sparse row (null seo, no template, empty block_fills, partial meta) ──
 
 console.log('\n=== Scenario 1: Sparse Row ===')
 
@@ -19,7 +19,8 @@ const sparseRow: Theme = {
   slug: 'sparse-theme',
   status: 'draft',
   meta: { name: 'Sparse' },
-  sections: [],
+  template_id: null,
+  block_fills: [],
   seo: null,
   created_by: null,
   created_at: '2026-03-30T10:00:00Z',
@@ -41,7 +42,8 @@ assert('meta.resources defaults to { public:[], licensed:[], premium:[] }',
   sparseForm.meta.resources.licensed.length === 0 &&
   sparseForm.meta.resources.premium.length === 0
 )
-assert('sections defaults to []', Array.isArray(sparseForm.sections) && sparseForm.sections.length === 0)
+assert('template_id defaults to empty string', sparseForm.template_id === '')
+assert('block_fills defaults to []', Array.isArray(sparseForm.block_fills) && sparseForm.block_fills.length === 0)
 assert('seo.title defaults to empty string (from null)', sparseForm.seo.title === '')
 assert('seo.description defaults to empty string (from null)', sparseForm.seo.description === '')
 assert('status preserved', sparseForm.status === 'draft')
@@ -55,6 +57,8 @@ assert('round-trip: meta.tagline empty → undefined', sparseInsert.meta.tagline
 assert('round-trip: meta.preview_images empty → undefined', sparseInsert.meta.preview_images === undefined)
 assert('round-trip: meta.compatible_plugins empty → undefined', sparseInsert.meta.compatible_plugins === undefined)
 assert('round-trip: seo.title empty → undefined', sparseInsert.seo?.title === undefined)
+assert('round-trip: template_id empty → null', sparseInsert.template_id === null)
+assert('round-trip: block_fills empty → undefined', sparseInsert.block_fills === undefined)
 
 // ── Scenario 2: Filled row (all fields populated) ──
 
@@ -85,9 +89,10 @@ const filledRow: Theme = {
       premium: ['priority-support'],
     },
   },
-  sections: [
-    { block: 'theme-hero', data: { headline: 'Build with Growth Hive', screenshots: ['s1.jpg'] } },
-    { block: 'feature-grid', data: { features: [{ icon: '🚀', title: 'Fast', description: 'Blazing' }] } },
+  template_id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+  block_fills: [
+    { position: 1, block_id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' },
+    { position: 5, block_id: 'b2c3d4e5-f6a7-8901-bcde-f12345678901' },
   ],
   seo: { title: 'Growth Hive - Business Theme', description: 'A modern business WP theme' },
   created_by: 'user-uuid',
@@ -106,27 +111,64 @@ assert('meta.sales survives', filledInsert.meta.sales === 1200)
 assert('meta.compatible_plugins survives', JSON.stringify(filledInsert.meta.compatible_plugins) === '["Elementor","WooCommerce"]')
 assert('meta.trust_badges survives', JSON.stringify(filledInsert.meta.trust_badges) === '["Power Elite","Starter"]')
 assert('meta.resources.licensed survives', JSON.stringify(filledInsert.meta.resources?.licensed) === '["download","child-theme"]')
-assert('sections length preserved', filledInsert.sections?.length === 2)
-assert('sections[0].block preserved', filledInsert.sections?.[0]?.block === 'theme-hero')
-assert('sections[1].data preserved', JSON.stringify(filledInsert.sections?.[1]?.data).includes('Fast'))
+assert('template_id preserved', filledInsert.template_id === 'f47ac10b-58cc-4372-a567-0e02b2c3d479')
+assert('block_fills length preserved', filledInsert.block_fills?.length === 2)
+assert('block_fills[0].position preserved', filledInsert.block_fills?.[0]?.position === 1)
+assert('block_fills[0].block_id preserved', filledInsert.block_fills?.[0]?.block_id === 'a1b2c3d4-e5f6-7890-abcd-ef1234567890')
+assert('block_fills[1].position preserved', filledInsert.block_fills?.[1]?.position === 5)
 assert('seo.title survives', filledInsert.seo?.title === 'Growth Hive - Business Theme')
 assert('seo.description survives', filledInsert.seo?.description === 'A modern business WP theme')
 assert('slug preserved', filledInsert.slug === 'growth-hive')
 assert('status preserved', filledInsert.status === 'published')
 assert('id preserved', filledInsert.id === 'filled-uuid')
 
-// ── Scenario 3: BlockId enforcement ──
+// ── Scenario 3: Template + Block Fill Schema Validation ──
 
-console.log('\n=== Scenario 3: BlockId Enforcement ===')
+console.log('\n=== Scenario 3: Template + Block Fill Shape ===')
 
-const validSection = blockSchema.safeParse({ block: 'theme-hero', data: { headline: 'Hi' } })
-assert('valid block id accepted', validSection.success)
+const validTheme = themeSchema.safeParse({
+  slug: 'test-theme',
+  meta: { name: 'Test' },
+  template_id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+  block_fills: [{ position: 1, block_id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479' }],
+  seo: {},
+  status: 'draft',
+})
+assert('valid theme with template accepted', validTheme.success)
 
-const bogusSection = blockSchema.safeParse({ block: 'bogus-type', data: {} })
-assert('bogus block id rejected', !bogusSection.success)
+const emptyTemplate = themeSchema.safeParse({
+  slug: 'test-theme',
+  meta: { name: 'Test' },
+  template_id: '',
+  block_fills: [],
+  seo: {},
+  status: 'draft',
+})
+assert('theme with empty template_id accepted', emptyTemplate.success)
 
-const emptyBlock = blockSchema.safeParse({ block: '', data: {} })
-assert('empty string block id rejected', !emptyBlock.success)
+const defaultTemplate = themeSchema.safeParse({
+  slug: 'test-theme',
+  meta: { name: 'Test' },
+  seo: {},
+  status: 'draft',
+})
+assert('theme with omitted template_id defaults correctly', defaultTemplate.success)
+
+const invalidFill = themeSchema.safeParse({
+  slug: 'test-theme',
+  meta: { name: 'Test' },
+  block_fills: [{ position: 0, block_id: 'not-a-uuid' }],
+  seo: {},
+})
+assert('block_fill with position 0 rejected', !invalidFill.success)
+
+const invalidBlockId = themeSchema.safeParse({
+  slug: 'test-theme',
+  meta: { name: 'Test' },
+  block_fills: [{ position: 1, block_id: 'not-a-uuid' }],
+  seo: {},
+})
+assert('block_fill with non-uuid block_id rejected', !invalidBlockId.success)
 
 // ── Summary ──
 

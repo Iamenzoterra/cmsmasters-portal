@@ -24,7 +24,8 @@ export function themeRowToFormData(row: Theme): ThemeFormData {
       trust_badges: row.meta.trust_badges ?? [],
       resources: row.meta.resources ?? { public: [], licensed: [], premium: [] },
     },
-    sections: row.sections ?? [],
+    template_id: row.template_id ?? '',
+    block_fills: row.block_fills ?? [],
     seo: {
       title: row.seo?.title ?? '',
       description: row.seo?.description ?? '',
@@ -66,7 +67,8 @@ export function formDataToThemeInsert(
       trust_badges: form.meta.trust_badges.length > 0 ? form.meta.trust_badges : undefined,
       resources: form.meta.resources,
     },
-    sections: form.sections,
+    template_id: form.template_id || null,
+    block_fills: form.block_fills.length > 0 ? form.block_fills : undefined,
     seo: {
       title: emptyToNull(form.seo.title),
       description: emptyToNull(form.seo.description),

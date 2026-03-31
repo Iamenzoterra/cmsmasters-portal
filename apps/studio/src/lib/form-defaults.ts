@@ -1,10 +1,9 @@
 import type { ThemeFormData } from '@cmsmasters/validators'
-import { getDefaultBlocks } from '@cmsmasters/validators'
 
 /**
  * Default form values for a new theme.
- * Plain typed literal — no themeSchema.parse() (slug/name min constraints would throw).
- * Sections from getDefaultBlocks() (canonical registry source).
+ * template_id empty — 005C adds template picker.
+ * block_fills empty — CM fills via "+" in editor.
  */
 export function getDefaults(): ThemeFormData {
   return {
@@ -23,7 +22,8 @@ export function getDefaults(): ThemeFormData {
       trust_badges: [],
       resources: { public: [], licensed: [], premium: [] },
     },
-    sections: getDefaultBlocks(),
+    template_id: '',
+    block_fills: [],
     seo: { title: '', description: '' },
     status: 'draft',
   }
