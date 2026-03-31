@@ -11,6 +11,8 @@ import { ThemeEditor } from './pages/theme-editor'
 import { MediaPage } from './pages/media'
 import { BlocksList } from './pages/blocks-list'
 import { BlockEditor } from './pages/block-editor'
+import { TemplatesList } from './pages/templates-list'
+import { TemplateEditor } from './pages/template-editor'
 import { NotFound } from './pages/not-found'
 import { ErrorBoundary } from './components/error-boundary'
 
@@ -60,6 +62,9 @@ export function App() {
         <Route path="/blocks" element={<BlocksList />} />
         <Route path="/blocks/new" element={<BlockEditor />} />
         <Route path="/blocks/:id" element={<BlockEditor />} />
+        <Route path="/templates" element={<TemplatesList />} />
+        <Route path="/templates/new" element={<TemplateEditor />} />
+        <Route path="/templates/:id" element={<TemplateEditor />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

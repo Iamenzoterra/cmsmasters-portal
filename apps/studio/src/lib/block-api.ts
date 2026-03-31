@@ -3,13 +3,13 @@ import { supabase } from './supabase'
 
 const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8787'
 
-async function getAuthToken(): Promise<string> {
+export async function getAuthToken(): Promise<string> {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session?.access_token) throw new Error('Not authenticated')
   return session.access_token
 }
 
-async function authHeaders(): Promise<HeadersInit> {
+export async function authHeaders(): Promise<HeadersInit> {
   const token = await getAuthToken()
   return {
     Authorization: `Bearer ${token}`,
@@ -17,7 +17,7 @@ async function authHeaders(): Promise<HeadersInit> {
   }
 }
 
-async function parseError(res: Response, fallback: string): Promise<string> {
+export async function parseError(res: Response, fallback: string): Promise<string> {
   try {
     const json = await res.json() as { error?: string }
     return json.error ?? fallback
