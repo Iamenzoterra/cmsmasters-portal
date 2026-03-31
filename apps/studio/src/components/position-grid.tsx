@@ -44,6 +44,10 @@ export function PositionGrid({
             style={{
               minHeight: '48px',
               borderBottom: isLast ? 'none' : '1px solid hsl(var(--border-default))',
+              ...(isReadonly && block ? {
+                backgroundColor: 'hsl(var(--bg-surface-alt) / 0.5)',
+                borderLeft: '2px solid hsl(var(--text-muted))',
+              } : {}),
             }}
           >
             {/* Position number */}
@@ -66,14 +70,25 @@ export function PositionGrid({
                 className="flex flex-1 items-center justify-between"
                 style={{ padding: 'var(--spacing-xs) var(--spacing-sm) var(--spacing-xs) 0' }}
               >
-                <span style={{
-                  fontSize: 'var(--text-sm-font-size)',
-                  fontWeight: 500,
-                  color: 'hsl(var(--text-primary))',
-                  fontFamily: "'Manrope', sans-serif",
-                }}>
-                  {block.name}
-                </span>
+                <div className="flex items-center" style={{ gap: '8px' }}>
+                  <span style={{
+                    fontSize: 'var(--text-sm-font-size)',
+                    fontWeight: 500,
+                    color: isReadonly ? 'hsl(var(--text-secondary))' : 'hsl(var(--text-primary))',
+                    fontFamily: "'Manrope', sans-serif",
+                  }}>
+                    {block.name}
+                  </span>
+                  {isReadonly && (
+                    <span style={{
+                      fontSize: 'var(--text-xs-font-size)',
+                      color: 'hsl(var(--text-muted))',
+                      fontFamily: "'Manrope', sans-serif",
+                    }}>
+                      Template
+                    </span>
+                  )}
+                </div>
                 {!isReadonly && (
                   <button
                     type="button"

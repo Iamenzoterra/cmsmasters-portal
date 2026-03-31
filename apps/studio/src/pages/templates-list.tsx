@@ -116,7 +116,7 @@ export function TemplatesList() {
 
       {/* Loading */}
       {loading && (
-        <div className="grid w-full gap-6" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+        <div className="grid w-full gap-6" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
@@ -163,7 +163,7 @@ export function TemplatesList() {
 
       {/* Grid */}
       {!loading && paginatedTemplates.length > 0 && (
-        <div className="grid w-full" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--spacing-xl)' }}>
+        <div className="grid w-full" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--spacing-xl)' }}>
           {paginatedTemplates.map((template) => {
             const filledCount = template.positions.filter((p) => p.block_id).length
             return (

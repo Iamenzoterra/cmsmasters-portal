@@ -118,10 +118,6 @@ export function ThemesList() {
             </p>
           )}
         </div>
-        <Button variant="primary" onClick={() => navigate('/themes/new')}>
-          <Plus size={16} />
-          Create Theme
-        </Button>
       </div>
 
       {/* Toolbar */}

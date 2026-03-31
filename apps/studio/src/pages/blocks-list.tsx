@@ -146,7 +146,7 @@ export function BlocksList() {
       {loading && (
         <div
           className="grid w-full gap-6"
-          style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}
+          style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}
         >
           {Array.from({ length: 6 }).map((_, i) => (
             <div
@@ -229,7 +229,7 @@ export function BlocksList() {
         <div
           className="grid w-full"
           style={{
-            gridTemplateColumns: 'repeat(3, 1fr)',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
             gap: 'var(--spacing-xl)',
           }}
         >

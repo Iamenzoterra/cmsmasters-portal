@@ -18,6 +18,7 @@ import { EditorFooter } from '../components/editor-footer'
 import { TemplatePicker } from '../components/template-picker'
 import { PositionGrid } from '../components/position-grid'
 import { BlockPickerModal } from '../components/block-picker-modal'
+import { DeleteConfirmModal } from '../components/delete-confirm-modal'
 import { fetchTemplateById } from '../lib/template-api'
 import { fetchAllBlocks } from '../lib/block-api'
 
@@ -107,6 +108,7 @@ export function ThemeEditor() {
   const [saving, setSaving] = useState(false)
   const [publishing, setPublishing] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   // Page Layout state
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null)
@@ -232,11 +234,13 @@ export function ThemeEditor() {
   }
 
   // ── Delete (M6: only for existing themes) ──
-  async function handleDelete() {
-    if (!existingTheme) return
-    const confirmed = globalThis.confirm(`Delete "${existingTheme.meta.name}"? This cannot be undone.`)
-    if (!confirmed) return
+  function handleDelete() {
+    setShowDeleteConfirm(true)
+  }
 
+  async function handleDeleteConfirmed() {
+    if (!existingTheme) return
+    setShowDeleteConfirm(false)
     setDeleting(true)
     try {
       await deleteTheme(existingTheme.id)
@@ -285,6 +289,12 @@ export function ThemeEditor() {
   }
 
   function handleChangeTemplate() {
+    // Show picker inline by clearing template_id (fills reset on new selection)
+    form.setValue('template_id', '', { shouldDirty: true })
+    form.setValue('block_fills', [], { shouldDirty: true })
+  }
+
+  function handleRemoveTemplate() {
     const currentFills = form.getValues('block_fills')
     if (currentFills.length > 0) {
       const confirmed = globalThis.confirm('Removing the template will clear all block fills. Continue?')
@@ -292,6 +302,7 @@ export function ThemeEditor() {
     }
     form.setValue('template_id', '', { shouldDirty: true })
     form.setValue('block_fills', [], { shouldDirty: true })
+    setSelectedTemplate(null)
   }
 
   // M2 cut: merged positions — template has priority over fills
@@ -349,9 +360,9 @@ export function ThemeEditor() {
           }}
         />
         {/* Body skeleton */}
-        <div className="flex flex-1" style={{ padding: 'var(--spacing-xl)', gap: 'var(--spacing-xl)' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', flex: 1, padding: 'var(--spacing-xl)', gap: 'var(--spacing-xl)' }}>
           {/* Left column */}
-          <div className="flex min-w-0 flex-[2] flex-col" style={{ gap: 'var(--spacing-lg)' }}>
+          <div className="flex flex-col" style={{ flex: '2 1 480px', minWidth: 0, gap: 'var(--spacing-lg)' }}>
             {[180, 120, 140, 200, 240, 120, 100].map((h, i) => (
               <div
                 key={i}
@@ -365,7 +376,7 @@ export function ThemeEditor() {
             ))}
           </div>
           {/* Right sidebar */}
-          <div className="w-[320px] shrink-0">
+          <div style={{ flex: '0 0 320px' }}>
             <div
               className="animate-pulse"
               style={{
@@ -442,9 +453,9 @@ export function ThemeEditor() {
       </div>
 
       {/* ── Body: 2-column ── */}
-      <div className="flex flex-1 overflow-y-auto" style={{ padding: 'var(--spacing-xl)', gap: 'var(--spacing-xl)' }}>
+      <div className="flex-1 overflow-y-auto" style={{ display: 'flex', flexWrap: 'wrap', padding: 'var(--spacing-xl)', gap: 'var(--spacing-xl)' }}>
         {/* Left: Form fields */}
-        <div className="flex min-w-0 flex-[2] flex-col" style={{ gap: 'var(--spacing-lg)' }}>
+        <div className="flex flex-col" style={{ flex: '2 1 480px', minWidth: 0, gap: 'var(--spacing-lg)' }}>
 
           {/* Section 1: Basic Info */}
           <FormSection title="Basic Info">
@@ -507,14 +518,24 @@ export function ThemeEditor() {
                       {selectedTemplate.name}
                     </span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleChangeTemplate}
-                    className="border-0 bg-transparent"
-                    style={{ color: 'hsl(var(--text-link))', fontSize: 'var(--text-sm-font-size)', fontFamily: "'Manrope', sans-serif", cursor: 'pointer', padding: 0 }}
-                  >
-                    Change
-                  </button>
+                  <div className="flex items-center" style={{ gap: 'var(--spacing-md)' }}>
+                    <button
+                      type="button"
+                      onClick={handleChangeTemplate}
+                      className="border-0 bg-transparent"
+                      style={{ color: 'hsl(var(--text-link))', fontSize: 'var(--text-sm-font-size)', fontFamily: "'Manrope', sans-serif", cursor: 'pointer', padding: 0 }}
+                    >
+                      Change
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleRemoveTemplate}
+                      className="border-0 bg-transparent"
+                      style={{ color: 'hsl(var(--status-error-fg))', fontSize: 'var(--text-sm-font-size)', fontFamily: "'Manrope', sans-serif", cursor: 'pointer', padding: 0 }}
+                    >
+                      Remove
+                    </button>
+                  </div>
                 </div>
                 <PositionGrid
                   maxPositions={selectedTemplate.max_positions}
@@ -540,6 +561,15 @@ export function ThemeEditor() {
             />
           )}
 
+          {showDeleteConfirm && existingTheme && (
+            <DeleteConfirmModal
+              title="Delete theme"
+              itemName={existingTheme.meta.name}
+              onConfirm={handleDeleteConfirmed}
+              onCancel={() => setShowDeleteConfirm(false)}
+            />
+          )}
+
           {/* SEO */}
           <FormSection title="SEO">
             <Field label="SEO Title" error={errors.seo?.title?.message} trailing={<CharCounter current={seoTitle.length} max={70} />}>
@@ -562,7 +592,7 @@ export function ThemeEditor() {
         </div>
 
         {/* Right: Sidebar */}
-        <div className="w-[320px] shrink-0">
+        <div style={{ flex: '0 0 320px' }}>
           <EditorSidebar
             control={control}
             register={register}
