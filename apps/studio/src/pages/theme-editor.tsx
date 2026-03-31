@@ -79,6 +79,7 @@ export function ThemeEditor() {
         }
         setExistingTheme(theme)
         reset(themeRowToFormData(theme))
+        setCurrentTemplateId(theme.template_id ?? ''); setCurrentBlockFills(theme.block_fills ?? [])
       })
       .catch((error) => {
         if (!cancelled) setFetchError(error instanceof Error ? error.message : 'Failed to load theme')
@@ -88,7 +89,8 @@ export function ThemeEditor() {
       })
 
     return () => { cancelled = true }
-  }, [slug, isNew, reset])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug, isNew])
 
   // Slug auto-generation (new themes only)
   const watchedName = useWatch({ control, name: 'meta.name' })
@@ -111,30 +113,28 @@ export function ThemeEditor() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   // Page Layout state
+  const [currentTemplateId, setCurrentTemplateId] = useState('')
+  const [currentBlockFills, setCurrentBlockFills] = useState<ThemeBlockFill[]>([])
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null)
   const [allBlocks, setAllBlocks] = useState<Block[]>([])
   const [fillPickerOpen, setFillPickerOpen] = useState(false)
   const [fillPickerPosition, setFillPickerPosition] = useState<number | null>(null)
-
-  // Page Layout watchers
-  const watchedTemplateId = useWatch({ control, name: 'template_id' })
-  const watchedBlockFills = useWatch({ control, name: 'block_fills' })
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false)
 
   // Fetch all blocks on mount (for position grid name lookup + block picker)
   useEffect(() => {
     fetchAllBlocks().then(setAllBlocks).catch(() => {})
   }, [])
 
-  // M3 cut: fetch selected template when watchedTemplateId changes; clear immediately when empty
+  // Fetch template only on edit load (when template already set from DB)
+  // Select/change/remove handlers set selectedTemplate directly
   useEffect(() => {
-    if (!watchedTemplateId) {
-      setSelectedTemplate(null)
-      return
-    }
-    fetchTemplateById(watchedTemplateId)
+    if (!currentTemplateId || selectedTemplate) return
+    fetchTemplateById(currentTemplateId)
       .then(setSelectedTemplate)
       .catch(() => setSelectedTemplate(null))
-  }, [watchedTemplateId])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTemplateId])
 
   // M5: beforeunload only when dirty, cleanup in return
   useEffect(() => {
@@ -147,6 +147,10 @@ export function ThemeEditor() {
 
   // ── Save Draft ──
   async function handleSaveDraft() {
+    // Sync layout state to RHF before validation
+    form.setValue('template_id', currentTemplateId)
+    form.setValue('block_fills', currentBlockFills)
+
     const valid = await form.trigger()
     if (!valid) { toast({ type: 'error', message: 'Fix validation errors before saving' }); return }
 
@@ -172,6 +176,7 @@ export function ThemeEditor() {
       if (existingTheme) {
         setExistingTheme(saved)
         reset(themeRowToFormData(saved))
+        setCurrentTemplateId(saved.template_id ?? ''); setCurrentBlockFills(saved.block_fills ?? [])
       } else {
         navigate(`/themes/${saved.slug}`, { replace: true })
       }
@@ -185,6 +190,10 @@ export function ThemeEditor() {
 
   // ── Publish ──
   async function handlePublish() {
+    // Sync layout state to RHF before validation
+    form.setValue('template_id', currentTemplateId)
+    form.setValue('block_fills', currentBlockFills)
+
     const valid = await form.trigger()
     if (!valid) { toast({ type: 'error', message: 'Fix validation errors before publishing' }); return }
 
@@ -222,6 +231,7 @@ export function ThemeEditor() {
       if (existingTheme) {
         setExistingTheme(saved)
         reset(themeRowToFormData(saved))
+        setCurrentTemplateId(saved.template_id ?? ''); setCurrentBlockFills(saved.block_fills ?? [])
       } else {
         navigate(`/themes/${saved.slug}`, { replace: true })
       }
@@ -269,47 +279,43 @@ export function ThemeEditor() {
   function handleDiscard() {
     if (existingTheme) {
       reset(themeRowToFormData(existingTheme))
+      setCurrentTemplateId(existingTheme.template_id ?? ''); setCurrentBlockFills(existingTheme.block_fills ?? [])
     } else {
       reset(getDefaults())
+      setCurrentTemplateId(''); setCurrentBlockFills([])
     }
+    setShowTemplatePicker(false)
   }
 
   // ── Page Layout handlers ──
 
-  function handleTemplateSelect(templateId: string) {
-    if (watchedTemplateId && watchedTemplateId !== templateId) {
-      const currentFills = form.getValues('block_fills')
-      if (currentFills.length > 0) {
-        const confirmed = globalThis.confirm('Changing the template will remove all block fills. Continue?')
-        if (!confirmed) return
-      }
-    }
-    form.setValue('template_id', templateId, { shouldDirty: true })
-    form.setValue('block_fills', [], { shouldDirty: true })
+  function handleTemplateSelect(template: Template) {
+    setCurrentTemplateId(template.id)
+    setCurrentBlockFills([])
+    setShowTemplatePicker(false)
+    setSelectedTemplate(template)
   }
 
   function handleChangeTemplate() {
-    // Show picker inline by clearing template_id (fills reset on new selection)
-    form.setValue('template_id', '', { shouldDirty: true })
-    form.setValue('block_fills', [], { shouldDirty: true })
+    setShowTemplatePicker(true)
   }
 
   function handleRemoveTemplate() {
-    const currentFills = form.getValues('block_fills')
-    if (currentFills.length > 0) {
+    if (currentBlockFills.length > 0) {
       const confirmed = globalThis.confirm('Removing the template will clear all block fills. Continue?')
       if (!confirmed) return
     }
-    form.setValue('template_id', '', { shouldDirty: true })
-    form.setValue('block_fills', [], { shouldDirty: true })
+    setCurrentTemplateId('')
+    setCurrentBlockFills([])
     setSelectedTemplate(null)
+    setShowTemplatePicker(false)
   }
 
   // M2 cut: merged positions — template has priority over fills
   function getMergedPositions() {
     if (!selectedTemplate) return []
     const templateMap = new Map(selectedTemplate.positions.map((p) => [p.position, p.block_id]))
-    const fillMap = new Map((watchedBlockFills ?? []).map((f: ThemeBlockFill) => [f.position, f.block_id]))
+    const fillMap = new Map(currentBlockFills.map((f) => [f.position, f.block_id]))
 
     return Array.from({ length: selectedTemplate.max_positions }, (_, i) => {
       const pos = i + 1
@@ -334,17 +340,15 @@ export function ThemeEditor() {
   // M1 cut: upsert by position, not append
   function handleFillBlockSelected(block: Block) {
     if (fillPickerPosition === null) return
-    const currentFills = form.getValues('block_fills') ?? []
-    const filtered = currentFills.filter((f: ThemeBlockFill) => f.position !== fillPickerPosition)
-    form.setValue('block_fills', [...filtered, { position: fillPickerPosition, block_id: block.id }], { shouldDirty: true })
+    const filtered = currentBlockFills.filter((f) => f.position !== fillPickerPosition)
+    setCurrentBlockFills([...filtered, { position: fillPickerPosition, block_id: block.id }])
     setFillPickerOpen(false)
     setFillPickerPosition(null)
   }
 
   function handleRemoveFill(pos: number) {
     if (getReadonlyPositions().includes(pos)) return
-    const currentFills = form.getValues('block_fills') ?? []
-    form.setValue('block_fills', currentFills.filter((f: ThemeBlockFill) => f.position !== pos), { shouldDirty: true })
+    setCurrentBlockFills(currentBlockFills.filter((f) => f.position !== pos))
   }
 
   if (loading) {
@@ -498,60 +502,81 @@ export function ThemeEditor() {
             </Field>
           </FormSection>
 
-          {/* Page Layout — template picker or position grid */}
-          <FormSection title="Page Layout">
-            {!watchedTemplateId ? (
-              <TemplatePicker selectedId="" onSelect={handleTemplateSelect} />
-            ) : selectedTemplate ? (
-              <>
-                <div className="flex items-center justify-between" style={{
-                  padding: 'var(--spacing-sm) var(--spacing-md)',
-                  backgroundColor: 'hsl(var(--bg-surface-alt))',
-                  borderRadius: 'var(--rounded-lg)',
-                  border: '1px solid hsl(var(--border-default))',
-                }}>
-                  <div className="flex items-center" style={{ gap: 'var(--spacing-sm)' }}>
-                    <span style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-secondary))', fontFamily: "'Manrope', sans-serif" }}>
-                      Using template:
-                    </span>
-                    <span style={{ fontSize: 'var(--text-sm-font-size)', fontWeight: 600, color: 'hsl(var(--text-primary))', fontFamily: "'Manrope', sans-serif" }}>
-                      {selectedTemplate.name}
-                    </span>
-                  </div>
-                  <div className="flex items-center" style={{ gap: 'var(--spacing-md)' }}>
-                    <button
-                      type="button"
-                      onClick={handleChangeTemplate}
-                      className="border-0 bg-transparent"
-                      style={{ color: 'hsl(var(--text-link))', fontSize: 'var(--text-sm-font-size)', fontFamily: "'Manrope', sans-serif", cursor: 'pointer', padding: 0 }}
-                    >
-                      Change
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleRemoveTemplate}
-                      className="border-0 bg-transparent"
-                      style={{ color: 'hsl(var(--status-error-fg))', fontSize: 'var(--text-sm-font-size)', fontFamily: "'Manrope', sans-serif", cursor: 'pointer', padding: 0 }}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </div>
-                <PositionGrid
-                  maxPositions={selectedTemplate.max_positions}
-                  positions={getMergedPositions()}
-                  blocks={allBlocks}
-                  onAssignBlock={handleAssignFill}
-                  onRemoveBlock={handleRemoveFill}
-                  readonlyPositions={getReadonlyPositions()}
-                />
-              </>
-            ) : (
-              <p style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-muted))', fontFamily: "'Manrope', sans-serif", margin: 0 }}>
-                Loading template...
-              </p>
-            )}
-          </FormSection>
+          {/* Page Layout */}
+          <div
+            className="border"
+            style={{
+              borderColor: 'hsl(var(--border-default))',
+              borderRadius: 'var(--rounded-xl)',
+              backgroundColor: 'hsl(var(--bg-surface))',
+            }}
+          >
+            <div
+              style={{
+                padding: 'var(--spacing-lg) var(--spacing-xl)',
+                fontFamily: "'Manrope', sans-serif",
+              }}
+            >
+              <span style={{ fontSize: 'var(--text-base-font-size)', fontWeight: 600, color: 'hsl(var(--text-primary))' }}>
+                Page Layout
+              </span>
+            </div>
+            <div style={{ padding: '0 var(--spacing-xl) var(--spacing-xl)' }}>
+              <div className="flex flex-col" style={{ gap: 'var(--spacing-md)' }}>
+                {(!currentTemplateId || showTemplatePicker) ? (
+                  <TemplatePicker selectedId={currentTemplateId ?? ''} onSelect={handleTemplateSelect} />
+                ) : selectedTemplate ? (
+                  <>
+                    <div className="flex items-center justify-between" style={{
+                      padding: 'var(--spacing-sm) var(--spacing-md)',
+                      backgroundColor: 'hsl(var(--bg-surface-alt))',
+                      borderRadius: 'var(--rounded-lg)',
+                      border: '1px solid hsl(var(--border-default))',
+                    }}>
+                      <div className="flex items-center" style={{ gap: 'var(--spacing-sm)' }}>
+                        <span style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-secondary))', fontFamily: "'Manrope', sans-serif" }}>
+                          Using template:
+                        </span>
+                        <span style={{ fontSize: 'var(--text-sm-font-size)', fontWeight: 600, color: 'hsl(var(--text-primary))', fontFamily: "'Manrope', sans-serif" }}>
+                          {selectedTemplate.name}
+                        </span>
+                      </div>
+                      <div className="flex items-center" style={{ gap: 'var(--spacing-md)' }}>
+                        <button
+                          type="button"
+                          onClick={handleChangeTemplate}
+                          className="border-0 bg-transparent"
+                          style={{ color: 'hsl(var(--text-link))', fontSize: 'var(--text-sm-font-size)', fontFamily: "'Manrope', sans-serif", cursor: 'pointer', padding: '4px 8px' }}
+                        >
+                          Change
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleRemoveTemplate}
+                          className="border-0 bg-transparent"
+                          style={{ color: 'hsl(var(--status-error-fg))', fontSize: 'var(--text-sm-font-size)', fontFamily: "'Manrope', sans-serif", cursor: 'pointer', padding: '4px 8px' }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                    <PositionGrid
+                      maxPositions={selectedTemplate.max_positions}
+                      positions={getMergedPositions()}
+                      blocks={allBlocks}
+                      onAssignBlock={handleAssignFill}
+                      onRemoveBlock={handleRemoveFill}
+                      readonlyPositions={getReadonlyPositions()}
+                    />
+                  </>
+                ) : (
+                  <p style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-muted))', fontFamily: "'Manrope', sans-serif", margin: 0 }}>
+                    Loading template...
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
 
           {/* Block picker modal for fills */}
           {fillPickerOpen && (

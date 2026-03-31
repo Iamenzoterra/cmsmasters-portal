@@ -5,7 +5,7 @@ import { fetchAllTemplates } from '../lib/template-api'
 
 interface TemplatePickerProps {
   selectedId: string
-  onSelect: (templateId: string) => void
+  onSelect: (template: Template) => void
 }
 
 export function TemplatePicker({ selectedId, onSelect }: TemplatePickerProps) {
@@ -67,7 +67,7 @@ export function TemplatePicker({ selectedId, onSelect }: TemplatePickerProps) {
           <button
             key={t.id}
             type="button"
-            onClick={() => onSelect(t.id)}
+            onClick={() => onSelect(t)}
             className="flex cursor-pointer flex-col items-start border text-left transition-shadow hover:shadow-sm"
             style={{
               padding: 'var(--spacing-md)',
