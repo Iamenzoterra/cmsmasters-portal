@@ -1,16 +1,15 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useForm, useWatch, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { createBlockSchema } from '@cmsmasters/validators'
 import type { Block } from '@cmsmasters/db'
-import { AlertTriangle, ChevronLeft, Plus, X } from 'lucide-react'
+import { AlertTriangle, ChevronLeft, Plus, X, Upload, Eye } from 'lucide-react'
 import { Button } from '@cmsmasters/ui'
 import { fetchBlockById, createBlockApi, updateBlockApi, deleteBlockApi } from '../lib/block-api'
 import { nameToSlug } from '../lib/form-defaults'
 import { useToast } from '../components/toast'
 import { FormSection } from '../components/form-section'
-import { BlockPreview } from '../components/block-preview'
 
 const inputStyle: React.CSSProperties = {
   height: '36px',
@@ -42,18 +41,20 @@ const errorStyle: React.CSSProperties = {
 const monoStyle: React.CSSProperties = {
   ...inputStyle,
   height: 'auto',
-  padding: 'var(--spacing-sm)',
-  fontFamily: "'Courier New', Courier, monospace",
+  padding: 'var(--spacing-md)',
+  fontFamily: "'JetBrains Mono', 'Fira Code', 'Courier New', monospace",
   fontSize: '13px',
-  lineHeight: '1.5',
+  lineHeight: '1.6',
   resize: 'vertical' as const,
+  backgroundColor: 'hsl(var(--bg-surface-alt))',
+  tabSize: 2,
+  letterSpacing: '-0.01em',
 }
 
 interface BlockFormData {
   name: string
   slug: string
-  html: string
-  css: string
+  code: string
   hasPriceHook: boolean
   priceSelector: string
   links: Array<{ selector: string; field: string; label?: string }>
@@ -65,8 +66,7 @@ function getDefaults(): BlockFormData {
   return {
     name: '',
     slug: '',
-    html: '',
-    css: '',
+    code: '',
     hasPriceHook: false,
     priceSelector: '',
     links: [],
@@ -75,12 +75,17 @@ function getDefaults(): BlockFormData {
   }
 }
 
+/** Combine html + css from DB into a single code string */
+function blockToCode(block: Block): string {
+  if (!block.css) return block.html
+  return `<style>\n${block.css}\n</style>\n\n${block.html}`
+}
+
 function blockToFormData(block: Block): BlockFormData {
   return {
     name: block.name,
     slug: block.slug,
-    html: block.html,
-    css: block.css,
+    code: blockToCode(block),
     hasPriceHook: !!block.hooks?.price,
     priceSelector: block.hooks?.price?.selector ?? '',
     links: block.hooks?.links ?? [],
@@ -89,7 +94,21 @@ function blockToFormData(block: Block): BlockFormData {
   }
 }
 
+/** Split code into html + css for the API */
+function splitCode(code: string): { html: string; css: string } {
+  const styleRegex = /<style[^>]*>([\s\S]*?)<\/style>/gi
+  let css = ''
+  let match
+  while ((match = styleRegex.exec(code)) !== null) {
+    css += (css ? '\n\n' : '') + match[1].trim()
+  }
+  const html = code.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '').trim()
+  return { html, css }
+}
+
 function formDataToPayload(data: BlockFormData) {
+  const { html, css } = splitCode(data.code)
+
   const hooks: Record<string, unknown> = {}
   if (data.hasPriceHook && data.priceSelector.trim()) {
     hooks.price = { selector: data.priceSelector.trim() }
@@ -109,11 +128,30 @@ function formDataToPayload(data: BlockFormData) {
 
   return {
     name: data.name,
-    html: data.html,
-    css: data.css || undefined,
+    html: html || data.code,
+    css: css || undefined,
     hooks: Object.keys(hooks).length > 0 ? hooks : undefined,
     metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
   }
+}
+
+function parseHtmlFile(content: string): string {
+  // Strip <!DOCTYPE>, <html>, <head>, <body> wrappers — keep <style> + body content
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(content, 'text/html')
+
+  const styles = Array.from(doc.querySelectorAll('style'))
+    .map((el) => el.textContent ?? '')
+    .join('\n\n')
+    .trim()
+
+  const body = doc.body?.innerHTML?.trim() ?? content
+  const cleaned = body.replace(/<script[\s\S]*?<\/script>/gi, '').trim()
+
+  if (styles) {
+    return `<style>\n${styles}\n</style>\n\n${cleaned}`
+  }
+  return cleaned
 }
 
 export function BlockEditor() {
@@ -124,6 +162,7 @@ export function BlockEditor() {
   const [existingBlock, setExistingBlock] = useState<Block | null>(null)
   const [loading, setLoading] = useState(!isNew)
   const [fetchError, setFetchError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const form = useForm<BlockFormData>({
     resolver: isNew ? zodResolver(createBlockSchema, {
@@ -167,13 +206,14 @@ export function BlockEditor() {
   }, [watchedName, isNew, form])
 
   // Live preview values
-  const watchedHtml = useWatch({ control, name: 'html' })
-  const watchedCss = useWatch({ control, name: 'css' })
+  const watchedCode = useWatch({ control, name: 'code' })
   const formSlug = useWatch({ control, name: 'slug' })
 
   const { toast } = useToast()
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [showPreview, setShowPreview] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   // beforeunload guard
   useEffect(() => {
@@ -192,8 +232,8 @@ export function BlockEditor() {
       toast({ type: 'error', message: 'Name is required' })
       return
     }
-    if (!data.html.trim()) {
-      toast({ type: 'error', message: 'HTML is required' })
+    if (!data.code.trim()) {
+      toast({ type: 'error', message: 'Code is required' })
       return
     }
     if (isNew && !data.slug.trim()) {
@@ -224,11 +264,9 @@ export function BlockEditor() {
     }
   }
 
-  async function handleDelete() {
+  async function handleDeleteConfirmed() {
     if (!existingBlock) return
-    const confirmed = globalThis.confirm(`Delete "${existingBlock.name}"? This cannot be undone.`)
-    if (!confirmed) return
-
+    setShowDeleteConfirm(false)
     setDeleting(true)
     try {
       await deleteBlockApi(existingBlock.id)
@@ -249,9 +287,36 @@ export function BlockEditor() {
     }
   }
 
+  function handleFileImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      const content = reader.result as string
+      const code = parseHtmlFile(content)
+
+      form.setValue('code', code, { shouldDirty: true })
+
+      // Auto-fill name from filename if empty
+      const currentName = form.getValues('name')
+      if (!currentName) {
+        const name = file.name.replace(/\.html?$/i, '').replace(/[-_]/g, ' ')
+        form.setValue('name', name, { shouldDirty: true })
+        if (isNew) form.setValue('slug', nameToSlug(name), { shouldDirty: false })
+      }
+
+      toast({ type: 'success', message: `Imported ${file.name}` })
+    }
+    reader.readAsText(file)
+
+    // Reset input so same file can be re-imported
+    e.target.value = ''
+  }
+
   if (loading) {
     return (
-      <div className="flex h-full flex-col" style={{ margin: 'calc(-1 * var(--spacing-3xl)) calc(-1 * var(--spacing-4xl))' }}>
+      <div className="flex flex-col" style={{ margin: 'calc(-1 * var(--spacing-3xl)) calc(-1 * var(--spacing-4xl))', minHeight: 'calc(100% + 2 * var(--spacing-3xl))' }}>
         <div
           className="shrink-0 border-b"
           style={{ height: '65px', borderColor: 'hsl(var(--border-default))', backgroundColor: 'hsl(var(--bg-surface))' }}
@@ -296,7 +361,7 @@ export function BlockEditor() {
   const busy = saving || deleting
 
   return (
-    <div className="flex h-full flex-col" style={{ margin: 'calc(-1 * var(--spacing-3xl)) calc(-1 * var(--spacing-4xl))' }}>
+    <div className="flex flex-col" style={{ margin: 'calc(-1 * var(--spacing-3xl)) calc(-1 * var(--spacing-4xl))', minHeight: 'calc(100% + 2 * var(--spacing-3xl))' }}>
       {/* Header */}
       <div
         className="flex shrink-0 items-center justify-between border-b"
@@ -330,61 +395,97 @@ export function BlockEditor() {
             {isNew ? 'New Block' : existingBlock?.name ?? id}
           </span>
         </div>
-        {formSlug && (
-          <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))', fontFamily: "'Manrope', sans-serif" }}>
-            {formSlug}
-          </span>
-        )}
+        <div className="flex items-center" style={{ gap: 'var(--spacing-md)' }}>
+          {formSlug && (
+            <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))', fontFamily: "'Manrope', sans-serif" }}>
+              {formSlug}
+            </span>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".html,.htm"
+            onChange={handleFileImport}
+            style={{ display: 'none' }}
+          />
+          <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+            <Upload size={14} />
+            Import HTML
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setShowPreview(true)} disabled={!(watchedCode ?? '').trim()}>
+            <Eye size={14} />
+            Preview
+          </Button>
+        </div>
       </div>
 
       {/* Body: 2-column */}
       <div className="flex flex-1 overflow-y-auto" style={{ padding: 'var(--spacing-xl)', gap: 'var(--spacing-xl)' }}>
         {/* Left: Form */}
-        <div className="flex min-w-0 flex-[2] flex-col" style={{ gap: 'var(--spacing-lg)' }}>
+        <div className="flex min-w-0 flex-1 flex-col" style={{ gap: 'var(--spacing-lg)', maxWidth: '900px' }}>
 
           <FormSection title="Basic Info">
-            <Field label="Name" error={errors.name?.message}>
+            <Field label="Name *" error={errors.name?.message}>
               <input {...register('name')} className="w-full outline-none" style={inputStyle} placeholder="Block name" />
             </Field>
             <Field label="Slug" error={errors.slug?.message}>
-              <input
-                {...register('slug')}
-                className="w-full outline-none"
-                style={{ ...inputStyle, backgroundColor: isNew ? 'hsl(var(--input))' : 'hsl(var(--bg-surface-alt))' }}
-                readOnly={!isNew}
-                placeholder="auto-generated-slug"
-              />
+              {isNew ? (
+                <input
+                  {...register('slug')}
+                  className="w-full outline-none"
+                  style={inputStyle}
+                  placeholder="auto-generated-slug"
+                />
+              ) : (
+                <span style={{
+                  fontSize: 'var(--text-sm-font-size)',
+                  color: 'hsl(var(--text-muted))',
+                  fontFamily: "'Manrope', sans-serif",
+                  padding: '0 var(--spacing-sm)',
+                  lineHeight: '36px',
+                }}>
+                  {formSlug}
+                </span>
+              )}
             </Field>
           </FormSection>
 
-          <FormSection title="HTML">
-            <Field label="HTML Content" error={errors.html?.message}>
-              <textarea
-                {...register('html')}
-                rows={12}
-                className="w-full outline-none"
-                style={monoStyle}
-                placeholder={'<div class="block-container">\n  <!-- Block content here -->\n</div>'}
-              />
-            </Field>
+          <FormSection title="Code *" defaultOpen={false}>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  const code = form.getValues('code')
+                  if (code) { navigator.clipboard.writeText(code); toast({ type: 'info', message: 'Code copied' }) }
+                }}
+                className="flex items-center gap-1 border-0 bg-transparent"
+                style={{
+                  color: 'hsl(var(--text-link))',
+                  fontSize: 'var(--text-xs-font-size)',
+                  fontFamily: "'Manrope', sans-serif",
+                  cursor: 'pointer',
+                  padding: 0,
+                }}
+              >
+                Copy
+              </button>
+            </div>
+            <textarea
+              {...register('code')}
+              rows={20}
+              className="w-full outline-none"
+              style={monoStyle}
+              placeholder={'<style>\n  .block-container { padding: 40px; }\n</style>\n\n<div class="block-container">\n  <!-- Block content here -->\n</div>'}
+            />
           </FormSection>
 
-          <FormSection title="CSS">
-            <Field label="CSS Styles">
-              <textarea
-                {...register('css')}
-                rows={8}
-                className="w-full outline-none"
-                style={monoStyle}
-                placeholder={'.block-container {\n  /* Styles here */\n}'}
-              />
-            </Field>
-          </FormSection>
-
-          <FormSection title="Hooks" defaultOpen={false}>
+          <FormSection title="Advanced" defaultOpen={false}>
             {/* Price hook */}
             <div className="flex flex-col" style={{ gap: 'var(--spacing-sm)' }}>
               <label style={labelStyle}>Price Hook</label>
+              <p style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))', fontFamily: "'Manrope', sans-serif", margin: 0 }}>
+                Bind dynamic pricing to an element in your block HTML.
+              </p>
               <div className="flex items-center" style={{ gap: 'var(--spacing-sm)' }}>
                 <input type="checkbox" {...register('hasPriceHook')} />
                 <span style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-secondary))', fontFamily: "'Manrope', sans-serif" }}>
@@ -404,6 +505,9 @@ export function BlockEditor() {
             {/* Link hooks */}
             <div className="flex flex-col" style={{ gap: 'var(--spacing-sm)' }}>
               <label style={labelStyle}>Link Hooks</label>
+              <p style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))', fontFamily: "'Manrope', sans-serif", margin: 0 }}>
+                Bind dynamic links to elements. Selector targets the element, field is the data key.
+              </p>
               {fields.map((field, index) => (
                 <div key={field.id} className="flex items-start" style={{ gap: 'var(--spacing-xs)' }}>
                   <input
@@ -455,9 +559,11 @@ export function BlockEditor() {
                 Add link hook
               </button>
             </div>
-          </FormSection>
 
-          <FormSection title="Metadata" defaultOpen={false}>
+            {/* Divider */}
+            <div style={{ height: '1px', backgroundColor: 'hsl(var(--border-default))' }} />
+
+            {/* Metadata */}
             <Field label="Alt Text">
               <input {...register('alt')} className="w-full outline-none" style={inputStyle} placeholder="Alternative text description" />
             </Field>
@@ -466,25 +572,19 @@ export function BlockEditor() {
             </Field>
           </FormSection>
 
+          <div aria-hidden style={{ height: '32px', flexShrink: 0 }} />
+
         </div>
 
-        {/* Right: Preview */}
-        <div className="w-[320px] shrink-0" style={{ position: 'sticky', top: 0, alignSelf: 'flex-start' }}>
-          <p
-            style={{
-              margin: '0 0 var(--spacing-sm) 0',
-              fontSize: 'var(--text-xs-font-size)',
-              fontWeight: 500,
-              color: 'hsl(var(--text-muted))',
-              fontFamily: "'Manrope', sans-serif",
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-            }}
-          >
-            Preview
-          </p>
-          <BlockPreview html={watchedHtml ?? ''} css={watchedCss ?? ''} height={400} />
-        </div>
+        {/* Preview modal */}
+        {showPreview && <PreviewModal code={watchedCode ?? ''} onClose={() => setShowPreview(false)} />}
+        {showDeleteConfirm && existingBlock && (
+          <DeleteConfirmModal
+            blockName={existingBlock.name}
+            onConfirm={handleDeleteConfirmed}
+            onCancel={() => setShowDeleteConfirm(false)}
+          />
+        )}
       </div>
 
       {/* Footer */}
@@ -498,6 +598,15 @@ export function BlockEditor() {
         }}
       >
         <div className="flex items-center" style={{ gap: 'var(--spacing-md)' }}>
+          {isDirty && (
+            <span style={{
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              backgroundColor: 'hsl(var(--status-warning-fg))',
+              flexShrink: 0,
+            }} />
+          )}
           <button
             type="button"
             onClick={handleDiscard}
@@ -512,13 +621,13 @@ export function BlockEditor() {
               padding: 0,
             }}
           >
-            Discard Changes
+            {isDirty ? 'Unsaved changes' : 'No changes'}
           </button>
 
           {existingBlock && (
             <button
               type="button"
-              onClick={handleDelete}
+              onClick={() => setShowDeleteConfirm(true)}
               disabled={busy}
               className="border-0 bg-transparent disabled:opacity-40"
               style={{
@@ -539,11 +648,201 @@ export function BlockEditor() {
           variant="primary"
           size="sm"
           onClick={handleSave}
-          disabled={busy}
+          disabled={busy || !isDirty}
           loading={saving}
         >
-          Save
+          {saving ? 'Saving...' : isNew ? 'Create Block' : 'Save Changes'}
         </Button>
+      </div>
+    </div>
+  )
+}
+
+function DeleteConfirmModal({ blockName, onConfirm, onCancel }: {
+  blockName: string
+  onConfirm: () => void
+  onCancel: () => void
+}) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onCancel() }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [onCancel])
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{
+        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+        backdropFilter: 'blur(4px)',
+        animation: 'fadeIn 150ms ease-out',
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onCancel() }}
+    >
+      <div
+        style={{
+          width: '420px',
+          backgroundColor: 'hsl(var(--bg-surface))',
+          borderRadius: 'var(--rounded-xl)',
+          overflow: 'hidden',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.05)',
+          animation: 'modalIn 200ms cubic-bezier(0.16, 1, 0.3, 1)',
+        }}
+      >
+        {/* Red accent bar */}
+        <div style={{
+          height: '3px',
+          background: 'linear-gradient(90deg, hsl(var(--status-error-fg)), hsl(var(--status-error-fg) / 0.4))',
+        }} />
+
+        <div style={{ padding: 'var(--spacing-xl) var(--spacing-xl) var(--spacing-lg)' }}>
+          <h3 style={{
+            margin: 0,
+            fontSize: '18px',
+            fontWeight: 700,
+            color: 'hsl(var(--text-primary))',
+            fontFamily: "'Manrope', sans-serif",
+            letterSpacing: '-0.01em',
+          }}>
+            Delete block
+          </h3>
+          <p style={{
+            margin: 'var(--spacing-sm) 0 0',
+            fontSize: 'var(--text-sm-font-size)',
+            lineHeight: '1.5',
+            color: 'hsl(var(--text-secondary))',
+            fontFamily: "'Manrope', sans-serif",
+          }}>
+            <strong style={{ color: 'hsl(var(--text-primary))' }}>{blockName}</strong> will be permanently removed. This cannot be undone.
+          </p>
+        </div>
+
+        <div
+          className="flex items-center justify-end"
+          style={{
+            padding: 'var(--spacing-md) var(--spacing-xl)',
+            gap: 'var(--spacing-sm)',
+            borderTop: '1px solid hsl(var(--border-default))',
+            backgroundColor: 'hsl(var(--bg-surface-alt) / 0.5)',
+          }}
+        >
+          <button
+            type="button"
+            onClick={onCancel}
+            className="border-0 bg-transparent"
+            style={{
+              padding: 'var(--spacing-xs) var(--spacing-md)',
+              fontSize: 'var(--text-sm-font-size)',
+              fontWeight: 500,
+              color: 'hsl(var(--text-secondary))',
+              fontFamily: "'Manrope', sans-serif",
+              cursor: 'pointer',
+              borderRadius: 'var(--rounded-lg)',
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            style={{
+              padding: 'var(--spacing-xs) var(--spacing-lg)',
+              fontSize: 'var(--text-sm-font-size)',
+              fontWeight: 600,
+              color: 'white',
+              fontFamily: "'Manrope', sans-serif",
+              cursor: 'pointer',
+              border: 'none',
+              borderRadius: 'var(--rounded-lg)',
+              backgroundColor: 'hsl(var(--status-error-fg))',
+              transition: 'filter 120ms ease',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(0.9)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.filter = 'none' }}
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+      <style>{`
+        @keyframes modalIn {
+          from { opacity: 0; transform: translateY(8px) scale(0.98); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+      `}</style>
+    </div>
+  )
+}
+
+function PreviewModal({ code, onClose }: { code: string; onClose: () => void }) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [onClose])
+
+  const srcdoc = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; }
+  </style>
+</head>
+<body>${code}
+<style>[class*="reveal"] { opacity: 1 !important; transform: none !important; transition: none !important; }</style>
+</body>
+</html>`
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div
+        className="flex flex-col"
+        style={{
+          width: '90vw',
+          height: '90vh',
+          backgroundColor: 'hsl(var(--bg-surface))',
+          borderRadius: 'var(--rounded-xl)',
+          overflow: 'hidden',
+          boxShadow: '0 25px 50px rgba(0,0,0,0.25)',
+        }}
+      >
+        <div
+          className="flex shrink-0 items-center justify-between"
+          style={{
+            height: '48px',
+            padding: '0 var(--spacing-lg)',
+            borderBottom: '1px solid hsl(var(--border-default))',
+          }}
+        >
+          <span style={{
+            fontSize: 'var(--text-sm-font-size)',
+            fontWeight: 600,
+            color: 'hsl(var(--text-primary))',
+            fontFamily: "'Manrope', sans-serif",
+          }}>
+            Block Preview
+          </span>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex items-center justify-center border-0 bg-transparent"
+            style={{ width: '32px', height: '32px', cursor: 'pointer', color: 'hsl(var(--text-muted))' }}
+          >
+            <X size={18} />
+          </button>
+        </div>
+        <iframe
+          srcDoc={srcdoc}
+          sandbox="allow-same-origin"
+          title="Block preview"
+          style={{ flex: 1, width: '100%', border: 'none' }}
+        />
       </div>
     </div>
   )

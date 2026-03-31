@@ -12,7 +12,7 @@ export function FormSection({ title, children, defaultOpen = true }: FormSection
 
   return (
     <div
-      className="overflow-hidden border"
+      className="border"
       style={{
         borderColor: 'hsl(var(--border-default))',
         borderRadius: 'var(--rounded-xl)',

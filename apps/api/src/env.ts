@@ -4,5 +4,4 @@ export interface Env {
 
   // Secrets (from `wrangler secret put`)
   SUPABASE_SERVICE_KEY: string
-  SUPABASE_JWT_SECRET: string
 }
