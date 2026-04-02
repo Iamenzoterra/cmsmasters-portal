@@ -31,6 +31,7 @@ export const createBlockSchema = z.object({
   name: z.string().min(1).max(200),
   html: z.string().min(1),
   css: z.string().default(''),
+  js: z.string().default(''),
   hooks: hooksSchema,
   metadata: metadataSchema,
 })
@@ -41,6 +42,7 @@ export const updateBlockSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   html: z.string().min(1).optional(),
   css: z.string().optional(),
+  js: z.string().optional(),
   hooks: hooksSchema.optional(),
   metadata: metadataSchema.optional(),
 })

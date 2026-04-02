@@ -14,7 +14,8 @@ import { uploadImageBatch, type BatchUploadResult } from '../lib/block-api'
 
 interface BlockImportPanelProps {
   code: string                          // current HTML+CSS (combined with <style>)
-  onApply: (processedCode: string) => void
+  js: string                            // current JS (separate from code)
+  onApply: (processedCode: string, js: string) => void
   onClose: () => void
 }
 
@@ -99,8 +100,10 @@ const CATEGORY_LABEL: Record<string, string> = {
   shadow: 'Shadows',
 }
 
-export function BlockImportPanel({ code, onApply, onClose }: BlockImportPanelProps) {
-  const { html: originalHtml, css: originalCss, js: originalJs } = useMemo(() => splitCode(code), [code])
+export function BlockImportPanel({ code, js: jsProp, onApply, onClose }: BlockImportPanelProps) {
+  const { html: originalHtml, css: originalCss, js: codeJs } = useMemo(() => splitCode(code), [code])
+  // JS from prop takes priority; fallback to JS extracted from code (backwards compat)
+  const originalJs = jsProp || codeJs
 
   // Token suggestions
   const [suggestions, setSuggestions] = useState<Suggestion[]>(() => scanCSS(originalCss))
@@ -161,10 +164,10 @@ export function BlockImportPanel({ code, onApply, onClose }: BlockImportPanelPro
     }
   }
 
-  // Apply processed code back to form
+  // Apply processed code back to form — JS separate, not embedded in code
   function handleApply() {
-    const finalCode = combineCode(processedHtml, finalCss, originalJs)
-    onApply(finalCode)
+    const finalCode = combineCode(processedHtml, finalCss, '')
+    onApply(finalCode, originalJs)
   }
 
   // Export as standalone HTML

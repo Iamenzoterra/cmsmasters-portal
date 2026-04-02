@@ -54,6 +54,7 @@ interface BlockFormData {
   name: string
   slug: string
   code: string
+  js: string
   hasPriceHook: boolean
   priceSelector: string
   links: Array<{ selector: string; field: string; label?: string }>
@@ -66,6 +67,7 @@ function getDefaults(): BlockFormData {
     name: '',
     slug: '',
     code: '',
+    js: '',
     hasPriceHook: false,
     priceSelector: '',
     links: [],
@@ -85,6 +87,7 @@ function blockToFormData(block: Block): BlockFormData {
     name: block.name,
     slug: block.slug,
     code: blockToCode(block),
+    js: block.js ?? '',
     hasPriceHook: !!block.hooks?.price,
     priceSelector: block.hooks?.price?.selector ?? '',
     links: block.hooks?.links ?? [],
@@ -129,13 +132,13 @@ function formDataToPayload(data: BlockFormData) {
     name: data.name,
     html: html || data.code,
     css: css || undefined,
+    js: data.js,
     hooks: Object.keys(hooks).length > 0 ? hooks : undefined,
     metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
   }
 }
 
-function parseHtmlFile(content: string): string {
-  // Strip <!DOCTYPE>, <html>, <head>, <body> wrappers — keep <style> + body content
+function parseHtmlFile(content: string): { code: string; js: string } {
   const parser = new DOMParser()
   const doc = parser.parseFromString(content, 'text/html')
 
@@ -144,13 +147,23 @@ function parseHtmlFile(content: string): string {
     .join('\n\n')
     .trim()
 
-  const body = doc.body?.innerHTML?.trim() ?? content
-  const cleaned = body.replace(/<script[\s\S]*?<\/script>/gi, '').trim()
+  const scripts = Array.from(doc.querySelectorAll('script'))
+    .map((el) => el.textContent ?? '')
+    .filter(Boolean)
+    .join('\n\n')
+    .trim()
 
-  if (styles) {
-    return `<style>\n${styles}\n</style>\n\n${cleaned}`
-  }
-  return cleaned
+  const body = doc.body?.innerHTML?.trim() ?? content
+  const cleaned = body
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .trim()
+
+  let code = ''
+  if (styles) code += `<style>\n${styles}\n</style>\n\n`
+  code += cleaned
+
+  return { code, js: scripts }
 }
 
 export function BlockEditor() {
@@ -291,8 +304,10 @@ export function BlockEditor() {
     const code = form.getValues('code')
     if (!code.trim()) return
     const name = form.getValues('name') || form.getValues('slug') || 'block'
+    const js = form.getValues('js') ?? ''
+    const scriptTag = js.trim() ? `\n<script type="module">\n${js}\n</script>` : ''
     const blob = new Blob([
-      `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8" />\n  <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n  <title>${name}</title>\n  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />\n  <style>*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; } body { font-family: 'Manrope', system-ui, sans-serif; }</style>\n</head>\n<body>\n${code}\n</body>\n</html>`
+      `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8" />\n  <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n  <title>${name}</title>\n  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />\n  <style>*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; } body { font-family: 'Manrope', system-ui, sans-serif; }</style>\n</head>\n<body>\n${code}${scriptTag}\n</body>\n</html>`
     ], { type: 'text/html' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -309,9 +324,10 @@ export function BlockEditor() {
     const reader = new FileReader()
     reader.onload = () => {
       const content = reader.result as string
-      const code = parseHtmlFile(content)
+      const { code, js } = parseHtmlFile(content)
 
       form.setValue('code', code, { shouldDirty: true })
+      form.setValue('js', js, { shouldDirty: true })
 
       // Auto-fill name from filename if empty
       const currentName = form.getValues('name')
@@ -499,6 +515,19 @@ export function BlockEditor() {
             />
           </FormSection>
 
+          <FormSection title="Animation & Interaction JS" defaultOpen={false}>
+            <p style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))', margin: 0 }}>
+              Vanilla JS for scroll reveals, hover effects, parallax. Rendered as &lt;script type=&quot;module&quot;&gt;.
+            </p>
+            <textarea
+              {...register('js')}
+              rows={12}
+              className="w-full outline-none"
+              style={monoStyle}
+              placeholder={"// Scoped to this block\nconst block = document.querySelector('.block-slug');\nconst io = new IntersectionObserver(...);\n// ..."}
+            />
+          </FormSection>
+
           <FormSection title="Advanced" defaultOpen={false}>
             {/* Price hook */}
             <div className="flex flex-col" style={{ gap: 'var(--spacing-sm)' }}>
@@ -599,8 +628,10 @@ export function BlockEditor() {
         {showProcess && (
           <BlockImportPanel
             code={watchedCode ?? ''}
-            onApply={(processedCode) => {
+            js={form.getValues('js') ?? ''}
+            onApply={(processedCode, js) => {
               form.setValue('code', processedCode, { shouldDirty: true })
+              form.setValue('js', js, { shouldDirty: true })
               setShowProcess(false)
               toast({ type: 'success', message: 'Block processed — tokens applied' })
             }}

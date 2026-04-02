@@ -154,6 +154,7 @@ export type Database = {
           name: string
           html: string
           css: string
+          js: string
           hooks: BlockHooks
           metadata: BlockMetadata
           created_by: string | null
@@ -166,6 +167,7 @@ export type Database = {
           name: string
           html: string
           css?: string
+          js?: string
           hooks?: BlockHooks
           metadata?: BlockMetadata
           created_by?: string | null
@@ -178,6 +180,7 @@ export type Database = {
           name?: string
           html?: string
           css?: string
+          js?: string
           hooks?: BlockHooks
           metadata?: BlockMetadata
           created_by?: string | null
