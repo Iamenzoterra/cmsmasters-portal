@@ -374,3 +374,34 @@ export async function fetchAllBlocks(): Promise<Block[]> {
 - 2-column grid of template cards with selected highlight
 - Used inside theme editor's "Page Layout" section; parent manages selected template state
 - Template selection passes full `Template` object (not just ID) to parent callback to avoid re-fetch
+
+---
+
+## Block creation workflow (WP-006, ADR-023, ADR-024)
+
+### Pipeline
+1. Figma design → `/block-craft` skill → Claude Code generates HTML+CSS+JS → preview on `localhost:7777`
+2. Iterate animations, interactions, layout until approved
+3. Studio → Import HTML → Process panel:
+   - Token scanner maps hardcoded CSS → `var(--token)` (auto-enabled suggestions, CM unchecks if broken)
+   - R2 image upload replaces Figma MCP URLs with permanent CDN URLs (`POST /api/upload/batch`)
+   - Component detection suggests `.cms-btn` classes for button-like elements
+   - Animation classes (`reveal`, `animate`) preserved — not tokenized
+   - JS extracted from `<script>` into separate `js` field
+4. Save → block stored in Supabase (`html`, `css`, `js` columns)
+5. Portal (Astro SSG) renders blocks at build time
+
+### Block structure rules
+- HTML wrapped in `<section class="block-{slug}" data-block>`
+- ALL CSS selectors scoped under `.block-{slug}` — no global leaking
+- Semantic HTML: `<button>` for actions, `<a>` for links, `<details>` for accordions — never `<div>` for interactive elements
+- Button states via `portal-blocks.css` classes: `.cms-btn`, `.cms-btn--primary`, `.cms-btn--secondary`, `.cms-btn--outline`, `.cms-btn--cta`
+- Animations: CSS scroll-driven `animation-timeline: view()` for entrance + `animate-utils.js` imports for behavioral (hover parallax, magnetic buttons)
+- JS stored in `blocks.js` column, rendered as `<script type="module">` by Portal
+- Only animate `transform` and `opacity` — compositor-safe, no layout thrashing
+- `@media (prefers-reduced-motion: reduce)` respected
+
+### Shared portal assets
+- `packages/ui/src/portal/portal-blocks.css` — `.cms-btn` (4 variants, 3 sizes, all states), `.cms-card`, `[data-tooltip]`
+- `packages/ui/src/portal/animate-utils.js` — `trackMouse`, `magnetic`, `stagger`, `spring`, `onVisible`
+- `packages/ui/src/theme/tokens.css` — design tokens (Figma source of truth, synced via `/sync-tokens`)

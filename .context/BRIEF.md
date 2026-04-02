@@ -2,7 +2,7 @@
 
 > Read this file FIRST. It gives you the full picture in 5 minutes.
 > Then read the specific layer spec for your current task.
-> Last updated: 31 March 2026
+> Last updated: 2 April 2026
 
 ---
 
@@ -23,7 +23,7 @@ The company operates 4 fragmented domains with no shared navigation, broken post
 │                     CLIENT (browser)                      │
 ├──────────┬───────────┬───────────┬──────────┬────────────┤
 │ Portal   │ Dashboard │ Support   │ Studio   │ Admin      │
-│ Next.js  │ Vite SPA  │ Vite SPA  │ Vite SPA │ Vite SPA   │
+│ Astro    │ Vite SPA  │ Vite SPA  │ Vite SPA │ Vite SPA   │
 │ SSG      │           │           │          │            │
 │ (public) │ (auth)    │ (auth)    │ (auth)   │ (auth)     │
 ├──────────┴───────────┴───────────┴──────────┴────────────┤
@@ -38,7 +38,7 @@ The company operates 4 fragmented domains with no shared navigation, broken post
 ```
 
 **Key rules:**
-- Portal = Next.js 15 SSG, public, no auth, SEO-first
+- Portal = Astro SSG, public, no auth, zero framework JS, SEO-first
 - Dashboard, Support, Studio, Admin = Vite + React Router SPAs
 - Hono API on Cloudflare Workers = the ONLY place secrets live
 - **Secrets boundary**: Envato key, Resend key, Claude API key, R2 creds, Supabase service_role — ONLY in Hono API. NEVER in SPA bundles.
@@ -47,41 +47,45 @@ The company operates 4 fragmented domains with no shared navigation, broken post
 
 ---
 
-## What's built (verified 31 March 2026)
+## What's built (verified 2 April 2026)
 
 ### Infrastructure ✅
 | Component | Status | Details |
 |-----------|--------|---------|
 | Nx monorepo | ✅ | nx.json, workspaces, eslint, knip |
-| Supabase DB | ✅ | **6 tables** (profiles, themes, licenses, audit_log, **blocks**, **templates**). themes: template_id (FK→templates) + block_fills (jsonb). blocks: html+css assets with hooks/metadata. templates: ordered position grids. **23 RLS policies**, 3 functions, 5 triggers |
+| Supabase DB | ✅ | **9 tables** (profiles, themes, licenses, audit_log, **blocks**, **templates**, **pages**, **page_blocks**, **global_elements**). blocks: html+css+js with hooks/metadata. templates: ordered position grids. pages: layout/composed. global_elements: scope-bound header/footer/sidebars. RLS on all tables |
 | Supabase Auth | ✅ | PKCE configured, magic link, on_auth_user_created trigger |
-| Hono API | ✅ | `apps/api/` — 13 routes: health (public), revalidate + upload (staff), **5 blocks CRUD** + **5 templates CRUD** (auth + role + dep checks on delete) |
+| Hono API | ✅ | `apps/api/` — 18+ routes: health, revalidate, upload + upload/batch (R2), blocks CRUD, templates CRUD, pages CRUD, global-elements CRUD. Auth + role guards. R2 bucket `cmsmasters-assets` configured |
 | Design tokens | ✅ | `packages/ui/src/theme/tokens.css` (222 lines, Figma MCP sync) |
 | Design system | ✅ | Flexible, updates through tokens + classes. Three-Layer structure ready |
 
 ### Shared packages ✅
 | Package | Status | Contents |
 |---------|--------|----------|
-| `@cmsmasters/db` | ✅ | client.ts, types.ts (Block, Template, Theme with template_id+block_fills, BlockHooks, BlockMetadata, TemplatePosition, ThemeBlockFill), mappers.ts, queries for themes/profiles/audit/**blocks**/**templates** (CRUD + usage helpers) |
+| `@cmsmasters/db` | ✅ | client.ts, types.ts (9 tables: Block with html+css+js, Template, Theme, Page, PageBlock, GlobalElement), mappers.ts, queries for all entities |
 | `@cmsmasters/auth` | ✅ | client.ts, hooks.ts (useSession/useUser/useRole), guards.tsx (RequireAuth), actions.ts (magic link + signout) |
 | `@cmsmasters/api-client` | ✅ | Hono RPC typed client |
-| `@cmsmasters/validators` | ✅ | themeSchema (slug, meta, template_id, block_fills, seo, status), blockFillSchema, createBlockSchema/updateBlockSchema, createTemplateSchema/updateTemplateSchema |
-| `@cmsmasters/ui` | 🟡 | tokens.css + button primitive + Three-Layer dirs (primitives/domain/layouts) |
+| `@cmsmasters/validators` | ✅ | theme, block (with js), template, page Zod schemas |
+| `@cmsmasters/ui` | 🟡 | tokens.css + button primitive + Three-Layer dirs + `portal-blocks.css` (.cms-btn system) + `animate-utils.js` (5 behavioral animation utilities) |
 
 ### Apps
 | App | Status | Details |
 |-----|--------|---------|
 | Command Center | ✅ DONE | 6 pages, localhost:4000, own dark theme |
-| Studio | 🟡 IN PROGRESS | Login, themes list (grid+table+toolbar+pagination), sidebar, blocks list + block editor (HTML+CSS+hooks), templates list + template editor (position grid), theme editor (meta + SEO + template picker + position grid + per-theme block fills), save/publish with toast + audit, media (stub). **WP-005C complete**: full blocks/templates CRUD UI, theme editor pivot from sections builder to template+fills model, responsive grids, delete modals, readonly position cues. Remaining: error boundaries, media upload, end-to-end theme test. |
+| Studio | ✅ DONE | Login, themes, blocks (editor + Process panel with token scanner + R2 image upload + component detection), templates, pages, global elements settings. Block editor: HTML+CSS+JS fields, import with script preservation, export. Process panel: split preview (before/after), zoom, scroll, replay, animation support. |
 | Portal | ⬜ | Not created yet |
 | Dashboard | ⬜ | Not created yet |
 | Admin | ⬜ | Not created yet |
 
 ### Also done
-- 22 ADR files V2/V3 aligned in workplan/adr/
+- 24 ADR files (V2/V3) in workplan/adr/ — incl. ADR-023 (Block Animations), ADR-024 (Block Components)
+- WP-006 Block Import Pipeline: token scanner, R2 upload, Process panel, portal-blocks.css, animate-utils.js, component detection
+- R2 bucket `cmsmasters-assets` configured on Cloudflare
+- `/block-craft` skill for Figma → production block pipeline (preview on :7777)
 - Homepage wireframe (10 sections)
 - .context/ folder with agent context
 - CLAUDE.md agent instructions
+- 5 skills: block-craft, portal-workflow, lint-ds, sync-tokens, figma-component-vars
 
 ---
 
@@ -93,29 +97,18 @@ The company operates 4 fragmented domains with no shared navigation, broken post
 
 ```
 Layer 0: Infrastructure           ✅ DONE (DB, Auth, Hono, packages)
-Layer 1: Studio                   🟡 IN PROGRESS (WP-005A+B+C done. Remaining: error boundaries, media upload, end-to-end theme test)
-Layer 2: Portal theme page        ⬜ /themes/[slug] SSG from Supabase (WP-005D)
-Layer 3: Dashboard + Admin        ⬜ parallel after Studio can create themes
+Layer 1: Studio + DB + API        ✅ DONE (WP-005A+B+C+D Phase 1: themes, blocks, templates, pages, global elements)
+Block Import Pipeline             ✅ DONE (WP-006: token scanner, R2 upload, Process panel, portal-blocks.css, animate-utils.js)
+Layer 2: Portal (Astro SSG)       🟡 CURRENT — WP-005D Phases 2-5
+Layer 3: Dashboard + Admin        ⬜ future
 ```
 
-### What's left for Layer 1 (Studio)
-- ~~Theme editor~~ Section page builder: meta sidebar + 5 core section editors + stub editor
-- ~~Publish flow~~ Save/publish with toast + audit + revalidation call
-- Error boundaries, 404 page
-- Media upload wired to Hono API → R2
-- Integration verify: end-to-end CRUD with section model
-- At least 1 test theme created end-to-end
-
-### What's left for Layer 2 (Portal theme page)
-- `apps/portal/` Next.js app created
-- `/themes/[slug]/page.tsx` SSG page with full ThemePage template (ADR-009):
-  - Hero (carousel + name + tagline + CTAs + trust badges)
-  - Feature Grid
-  - Plugin Comparison (included plugins with value calculator)
-  - Resource Sidebar (3 tiers: public/licensed/premium with lock icons)
-  - Custom Sections renderer
-  - Trust Strip + Cross-sell
-  - Full SEO (JSON-LD, OG, metadata)
+### What's next: Layer 2 (Portal — Astro SSG)
+- `apps/portal/` Astro app scaffold (WP-005D Phase 2)
+- Theme page render: global elements resolution + template blocks + hook resolution
+- Composed pages + homepage (WP-005D Phase 3)
+- SEO: JSON-LD, OG, sitemap (WP-005D Phase 4)
+- Blocks created via `/block-craft` skill → imported via Studio Process panel
 
 ### What's left for Layer 3
 - `apps/dashboard/` — profile, my themes, license list
@@ -132,8 +125,8 @@ Each theme references a **template** (ordered position grid with block assignmen
 - 🔒 Licensed: Theme Download, Child Theme, PSD Files, Support Ticket
 - ⭐ Premium: Priority Support, Megakit Access (Epic 2 prep)
 
-**Block model (WP-005B):**
-- **Block** = HTML + scoped CSS asset in `blocks` table. Has hooks for dynamic data (price selector, links). Created outside Studio (Figma → code → HTML+CSS).
+**Block model (WP-005B + WP-006):**
+- **Block** = HTML + scoped CSS + JS in `blocks` table. Has hooks for dynamic data. Created via Figma → `/block-craft` skill → Studio import → Process panel. Animations: CSS scroll-driven (entrance) + animate-utils.js (behavioral). Components: `.cms-btn` classes from portal-blocks.css. ADR-023, ADR-024.
 - **Template** = ordered position grid in `templates` table. Positions: `[{ position: 1, block_id: uuid|null }]`. One template → many themes.
 - **Theme** = `template_id` (FK→templates) + `block_fills` (CM fills empty positions per-theme). Dynamic data (price, links) lives in `theme.meta` → hooks inject at render time.
 
@@ -180,3 +173,5 @@ Dmitry communicates concisely in Ukrainian. Corrections are brief — reorient i
 - WP-005A Phase 0–4: `logs/wp-005a/` — Block library (created→renamed→removed), type→block rename, architecture pivot to DB-driven model
 - WP-005B Phase 0–4: `logs/wp-005b/` — Supabase migration (blocks+templates tables, themes alter), validators+queries, 10 Hono API endpoints, docs close
 - WP-005C Phase 0–4: `logs/wp-005c/` — blocks/templates CRUD UI (list+editor), theme editor pivot (template picker + block fills + position grid), UX polish (responsive grids, delete modals, readonly cues)
+- WP-005D Phase 0–1: `logs/wp-005d/` — pages + global elements types/API/Studio UI
+- WP-006 Phase 0–8: `logs/wp-006/` — block import pipeline (token scanner, R2 upload, Process panel, JS field, portal-blocks.css, animate-utils.js, component detection)

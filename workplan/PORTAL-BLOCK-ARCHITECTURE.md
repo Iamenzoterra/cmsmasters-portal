@@ -74,12 +74,17 @@ Theme page має два сайдбари:
 - **Redesign** — інший інстанс для breakpoint
 - **Hide** — не показувати на breakpoint
 
-### 10. Block creation pipeline
+### 10. Block creation pipeline (✅ implemented — WP-006)
 ```
 1. Figma → дизайн блоку
-2. Claude Code → HTML+CSS+JS з токенами
-3. Витягуєш картинки → CF Images / R2
-4. Studio → імпорт → токени applied, хардкод вичищений
+2. Claude Code → /block-craft skill → HTML+CSS+JS з токенами → preview :7777 → iterate
+3. Studio → Import HTML → Process panel:
+   a. Token scanner: hardcoded CSS → var(--token) suggestions (all enabled, CM unchecks if broken)
+   b. R2 image upload: Figma MCP URLs → permanent CDN URLs (POST /api/upload/batch, content-hash dedup)
+   c. Component detection: suggests .cms-btn classes for button-like elements (ADR-024)
+   d. Animation protection: reveal/animate selectors preserved (ADR-023)
+   e. JS extraction: <script type="module"> → separate js field in DB
+4. Save → block in DB (html + css + js columns)
 5. Inspector → хуки (ціна, alt, responsive breakpoints)
 6. Save → block в бібліотеці
 7. Сторінка → "+" → обрати block → готово
