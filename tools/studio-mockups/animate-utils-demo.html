@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>animate-utils.js — Demo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Manrope', system-ui, sans-serif;
+      background: hsl(20 23% 97%);
+      color: hsl(0 0% 9%);
+      padding: 60px 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 80px;
+    }
+    h1 { font-size: 32px; font-weight: 600; text-align: center; }
+    h2 { font-size: 20px; font-weight: 500; color: hsl(0 0% 33%); margin-bottom: 16px; }
+    .demo-section {
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      background: hsl(0 0% 95%);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    /* ── trackMouse demo ── */
+    .parallax-container {
+      width: 500px;
+      height: 300px;
+      background: hsl(39 91% 87%);
+      border-radius: 24px;
+      position: relative;
+      overflow: hidden;
+      cursor: crosshair;
+    }
+    .parallax-container .float {
+      position: absolute;
+      border-radius: 12px;
+      background: white;
+      box-shadow: 0 4px 12px hsl(0 0% 0% / 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 14px;
+      transition: transform 0.15s ease-out;
+    }
+    .float-a { width: 120px; height: 80px; top: 40px; left: 40px; }
+    .float-b { width: 140px; height: 100px; top: 60px; right: 50px; }
+    .float-c { width: 100px; height: 60px; bottom: 50px; left: 180px; }
+
+    /* ── magnetic demo ── */
+    .magnetic-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px 40px;
+      background: hsl(230 58% 20%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s ease;
+    }
+    .magnetic-btn:hover { background: hsl(235 36% 24%); }
+
+    /* ── stagger demo ── */
+    .stagger-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .stagger-item {
+      width: 80px;
+      height: 80px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 20px;
+      color: white;
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    .stagger-item:nth-child(1) { background: hsl(227 72% 51%); }
+    .stagger-item:nth-child(2) { background: hsl(189 69% 58%); }
+    .stagger-item:nth-child(3) { background: hsl(118 45% 89%); color: hsl(0 0% 9%); }
+    .stagger-item:nth-child(4) { background: hsl(39 91% 87%); color: hsl(0 0% 9%); }
+    .stagger-item:nth-child(5) { background: hsl(312 100% 92%); color: hsl(0 0% 9%); }
+    .stagger-item:nth-child(6) { background: hsl(235 36% 24%); }
+
+    /* ── spring demo ── */
+    .spring-box {
+      width: 200px;
+      height: 60px;
+      background: hsl(206 100% 92%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 700;
+      color: hsl(235 67% 29%);
+      cursor: pointer;
+    }
+
+    /* ── onVisible demo ── */
+    .visible-box {
+      width: 300px;
+      height: 100px;
+      background: hsl(0 0% 100%);
+      border: 2px solid hsl(30 19% 90%);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 500;
+      opacity: 0;
+      transform: translateY(40px);
+      transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .visible-box.revealed {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .spacer { height: 200px; display: flex; align-items: center; color: hsl(0 0% 62%); font-size: 14px; }
+  </style>
+</head>
+<body>
+
+  <h1>animate-utils.js — Demo</h1>
+
+  <!-- trackMouse -->
+  <div class="demo-section">
+    <h2><code>trackMouse</code> — hover parallax</h2>
+    <div class="parallax-container" id="parallax-area">
+      <div class="float float-a" data-parallax="25">A</div>
+      <div class="float float-b" data-parallax="15">B</div>
+      <div class="float float-c" data-parallax="35">C</div>
+    </div>
+  </div>
+
+  <!-- magnetic -->
+  <div class="demo-section">
+    <h2><code>magnetic</code> — magnetic button</h2>
+    <button class="magnetic-btn" id="mag-btn" type="button">Hover me</button>
+  </div>
+
+  <!-- stagger + onVisible -->
+  <div class="demo-section">
+    <h2><code>stagger</code> + <code>onVisible</code></h2>
+    <div class="spacer">↓ scroll down to trigger stagger ↓</div>
+    <div class="stagger-row" id="stagger-row">
+      <div class="stagger-item">1</div>
+      <div class="stagger-item">2</div>
+      <div class="stagger-item">3</div>
+      <div class="stagger-item">4</div>
+      <div class="stagger-item">5</div>
+      <div class="stagger-item">6</div>
+    </div>
+  </div>
+
+  <!-- spring -->
+  <div class="demo-section">
+    <h2><code>spring</code> — click to animate</h2>
+    <div class="spring-box" id="spring-box">0</div>
+  </div>
+
+  <!-- onVisible standalone -->
+  <div class="demo-section">
+    <h2><code>onVisible</code> — scroll reveal</h2>
+    <div class="spacer">↓ scroll down ↓</div>
+    <div class="visible-box" id="vis-box">I appear on scroll!</div>
+  </div>
+
+  <div style="height: 200px"></div>
+
+  <script type="module">
+    import { trackMouse, magnetic, stagger, spring, onVisible } from '../../packages/ui/src/portal/animate-utils.js';
+
+    // trackMouse
+    const area = document.getElementById('parallax-area');
+    trackMouse(area, area.querySelectorAll('.float'));
+
+    // magnetic
+    magnetic(document.getElementById('mag-btn'), { strength: 0.4 });
+
+    // stagger + onVisible
+    const row = document.getElementById('stagger-row');
+    onVisible(row, () => {
+      stagger(row.children, [
+        { opacity: 0, transform: 'translateY(30px) scale(0.9)' },
+        { opacity: 1, transform: 'translateY(0) scale(1)' },
+      ], { duration: 500, delay: 100 });
+    });
+
+    // spring
+    const box = document.getElementById('spring-box');
+    let current = 0;
+    box.addEventListener('click', () => {
+      const target = current === 0 ? 100 : 0;
+      spring(current, target, (v) => {
+        box.textContent = Math.round(v);
+      }, { stiffness: 0.08, damping: 0.75 });
+      current = target;
+    });
+
+    // onVisible standalone
+    onVisible(document.getElementById('vis-box'), (el) => {
+      el.classList.add('revealed');
+    });
+  </script>
+
+</body>
+</html>
