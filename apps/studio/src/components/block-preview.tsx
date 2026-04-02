@@ -1,5 +1,9 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
 import { RotateCcw } from 'lucide-react'
+// Import shared portal assets as raw strings for iframe injection
+import tokensCSS from '@cmsmasters/ui/src/theme/tokens.css?raw'
+import portalBlocksCSS from '@cmsmasters/ui/src/portal/portal-blocks.css?raw'
+import animateUtilsJS from '@cmsmasters/ui/src/portal/animate-utils.js?raw'
 
 interface BlockPreviewProps {
   html: string
@@ -88,6 +92,15 @@ export function BlockPreview({
       });
     </script>` : ''
 
+  // In interactive mode, inject shared portal assets (tokens + component classes)
+  const sharedStyles = interactive ? `${tokensCSS}\n${portalBlocksCSS}` : ''
+  // Make animate-utils available as inline module for block JS imports
+  const animateModule = interactive && js
+    ? `<script type="module">
+// Shared animate-utils — inlined for iframe context
+${animateUtilsJS}
+</script>` : ''
+
   const srcdoc = `<!DOCTYPE html>
 <html>
 <head>
@@ -101,11 +114,13 @@ export function BlockPreview({
       overflow: hidden;
       background: white;
     }
+    ${sharedStyles}
     ${css}
     ${interactive ? '' : staticAnimationOverride}
   </style>
 </head>
 <body>${html}
+${animateModule}
 ${ioBootstrap}
 ${scriptTag}
 </body>

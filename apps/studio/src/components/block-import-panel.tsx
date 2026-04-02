@@ -104,8 +104,9 @@ const CATEGORY_LABEL: Record<string, string> = {
 
 export function BlockImportPanel({ code, js: jsProp, onApply, onClose }: BlockImportPanelProps) {
   const { html: originalHtml, css: originalCss, js: codeJs } = useMemo(() => splitCode(code), [code])
-  // JS from prop takes priority; fallback to JS extracted from code (backwards compat)
-  const originalJs = jsProp || codeJs
+  // JS from prop takes priority (even empty string = intentionally cleared).
+  // Only fall back to codeJs when prop is null/undefined (legacy blocks with no js field).
+  const originalJs = jsProp != null ? jsProp : codeJs
 
   // Token suggestions + component suggestions
   const [suggestions, setSuggestions] = useState<Suggestion[]>(() => [

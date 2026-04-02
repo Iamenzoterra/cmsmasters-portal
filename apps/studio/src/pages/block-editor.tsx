@@ -12,6 +12,8 @@ import { useToast } from '../components/toast'
 import { FormSection } from '../components/form-section'
 import { DeleteConfirmModal } from '../components/delete-confirm-modal'
 import { BlockImportPanel } from '../components/block-import-panel'
+import tokensCSS from '@cmsmasters/ui/src/theme/tokens.css?raw'
+import portalBlocksCSS from '@cmsmasters/ui/src/portal/portal-blocks.css?raw'
 
 const inputStyle: React.CSSProperties = {
   height: '36px',
@@ -307,7 +309,7 @@ export function BlockEditor() {
     const js = form.getValues('js') ?? ''
     const scriptTag = js.trim() ? `\n<script type="module">\n${js}\n</script>` : ''
     const blob = new Blob([
-      `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8" />\n  <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n  <title>${name}</title>\n  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />\n  <style>*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; } body { font-family: 'Manrope', system-ui, sans-serif; }</style>\n</head>\n<body>\n${code}${scriptTag}\n</body>\n</html>`
+      `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8" />\n  <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n  <title>${name}</title>\n  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />\n  <style>*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; } body { font-family: 'Manrope', system-ui, sans-serif; }\n${tokensCSS}\n${portalBlocksCSS}</style>\n</head>\n<body>\n${code}${scriptTag}\n</body>\n</html>`
     ], { type: 'text/html' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
