@@ -4,6 +4,7 @@ import { Button } from '@cmsmasters/ui'
 import { BlockPreview } from './block-preview'
 import {
   scanCSS,
+  scanHTML,
   applyCSS,
   extractImages,
   replaceImages,
@@ -98,6 +99,7 @@ const CATEGORY_LABEL: Record<string, string> = {
   spacing: 'Spacing',
   radius: 'Border Radius',
   shadow: 'Shadows',
+  component: 'Components',
 }
 
 export function BlockImportPanel({ code, js: jsProp, onApply, onClose }: BlockImportPanelProps) {
@@ -105,8 +107,11 @@ export function BlockImportPanel({ code, js: jsProp, onApply, onClose }: BlockIm
   // JS from prop takes priority; fallback to JS extracted from code (backwards compat)
   const originalJs = jsProp || codeJs
 
-  // Token suggestions
-  const [suggestions, setSuggestions] = useState<Suggestion[]>(() => scanCSS(originalCss))
+  // Token suggestions + component suggestions
+  const [suggestions, setSuggestions] = useState<Suggestion[]>(() => [
+    ...scanCSS(originalCss),
+    ...scanHTML(originalHtml, originalCss),
+  ])
 
   // Image state
   const images = useMemo(() => extractImages(originalHtml, originalCss), [originalHtml, originalCss])
@@ -461,6 +466,11 @@ function SuggestionRow({ suggestion: s, onToggle }: { suggestion: Suggestion; on
             {badge.label}
           </span>
         </div>
+        {s.warning && (
+          <span style={{ fontSize: '11px', color: 'hsl(var(--status-warn-fg))' }}>
+            {s.warning}
+          </span>
+        )}
       </div>
     </label>
   )

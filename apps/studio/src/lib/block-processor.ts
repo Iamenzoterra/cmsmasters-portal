@@ -12,6 +12,7 @@ import {
   spacingTokens,
   radiusTokens,
   shadowTokens,
+  buttonColorTokens,
   findClosestColorToken,
   findClosestSpacing,
 } from './token-map'
@@ -29,7 +30,13 @@ export interface Suggestion {
   tokenValue: string        // resolved token value for display
   confidence: SuggestionConfidence
   enabled: boolean          // true by default
-  category: 'color' | 'typography' | 'spacing' | 'radius' | 'shadow'
+  category: 'color' | 'typography' | 'spacing' | 'radius' | 'shadow' | 'component'
+  /** For component suggestions: detected component type */
+  componentType?: 'button' | 'card'
+  /** For component suggestions: suggested CSS class */
+  suggestedClass?: string
+  /** For component suggestions: warning message */
+  warning?: string
 }
 
 export interface ImageRef {
@@ -63,10 +70,18 @@ export function scanCSS(css: string): Suggestion[] {
   // Parse CSS into rule blocks
   const rules = parseRules(css)
 
+  // Animation-related selectors to skip
+  const ANIMATION_SKIP = /reveal|animate|visible|keyframe/i
+
   for (const rule of rules) {
+    // Skip animation selectors — their opacity/transform values are intentional
+    if (ANIMATION_SKIP.test(rule.selector)) continue
+
+    const isButton = isButtonLikeRule(rule)
+
     for (const decl of rule.declarations) {
       // ── Colors ──
-      scanColors(rule.selector, decl, suggestions, seen)
+      scanColors(rule.selector, decl, suggestions, seen, isButton)
       // ── Font sizes ──
       scanFontSizes(rule.selector, decl, suggestions, seen)
       // ── Line heights ──
@@ -83,6 +98,17 @@ export function scanCSS(css: string): Suggestion[] {
   }
 
   return suggestions
+}
+
+// ── Button detection heuristic ──
+
+function isButtonLikeRule(rule: CSSRule): boolean {
+  const has = (prop: string) => rule.declarations.some(d => d.property === prop)
+  const hasBg = has('background') || has('background-color')
+  const hasPad = has('padding') || has('padding-top') || has('padding-left')
+  const hasRadius = has('border-radius')
+  const hasCursor = rule.declarations.some(d => d.property === 'cursor' && d.value === 'pointer')
+  return (hasCursor && hasBg) || (hasBg && hasPad && hasRadius)
 }
 
 // ── Color scanning ──
@@ -108,6 +134,7 @@ function scanColors(
   decl: Declaration,
   suggestions: Suggestion[],
   seen: Set<string>,
+  isButton = false,
 ): void {
   if (!isColorProperty(decl.property)) return
 
@@ -123,9 +150,13 @@ function scanColors(
     if (seen.has(key)) continue
     seen.add(key)
 
-    const result = findClosestColorToken(hsl, ctx)
+    // Button context: check button-specific tokens first
+    const btnToken = isButton ? buttonColorTokens[hsl] : undefined
+    const result = btnToken
+      ? { token: btnToken, distance: 0 }
+      : findClosestColorToken(hsl, ctx)
     if (!result) continue
-    if (result.distance > 15) continue // too far, skip
+    if (result.distance > 15) continue
 
     suggestions.push({
       id: nextId(),
@@ -152,7 +183,10 @@ function scanColors(
     if (seen.has(key)) continue
     seen.add(key)
 
-    const result = findClosestColorToken(hsl, ctx)
+    const btnToken = isButton ? buttonColorTokens[hsl] : undefined
+    const result = btnToken
+      ? { token: btnToken, distance: 0 }
+      : findClosestColorToken(hsl, ctx)
     if (!result) continue
     if (result.distance > 15) continue
 
@@ -468,8 +502,9 @@ export function applyCSS(css: string, suggestions: Suggestion[]): string {
   let result = css
 
   // Sort by original length descending to avoid partial replacements
+  // Component suggestions are informational — skip in CSS apply
   const enabled = suggestions
-    .filter(s => s.enabled)
+    .filter(s => s.enabled && s.category !== 'component')
     .sort((a, b) => b.original.length - a.original.length)
 
   for (const s of enabled) {
@@ -591,6 +626,93 @@ export function replaceImages(
   }
 
   return { html: newHtml, css: newCss }
+}
+
+// ── HTML Component Scanner ──
+
+/**
+ * Scan HTML + CSS for component patterns (buttons, cards).
+ * Returns informational suggestions — CM acts on them manually.
+ */
+export function scanHTML(html: string, css: string): Suggestion[] {
+  const suggestions: Suggestion[] = []
+  const rules = parseRules(css)
+
+  for (const rule of rules) {
+    if (!isButtonLikeRule(rule)) continue
+
+    // Determine button variant from background color
+    const bgDecl = rule.declarations.find(d => d.property === 'background' || d.property === 'background-color')
+    const variant = detectButtonVariant(bgDecl?.value)
+
+    // Check if HTML uses a non-semantic element for this selector
+    const selectorClass = rule.selector.replace(/^\./, '').split(/[\s:.>+~]/).filter(Boolean)[0]
+    if (!selectorClass) continue
+
+    const usesDiv = new RegExp(`<div[^>]*class=["'][^"']*\\b${escapeRegExp(selectorClass)}\\b`, 'i').test(html)
+    const usesSpan = new RegExp(`<span[^>]*class=["'][^"']*\\b${escapeRegExp(selectorClass)}\\b`, 'i').test(html)
+    const usesButton = new RegExp(`<(button|a)[^>]*class=["'][^"']*\\b${escapeRegExp(selectorClass)}\\b`, 'i').test(html)
+
+    if (usesDiv || usesSpan) {
+      suggestions.push({
+        id: nextId(),
+        property: 'element',
+        selector: rule.selector,
+        original: usesDiv ? '<div>' : '<span>',
+        token: `cms-btn cms-btn--${variant}`,
+        tokenValue: '',
+        confidence: 'exact',
+        enabled: true,
+        category: 'component',
+        componentType: 'button',
+        suggestedClass: `cms-btn cms-btn--${variant}`,
+        warning: `Use <button> instead of ${usesDiv ? '<div>' : '<span>'} for interactive elements`,
+      })
+    } else if (!usesButton) {
+      // Element exists in CSS but we can't determine HTML tag — suggest class addition
+      suggestions.push({
+        id: nextId(),
+        property: 'class',
+        selector: rule.selector,
+        original: rule.selector,
+        token: `cms-btn cms-btn--${variant}`,
+        tokenValue: '',
+        confidence: 'close',
+        enabled: true,
+        category: 'component',
+        componentType: 'button',
+        suggestedClass: `cms-btn cms-btn--${variant}`,
+      })
+    }
+  }
+
+  return suggestions
+}
+
+function detectButtonVariant(bgValue?: string): string {
+  if (!bgValue) return 'primary'
+
+  // Check for dark background → primary
+  const hexMatch = bgValue.match(/#([0-9a-fA-F]{3,8})/)
+  if (hexMatch) {
+    const hsl = hexToHsl(hexMatch[0])
+    if (hsl) {
+      const parts = hsl.match(/(\d+)\s+(\d+)%\s+(\d+)%/)
+      if (parts) {
+        const hue = parseInt(parts[1])
+        const sat = parseInt(parts[2])
+        const lum = parseInt(parts[3])
+        if (lum < 30) return 'primary'                        // dark → primary
+        if (hue >= 200 && hue <= 240 && sat > 50) return 'secondary'  // blue → secondary
+        if (lum > 80) return 'cta'                             // light → cta
+      }
+    }
+  }
+
+  // Check for transparent → outline
+  if (bgValue === 'transparent' || bgValue === 'none') return 'outline'
+
+  return 'primary'
 }
 
 // ── Simple CSS Parser ──

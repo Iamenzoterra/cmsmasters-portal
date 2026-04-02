@@ -75,6 +75,17 @@ export const preferredColorTokens: Record<string, string> = {
   '206 100% 92%': '--section-azure',
 }
 
+// ── Button-context color tokens (used when selector is detected as button-like) ──
+export const buttonColorTokens: Record<string, string> = {
+  '230 58% 20%': '--button-primary-bg',
+  '0 0% 100%': '--button-primary-fg',
+  '235 36% 24%': '--button-primary-hover',
+  '227 72% 51%': '--button-secondary-bg',
+  '235 67% 29%': '--button-secondary-hover',
+  '206 100% 92%': '--button-cta-bg',
+  '0 0% 9%': '--button-primary-bg',    // near-black on button → primary bg
+}
+
 // ── Font size tokens: px value → token name ──
 export const fontSizeTokens: Record<string, string> = {
   '54px': '--h1-font-size',

@@ -3,7 +3,7 @@
  * Usage: npx tsx tools/test-scanner.ts
  */
 import { readFileSync } from 'fs'
-import { scanCSS, extractImages } from '../apps/studio/src/lib/block-processor'
+import { scanCSS, scanHTML, extractImages } from '../apps/studio/src/lib/block-processor'
 
 const html = readFileSync('tools/studio-mockups/test-section.html', 'utf-8')
 
@@ -35,6 +35,14 @@ for (const [cat, items] of byCategory) {
 }
 
 console.log(`Total: ${suggestions.length} suggestions\n`)
+
+console.log('=== COMPONENT SUGGESTIONS ===\n')
+const components = scanHTML(bodyHtml, css)
+for (const s of components) {
+  console.log(`  ${s.selector.padEnd(25)} → ${s.suggestedClass ?? s.token}`)
+  if (s.warning) console.log(`    ⚠️  ${s.warning}`)
+}
+console.log(`\nTotal: ${components.length} component suggestions\n`)
 
 console.log('=== IMAGES ===\n')
 const images = extractImages(bodyHtml, css)
