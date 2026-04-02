@@ -1,0 +1,188 @@
+/* portal-blocks.css — Shared component classes for Portal blocks
+   All values via var(--token) from tokens.css.
+   Consuming page must load tokens.css before this file.
+   ADR-024: Block Interactive Components and States */
+
+/* ══════════════════════════════════════
+   BUTTON SYSTEM — .cms-btn
+   ══════════════════════════════════════ */
+
+.cms-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--button-gap);
+  height: var(--button-height-default);
+  padding: var(--button-padding-y-default) var(--button-padding-x-default);
+  font-family: inherit;
+  font-size: var(--button-font-size);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--button-line-height);
+  border: none;
+  border-radius: var(--button-radius);
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.1s ease,
+    box-shadow 0.15s ease;
+}
+
+/* ── Color variants ── */
+
+.cms-btn--primary {
+  background-color: hsl(var(--button-primary-bg));
+  color: hsl(var(--button-primary-fg));
+}
+.cms-btn--primary:hover {
+  background-color: hsl(var(--button-primary-hover));
+}
+
+.cms-btn--secondary {
+  background-color: hsl(var(--button-secondary-bg));
+  color: hsl(var(--button-secondary-fg));
+}
+.cms-btn--secondary:hover {
+  background-color: hsl(var(--button-secondary-hover));
+}
+
+.cms-btn--outline {
+  background-color: transparent;
+  color: hsl(var(--button-outline-fg));
+  border: 1.5px solid hsl(var(--button-outline-border));
+}
+.cms-btn--outline:hover {
+  background-color: hsl(var(--button-outline-border));
+  color: hsl(var(--button-primary-fg));
+}
+
+.cms-btn--cta {
+  background-color: hsl(var(--button-cta-bg));
+  color: hsl(var(--button-cta-fg));
+}
+.cms-btn--cta:hover {
+  background-color: hsl(var(--button-cta-bg) / 0.7);
+}
+
+/* ── Universal states ── */
+
+.cms-btn:active {
+  transform: scale(0.97);
+  transition-duration: 0.05s;
+}
+
+.cms-btn:focus-visible {
+  outline: 2px solid hsl(var(--border-focus));
+  outline-offset: 2px;
+}
+
+.cms-btn:disabled,
+.cms-btn[aria-disabled="true"] {
+  opacity: 0.5;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+/* ── Size variants ── */
+
+.cms-btn--sm {
+  height: var(--button-height-sm);
+  padding: var(--button-padding-y-sm) var(--button-padding-x-sm);
+  font-size: var(--button-font-size-mini);
+  line-height: var(--button-line-height-mini);
+  gap: var(--button-gap-sm);
+}
+
+.cms-btn--lg {
+  height: var(--button-height-lg);
+  padding: var(--button-padding-y-lg) var(--button-padding-x-lg);
+}
+
+.cms-btn--xl {
+  height: var(--button-height-xl);
+  padding: var(--button-padding-y-xl) var(--button-padding-x-xl);
+  font-size: var(--button-font-size-xl);
+  line-height: var(--button-line-height-xl);
+}
+
+/* ── Modifiers ── */
+
+.cms-btn--pill {
+  border-radius: var(--button-radius-pill);
+}
+
+/* ══════════════════════════════════════
+   CARD — .cms-card
+   ══════════════════════════════════════ */
+
+.cms-card {
+  background-color: hsl(var(--card-bg));
+  border: 1px solid hsl(var(--card-border));
+  border-radius: var(--rounded-xl);
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.cms-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+/* ══════════════════════════════════════
+   TOOLTIP — [data-tooltip]
+   ══════════════════════════════════════ */
+
+[data-tooltip] {
+  position: relative;
+}
+
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--spacing-2xs) var(--spacing-xs);
+  background-color: hsl(var(--bg-inverse));
+  color: hsl(var(--text-inverse));
+  font-size: var(--text-xs-font-size);
+  line-height: var(--text-xs-line-height);
+  border-radius: var(--rounded-md);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+[data-tooltip]:hover::after,
+[data-tooltip]:focus::after {
+  opacity: 1;
+}
+
+/* ══════════════════════════════════════
+   TOUCH PROTECTION
+   ══════════════════════════════════════ */
+
+@media (hover: none) {
+  .cms-btn--primary:hover { background-color: hsl(var(--button-primary-bg)); }
+  .cms-btn--secondary:hover { background-color: hsl(var(--button-secondary-bg)); }
+  .cms-btn--outline:hover { background-color: transparent; color: hsl(var(--button-outline-fg)); }
+  .cms-btn--cta:hover { background-color: hsl(var(--button-cta-bg)); }
+  .cms-card:hover { box-shadow: none; transform: none; }
+}
+
+/* ══════════════════════════════════════
+   REDUCED MOTION
+   ══════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  .cms-btn,
+  .cms-card,
+  [data-tooltip]::after {
+    transition-duration: 0.01ms !important;
+  }
+}
