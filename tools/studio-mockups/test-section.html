@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manage Clinic Services — Section</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Manrope', system-ui, sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      padding: 40px;
+    }
+
+    .section-container {
+      background: #FCE7C1;
+      border-radius: 35px;
+      padding: 70px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 35px;
+      width: 500px;
+    }
+
+    /* Section Header */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding-bottom: 35px;
+    }
+    .section-header h1 {
+      font-size: 42px;
+      font-weight: 500;
+      line-height: 46px;
+      color: #181818;
+      text-align: center;
+      text-transform: capitalize;
+      width: 320px;
+    }
+
+    /* Feature Container */
+    .feature-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+    }
+    .feature-icon {
+      width: 26px;
+      height: 26px;
+    }
+    .feature-icon img {
+      width: 100%;
+      height: 100%;
+    }
+    .feature-title {
+      font-size: 26px;
+      font-weight: 400;
+      line-height: 34px;
+      color: #181818;
+      text-align: center;
+      text-transform: capitalize;
+      white-space: nowrap;
+    }
+
+    /* Feature Options */
+    .feature-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      align-items: center;
+      justify-content: center;
+      width: 360px;
+    }
+    .option-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .option-icon {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+    .option-icon img {
+      width: 100%;
+      height: 100%;
+    }
+    .option-label {
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 16px;
+      color: #545454;
+      white-space: nowrap;
+    }
+
+    /* Service Screenshot */
+    .service-screenshot {
+      position: relative;
+      width: 537px;
+      height: 395px;
+    }
+
+    /* Main web page frame */
+    .web-page {
+      position: absolute;
+      top: 0;
+      left: 17.12%;
+      right: 22.59%;
+      bottom: 16.77%;
+      border: 0.9px solid #BCBCBC;
+      border-radius: 4.5px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: -1.8px 2.7px 9px rgba(0,0,0,0.06);
+    }
+    .web-page .top-strip {
+      background: white;
+      border-bottom: 0.9px solid #BCBCBC;
+      padding: 4.5px;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      border-radius: 4.5px 4.5px 0 0;
+    }
+    .web-page .top-strip .dot {
+      width: 3.3px;
+      height: 3.3px;
+      background: #E89A97;
+      border-radius: 50%;
+    }
+    .web-page .content {
+      background: white;
+      border-radius: 0 0 4.5px 4.5px;
+      position: relative;
+      flex: 1;
+    }
+    .web-page .content .main-screenshot {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 0 0 4.5px 4.5px;
+    }
+
+    /* Finger cursor */
+    .finger {
+      position: absolute;
+      width: 14px;
+      height: 20px;
+      left: 193px;
+      top: 195px;
+    }
+    .finger img { width: 100%; height: 100%; }
+
+    /* Dashed border overlay */
+    .dashed-overlay {
+      position: absolute;
+      top: 20.76%;
+      right: 8.82%;
+      bottom: 10.63%;
+      left: 10.79%;
+      border: 2px dashed #545454;
+      opacity: 0.5;
+    }
+
+    /* Block 1 — floating card right */
+    .block1 {
+      position: absolute;
+      top: 41.94%;
+      left: 66.06%;
+      right: 5.59%;
+      bottom: 8.07%;
+      background: white;
+      border-radius: 0.8px;
+      padding: 8px;
+      box-shadow: -1.6px 2.4px 12px rgba(0,0,0,0.12);
+      overflow: hidden;
+    }
+    .block1 img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 0.3px;
+    }
+
+    /* Instagram block — bottom center */
+    .instagram-block {
+      position: absolute;
+      top: 63.04%;
+      left: 20.1%;
+      right: 52.74%;
+      bottom: 0;
+      background: white;
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      box-shadow: -2px 3px 15px rgba(0,0,0,0.12);
+    }
+    .instagram-block img {
+      width: 126px;
+      height: 126px;
+      object-fit: cover;
+    }
+
+    /* Posts Grid card — top left */
+    .posts-grid-card {
+      position: absolute;
+      top: 27.34%;
+      left: 0.93%;
+      right: 74.88%;
+      bottom: 51.14%;
+      background: white;
+      border-radius: 2px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      padding: 14.4px 24px 12px;
+      box-shadow: -2px 3px 15px rgba(0,0,0,0.12);
+    }
+    .posts-grid-card .icon {
+      width: 34px;
+      height: 24px;
+    }
+    .posts-grid-card .icon img { width: 100%; height: 100%; }
+    .posts-grid-card .label {
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 12px;
+      color: #545454;
+      white-space: nowrap;
+    }
+
+    /* CTA Button Section */
+    .button-extended {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 45px;
+      padding-top: 35px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .cta-container {
+      background: #181818;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 15px 35px;
+      font-size: 20px;
+      font-weight: 500;
+      line-height: 26px;
+    }
+    .cta-container .text-white { color: white; }
+    .cta-container .text-accent { color: #FCE7C1; }
+
+    .cta-subtext {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #181818;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+    .cta-subtext .muted {
+      opacity: 0.5;
+      line-height: 16px;
+    }
+    .cta-subtext .bold {
+      line-height: 16px;
+      font-weight: 600;
+    }
+
+    /* ── Scroll-triggered reveal animations ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(60px);
+      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Staggered children */
+    .reveal-stagger > .reveal:nth-child(1) { transition-delay: 0s; }
+    .reveal-stagger > .reveal:nth-child(2) { transition-delay: 0.12s; }
+    .reveal-stagger > .reveal:nth-child(3) { transition-delay: 0.24s; }
+    .reveal-stagger > .reveal:nth-child(4) { transition-delay: 0.36s; }
+
+    /* Screenshot floating cards — slide from sides */
+    .reveal-left {
+      opacity: 0;
+      transform: translateX(-80px) scale(0.95);
+      transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal-left.visible {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+    }
+
+    .reveal-right {
+      opacity: 0;
+      transform: translateX(80px) scale(0.95);
+      transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal-right.visible {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+    }
+
+    /* Main screenshot — scale up */
+    .reveal-scale {
+      opacity: 0;
+      transform: scale(0.9);
+      transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal-scale.visible {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* CTA — bounce up */
+    .reveal-bounce {
+      opacity: 0;
+      transform: translateY(40px) scale(0.95);
+      transition: opacity 0.7s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .reveal-bounce.visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    /* Finger cursor — delayed fade + subtle move */
+    .reveal-finger {
+      opacity: 0;
+      transform: translate(-20px, -20px);
+      transition: opacity 0.6s ease 0.8s,
+                  transform 0.6s ease 0.8s;
+    }
+    .reveal-finger.visible {
+      opacity: 1;
+      transform: translate(0, 0);
+    }
+
+    /* Dashed border — draw in */
+    .reveal-dashed {
+      opacity: 0;
+      transform: scale(0.97);
+      transition: opacity 1.2s ease 0.4s,
+                  transform 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.4s;
+    }
+    .reveal-dashed.visible {
+      opacity: 0.5;
+      transform: scale(1);
+    }
+  </style>
+</head>
+<body>
+  <div class="section-container">
+    <!-- Section Header -->
+    <div class="section-header reveal">
+      <h1>Manage Clinic Services</h1>
+    </div>
+
+    <!-- Feature Container -->
+    <div class="feature-container reveal">
+      <div class="feature-icon">
+        <img src="https://www.figma.com/api/mcp/asset/bae2e790-ac5a-4736-83f8-9c1d4961c04e" alt="Feature icon" />
+      </div>
+      <p class="feature-title">Dedicated Services Page</p>
+    </div>
+
+    <!-- Feature Options -->
+    <div class="feature-options reveal-stagger">
+      <div class="option-item reveal">
+        <div class="option-icon">
+          <img src="https://www.figma.com/api/mcp/asset/dd7174fe-ab9f-47de-a063-b3db59fd67d9" alt="Check" />
+        </div>
+        <p class="option-label">Premade Page</p>
+      </div>
+      <div class="option-item reveal">
+        <div class="option-icon">
+          <img src="https://www.figma.com/api/mcp/asset/dd7174fe-ab9f-47de-a063-b3db59fd67d9" alt="Check" />
+        </div>
+        <p class="option-label">Service Cover</p>
+      </div>
+      <div class="option-item reveal">
+        <div class="option-icon">
+          <img src="https://www.figma.com/api/mcp/asset/dd7174fe-ab9f-47de-a063-b3db59fd67d9" alt="Check" />
+        </div>
+        <p class="option-label">Services Grid</p>
+      </div>
+    </div>
+
+    <!-- Service Screenshot -->
+    <div class="service-screenshot">
+      <!-- Dashed border overlay -->
+      <div class="dashed-overlay reveal-dashed"></div>
+
+      <!-- Main web page frame -->
+      <div class="web-page reveal-scale">
+        <div class="top-strip">
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+        </div>
+        <div class="content">
+          <img class="main-screenshot" src="https://www.figma.com/api/mcp/asset/07409dc4-9767-4240-9d45-408881b8a64f" alt="Main screenshot" />
+          <div class="finger reveal-finger">
+            <img src="https://www.figma.com/api/mcp/asset/9cd6014b-4b28-4e36-a2a6-93f1fbc0d2c2" alt="Cursor" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Block 1 — floating card right -->
+      <div class="block1 reveal-right" style="transition-delay: 0.3s">
+        <img src="https://www.figma.com/api/mcp/asset/18844354-8f23-4f97-a7bf-4db4658f119f" alt="Service detail" />
+      </div>
+
+      <!-- Instagram block — bottom left -->
+      <div class="instagram-block reveal-left" style="transition-delay: 0.5s">
+        <img src="https://www.figma.com/api/mcp/asset/02028cd0-5ae4-439a-a110-596726f1d211" alt="Instagram grid" />
+      </div>
+
+      <!-- Posts Grid card — top left -->
+      <div class="posts-grid-card reveal-left" style="transition-delay: 0.15s">
+        <div class="icon">
+          <img src="https://www.figma.com/api/mcp/asset/88f570e2-05fa-4af0-af7a-7352a2a0cb59" alt="Grid icon" />
+        </div>
+        <p class="label">Posts Grid</p>
+      </div>
+    </div>
+
+    <!-- CTA Button Section -->
+    <div class="button-extended">
+      <div class="cta-container reveal-bounce">
+        <span class="text-white">Purchase Theme </span>
+        <span class="text-accent">$69</span>
+      </div>
+      <div class="cta-subtext reveal" style="transition-delay: 0.2s">
+        <div class="muted">
+          <p>Pay once. No hidden fees.</p>
+          <p>6 months of expert support included</p>
+        </div>
+        <p class="bold">free updates.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // IntersectionObserver for scroll-triggered animations
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, {
+      threshold: 0.15,
+      rootMargin: '0px 0px -50px 0px'
+    });
+
+    // Observe all animated elements
+    document.querySelectorAll('.reveal, .reveal-left, .reveal-right, .reveal-scale, .reveal-bounce, .reveal-finger, .reveal-dashed').forEach(el => {
+      observer.observe(el);
+    });
+
+    // Also trigger stagger parent's children
+    document.querySelectorAll('.reveal-stagger').forEach(parent => {
+      const staggerObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.querySelectorAll('.reveal').forEach(child => {
+              child.classList.add('visible');
+            });
+          }
+        });
+      }, { threshold: 0.15 });
+      staggerObserver.observe(parent);
+    });
+  </script>
+</body>
+</html>

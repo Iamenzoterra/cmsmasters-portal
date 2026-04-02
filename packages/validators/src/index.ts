@@ -20,3 +20,19 @@ export {
   updateTemplateSchema,
 } from './template'
 export type { CreateTemplatePayload, UpdateTemplatePayload } from './template'
+
+// ── Page schemas ──
+export {
+  pageSchema,
+  updatePageSchema,
+  pageBlockSchema,
+  globalElementSchema,
+  updateGlobalElementSchema,
+} from './page'
+export type {
+  CreatePagePayload,
+  UpdatePagePayload,
+  PageBlockPayload,
+  CreateGlobalElementPayload,
+  UpdateGlobalElementPayload,
+} from './page'

@@ -56,9 +56,8 @@ export function PositionGrid({
               style={{
                 width: '44px',
                 fontSize: 'var(--text-xs-font-size)',
-                fontWeight: 600,
+                fontWeight: 'var(--font-weight-semibold)',
                 color: 'hsl(var(--text-muted))',
-                fontFamily: "'Manrope', sans-serif",
               }}
             >
               {pos}
@@ -73,9 +72,9 @@ export function PositionGrid({
                 <div className="flex items-center" style={{ gap: '8px' }}>
                   <span style={{
                     fontSize: 'var(--text-sm-font-size)',
-                    fontWeight: 500,
+                    fontWeight: 'var(--font-weight-medium)',
                     color: isReadonly ? 'hsl(var(--text-secondary))' : 'hsl(var(--text-primary))',
-                    fontFamily: "'Manrope', sans-serif",
+
                   }}>
                     {block.name}
                   </span>
@@ -83,7 +82,7 @@ export function PositionGrid({
                     <span style={{
                       fontSize: 'var(--text-xs-font-size)',
                       color: 'hsl(var(--text-muted))',
-                      fontFamily: "'Manrope', sans-serif",
+  
                     }}>
                       Template
                     </span>
@@ -118,7 +117,7 @@ export function PositionGrid({
                   style={{
                     color: 'hsl(var(--text-link))',
                     fontSize: 'var(--text-sm-font-size)',
-                    fontFamily: "'Manrope', sans-serif",
+
                     cursor: 'pointer',
                     padding: '2px 0',
                   }}

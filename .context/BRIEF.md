@@ -2,7 +2,7 @@
 
 > Read this file FIRST. It gives you the full picture in 5 minutes.
 > Then read the specific layer spec for your current task.
-> Last updated: 30 March 2026
+> Last updated: 31 March 2026
 
 ---
 
@@ -47,32 +47,32 @@ The company operates 4 fragmented domains with no shared navigation, broken post
 
 ---
 
-## What's built (verified 29 March 2026)
+## What's built (verified 31 March 2026)
 
 ### Infrastructure ✅
 | Component | Status | Details |
 |-----------|--------|---------|
 | Nx monorepo | ✅ | nx.json, workspaces, eslint, knip |
-| Supabase DB | ✅ | **4 tables** (profiles, themes, licenses, audit_log), **themes: 9 columns** (id, slug, status, meta jsonb, sections jsonb, seo jsonb, created_by, timestamps), **15 RLS policies**, 3 functions, 3 triggers |
+| Supabase DB | ✅ | **6 tables** (profiles, themes, licenses, audit_log, **blocks**, **templates**). themes: template_id (FK→templates) + block_fills (jsonb). blocks: html+css assets with hooks/metadata. templates: ordered position grids. **23 RLS policies**, 3 functions, 5 triggers |
 | Supabase Auth | ✅ | PKCE configured, magic link, on_auth_user_created trigger |
-| Hono API | ✅ | `apps/api/` — auth middleware, role middleware, health/revalidate/upload routes |
+| Hono API | ✅ | `apps/api/` — 13 routes: health (public), revalidate + upload (staff), **5 blocks CRUD** + **5 templates CRUD** (auth + role + dep checks on delete) |
 | Design tokens | ✅ | `packages/ui/src/theme/tokens.css` (222 lines, Figma MCP sync) |
 | Design system | ✅ | Flexible, updates through tokens + classes. Three-Layer structure ready |
 
 ### Shared packages ✅
 | Package | Status | Contents |
 |---------|--------|----------|
-| `@cmsmasters/db` | ✅ | client.ts, types.ts (ThemeMeta, ThemeSection, ThemeSEO, SectionType), mappers.ts (themeRowToFormData/formDataToThemeInsert), queries for themes/profiles/audit |
+| `@cmsmasters/db` | ✅ | client.ts, types.ts (Block, Template, Theme with template_id+block_fills, BlockHooks, BlockMetadata, TemplatePosition, ThemeBlockFill), mappers.ts, queries for themes/profiles/audit/**blocks**/**templates** (CRUD + usage helpers) |
 | `@cmsmasters/auth` | ✅ | client.ts, hooks.ts (useSession/useUser/useRole), guards.tsx (RequireAuth), actions.ts (magic link + signout) |
 | `@cmsmasters/api-client` | ✅ | Hono RPC typed client |
-| `@cmsmasters/validators` | ✅ | Nested themeSchema ({ slug, meta, sections[], seo, status }), section registry (12 types: 5 core + 7 stubs), per-type Zod schemas, validateSectionData(), getDefaultSections() |
+| `@cmsmasters/validators` | ✅ | themeSchema (slug, meta, template_id, block_fills, seo, status), blockFillSchema, createBlockSchema/updateBlockSchema, createTemplateSchema/updateTemplateSchema |
 | `@cmsmasters/ui` | 🟡 | tokens.css + button primitive + Three-Layer dirs (primitives/domain/layouts) |
 
 ### Apps
 | App | Status | Details |
 |-----|--------|---------|
 | Command Center | ✅ DONE | 6 pages, localhost:4000, own dark theme |
-| Studio | 🟡 IN PROGRESS | Login, themes list (table+toolbar+cards), sidebar, section-based page builder (5 core editors + stub), save/publish with toast + audit, media (stub) |
+| Studio | 🟡 IN PROGRESS | Login, themes list (grid+table+toolbar+pagination), sidebar, blocks list + block editor (HTML+CSS+hooks), templates list + template editor (position grid), theme editor (meta + SEO + template picker + position grid + per-theme block fills), save/publish with toast + audit, media (stub). **WP-005C complete**: full blocks/templates CRUD UI, theme editor pivot from sections builder to template+fills model, responsive grids, delete modals, readonly position cues. Remaining: error boundaries, media upload, end-to-end theme test. |
 | Portal | ⬜ | Not created yet |
 | Dashboard | ⬜ | Not created yet |
 | Admin | ⬜ | Not created yet |
@@ -93,8 +93,8 @@ The company operates 4 fragmented domains with no shared navigation, broken post
 
 ```
 Layer 0: Infrastructure           ✅ DONE (DB, Auth, Hono, packages)
-Layer 1: Studio                   🟡 IN PROGRESS (section page builder done, polish + integration verify remaining)
-Layer 2: Portal theme page        ⬜ /themes/[slug] SSG from Supabase
+Layer 1: Studio                   🟡 IN PROGRESS (WP-005A+B+C done. Remaining: error boundaries, media upload, end-to-end theme test)
+Layer 2: Portal theme page        ⬜ /themes/[slug] SSG from Supabase (WP-005D)
 Layer 3: Dashboard + Admin        ⬜ parallel after Studio can create themes
 ```
 
@@ -125,24 +125,30 @@ Layer 3: Dashboard + Admin        ⬜ parallel after Studio can create themes
 
 ## Theme page architecture (ADR-009 — critical reference)
 
-Each theme = one DB row. Portal renders ordered `sections[]` array. Section type determines component. No hardcoded template.
+Each theme references a **template** (ordered position grid with block assignments) and optionally fills empty positions via **block_fills**. Portal resolves blocks from DB at build time, injects dynamic data via hooks.
 
 **Resource Sidebar access tiers (ADR-005 V2):**
 - 🔓 Public: Live Demo, Documentation, Changelog, FAQ
 - 🔒 Licensed: Theme Download, Child Theme, PSD Files, Support Ticket
 - ⭐ Premium: Priority Support, Megakit Access (Epic 2 prep)
 
-**Theme data shape (section-driven, WP-004):**
+**Block model (WP-005B):**
+- **Block** = HTML + scoped CSS asset in `blocks` table. Has hooks for dynamic data (price selector, links). Created outside Studio (Figma → code → HTML+CSS).
+- **Template** = ordered position grid in `templates` table. Positions: `[{ position: 1, block_id: uuid|null }]`. One template → many themes.
+- **Theme** = `template_id` (FK→templates) + `block_fills` (CM fills empty positions per-theme). Dynamic data (price, links) lives in `theme.meta` → hooks inject at render time.
 
-DB columns: id, slug, status, meta (jsonb), sections (jsonb), seo (jsonb), created_by, created_at, updated_at
+**Theme data shape (WP-005B):**
+
+DB columns: id, slug, status, meta (jsonb), template_id (uuid FK→templates), block_fills (jsonb), seo (jsonb), created_by, created_at, updated_at
 
 meta: { name, tagline, description, category, price, demo_url, themeforest_url, themeforest_id, thumbnail_url, preview_images, rating, sales, compatible_plugins, trust_badges, resources: { public, licensed, premium } }
 
-sections: [{ type: SectionType, data: {...} }, ...] — ordered array, section type determines rendering
-  Core 5: theme-hero, feature-grid, plugin-comparison, trust-strip, related-themes
-  Stubs (7): before-after, video-demo, testimonials, faq, cta-banner, stats-counter, resource-sidebar
+template_id: uuid | null — references templates table
+block_fills: [{ position: number, block_id: uuid }] — per-theme additions to template
 
 seo: { title, description }
+
+**Architecture reference:** `workplan/BLOCK-ARCHITECTURE-V2.md`
 
 ---
 
@@ -170,8 +176,7 @@ Dmitry communicates concisely in Ukrainian. Corrections are brief — reorient i
 ---
 
 ## Source Logs
-- WP-004 Phase 0: `logs/wp-004/phase-0-result.md` — flat-field inventory
-- WP-004 Phase 1: `logs/wp-004/phase-1-result.md` — DB migration + types + validators + mappers
-- WP-004 Phase 2: `logs/wp-004/phase-2-result.md` — section registry
-- WP-004 Phase 3: `logs/wp-004/phase-3-result.md` — query recovery + path migration
-- WP-004 Phase 4: `logs/wp-004/phase-4-result.md` — section page builder
+- WP-004 Phase 0–4: `logs/wp-004/` — DB migration, section registry, page builder
+- WP-005A Phase 0–4: `logs/wp-005a/` — Block library (created→renamed→removed), type→block rename, architecture pivot to DB-driven model
+- WP-005B Phase 0–4: `logs/wp-005b/` — Supabase migration (blocks+templates tables, themes alter), validators+queries, 10 Hono API endpoints, docs close
+- WP-005C Phase 0–4: `logs/wp-005c/` — blocks/templates CRUD UI (list+editor), theme editor pivot (template picker + block fills + position grid), UX polish (responsive grids, delete modals, readonly cues)

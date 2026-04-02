@@ -60,7 +60,6 @@ export function BlocksList() {
           style={{
             fontSize: 'var(--text-sm-font-size)',
             color: 'hsl(var(--status-error-fg))',
-            fontFamily: "'Manrope', sans-serif",
           }}
         >
           {error}
@@ -82,9 +81,8 @@ export function BlocksList() {
               margin: 0,
               fontSize: 'var(--h3-font-size)',
               lineHeight: 'var(--h3-line-height)',
-              fontWeight: 700,
+              fontWeight: 'var(--font-weight-bold)',
               color: 'hsl(var(--text-primary))',
-              fontFamily: "'Manrope', sans-serif",
             }}
           >
             Blocks
@@ -96,7 +94,6 @@ export function BlocksList() {
                 fontSize: 'var(--text-sm-font-size)',
                 lineHeight: 'var(--text-sm-line-height)',
                 color: 'hsl(var(--text-secondary))',
-                fontFamily: "'Manrope', sans-serif",
               }}
             >
               {blocks.length} block{blocks.length !== 1 ? 's' : ''}
@@ -136,7 +133,6 @@ export function BlocksList() {
               borderRadius: 'var(--rounded-lg)',
               fontSize: 'var(--text-sm-font-size)',
               color: 'hsl(var(--foreground))',
-              fontFamily: "'Manrope', sans-serif",
             }}
           />
         </div>
@@ -170,9 +166,8 @@ export function BlocksList() {
             style={{
               margin: 0,
               fontSize: 'var(--h4-font-size)',
-              fontWeight: 600,
+              fontWeight: 'var(--font-weight-semibold)',
               color: 'hsl(var(--text-primary))',
-              fontFamily: "'Manrope', sans-serif",
             }}
           >
             No blocks yet
@@ -182,7 +177,6 @@ export function BlocksList() {
               margin: 0,
               fontSize: 'var(--text-sm-font-size)',
               color: 'hsl(var(--text-secondary))',
-              fontFamily: "'Manrope', sans-serif",
             }}
           >
             Create your first block to get started
@@ -202,7 +196,6 @@ export function BlocksList() {
               margin: 0,
               fontSize: 'var(--text-sm-font-size)',
               color: 'hsl(var(--text-muted))',
-              fontFamily: "'Manrope', sans-serif",
             }}
           >
             No blocks match your search
@@ -214,7 +207,6 @@ export function BlocksList() {
             style={{
               fontSize: 'var(--text-sm-font-size)',
               color: 'hsl(var(--text-link))',
-              fontFamily: "'Manrope', sans-serif",
               cursor: 'pointer',
               padding: 0,
             }}
@@ -243,10 +235,10 @@ export function BlocksList() {
                 backgroundColor: 'hsl(var(--card-bg))',
                 borderColor: 'hsl(var(--card-border))',
                 borderRadius: 'var(--rounded-xl)',
-                boxShadow: '0px 2px 8px 0px rgba(0,0,0,0.06)',
+                boxShadow: 'var(--shadow-sm)',
               }}
             >
-              <BlockPreview html={block.html} css={block.css} height={160} />
+              <BlockPreview html={block.html} css={block.css} height={224} zoom={4} />
 
               <div
                 className="flex w-full flex-col"
@@ -257,9 +249,8 @@ export function BlocksList() {
                   style={{
                     fontSize: 'var(--text-base-font-size)',
                     lineHeight: '24px',
-                    fontWeight: 600,
+                    fontWeight: 'var(--font-weight-semibold)',
                     color: 'hsl(var(--text-primary))',
-                    fontFamily: "'Manrope', sans-serif",
                     margin: 0,
                   }}
                 >
@@ -270,7 +261,6 @@ export function BlocksList() {
                   style={{
                     fontSize: 'var(--text-xs-font-size)',
                     color: 'hsl(var(--text-muted))',
-                    fontFamily: "'Manrope', sans-serif",
                     margin: 0,
                   }}
                 >
@@ -281,7 +271,6 @@ export function BlocksList() {
                     style={{
                       fontSize: '12px',
                       color: 'hsl(var(--text-muted))',
-                      fontFamily: "'Manrope', sans-serif",
                     }}
                   >
                     Updated {timeAgo(block.updated_at)}

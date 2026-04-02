@@ -23,9 +23,9 @@ interface EditorSidebarProps {
 
 const labelStyle: React.CSSProperties = {
   fontSize: 'var(--text-xs-font-size)',
-  fontWeight: 600,
+  fontWeight: 'var(--font-weight-semibold)',
   color: 'hsl(var(--text-muted))',
-  fontFamily: "'Manrope', sans-serif",
+
   textTransform: 'uppercase',
   letterSpacing: '0.5px',
 }
@@ -38,7 +38,7 @@ const inputStyle: React.CSSProperties = {
   borderRadius: 'var(--rounded-lg)',
   fontSize: 'var(--text-sm-font-size)',
   color: 'hsl(var(--foreground))',
-  fontFamily: "'Manrope', sans-serif",
+
   width: '100%',
 }
 
@@ -109,7 +109,7 @@ export function EditorSidebar({ control, register, watch, setValue: _setValue, e
             style={{
               fontSize: 'var(--text-xs-font-size)',
               color: 'hsl(var(--text-link))',
-              fontFamily: "'Manrope', sans-serif",
+            
               cursor: 'pointer',
             }}
           >
@@ -222,10 +222,10 @@ export function EditorSidebar({ control, register, watch, setValue: _setValue, e
 function MetaRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between">
-      <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))', fontFamily: "'Manrope', sans-serif" }}>
+      <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>
         {label}
       </span>
-      <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-secondary))', fontFamily: "'Manrope', sans-serif" }}>
+      <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-secondary))' }}>
         {value}
       </span>
     </div>

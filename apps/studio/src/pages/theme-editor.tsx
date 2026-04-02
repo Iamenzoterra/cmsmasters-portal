@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { themeSchema, type ThemeFormData } from '@cmsmasters/validators'
 import type { Theme, Template, Block, ThemeBlockFill } from '@cmsmasters/db'
 import { upsertTheme, logAction, themeRowToFormData, formDataToThemeInsert } from '@cmsmasters/db'
-import { AlertTriangle, ChevronLeft } from 'lucide-react'
+import { AlertTriangle, ChevronLeft, LayoutTemplate } from 'lucide-react'
 import { Button } from '@cmsmasters/ui'
 import { fetchThemeBySlug, deleteTheme } from '../lib/queries'
 import { supabase } from '../lib/supabase'
@@ -31,21 +31,18 @@ const inputStyle: React.CSSProperties = {
   boxShadow: 'var(--shadow-xs)',
   fontSize: 'var(--text-sm-font-size)',
   color: 'hsl(var(--foreground))',
-  fontFamily: "'Manrope', sans-serif",
   width: '100%',
 }
 
 const labelStyle: React.CSSProperties = {
   fontSize: 'var(--text-sm-font-size)',
-  fontWeight: 500,
+  fontWeight: 'var(--font-weight-medium)',
   color: 'hsl(var(--foreground))',
-  fontFamily: "'Manrope', sans-serif",
 }
 
 const errorStyle: React.CSSProperties = {
   fontSize: 'var(--text-xs-font-size)',
   color: 'hsl(var(--status-error-fg))',
-  fontFamily: "'Manrope', sans-serif",
   marginTop: '4px',
 }
 
@@ -64,11 +61,23 @@ export function ThemeEditor() {
   })
 
   const { register, control, reset, formState: { errors, isDirty } } = form
-  // Fetch existing theme
+  // Fetch existing theme — OR reset all state for new themes (route reuse)
   useEffect(() => {
-    if (isNew) return
+    if (isNew) {
+      // Reset everything when navigating to /themes/new (component is reused by React Router)
+      setExistingTheme(null)
+      setFetchError(null)
+      setLoading(false)
+      reset(getDefaults())
+      setCurrentTemplateId('')
+      setCurrentBlockFills([])
+      setSelectedTemplate(null)
+      setShowTemplatePicker(false)
+      return
+    }
     let cancelled = false
     setLoading(true)
+    setFetchError(null)
 
     fetchThemeBySlug(slug)
       .then((theme) => {
@@ -408,7 +417,7 @@ export function ThemeEditor() {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
         <AlertTriangle size={48} style={{ color: 'hsl(var(--status-error-fg))' }} />
-        <p style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--status-error-fg))', fontFamily: "'Manrope', sans-serif", margin: 0 }}>{fetchError}</p>
+        <p style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--status-error-fg))', margin: 0 }}>{fetchError}</p>
         <Button variant="outline" size="sm" onClick={() => navigate('/')}>Back to Themes</Button>
       </div>
     )
@@ -433,7 +442,7 @@ export function ThemeEditor() {
             style={{ color: 'hsl(var(--text-secondary))', gap: '4px' }}
           >
             <ChevronLeft size={18} />
-            <span style={{ fontSize: 'var(--text-sm-font-size)', fontFamily: "'Manrope', sans-serif" }}>
+            <span style={{ fontSize: 'var(--text-sm-font-size)' }}>
               Themes
             </span>
           </Link>
@@ -441,16 +450,15 @@ export function ThemeEditor() {
           <span
             style={{
               fontSize: 'var(--text-sm-font-size)',
-              fontWeight: 600,
+              fontWeight: 'var(--font-weight-semibold)',
               color: 'hsl(var(--text-primary))',
-              fontFamily: "'Manrope', sans-serif",
             }}
           >
             {isNew ? 'New Theme' : existingTheme?.meta.name ?? slug}
           </span>
         </div>
         {formSlug && (
-          <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))', fontFamily: "'Manrope', sans-serif" }}>
+          <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>
             /themes/{formSlug}
           </span>
         )}
@@ -514,52 +522,79 @@ export function ThemeEditor() {
             <div
               style={{
                 padding: 'var(--spacing-lg) var(--spacing-xl)',
-                fontFamily: "'Manrope', sans-serif",
               }}
             >
-              <span style={{ fontSize: 'var(--text-base-font-size)', fontWeight: 600, color: 'hsl(var(--text-primary))' }}>
+              <span style={{ fontSize: 'var(--text-base-font-size)', fontWeight: 'var(--font-weight-semibold)', color: 'hsl(var(--text-primary))' }}>
                 Page Layout
               </span>
             </div>
             <div style={{ padding: '0 var(--spacing-xl) var(--spacing-xl)' }}>
               <div className="flex flex-col" style={{ gap: 'var(--spacing-md)' }}>
-                {(!currentTemplateId || showTemplatePicker) ? (
-                  <TemplatePicker selectedId={currentTemplateId ?? ''} onSelect={handleTemplateSelect} />
-                ) : selectedTemplate ? (
-                  <>
-                    <div className="flex items-center justify-between" style={{
-                      padding: 'var(--spacing-sm) var(--spacing-md)',
-                      backgroundColor: 'hsl(var(--bg-surface-alt))',
-                      borderRadius: 'var(--rounded-lg)',
-                      border: '1px solid hsl(var(--border-default))',
-                    }}>
-                      <div className="flex items-center" style={{ gap: 'var(--spacing-sm)' }}>
-                        <span style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-secondary))', fontFamily: "'Manrope', sans-serif" }}>
-                          Using template:
-                        </span>
-                        <span style={{ fontSize: 'var(--text-sm-font-size)', fontWeight: 600, color: 'hsl(var(--text-primary))', fontFamily: "'Manrope', sans-serif" }}>
-                          {selectedTemplate.name}
-                        </span>
-                      </div>
-                      <div className="flex items-center" style={{ gap: 'var(--spacing-md)' }}>
-                        <button
-                          type="button"
-                          onClick={handleChangeTemplate}
-                          className="border-0 bg-transparent"
-                          style={{ color: 'hsl(var(--text-link))', fontSize: 'var(--text-sm-font-size)', fontFamily: "'Manrope', sans-serif", cursor: 'pointer', padding: '4px 8px' }}
-                        >
-                          Change
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleRemoveTemplate}
-                          className="border-0 bg-transparent"
-                          style={{ color: 'hsl(var(--status-error-fg))', fontSize: 'var(--text-sm-font-size)', fontFamily: "'Manrope', sans-serif", cursor: 'pointer', padding: '4px 8px' }}
-                        >
-                          Remove
-                        </button>
-                      </div>
+
+                {/* State 1: No template — empty state with Select button */}
+                <div style={{ display: (!currentTemplateId && !showTemplatePicker) ? 'flex' : 'none', flexDirection: 'column', alignItems: 'center', gap: 'var(--spacing-md)', padding: 'var(--spacing-xl) 0' }}>
+                  <LayoutTemplate size={32} style={{ color: 'hsl(var(--text-muted))' }} />
+                  <p style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-muted))', margin: 0, textAlign: 'center' }}>
+                    No template selected
+                  </p>
+                  <Button variant="outline" size="sm" onClick={() => setShowTemplatePicker(true)}>
+                    Select Template
+                  </Button>
+                </div>
+
+                {/* State 2: Picker open — user is choosing a template */}
+                <div style={{ display: showTemplatePicker ? 'block' : 'none' }}>
+                  {currentTemplateId && (
+                    <div className="flex items-center justify-end" style={{ marginBottom: 'var(--spacing-sm)' }}>
+                      <button
+                        type="button"
+                        onClick={() => setShowTemplatePicker(false)}
+                        className="border-0 bg-transparent"
+                        style={{ color: 'hsl(var(--text-secondary))', fontSize: 'var(--text-sm-font-size)', cursor: 'pointer', padding: '4px 8px' }}
+                      >
+                        Cancel
+                      </button>
                     </div>
+                  )}
+                  <TemplatePicker selectedId={currentTemplateId ?? ''} onSelect={handleTemplateSelect} />
+                </div>
+
+                {/* State 3: Template active — show current template + grid */}
+                <div style={{ display: (currentTemplateId && !showTemplatePicker && selectedTemplate) ? 'flex' : 'none', flexDirection: 'column', gap: 'var(--spacing-md)' }}>
+                  <div className="flex items-center justify-between" style={{
+                    padding: 'var(--spacing-sm) var(--spacing-md)',
+                    backgroundColor: 'hsl(var(--bg-surface-alt))',
+                    borderRadius: 'var(--rounded-lg)',
+                    border: '1px solid hsl(var(--border-default))',
+                  }}>
+                    <div className="flex items-center" style={{ gap: 'var(--spacing-sm)' }}>
+                      <span style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-secondary))' }}>
+                        Using template:
+                      </span>
+                      <span style={{ fontSize: 'var(--text-sm-font-size)', fontWeight: 'var(--font-weight-semibold)', color: 'hsl(var(--text-primary))' }}>
+                        {selectedTemplate?.name}
+                      </span>
+                    </div>
+                    <div className="flex items-center" style={{ gap: 'var(--spacing-md)' }}>
+                      <button
+                        type="button"
+                        onClick={handleChangeTemplate}
+                        className="border-0 bg-transparent"
+                        style={{ color: 'hsl(var(--text-link))', fontSize: 'var(--text-sm-font-size)', cursor: 'pointer', padding: '4px 8px' }}
+                      >
+                        Change
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleRemoveTemplate}
+                        className="border-0 bg-transparent"
+                        style={{ color: 'hsl(var(--status-error-fg))', fontSize: 'var(--text-sm-font-size)', cursor: 'pointer', padding: '4px 8px' }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                  {selectedTemplate && (
                     <PositionGrid
                       maxPositions={selectedTemplate.max_positions}
                       positions={getMergedPositions()}
@@ -568,9 +603,12 @@ export function ThemeEditor() {
                       onRemoveBlock={handleRemoveFill}
                       readonlyPositions={getReadonlyPositions()}
                     />
-                  </>
-                ) : (
-                  <p style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-muted))', fontFamily: "'Manrope', sans-serif", margin: 0 }}>
+                  )}
+                </div>
+
+                {/* Loading state for template fetch */}
+                {currentTemplateId && !showTemplatePicker && !selectedTemplate && (
+                  <p style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-muted))', margin: 0 }}>
                     Loading template...
                   </p>
                 )}

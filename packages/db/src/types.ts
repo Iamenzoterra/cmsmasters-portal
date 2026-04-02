@@ -69,6 +69,12 @@ export type ThemeStatus = 'draft' | 'published' | 'archived'
 
 export type LicenseType = 'regular' | 'extended'
 
+// ── Page types ──
+
+export type PageType = 'layout' | 'composed'
+
+export type GlobalSlot = 'header' | 'footer' | 'sidebar-left' | 'sidebar-right'
+
 // Database type (column-for-column from 002_section_architecture migration)
 
 export type Database = {
@@ -249,6 +255,99 @@ export type Database = {
         }
         Relationships: []
       }
+      pages: {
+        Row: {
+          id: string
+          slug: string
+          title: string
+          type: PageType
+          seo: ThemeSEO | null
+          status: ThemeStatus
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          slug: string
+          title: string
+          type: PageType
+          seo?: ThemeSEO | null
+          status?: ThemeStatus
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          slug?: string
+          title?: string
+          type?: PageType
+          seo?: ThemeSEO | null
+          status?: ThemeStatus
+          created_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      page_blocks: {
+        Row: {
+          id: string
+          page_id: string
+          block_id: string
+          position: number
+          config: Record<string, unknown>
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          page_id: string
+          block_id: string
+          position: number
+          config?: Record<string, unknown>
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          page_id?: string
+          block_id?: string
+          position?: number
+          config?: Record<string, unknown>
+        }
+        Relationships: []
+      }
+      global_elements: {
+        Row: {
+          id: string
+          slot: GlobalSlot
+          block_id: string
+          scope: string
+          priority: number
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          slot: GlobalSlot
+          block_id: string
+          scope: string
+          priority?: number
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          slot?: GlobalSlot
+          block_id?: string
+          scope?: string
+          priority?: number
+          created_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       audit_log: {
         Row: {
           id: string
@@ -317,6 +416,17 @@ export type BlockUpdate = Database['public']['Tables']['blocks']['Update']
 export type Template = Database['public']['Tables']['templates']['Row']
 export type TemplateInsert = Database['public']['Tables']['templates']['Insert']
 export type TemplateUpdate = Database['public']['Tables']['templates']['Update']
+
+export type Page = Database['public']['Tables']['pages']['Row']
+export type PageInsert = Database['public']['Tables']['pages']['Insert']
+export type PageUpdate = Database['public']['Tables']['pages']['Update']
+
+export type PageBlock = Database['public']['Tables']['page_blocks']['Row']
+export type PageBlockInsert = Database['public']['Tables']['page_blocks']['Insert']
+
+export type GlobalElement = Database['public']['Tables']['global_elements']['Row']
+export type GlobalElementInsert = Database['public']['Tables']['global_elements']['Insert']
+export type GlobalElementUpdate = Database['public']['Tables']['global_elements']['Update']
 
 export type AuditEntry = Database['public']['Tables']['audit_log']['Row']
 export type AuditEntryInsert = Database['public']['Tables']['audit_log']['Insert']

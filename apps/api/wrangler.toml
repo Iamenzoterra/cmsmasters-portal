@@ -5,6 +5,7 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 SUPABASE_URL = ""
+R2_PUBLIC_URL = ""
 
 # Secrets (set via `wrangler secret put <NAME>`):
 # SUPABASE_SERVICE_KEY  — Supabase service_role key
@@ -14,3 +15,10 @@ SUPABASE_URL = ""
 #   SUPABASE_URL=https://your-project.supabase.co
 #   SUPABASE_SERVICE_KEY=eyJ...
 #   SUPABASE_JWT_SECRET=your-jwt-secret
+
+# R2 bucket for block assets (images, etc.)
+# Create bucket: wrangler r2 bucket create cmsmasters-assets
+# Enable public access in Cloudflare dashboard → R2 → bucket → Settings → Public access
+[[r2_buckets]]
+binding = "ASSETS_BUCKET"
+bucket_name = "cmsmasters-assets"

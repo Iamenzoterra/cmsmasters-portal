@@ -18,7 +18,7 @@ export function DeleteConfirmModal({ title, itemName, onConfirm, onCancel }: Del
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
       style={{
-        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+        backgroundColor: 'hsl(var(--black-alpha-40))',
         backdropFilter: 'blur(4px)',
         animation: 'fadeIn 150ms ease-out',
       }}
@@ -30,7 +30,7 @@ export function DeleteConfirmModal({ title, itemName, onConfirm, onCancel }: Del
           backgroundColor: 'hsl(var(--bg-surface))',
           borderRadius: 'var(--rounded-xl)',
           overflow: 'hidden',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.05)',
+          boxShadow: 'var(--shadow-2xl)',
           animation: 'modalIn 200ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       >
@@ -43,9 +43,8 @@ export function DeleteConfirmModal({ title, itemName, onConfirm, onCancel }: Del
           <h3 style={{
             margin: 0,
             fontSize: '18px',
-            fontWeight: 700,
+            fontWeight: 'var(--font-weight-bold)',
             color: 'hsl(var(--text-primary))',
-            fontFamily: "'Manrope', sans-serif",
             letterSpacing: '-0.01em',
           }}>
             {title}
@@ -55,7 +54,6 @@ export function DeleteConfirmModal({ title, itemName, onConfirm, onCancel }: Del
             fontSize: 'var(--text-sm-font-size)',
             lineHeight: '1.5',
             color: 'hsl(var(--text-secondary))',
-            fontFamily: "'Manrope', sans-serif",
           }}>
             <strong style={{ color: 'hsl(var(--text-primary))' }}>{itemName}</strong> will be permanently removed. This cannot be undone.
           </p>
@@ -77,9 +75,8 @@ export function DeleteConfirmModal({ title, itemName, onConfirm, onCancel }: Del
             style={{
               padding: 'var(--spacing-xs) var(--spacing-md)',
               fontSize: 'var(--text-sm-font-size)',
-              fontWeight: 500,
+              fontWeight: 'var(--font-weight-medium)',
               color: 'hsl(var(--text-secondary))',
-              fontFamily: "'Manrope', sans-serif",
               cursor: 'pointer',
               borderRadius: 'var(--rounded-lg)',
             }}
@@ -92,9 +89,8 @@ export function DeleteConfirmModal({ title, itemName, onConfirm, onCancel }: Del
             style={{
               padding: 'var(--spacing-xs) var(--spacing-lg)',
               fontSize: 'var(--text-sm-font-size)',
-              fontWeight: 600,
+              fontWeight: 'var(--font-weight-semibold)',
               color: 'white',
-              fontFamily: "'Manrope', sans-serif",
               cursor: 'pointer',
               border: 'none',
               borderRadius: 'var(--rounded-lg)',

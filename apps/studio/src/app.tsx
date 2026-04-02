@@ -13,6 +13,10 @@ import { BlocksList } from './pages/blocks-list'
 import { BlockEditor } from './pages/block-editor'
 import { TemplatesList } from './pages/templates-list'
 import { TemplateEditor } from './pages/template-editor'
+import { PagesList } from './pages/pages-list'
+import { PageEditor } from './pages/page-editor'
+import { GlobalElementsSettings } from './pages/global-elements-settings'
+import { ElementsList } from './pages/elements-list'
 import { NotFound } from './pages/not-found'
 import { ErrorBoundary } from './components/error-boundary'
 
@@ -35,6 +39,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   )
 }
 
+function LayoutsList() {
+  return <PagesList filterType="layout" title="Layouts" createLabel="Create Layout" createPath="/layouts/new" editPath="/layouts" />
+}
+
+function StaticPagesList() {
+  return <PagesList filterType="composed" title="Static Pages" createLabel="Create Page" createPath="/static-pages/new" editPath="/static-pages" />
+}
+
 export function App() {
   return (
     <>
@@ -55,16 +67,29 @@ export function App() {
           </ProtectedRoute>
         }
       >
+        {/* Themes group */}
         <Route index element={<ThemesList />} />
         <Route path="/themes/new" element={<ThemeEditor />} />
         <Route path="/themes/:slug" element={<ThemeEditor />} />
-        <Route path="/media" element={<MediaPage />} />
         <Route path="/blocks" element={<BlocksList />} />
         <Route path="/blocks/new" element={<BlockEditor />} />
         <Route path="/blocks/:id" element={<BlockEditor />} />
         <Route path="/templates" element={<TemplatesList />} />
         <Route path="/templates/new" element={<TemplateEditor />} />
         <Route path="/templates/:id" element={<TemplateEditor />} />
+
+        {/* Pages group */}
+        <Route path="/layouts" element={<LayoutsList />} />
+        <Route path="/layouts/new" element={<PageEditor />} />
+        <Route path="/layouts/:id" element={<PageEditor />} />
+        <Route path="/static-pages" element={<StaticPagesList />} />
+        <Route path="/static-pages/new" element={<PageEditor />} />
+        <Route path="/static-pages/:id" element={<PageEditor />} />
+        <Route path="/global-elements" element={<GlobalElementsSettings />} />
+        <Route path="/elements" element={<ElementsList />} />
+
+        {/* Standalone */}
+        <Route path="/media" element={<MediaPage />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

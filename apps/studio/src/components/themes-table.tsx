@@ -9,7 +9,6 @@ interface ThemesTableProps {
 
 const cellStyle: React.CSSProperties = {
   padding: 'var(--spacing-sm) var(--spacing-md)',
-  fontFamily: "'Manrope', sans-serif",
 }
 
 export function ThemesTable({ themes, onThemeClick }: ThemesTableProps) {
@@ -28,7 +27,7 @@ export function ThemesTable({ themes, onThemeClick }: ThemesTableProps) {
               style={{
                 ...cellStyle,
                 fontSize: 'var(--text-xs-font-size)',
-                fontWeight: 500,
+                fontWeight: 'var(--font-weight-medium)',
                 color: 'hsl(var(--text-muted))',
               }}
             >
@@ -51,7 +50,7 @@ export function ThemesTable({ themes, onThemeClick }: ThemesTableProps) {
               e.currentTarget.style.backgroundColor = ''
             }}
           >
-            <td style={{ ...cellStyle, fontSize: 'var(--text-sm-font-size)', fontWeight: 600, color: 'hsl(var(--text-primary))' }}>
+            <td style={{ ...cellStyle, fontSize: 'var(--text-sm-font-size)', fontWeight: 'var(--font-weight-semibold)', color: 'hsl(var(--text-primary))' }}>
               {theme.meta.name}
             </td>
             <td style={{ ...cellStyle, fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-secondary))' }}>
@@ -60,7 +59,7 @@ export function ThemesTable({ themes, onThemeClick }: ThemesTableProps) {
             <td style={cellStyle}>
               <StatusBadge status={theme.status} />
             </td>
-            <td style={{ ...cellStyle, fontSize: 'var(--text-sm-font-size)', fontWeight: 600, color: 'hsl(var(--text-primary))' }}>
+            <td style={{ ...cellStyle, fontSize: 'var(--text-sm-font-size)', fontWeight: 'var(--font-weight-semibold)', color: 'hsl(var(--text-primary))' }}>
               {formatPrice(theme.meta.price ?? null)}
             </td>
             <td style={{ ...cellStyle, fontSize: '12px', color: 'hsl(var(--text-muted))' }}>

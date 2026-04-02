@@ -4,6 +4,10 @@ import type { Env } from './env'
 import { health } from './routes/health'
 import { revalidate } from './routes/revalidate'
 import { upload } from './routes/upload'
+import { blocks } from './routes/blocks'
+import { templates } from './routes/templates'
+import { pages } from './routes/pages'
+import { globalElements } from './routes/global-elements'
 
 const app = new Hono<{ Bindings: Env }>()
 
@@ -18,6 +22,7 @@ app.use(
       'http://localhost:5176', // Support
       'http://localhost:4000', // Command Center
       'http://localhost:3000', // Portal (Next.js)
+      'http://localhost:4321', // Astro (build/preview)
     ],
     allowHeaders: ['Content-Type', 'Authorization'],
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -31,6 +36,10 @@ app.route('/api', health)
 // Protected routes — auth middleware applied per-route, not globally
 app.route('/api', revalidate)
 app.route('/api', upload)
+app.route('/api', blocks)
+app.route('/api', templates)
+app.route('/api', pages)
+app.route('/api', globalElements)
 
 app.notFound((c) => {
   return c.json({ error: 'Not found' }, 404)

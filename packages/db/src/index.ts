@@ -26,6 +26,16 @@ export type {
   Template,
   TemplateInsert,
   TemplateUpdate,
+  PageType,
+  GlobalSlot,
+  Page,
+  PageInsert,
+  PageUpdate,
+  PageBlock,
+  PageBlockInsert,
+  GlobalElement,
+  GlobalElementInsert,
+  GlobalElementUpdate,
   AuditEntry,
   AuditEntryInsert,
 } from './types'
@@ -53,3 +63,24 @@ export {
   deleteTemplate,
   getTemplateUsage,
 } from './queries/templates'
+
+export {
+  getPages,
+  getPageById,
+  getPageBySlug,
+  createPage,
+  updatePage,
+  deletePage,
+  getPageBlocks,
+  upsertPageBlocks,
+  getPageBlockCount,
+} from './queries/pages'
+
+export {
+  getGlobalElements,
+  getGlobalElementsBySlot,
+  createGlobalElement,
+  updateGlobalElement,
+  deleteGlobalElement,
+  resolveGlobalElementsForPage,
+} from './queries/global-elements'

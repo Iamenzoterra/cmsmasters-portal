@@ -1,75 +1,150 @@
 ---
 id: 7
-title: Split-Stack Architecture
-version: 2
+title: 'Split-Stack Architecture'
+version: 3
 status: active
 category: tech-stack
-relatedADRs: [11, 17, 22]
+relatedADRs: [11, 17, 22, 23]
 supersededBy: null
-date: 2026-03-09
+date: 2026-03-30
 ---
 
 # ADR-007: Split-Stack Architecture
 
+> **V3** — Portal: Next.js → Astro. Дата: 30 березня 2026.
+
+**V1 (що було):**
+- Next.js monolith для всіх 5 апок — відхилено
+- Перехід до split-stack: кожна апка = свій фреймворк
+
+**V2 (проміжна):**
+- Portal = Next.js 15 SSG (App Router)
+- Dashboard/Support/Studio/Admin = Vite + React Router SPA
+- API = Hono on Cloudflare Workers
+
+**V3 (поточна):**
+- Portal = **Astro SSG** (HTML-first, 0KB JS)
+- Решта без змін
+
+---
+
 ## Context
 
-The CMSMasters Portal ecosystem consists of five distinct applications: Portal (public-facing marketing and documentation site), Dashboard (customer account and subscription management), Support (ticket and knowledge-base interface), Studio (content creation and theme preview tool), and Admin (internal operations panel).
+V2 обрала Next.js SSG для Portal — обґрунтовано для generic SSG use case. Але архітектурне рішення ADR-009 V4 (Block Library) змінює вимоги до Portal:
 
-An early proposal was to build everything as a single Next.js monolith — one App Router project serving all five surfaces. That approach was rejected for the following reasons:
+1. **Блоки з Figma = HTML+CSS.** Astro `.astro` файли = HTML з props. Copy-paste без конвертації. Next.js = JSX конвертація кожного блоку (`class` → `className`, scoped styles → CSS Modules).
 
-- **Portal** is content-heavy and SEO-critical. It benefits from static site generation, edge CDN delivery, and zero JavaScript hydration for most pages.
-- **Dashboard, Support, Studio, and Admin** are auth-gated SPAs with rich interactivity, client-side routing, and no SEO requirement. Serving them through Next.js SSR/SSG adds unnecessary complexity and build overhead.
-- A monolith couples deployment cadences — a change to the Admin panel would trigger a full Portal rebuild and redeploy.
-- Next.js App Router is optimised for content sites. For deeply interactive SPAs, Vite + React Router is faster to build, faster to bundle, and simpler to deploy.
-- The API layer needs to run at the edge (low latency for global users) and has no need for Next.js server actions or middleware.
+2. **0KB JS за замовчуванням.** Сторінка теми — маркетинговий лендінг. Нуль інтерактиву на старті (CSS hover/fade-in). React runtime (~50-80KB) на сторінці де 0 client-side JS — waste. Lighthouse Performance 100 vs ~90-95.
+
+3. **AI discovery.** AI краулери (ChatGPT, Perplexity, Google AI Overviews) читають фінальний HTML. Astro output = чистий semantic HTML без `<script>` тегів. Next.js RSC output = той самий HTML + framework scripts. Різниця мінімальна для AI, але чистіший HTML = менше шуму.
+
+4. **`packages/ui` не потрібен Portal.** Portal = публічний маркетинговий сайт з власним дизайном (блоки з Figma, брендові CTA кнопки). shadcn/ui Button на Portal не використовується. `packages/ui` потрібен тільки internal апкам (Studio, Dashboard, Admin).
+
+5. **Islands для інтерактиву.** Коли потрібен JS (carousel, auth-aware resource sidebar) — Astro islands підключають мінімальний JS точково. Не тягнемо React на всю сторінку.
 
 ## Decision
 
-Use the right framework for each application in the stack:
-
 | App | Framework | Deployment | Rationale |
 |-----|-----------|------------|-----------|
-| Portal | Next.js 15 App Router (SSG) | Cloudflare Pages | SEO, static content, edge CDN |
+| **Portal** | **Astro SSG** | Cloudflare Pages | **HTML-first, 0KB JS, блоки з Figma 1:1, semantic для AI** |
 | Dashboard | Vite + React Router SPA | Cloudflare Pages | Auth-gated, rich client interactions |
 | Support | Vite + React Router SPA | Cloudflare Pages | Auth-gated, ticket/KB interface |
-| Studio | Vite + React Router SPA | Cloudflare Pages | Content creation, heavy interactivity |
+| Studio | Vite + React Router SPA | Cloudflare Pages | Content assembly, heavy interactivity |
 | Admin | Vite + React Router SPA | Cloudflare Pages | Internal ops, no SEO requirement |
 | API | Hono on Cloudflare Workers | Cloudflare Workers | Edge runtime, low latency, lightweight |
 
-**Portal = Next.js 15 App Router (SSG)**
+### Portal = Astro SSG
 
-- App Router with `generateStaticParams` pre-renders all documentation, blog, and theme pages at build time.
-- React Server Components eliminate client-side JS for read-only pages.
-- Incremental Static Regeneration handles content updates without full rebuilds.
+```
+apps/portal/                        ← Astro
+├── src/
+│   ├── pages/
+│   │   ├── index.astro             — homepage (sections from Supabase)
+│   │   ├── themes/[slug].astro     — theme page (sections renderer)
+│   │   └── docs/[...slug].astro    — documentation pages
+│   ├── layouts/
+│   │   ├── ThemePage.astro         — two-column: content + sidebar
+│   │   └── Base.astro              — html, head, meta, json-ld
+│   ├── blocks/                     — HTML+CSS block components from Figma
+│   │   ├── hero-carousel-v1.astro
+│   │   ├── feature-grid-3col.astro
+│   │   ├── plugin-value-calc.astro
+│   │   └── ...
+│   ├── components/                 — shared layout parts
+│   │   ├── ResourceSidebar.astro   — fixed sidebar from meta
+│   │   ├── Header.astro
+│   │   └── Footer.astro
+│   └── islands/                    — JS only where needed (client:visible)
+│       ├── Carousel.tsx            — image slider (Preact, ~2KB)
+│       └── SearchPanel.tsx         — theme search (React island)
+├── public/
+│   ├── llms.txt                    — AI discovery index
+│   └── api/themes/                 — JSON output per theme
+```
 
-**Dashboard / Support / Studio / Admin = Vite + React Router SPA**
+**Block rendering:**
+```astro
+---
+// src/pages/themes/[slug].astro
+import { BLOCK_COMPONENTS } from '../blocks/registry'
+const { theme } = Astro.props
 
-- Vite delivers sub-second HMR during development and optimised production bundles.
-- React Router v7 provides client-side navigation with data loaders.
-- Each SPA is deployed independently — no coupling between apps.
-- Auth via Supabase client SDK runs entirely client-side.
+---
+<main>
+  {theme.sections.map(section => {
+    const Block = BLOCK_COMPONENTS[section.block]
+    return Block ? <Block {...section.data} meta={theme.meta} /> : null
+  })}
+</main>
+<aside>
+  <ResourceSidebar resources={theme.meta.resources} />
+</aside>
+```
 
-**API = Hono on Cloudflare Workers**
+**Data fetching:**
+```astro
+---
+// src/pages/themes/[slug].astro
+export async function getStaticPaths() {
+  const themes = await supabase.from('themes').select('slug').eq('status', 'published')
+  return themes.data.map(t => ({ params: { slug: t.slug } }))
+}
+---
+```
 
-- Hono is a lightweight, TypeScript-first web framework designed for edge runtimes.
-- Cloudflare Workers run at ~0ms cold start globally.
-- Single API service consumed by all five apps.
-- Typed route handlers shared with frontend via a shared `types/` package in the monorepo.
+**Revalidation:** Studio publish → Hono API → Cloudflare Pages deploy hook (rebuild single page or full site). Не так елегантно як Next.js `revalidatePath()`, але функціонально. Альтернатива: Astro Server Islands (experimental) або on-demand ISR через adapter.
+
+### Internal apps = Vite + React Router (без змін від V2)
+
+Dashboard, Support, Studio, Admin — auth-gated SPAs з rich interactivity. React + Vite — оптимальний стек для цього. Нема SEO requirement, нема потреби в HTML-first.
+
+### API = Hono on Cloudflare Workers (без змін від V2)
+
+Single API service, edge runtime, secrets boundary. Consumed by all apps.
 
 ## Consequences
 
-**Positive:**
-- Each app is independently deployable — a Studio release does not affect Portal uptime.
-- Portal achieves perfect Lighthouse scores with zero unnecessary JavaScript.
-- Dashboard and SPAs have full SPA flexibility without SSR constraints.
-- API response times are globally low due to edge execution.
-- Developer experience is optimised per context: Next.js conventions for Portal, plain React for SPAs.
+**Positive (нове в V3):**
+- Portal: Lighthouse Performance ~100 (0KB JS baseline)
+- Figma → `.astro` файл = HTML+CSS copy-paste. Нуль JSX конвертації
+- AI crawlers бачать чистий HTML без framework script tags
+- Islands для інтерактиву — JS тільки де потрібно, грузиться тільки коли видимий
+- Portal не залежить від React runtime — менше залежностей, менший attack surface
 
-**Negative / Trade-offs:**
-- Five separate build pipelines to maintain (mitigated by monorepo tooling — see ADR-017).
-- Shared code (types, UI atoms, utilities) requires a monorepo package strategy (ADR-022).
-- Cross-app navigation requires full page loads at app boundaries (acceptable — apps serve distinct user flows).
-- API versioning must be managed explicitly since all apps consume the same Hono endpoint.
+**Negative / Trade-offs (нове в V3):**
+- Два шаблонних синтаксиси в монорепо (`.astro` для Portal + `.tsx` для SPAs)
+- `packages/ui` не shared з Portal — Portal має власні block components
+- Revalidation менш елегантна ніж Next.js (webhook rebuild vs `revalidatePath()`)
+- Claude Code знає Astro добре, але Next.js — ідеально. Мінімальний learning gap
 
-**Neutral:**
-- The Command Center (this app) is built on Next.js 15 App Router as it is a content/dashboard hybrid and served localhost-only — it follows Portal conventions.
+**Збережено від V2:**
+- Independent deployments per app
+- SPAs have full flexibility
+- API at edge globally
+- Monorepo package strategy (ADR-017, ADR-022)
+
+**Addressed changes:**
+- ADR-007 V2 → V3: Portal framework змінено з Next.js 15 SSG на Astro SSG
+- Узгоджено з ADR-009 V4 (Block Library), ADR-023 (Block Library Architecture)
+- ADR-016 (SEO): `generateStaticParams()` → `getStaticPaths()`, суть та сама
+- ADR-008 (content): `generateMetadata()` → Astro frontmatter + `<head>`, суть та сама

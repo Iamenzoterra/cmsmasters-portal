@@ -4,6 +4,7 @@ import { JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { Sidebar } from '@/components/Sidebar';
 import { GlobalSearch } from '@/components/GlobalSearch';
+import { AgentationToolbar } from '@/components/AgentationToolbar';
 import type { SearchItem } from '@/components/GlobalSearch';
 import { getPhases, getComponents, getContentStatusEntries, getADRList } from '@/lib/data';
 
@@ -76,6 +77,7 @@ export default async function RootLayout({
       <body
         className={`${jetbrainsMono.variable} bg-surface-app text-text-primary`}
       >
+        <AgentationToolbar />
         <GlobalSearch searchIndex={searchIndex} />
         <div className="flex h-screen">
           <Sidebar />

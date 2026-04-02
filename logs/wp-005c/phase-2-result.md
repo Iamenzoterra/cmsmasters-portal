@@ -49,13 +49,13 @@ None.
 | Auth helpers exported | ✅ 3 exports |
 | Routes registered | ✅ 3 routes + 2 imports |
 | Sidebar updated | ✅ Templates item with LayoutTemplate icon |
-| Manual: create template | ⏳ pending dev server |
-| Manual: block picker | ⏳ pending dev server |
-| Manual: position grid | ⏳ pending dev server |
-| Manual: edit template | ⏳ pending dev server |
-| Manual: delete template | ⏳ pending dev server |
-| Regression: block delete | ⏳ pending dev server |
-| AC met | ✅ (code-level; runtime pending) |
+| Manual: create template | ✅ |
+| Manual: block picker | ✅ |
+| Manual: position grid | ✅ |
+| Manual: edit template | ✅ |
+| Manual: delete template | ✅ |
+| Regression: block delete | ✅ |
+| AC met | ✅ |
 
 ## Git
-- Commit: `pending`
+- Commit: `aee70c8d` — `feat: templates page with position grid CRUD and block picker [WP-005C phase 2]`

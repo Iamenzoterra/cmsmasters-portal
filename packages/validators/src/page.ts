@@ -1,0 +1,58 @@
+import { z } from 'zod'
+
+// ── SEO schema (reused from theme) ──
+
+const seoSchema = z.object({
+  title: z.string().optional(),
+  description: z.string().optional(),
+})
+
+// ── Create page ──
+
+export const pageSchema = z.object({
+  slug: z.string().regex(/^[a-z0-9-]+$/).min(2).max(100),
+  title: z.string().min(1).max(200),
+  type: z.enum(['layout', 'composed']),
+  seo: seoSchema.optional(),
+  status: z.enum(['draft', 'published', 'archived']).default('draft'),
+})
+
+// ── Update page (all fields optional) ──
+
+export const updatePageSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  seo: seoSchema.optional(),
+  status: z.enum(['draft', 'published', 'archived']).optional(),
+})
+
+// ── Page block (for composed page block list) ──
+
+export const pageBlockSchema = z.object({
+  block_id: z.string().uuid(),
+  position: z.number().int().min(1),
+  config: z.record(z.string(), z.unknown()).optional(),
+})
+
+// ── Create global element ──
+
+export const globalElementSchema = z.object({
+  slot: z.enum(['header', 'footer', 'sidebar-left', 'sidebar-right']),
+  block_id: z.string().uuid(),
+  scope: z.string().min(1),
+  priority: z.number().int().min(0).max(100).default(0),
+})
+
+// ── Update global element ──
+
+export const updateGlobalElementSchema = z.object({
+  slot: z.enum(['header', 'footer', 'sidebar-left', 'sidebar-right']).optional(),
+  block_id: z.string().uuid().optional(),
+  scope: z.string().min(1).optional(),
+  priority: z.number().int().min(0).max(100).optional(),
+})
+
+export type CreatePagePayload = z.infer<typeof pageSchema>
+export type UpdatePagePayload = z.infer<typeof updatePageSchema>
+export type PageBlockPayload = z.infer<typeof pageBlockSchema>
+export type CreateGlobalElementPayload = z.infer<typeof globalElementSchema>
+export type UpdateGlobalElementPayload = z.infer<typeof updateGlobalElementSchema>

@@ -39,8 +39,7 @@ export function Topbar() {
             style={{
               color: 'hsl(var(--button-primary-fg))',
               fontSize: 'var(--text-sm-font-size)',
-              fontWeight: 700,
-              fontFamily: "'Manrope', sans-serif",
+              fontWeight: 'var(--font-weight-bold)',
             }}
           >
             C
@@ -50,9 +49,8 @@ export function Topbar() {
           style={{
             fontSize: 'var(--text-sm-font-size)',
             lineHeight: 'var(--text-sm-line-height)',
-            fontWeight: 600,
+            fontWeight: 'var(--font-weight-semibold)',
             color: 'hsl(var(--text-primary))',
-            fontFamily: "'Manrope', sans-serif",
           }}
         >
           Content Studio
@@ -73,9 +71,8 @@ export function Topbar() {
           <span
             style={{
               fontSize: '11px',
-              fontWeight: 600,
+              fontWeight: 'var(--font-weight-semibold)',
               color: 'hsl(var(--text-muted))',
-              fontFamily: "'Manrope', sans-serif",
             }}
           >
             {initials}
@@ -85,9 +82,8 @@ export function Topbar() {
           style={{
             fontSize: 'var(--caption-font-size)',
             lineHeight: 'var(--caption-line-height)',
-            fontWeight: 500,
+            fontWeight: 'var(--font-weight-medium)',
             color: 'hsl(var(--text-secondary))',
-            fontFamily: "'Manrope', sans-serif",
           }}
         >
           {displayName}

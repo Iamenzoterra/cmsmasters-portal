@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Content Studio — Theme Editor V2 (Full)</title>
+
+  <!-- Google Fonts: Manrope -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Tailwind CSS v3 CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Manrope', 'system-ui', 'sans-serif'],
+            mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+          },
+          colors: {
+            page:       'rgb(250,248,247)',
+            surface:    'rgb(255,255,255)',
+            'surface-alt': 'rgb(241,241,241)',
+            navy:       'rgb(21,31,79)',
+            'navy-hover':'rgb(28,40,100)',
+            'outline-border': 'rgb(39,43,83)',
+            txt: {
+              primary:   'rgb(24,24,24)',
+              secondary: 'rgb(84,84,84)',
+              muted:     'rgb(170,161,146)',
+              link:      'rgb(41,81,220)',
+            },
+            border: {
+              DEFAULT:   'rgb(234,229,224)',
+              light:     'rgb(221,221,221)',
+            },
+            tag: {
+              bg:        'rgb(250,248,247)',
+              fg:        'rgb(84,84,84)',
+              border:    'rgb(234,229,224)',
+              teal:      'rgb(76,200,222)',
+            },
+            status: {
+              'success-bg': 'rgb(224,245,222)',
+              'success-fg': 'rgb(34,135,34)',
+              'warn-bg':    'rgb(255,251,235)',
+              'warn-fg':    'rgb(217,119,6)',
+            },
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+  <!-- Figma Capture -->
+  <script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Manrope', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+
+    /* Card subtle shadow */
+    .card-shadow {
+      box-shadow:
+        0 1px 3px rgba(24, 24, 24, 0.04),
+        0 4px 16px rgba(24, 24, 24, 0.03);
+    }
+
+    /* Footer shadow (upward) */
+    .footer-shadow {
+      box-shadow: 0 -2px 12px rgba(24, 24, 24, 0.06);
+    }
+
+    /* Input focus ring */
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(41, 81, 220, 0.12);
+      border-color: rgb(41, 81, 220) !important;
+    }
+
+    /* Button hover transitions */
+    .btn-primary { transition: background-color 0.15s ease, box-shadow 0.15s ease; }
+    .btn-primary:hover { background-color: rgb(28, 40, 100); }
+
+    .btn-outline { transition: background-color 0.15s ease, border-color 0.15s ease; }
+    .btn-outline:hover { background-color: rgb(250, 248, 247); }
+
+    .btn-ghost { transition: color 0.15s ease; }
+    .btn-ghost:hover { color: rgb(24, 24, 24); }
+
+    /* Thumbnail placeholder */
+    .thumb-placeholder {
+      background-color: rgb(245, 243, 240);
+      background-image:
+        linear-gradient(45deg, rgba(0,0,0,0.02) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(0,0,0,0.02) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(0,0,0,0.02) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(0,0,0,0.02) 75%);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+    }
+
+    /* Dashed add button */
+    .btn-dashed {
+      border: 1.5px dashed rgb(234, 229, 224);
+      transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+    }
+    .btn-dashed:hover {
+      border-color: rgb(170, 161, 146);
+      background-color: rgb(250, 248, 247);
+    }
+
+    /* Drag handle cursor */
+    .drag-handle { cursor: grab; }
+    .drag-handle:active { cursor: grabbing; }
+
+    /* Delete button */
+    .delete-btn { transition: color 0.15s ease, background-color 0.15s ease; }
+    .delete-btn:hover { color: rgb(220, 38, 38); background-color: rgb(254, 242, 242); }
+
+    /* Google preview card */
+    .google-preview {
+      font-family: Arial, sans-serif;
+    }
+
+    /* Section collapse arrow */
+    .section-toggle { transition: transform 0.2s ease; }
+    .section-toggle.collapsed { transform: rotate(-90deg); }
+
+    /* Character counter colors */
+    .char-ok { color: rgb(34, 135, 34); }
+    .char-warn { color: rgb(217, 119, 6); }
+    .char-over { color: rgb(220, 38, 38); }
+
+    /* Separator */
+    .meta-separator {
+      height: 1px;
+      background-color: rgb(234, 229, 224);
+    }
+
+    /* Star rating */
+    .star-filled { color: rgb(250, 204, 21); }
+    .star-empty { color: rgb(221, 221, 221); }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgb(210, 205, 198); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgb(170, 161, 146); }
+  </style>
+</head>
+<body>
+
+<!-- =====================================================================
+     OUTER FRAME: 1220 x 2400, overflow hidden, page background
+     ===================================================================== -->
+<div
+  id="frame"
+  style="width: 1220px; height: 2400px; overflow: hidden;"
+  class="bg-page relative flex flex-col"
+>
+
+  <!-- ===================================================================
+       PAGE HEADER
+       =================================================================== -->
+  <header class="bg-surface border-b border-border flex items-center justify-between px-8 py-4 shrink-0">
+    <!-- Left: Back link + Title -->
+    <div class="flex items-center gap-4">
+      <a href="#" class="flex items-center gap-1.5 text-txt-muted hover:text-txt-secondary transition-colors text-sm font-medium">
+        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+        Back to Themes
+      </a>
+      <div class="w-px h-5 bg-border"></div>
+      <h1 class="text-lg font-semibold text-txt-primary">Flavor Theme</h1>
+    </div>
+    <!-- Right: More menu -->
+    <button class="w-8 h-8 flex items-center justify-center rounded-lg text-txt-muted hover:text-txt-secondary hover:bg-page transition-colors">
+      <i data-lucide="more-horizontal" class="w-5 h-5"></i>
+    </button>
+  </header>
+
+  <!-- ===================================================================
+       SCROLLABLE CONTENT AREA (main + sidebar)
+       =================================================================== -->
+  <div class="flex-1 overflow-y-auto">
+    <div class="flex gap-6 px-8 pt-6 pb-28">
+
+      <!-- =================================================================
+           LEFT COLUMN — 65% — form sections
+           ================================================================= -->
+      <div class="flex-1 min-w-0 flex flex-col gap-5" style="max-width: 65%;">
+
+        <!-- ─── 1. BASIC INFO ─── -->
+        <section class="bg-surface rounded-xl border border-border card-shadow">
+          <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border">
+            <h2 class="text-lg font-semibold text-txt-primary">Basic Info</h2>
+            <button class="section-toggle w-6 h-6 flex items-center justify-center text-txt-muted hover:text-txt-secondary rounded transition-colors">
+              <i data-lucide="chevron-down" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <div class="px-6 py-5 flex flex-col gap-5">
+            <!-- Name -->
+            <div class="flex flex-col gap-1.5">
+              <label class="text-sm font-medium text-txt-secondary">Name</label>
+              <input
+                type="text"
+                value="Flavor Theme"
+                class="w-full h-9 px-3 text-sm text-txt-primary bg-surface border border-border rounded-lg placeholder:text-txt-muted"
+              />
+            </div>
+            <!-- Tagline -->
+            <div class="flex flex-col gap-1.5">
+              <label class="text-sm font-medium text-txt-secondary">Tagline</label>
+              <input
+                type="text"
+                value="Creative Multipurpose WordPress Theme"
+                class="w-full h-9 px-3 text-sm text-txt-primary bg-surface border border-border rounded-lg placeholder:text-txt-muted"
+              />
+            </div>
+            <!-- Description -->
+            <div class="flex flex-col gap-1.5">
+              <label class="text-sm font-medium text-txt-secondary">Description</label>
+              <textarea
+                rows="4"
+                class="w-full px-3 py-2 text-sm text-txt-primary bg-surface border border-border rounded-lg placeholder:text-txt-muted resize-none leading-relaxed"
+              >A stunning, feature-rich WordPress theme designed for creative professionals. Flavor comes with 15+ demo layouts, drag-and-drop page builder compatibility, WooCommerce support, and a powerful theme options panel that makes customization effortless.</textarea>
+            </div>
+          </div>
+        </section>
+
+        <!-- ─── 2. LINKS ─── -->
+        <section class="bg-surface rounded-xl border border-border card-shadow">
+          <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border">
+            <h2 class="text-lg font-semibold text-txt-primary">Links</h2>
+            <button class="section-toggle w-6 h-6 flex items-center justify-center text-txt-muted hover:text-txt-secondary rounded transition-colors">
+              <i data-lucide="chevron-down" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <div class="px-6 py-5 flex flex-col gap-5">
+            <!-- Demo URL -->
+            <div class="flex flex-col gap-1.5">
+              <label class="text-sm font-medium text-txt-secondary">Demo URL</label>
+              <input
+                type="url"
+                value="https://flavor.developer.starter.com"
+                class="w-full h-9 px-3 text-sm text-txt-primary bg-surface border border-border rounded-lg placeholder:text-txt-muted"
+              />
+            </div>
+            <!-- ThemeForest URL -->
+            <div class="flex flex-col gap-1.5">
+              <label class="text-sm font-medium text-txt-secondary">ThemeForest URL</label>
+              <input
+                type="url"
+                value="https://themeforest.net/item/flavor/24452857"
+                class="w-full h-9 px-3 text-sm text-txt-primary bg-surface border border-border rounded-lg placeholder:text-txt-muted"
+              />
+            </div>
+            <!-- ThemeForest ID -->
+            <div class="flex flex-col gap-1.5">
+              <label class="text-sm font-medium text-txt-secondary">ThemeForest ID</label>
+              <input
+                type="text"
+                value="24452857"
+                class="w-full h-9 px-3 text-sm text-txt-primary bg-surface border border-border rounded-lg placeholder:text-txt-muted"
+                style="max-width: 200px;"
+              />
+            </div>
+          </div>
+        </section>
+
+        <!-- ─── 3. HERO (NEW) ─── -->
+        <section class="bg-surface rounded-xl border border-border card-shadow">
+          <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border">
+            <h2 class="text-lg font-semibold text-txt-primary">Hero</h2>
+            <button class="section-toggle w-6 h-6 flex items-center justify-center text-txt-muted hover:text-txt-secondary rounded transition-colors">
+              <i data-lucide="chevron-down" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <div class="px-6 py-5 flex flex-col gap-5">
+            <!-- Headline -->
+            <div class="flex flex-col gap-1.5">
+              <label class="text-sm font-medium text-txt-secondary">Headline</label>
+              <input
+                type="text"
+                placeholder="Override default hero text"
+                class="w-full h-9 px-3 text-sm text-txt-primary bg-surface border border-border rounded-lg placeholder:text-txt-muted"
+              />
+            </div>
+            <!-- Screenshots -->
+            <div class="flex flex-col gap-2">
+              <label class="text-sm font-medium text-txt-secondary">Screenshots</label>
+              <div class="flex items-center gap-3">
+                <!-- Thumbnail 1 -->
+                <div class="thumb-placeholder rounded-lg border border-border flex items-center justify-center shrink-0" style="width: 120px; height: 80px;">
+                  <i data-lucide="image" class="w-5 h-5 text-txt-muted opacity-40"></i>
+                </div>
+                <!-- Thumbnail 2 -->
+                <div class="thumb-placeholder rounded-lg border border-border flex items-center justify-center shrink-0" style="width: 120px; height: 80px;">
+                  <i data-lucide="image" class="w-5 h-5 text-txt-muted opacity-40"></i>
+                </div>
+                <!-- Thumbnail 3 -->
+                <div class="thumb-placeholder rounded-lg border border-border flex items-center justify-center shrink-0" style="width: 120px; height: 80px;">
+                  <i data-lucide="image" class="w-5 h-5 text-txt-muted opacity-40"></i>
+                </div>
+                <!-- Add button -->
+                <button class="btn-dashed rounded-lg flex items-center justify-center shrink-0 text-txt-muted" style="width: 120px; height: 80px;">
+                  <i data-lucide="plus" class="w-5 h-5"></i>
+                </button>
+              </div>
+              <p class="text-xs text-txt-muted mt-0.5">Drag to reorder. These appear in the hero carousel.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ─── 4. FEATURES (existing repeater) ─── -->
+        <section class="bg-surface rounded-xl border border-border card-shadow">
+          <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border">
+            <h2 class="text-lg font-semibold text-txt-primary">Features</h2>
+            <button class="section-toggle w-6 h-6 flex items-center justify-center text-txt-muted hover:text-txt-secondary rounded transition-colors">
+              <i data-lucide="chevron-down" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <div class="px-6 py-5 flex flex-col gap-3">
+            <!-- Feature Row 1 -->
+            <div class="flex items-start gap-3 p-3 rounded-lg border border-border" style="background-color: rgba(250,248,247,0.5);">
+              <div class="drag-handle flex items-center justify-center w-6 h-9 text-txt-muted shrink-0">
+                <i data-lucide="grip-vertical" class="w-4 h-4"></i>
+              </div>
+              <div class="flex flex-col gap-1 shrink-0" style="width: 100px;">
+                <label class="text-xs font-medium text-txt-muted">Icon</label>
+                <input type="text" value="layout" class="w-full h-8 px-2.5 text-xs text-txt-primary bg-surface border border-border rounded-md" />
+              </div>
+              <div class="flex flex-col gap-1 flex-1 min-w-0">
+                <label class="text-xs font-medium text-txt-muted">Title</label>
+                <input type="text" value="Page Builder Ready" class="w-full h-8 px-2.5 text-xs text-txt-primary bg-surface border border-border rounded-md" />
+              </div>
+              <div class="flex flex-col gap-1 flex-1 min-w-0">
+                <label class="text-xs font-medium text-txt-muted">Description</label>
+                <input type="text" value="Works with Elementor, WPBakery, and Gutenberg" class="w-full h-8 px-2.5 text-xs text-txt-primary bg-surface border border-border rounded-md" />
+              </div>
+              <button class="delete-btn flex items-center justify-center w-7 h-8 mt-[18px] rounded-md text-txt-muted shrink-0">
+                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+
+            <!-- Feature Row 2 -->
+            <div class="flex items-start gap-3 p-3 rounded-lg border border-border" style="background-color: rgba(250,248,247,0.5);">
+              <div class="drag-handle flex items-center justify-center w-6 h-9 text-txt-muted shrink-0">
+                <i data-lucide="grip-vertical" class="w-4 h-4"></i>
+              </div>
+              <div class="flex flex-col gap-1 shrink-0" style="width: 100px;">
+                <label class="text-xs font-medium text-txt-muted">Icon</label>
+                <input type="text" value="shopping-cart" class="w-full h-8 px-2.5 text-xs text-txt-primary bg-surface border border-border rounded-md" />
+              </div>
+              <div class="flex flex-col gap-1 flex-1 min-w-0">
+                <label class="text-xs font-medium text-txt-muted">Title</label>
+                <input type="text" value="WooCommerce Integration" class="w-full h-8 px-2.5 text-xs text-txt-primary bg-surface border border-border rounded-md" />
+              </div>
+              <div class="flex flex-col gap-1 flex-1 min-w-0">
+                <label class="text-xs font-medium text-txt-muted">Description</label>
+                <input type="text" value="Full eCommerce support with custom shop layouts" class="w-full h-8 px-2.5 text-xs text-txt-primary bg-surface border border-border rounded-md" />
+              </div>
+              <button class="delete-btn flex items-center justify-center w-7 h-8 mt-[18px] rounded-md text-txt-muted shrink-0">
+                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+
+            <!-- Add Feature Button -->
+            <button class="btn-dashed flex items-center justify-center gap-2 w-full h-10 rounded-lg text-sm font-medium text-txt-muted mt-1">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              Add Feature
+            </button>
+          </div>
+        </section>
+
+        <!-- ─── 5. PLUGINS & COMPATIBILITY (NEW) ─── -->
+        <section class="bg-surface rounded-xl border border-border card-shadow">
+          <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border">
+            <h2 class="text-lg font-semibold text-txt-primary">Plugins &amp; Compatibility</h2>
+            <button class="section-toggle w-6 h-6 flex items-center justify-center text-txt-muted hover:text-txt-secondary rounded transition-colors">
+              <i data-lucide="chevron-down" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <div class="px-6 py-5 flex flex-col gap-5">
+
+            <!-- Included Plugins -->
+            <div class="flex flex-col gap-3">
+              <h3 class="text-sm font-semibold text-txt-primary">Included Plugins</h3>
+
+              <!-- Table header -->
+              <div class="flex items-center gap-2 px-3 py-1.5">
+                <span class="text-xs font-semibold text-txt-muted uppercase tracking-wider flex-1" style="min-width: 140px;">Name</span>
+                <span class="text-xs font-semibold text-txt-muted uppercase tracking-wider flex-1" style="min-width: 120px;">Slug</span>
+                <span class="text-xs font-semibold text-txt-muted uppercase tracking-wider" style="width: 80px;">Value $</span>
+                <span class="text-xs font-semibold text-txt-muted uppercase tracking-wider flex-1" style="min-width: 140px;">Icon URL</span>
+                <span style="width: 28px;"></span>
+              </div>
+
+              <!-- Plugin Row 1 -->
+              <div class="flex items-center gap-2 p-3 rounded-lg border border-border" style="background-color: rgba(250,248,247,0.5);">
+                <input type="text" value="Slider Revolution" class="flex-1 h-8 px-2.5 text-xs text-txt-primary bg-surface border border-border rounded-md" style="min-width: 140px;" />
+                <input type="text" value="revslider" class="flex-1 h-8 px-2.5 text-xs text-txt-primary bg-surface border border-border rounded-md" style="min-width: 120px;" />
+                <input type="text" value="49" class="h-8 px-2.5 text-xs text-txt-primary bg-surface border border-border rounded-md" style="width: 80px;" />
+                <input type="text" value="https://cdn.example.com/rev.svg" class="flex-1 h-8 px-2.5 text-xs text-txt-primary bg-surface border border-border rounded-md" style="min-width: 140px;" />
+                <button class="delete-btn flex items-center justify-center w-7 h-8 rounded-md text-txt-muted shrink-0">
+                  <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+
+              <!-- Plugin Row 2 -->
+              <div class="flex items-center gap-2 p-3 rounded-lg border border-border" style="background-color: rgba(250,248,247,0.5);">
+                <input type="text" value="WPBakery Builder" class="flex-1 h-8 px-2.5 text-xs text-txt-primary bg-surface border border-border rounded-md" style="min-width: 140px;" />
+                <input type="text" value="js_composer" class="flex-1 h-8 px-2.5 text-xs text-txt-primary bg-surface border border-border rounded-md" style="min-width: 120px;" />
+                <input type="text" value="39" class="h-8 px-2.5 text-xs text-txt-primary bg-surface border border-border rounded-md" style="width: 80px;" />
+                <input type="text" value="https://cdn.example.com/wpb.svg" class="flex-1 h-8 px-2.5 text-xs text-txt-primary bg-surface border border-border rounded-md" style="min-width: 140px;" />
+                <button class="delete-btn flex items-center justify-center w-7 h-8 rounded-md text-txt-muted shrink-0">
+                  <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+
+              <!-- Total value -->
+              <div class="flex justify-end pr-12">
+                <span class="text-sm font-semibold text-txt-primary">Total value: $88</span>
+              </div>
+
+              <!-- Add Plugin Button -->
+              <button class="btn-dashed flex items-center justify-center gap-2 w-full h-10 rounded-lg text-sm font-medium text-txt-muted">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                Add Plugin
+              </button>
+            </div>
+
+            <!-- Separator -->
+            <div class="meta-separator"></div>
+
+            <!-- Compatible With -->
+            <div class="flex flex-col gap-3">
+              <h3 class="text-sm font-semibold text-txt-primary">Compatible With</h3>
+              <div class="flex items-center gap-2 flex-wrap">
+                <!-- Active chips -->
+                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-navy text-white">Elementor</span>
+                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-navy text-white">WooCommerce</span>
+                <!-- Inactive chips -->
+                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-tag-bg text-tag-fg border border-tag-border">WPML</span>
+                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-tag-bg text-tag-fg border border-tag-border">Yoast</span>
+                <!-- Add link -->
+                <button class="text-xs font-medium text-txt-link hover:underline ml-1">+ add</button>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ─── 6. SEO ─── -->
+        <section class="bg-surface rounded-xl border border-border card-shadow">
+          <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border">
+            <h2 class="text-lg font-semibold text-txt-primary">SEO</h2>
+            <button class="section-toggle w-6 h-6 flex items-center justify-center text-txt-muted hover:text-txt-secondary rounded transition-colors">
+              <i data-lucide="chevron-down" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <div class="px-6 py-5 flex flex-col gap-5">
+            <!-- SEO Title -->
+            <div class="flex flex-col gap-1.5">
+              <div class="flex items-center justify-between">
+                <label class="text-sm font-medium text-txt-secondary">SEO Title</label>
+                <span class="text-xs font-medium char-ok">52 / 70</span>
+              </div>
+              <input
+                type="text"
+                value="Flavor Theme — Creative Multipurpose WordPress Theme"
+                class="w-full h-9 px-3 text-sm text-txt-primary bg-surface border border-border rounded-lg placeholder:text-txt-muted"
+                maxlength="70"
+              />
+            </div>
+            <!-- SEO Description -->
+            <div class="flex flex-col gap-1.5">
+              <div class="flex items-center justify-between">
+                <label class="text-sm font-medium text-txt-secondary">SEO Description</label>
+                <span class="text-xs font-medium char-ok">142 / 160</span>
+              </div>
+              <textarea
+                rows="3"
+                class="w-full px-3 py-2 text-sm text-txt-primary bg-surface border border-border rounded-lg placeholder:text-txt-muted resize-none leading-relaxed"
+                maxlength="160"
+              >Build stunning websites with Flavor, a premium WordPress theme featuring 15+ demos, drag-and-drop builders, WooCommerce, and unlimited customization options.</textarea>
+            </div>
+
+            <!-- Google Preview -->
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-medium text-txt-muted uppercase tracking-wider">Google Preview</label>
+              <div class="google-preview border border-border rounded-lg p-4 bg-surface">
+                <div class="flex items-center gap-1 text-xs" style="color: #202124;">
+                  <span style="color: #4d5156;">cmsmasters.net</span>
+                  <span style="color: #4d5156;">></span>
+                  <span style="color: #4d5156;">themes</span>
+                  <span style="color: #4d5156;">></span>
+                  <span style="color: #4d5156;">flavor</span>
+                </div>
+                <div class="mt-1 text-xl leading-snug" style="color: #1a0dab; font-family: Arial, sans-serif;">
+                  Flavor Theme — Creative Multipurpose WordPress Theme
+                </div>
+                <div class="mt-1 text-sm leading-relaxed" style="color: #4d5156; font-family: Arial, sans-serif;">
+                  Build stunning websites with Flavor, a premium WordPress theme featuring 15+ demos, drag-and-drop builders, WooCommerce, and unlimited customization options.
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ─── 7. CUSTOM SECTIONS (NEW) ─── -->
+        <section class="bg-surface rounded-xl border border-border card-shadow">
+          <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border">
+            <h2 class="text-lg font-semibold text-txt-primary">Custom Sections</h2>
+            <button class="section-toggle w-6 h-6 flex items-center justify-center text-txt-muted hover:text-txt-secondary rounded transition-colors">
+              <i data-lucide="chevron-down" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <div class="px-6 py-5 flex flex-col gap-3">
+            <p class="text-xs text-txt-muted leading-relaxed">Render unique content blocks on Portal. Valid types: <code class="px-1 py-0.5 rounded bg-surface-alt text-txt-secondary text-xs font-mono">before-after</code>, <code class="px-1 py-0.5 rounded bg-surface-alt text-txt-secondary text-xs font-mono">video-demo</code>, <code class="px-1 py-0.5 rounded bg-surface-alt text-txt-secondary text-xs font-mono">testimonial</code>, <code class="px-1 py-0.5 rounded bg-surface-alt text-txt-secondary text-xs font-mono">custom-cta</code></p>
+            <textarea
+              class="w-full px-4 py-3 text-sm text-txt-primary bg-surface border border-border rounded-lg font-mono resize-none leading-relaxed"
+              style="min-height: 160px;"
+            >[
+  {
+    "type": "before-after",
+    "data": { "before": "https://...", "after": "https://..." }
+  },
+  {
+    "type": "video-demo",
+    "data": { "youtubeId": "abc123" }
+  }
+]</textarea>
+          </div>
+        </section>
+
+      </div>
+      <!-- END LEFT COLUMN -->
+
+      <!-- =================================================================
+           RIGHT COLUMN — 35% — sidebar metadata
+           ================================================================= -->
+      <aside class="shrink-0" style="width: 35%;">
+        <div class="bg-surface rounded-xl border border-border card-shadow sticky top-6">
+          <div class="p-6 flex flex-col gap-6">
+
+            <!-- 1. Thumbnail -->
+            <div class="flex flex-col gap-2">
+              <label class="text-sm font-medium text-txt-secondary">Thumbnail</label>
+              <div class="thumb-placeholder rounded-lg border border-border flex items-center justify-center" style="aspect-ratio: 16 / 10;">
+                <div class="flex flex-col items-center gap-2 text-txt-muted">
+                  <i data-lucide="image" class="w-8 h-8 opacity-40"></i>
+                  <span class="text-xs font-medium">1600 x 1000</span>
+                </div>
+              </div>
+              <button class="text-xs font-medium text-txt-link hover:underline self-start mt-0.5">
+                Upload image
+              </button>
+            </div>
+
+            <!-- 2. Status -->
+            <div class="flex flex-col gap-2">
+              <label class="text-sm font-medium text-txt-secondary">Status</label>
+              <div class="flex items-center gap-2">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-status-success-bg text-status-success-fg">
+                  <span class="w-1.5 h-1.5 rounded-full bg-status-success-fg"></span>
+                  Published
+                </span>
+              </div>
+            </div>
+
+            <!-- 3. Category -->
+            <div class="flex flex-col gap-1.5">
+              <label class="text-sm font-medium text-txt-secondary">Category</label>
+              <div class="relative">
+                <select class="w-full h-9 px-3 pr-8 text-sm text-txt-primary bg-surface border border-border rounded-lg appearance-none cursor-pointer">
+                  <option value="creative" selected>Creative</option>
+                  <option value="business">Business</option>
+                  <option value="blog">Blog</option>
+                  <option value="portfolio">Portfolio</option>
+                  <option value="ecommerce">eCommerce</option>
+                </select>
+                <div class="absolute inset-y-0 right-2.5 flex items-center pointer-events-none text-txt-muted">
+                  <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. Price -->
+            <div class="flex flex-col gap-1.5">
+              <label class="text-sm font-medium text-txt-secondary">Price</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-3 flex items-center text-sm text-txt-muted font-medium">$</span>
+                <input
+                  type="text"
+                  value="59"
+                  class="w-full h-9 pl-7 pr-3 text-sm text-txt-primary bg-surface border border-border rounded-lg"
+                  style="max-width: 140px;"
+                />
+              </div>
+            </div>
+
+            <!-- 5. Rating (NEW) -->
+            <div class="flex flex-col gap-2">
+              <label class="text-sm font-medium text-txt-secondary">Rating</label>
+              <div class="flex items-center gap-1">
+                <!-- 4 filled stars -->
+                <svg class="w-5 h-5 star-filled" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <svg class="w-5 h-5 star-filled" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <svg class="w-5 h-5 star-filled" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <svg class="w-5 h-5 star-filled" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <!-- 1 empty star -->
+                <svg class="w-5 h-5 star-empty" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              </div>
+              <input
+                type="text"
+                value="4.58"
+                class="h-8 px-2.5 text-sm text-txt-primary bg-surface border border-border rounded-lg"
+                style="max-width: 80px;"
+              />
+            </div>
+
+            <!-- 6. Sales (NEW) -->
+            <div class="flex flex-col gap-1.5">
+              <label class="text-sm font-medium text-txt-secondary">Sales</label>
+              <input
+                type="text"
+                value="2,366"
+                class="h-9 px-3 text-sm text-txt-primary bg-surface border border-border rounded-lg"
+                style="max-width: 140px;"
+              />
+            </div>
+
+            <!-- 7. Trust Badges (NEW) -->
+            <div class="flex flex-col gap-2">
+              <label class="text-sm font-medium text-txt-secondary">Trust Badges</label>
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-navy text-white">Power Elite</span>
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-navy text-white">Elementor</span>
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-navy text-white">GDPR</span>
+                <button class="text-xs font-medium text-txt-link hover:underline">+ add</button>
+              </div>
+            </div>
+
+            <!-- 8. Resources (NEW) -->
+            <div class="flex flex-col gap-3">
+              <label class="text-sm font-medium text-txt-secondary">Resources</label>
+
+              <!-- Public -->
+              <div class="flex flex-col gap-1.5">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-xs">&#128275;</span>
+                  <span class="text-xs font-semibold text-txt-secondary uppercase tracking-wider">Public</span>
+                </div>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-surface-alt text-txt-secondary border border-border">docs</span>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-surface-alt text-txt-secondary border border-border">changelog</span>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-surface-alt text-txt-secondary border border-border">faq</span>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-surface-alt text-txt-secondary border border-border">demos</span>
+                  <button class="text-xs font-medium text-txt-link hover:underline">+ add</button>
+                </div>
+              </div>
+
+              <!-- Licensed -->
+              <div class="flex flex-col gap-1.5">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-xs">&#128274;</span>
+                  <span class="text-xs font-semibold text-txt-secondary uppercase tracking-wider">Licensed</span>
+                </div>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-surface-alt text-txt-secondary border border-border">download</span>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-surface-alt text-txt-secondary border border-border">child-theme</span>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-surface-alt text-txt-secondary border border-border">psd</span>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-surface-alt text-txt-secondary border border-border">support</span>
+                  <button class="text-xs font-medium text-txt-link hover:underline">+ add</button>
+                </div>
+              </div>
+
+              <!-- Premium -->
+              <div class="flex flex-col gap-1.5">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-xs">&#11088;</span>
+                  <span class="text-xs font-semibold text-txt-secondary uppercase tracking-wider">Premium</span>
+                </div>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-surface-alt text-txt-secondary border border-border">priority-support</span>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-surface-alt text-txt-secondary border border-border">megakit-access</span>
+                  <button class="text-xs font-medium text-txt-link hover:underline">+ add</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Separator -->
+            <div class="meta-separator"></div>
+
+            <!-- 9. META -->
+            <div class="flex flex-col gap-3">
+              <h3 class="text-xs font-semibold text-txt-muted uppercase tracking-wider">Meta</h3>
+              <div class="flex flex-col gap-2.5">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm text-txt-muted">Created</span>
+                  <span class="text-sm font-medium text-txt-primary">15 Jan 2026</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-sm text-txt-muted">Updated</span>
+                  <span class="text-sm font-medium text-txt-primary">2h ago</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-sm text-txt-muted">By</span>
+                  <span class="text-sm font-medium text-txt-primary">Designer</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </aside>
+      <!-- END RIGHT COLUMN -->
+
+    </div>
+  </div>
+  <!-- END SCROLLABLE CONTENT -->
+
+  <!-- ===================================================================
+       STICKY FOOTER
+       =================================================================== -->
+  <footer class="absolute bottom-0 left-0 right-0 bg-surface border-t border-border footer-shadow flex items-center justify-between px-8 py-3.5 z-10">
+    <!-- Left: Discard -->
+    <button class="btn-ghost text-sm font-medium text-txt-muted">
+      Discard Changes
+    </button>
+    <!-- Right: Save Draft + Publish -->
+    <div class="flex items-center gap-3">
+      <button class="btn-outline h-9 px-5 text-sm font-semibold rounded-lg border border-outline-border text-navy bg-surface">
+        Save Draft
+      </button>
+      <button class="btn-primary h-9 px-5 text-sm font-semibold rounded-lg bg-navy text-white">
+        Publish
+      </button>
+    </div>
+  </footer>
+
+</div>
+<!-- END FRAME -->
+
+<!-- Initialize Lucide icons -->
+<script>
+  lucide.createIcons();
+</script>
+
+</body>
+</html>

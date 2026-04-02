@@ -2,13 +2,15 @@
 
 > Create `packages/blocks/` — migrate section schemas, rename `type` → `block`, generate first 5 blocks from Figma, template registry.
 
-**Status:** PLANNING
+**Status:** DONE
 **Priority:** P0 — Critical path (005B/C/D all depend on this)
 **Prerequisites:** WP-004 ✅ (section model in DB + section registry + Studio page builder)
 **Milestone:** WP-005 Part 1 of 4
 **Estimated effort:** 12–16 hours across 5 phases
 **Created:** 2026-03-30
-**Completed:** —
+**Completed:** 2026-03-31
+
+> **Architecture pivot (2026-03-31):** Original Phase 3 (Figma blocks + .astro templates) replaced with cleanup phase. Block model pivoted from hardcoded `packages/blocks/` to DB-driven `blocks` table (WP-005B). See `workplan/BLOCK-ARCHITECTURE-V2.md`.
 
 ---
 

@@ -22,21 +22,18 @@ const inputStyle: React.CSSProperties = {
   boxShadow: 'var(--shadow-xs)',
   fontSize: 'var(--text-sm-font-size)',
   color: 'hsl(var(--foreground))',
-  fontFamily: "'Manrope', sans-serif",
   width: '100%',
 }
 
 const labelStyle: React.CSSProperties = {
   fontSize: 'var(--text-sm-font-size)',
-  fontWeight: 500,
+  fontWeight: 'var(--font-weight-medium)',
   color: 'hsl(var(--foreground))',
-  fontFamily: "'Manrope', sans-serif",
 }
 
 const errorStyle: React.CSSProperties = {
   fontSize: 'var(--text-xs-font-size)',
   color: 'hsl(var(--status-error-fg))',
-  fontFamily: "'Manrope', sans-serif",
   marginTop: '4px',
 }
 
@@ -274,7 +271,7 @@ export function TemplateEditor() {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
         <AlertTriangle size={48} style={{ color: 'hsl(var(--status-error-fg))' }} />
-        <p style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--status-error-fg))', fontFamily: "'Manrope', sans-serif", margin: 0 }}>
+        <p style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--status-error-fg))', margin: 0 }}>
           {fetchError}
         </p>
         <Button variant="outline" size="sm" onClick={() => navigate('/templates')}>Back to Templates</Button>
@@ -294,15 +291,15 @@ export function TemplateEditor() {
         <div className="flex items-center" style={{ gap: 'var(--spacing-sm)' }}>
           <Link to="/templates" className="flex items-center no-underline" style={{ color: 'hsl(var(--text-secondary))', gap: '4px' }}>
             <ChevronLeft size={18} />
-            <span style={{ fontSize: 'var(--text-sm-font-size)', fontFamily: "'Manrope', sans-serif" }}>Templates</span>
+            <span style={{ fontSize: 'var(--text-sm-font-size)' }}>Templates</span>
           </Link>
           <span style={{ color: 'hsl(var(--text-muted))' }}>/</span>
-          <span style={{ fontSize: 'var(--text-sm-font-size)', fontWeight: 600, color: 'hsl(var(--text-primary))', fontFamily: "'Manrope', sans-serif" }}>
+          <span style={{ fontSize: 'var(--text-sm-font-size)', fontWeight: 'var(--font-weight-semibold)', color: 'hsl(var(--text-primary))' }}>
             {isNew ? 'New Template' : existingTemplate?.name ?? id}
           </span>
         </div>
         {formSlug && (
-          <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))', fontFamily: "'Manrope', sans-serif" }}>
+          <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>
             {formSlug}
           </span>
         )}
@@ -320,7 +317,7 @@ export function TemplateEditor() {
               {isNew ? (
                 <input {...register('slug')} className="w-full outline-none" style={inputStyle} placeholder="auto-generated-slug" />
               ) : (
-                <span style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-muted))', fontFamily: "'Manrope', sans-serif", padding: '0 var(--spacing-sm)', lineHeight: '36px' }}>
+                <span style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-muted))', padding: '0 var(--spacing-sm)', lineHeight: '36px' }}>
                   {formSlug}
                 </span>
               )}
@@ -394,7 +391,7 @@ export function TemplateEditor() {
             onClick={handleDiscard}
             disabled={!anyDirty || busy}
             className="border-0 bg-transparent disabled:opacity-40"
-            style={{ color: 'hsl(var(--text-secondary))', fontSize: 'var(--text-sm-font-size)', fontWeight: 500, fontFamily: "'Manrope', sans-serif", cursor: anyDirty && !busy ? 'pointer' : 'default', padding: 0 }}
+            style={{ color: 'hsl(var(--text-secondary))', fontSize: 'var(--text-sm-font-size)', fontWeight: 'var(--font-weight-medium)', cursor: anyDirty && !busy ? 'pointer' : 'default', padding: 0 }}
           >
             {anyDirty ? 'Unsaved changes' : 'No changes'}
           </button>
@@ -404,7 +401,7 @@ export function TemplateEditor() {
               onClick={() => setShowDeleteConfirm(true)}
               disabled={busy}
               className="border-0 bg-transparent disabled:opacity-40"
-              style={{ color: 'hsl(var(--status-error-fg))', fontSize: 'var(--text-sm-font-size)', fontWeight: 500, fontFamily: "'Manrope', sans-serif", cursor: busy ? 'default' : 'pointer', padding: 0 }}
+              style={{ color: 'hsl(var(--status-error-fg))', fontSize: 'var(--text-sm-font-size)', fontWeight: 'var(--font-weight-medium)', cursor: busy ? 'default' : 'pointer', padding: 0 }}
             >
               {deleting ? 'Deleting...' : 'Delete'}
             </button>

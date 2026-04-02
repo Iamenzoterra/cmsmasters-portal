@@ -1,6 +1,6 @@
 # ADR Digest — Architecture Decisions for Implementation
 
-> Condensed from 22 ADRs (V2/V3 versions). Only implementation-relevant decisions.
+> Condensed from 24 ADRs (V2/V3 versions). Only implementation-relevant decisions.
 > Full ADR Bible: workplan/adr/ (22 files) or docs/ARCHITECTURE.md
 
 ---
@@ -111,6 +111,27 @@ Located in `/packages/ui/`:
 
 ### ADR-021: Subscription prepared architecturally
 - subscription_tier field ready in schema. Stripe/Paddle = Epic 2 (post-launch).
+
+---
+
+## Block animation & interaction (ADR-023, ADR-024)
+
+### ADR-023: Block Animation Architecture
+- **3-layer hybrid:** CSS scroll-driven animations (entrance, 0 JS) + shared micro-utilities (1.5KB) + per-block inline scripts (150-500B each)
+- Entrance: `animation-timeline: view()` in pure CSS. Each block has unique `@keyframes` in scoped CSS.
+- Behavioral (hover parallax, magnetic buttons): tiny vanilla JS via shared `/assets/animate-utils.js`
+- Per-block `<script type="module">` for bespoke interactions. Self-contained, lazy.
+- Only animate `transform` and `opacity` (compositor-safe). No GSAP, no Lenis, no AOS.
+- `blocks` table gets `js` column for animation/behavioral scripts.
+- Total JS budget: ~5KB per page. Lighthouse 95+.
+
+### ADR-024: Block Interactive Components and States
+- **4 tiers:** (1) CSS + native HTML (80%), (2) CSS + inline vanilla JS (15%), (3) Astro islands (5%), (4) Web Components (future)
+- Buttons: `<button class="cms-btn cms-btn--primary">` with `:hover`, `:active`, `:focus-visible`, `:disabled` via tokens. Never `<div>` for interactive elements.
+- Accordions: `<details name="group">` (native, accessible, 0 JS)
+- Tabs: inline `<script>` ~400B with ARIA roles
+- Shared `portal-blocks.css` (~3KB) ships with every page — full button system using design tokens
+- Block authoring rule: semantic HTML mandatory (button, a, details). Claude Code enforces.
 
 ---
 

@@ -5,41 +5,44 @@
 
 ---
 
-## Layer 1: Studio — Complete Theme Editor (3–4 days) — SECTION BUILDER DONE
+## Layer 1: Studio — Theme Editor + Blocks/Templates — WP-005A+B+C DONE
 
 **App:** `apps/studio/` — Vite + React Router SPA (shell already exists)
 **Auth:** content_manager or admin role
-**Purpose:** Content Manager creates and edits themes via section-based page builder.
+**Purpose:** Content Manager manages blocks, templates, and themes.
 
-### What exists
+### What exists (after WP-005A + WP-005B + WP-005C)
 - Login page, auth callback
 - Themes list page (table + toolbar + cards + pagination + status badges)
 - Sidebar, topbar
-- Section-based page builder (WP-004): useFieldArray sections, 5 core editors, stub editor, add/remove/reorder
-- Save/publish: meta + sections[] + seo persisted, revalidation triggered
-- Section registry: 12 types in @cmsmasters/validators
+- **Blocks list** (responsive grid, search/filter, pagination) + **block editor** (HTML+CSS+hooks, live iframe preview, import, delete with confirmation)
+- **Templates list** (position dot indicators, responsive grid) + **template editor** (position grid editor with BlockPickerModal, add/remove blocks per slot)
+- **Theme editor:** meta form + SEO + **template picker** (inline grid) + **position grid** (merged template slots readonly + per-theme block fills editable) + save/publish + delete confirmation modal
+- Save/publish: meta + seo + template_id + block_fills persisted, revalidation triggered
 - Media page (stub)
+- **DB foundation (WP-005B):** blocks + templates tables in Supabase, 10 Hono API endpoints (CRUD), validators, query layer, dependency checks on delete
+- **Block model:** HTML+CSS assets in DB, hooks for dynamic data, templates as position grids, themes reference template_id + block_fills
 
-### What needs building
+**What remains (Layer 1):**
 
-**Media upload flow:**
+**Media upload flow** (not yet wired):
 1. User drags image → component calls Hono API `POST /api/upload`
 2. Hono returns R2 signed upload URL
 3. Browser uploads directly to R2
 4. URL saved in theme record
 
-**Publish flow:**
-1. Save → Supabase `upsert` themes table (direct, anon key)
+**Publish flow** (save works, revalidation not wired):
+1. Save → Supabase `upsert` themes table (direct, anon key) ✅
 2. Publish → set status='published' + `POST /api/content/revalidate` via @cmsmasters/api-client
 3. Revalidation triggers Portal SSG rebuild of `/themes/[slug]`
 
 ### Acceptance criteria
-- [x] Section page builder with 5 core editors + stub editor
-- [x] Save/publish persists meta + sections[] + seo to Supabase
-- [x] Section registry: 12 types, getDefaultSections(), validateSectionData()
+- [x] WP-005A: type→block rename, packages/blocks/ removed, architecture pivot
+- [x] WP-005B: blocks+templates DB tables, 10 API endpoints, validators+queries, Studio cleanup
+- [x] WP-005C: Blocks CRUD page, Templates CRUD page, Theme Editor with template picker
 - [ ] Error boundaries, 404 page
 - [ ] Media upload works (image appears in R2, URL saved)
-- [ ] At least 1 theme created end-to-end with section model
+- [ ] At least 1 theme created end-to-end with template+block model
 - [ ] Publish triggers revalidation endpoint
 
 ---
@@ -55,7 +58,7 @@
 
 ### ThemePage template (ADR-009)
 
-Portal renders ordered `sections[]` array from DB. Section type determines component. No hardcoded template — section order = JSON order.
+Portal resolves a theme's template (position grid) + block fills from DB. Each position maps to a block (HTML+CSS asset). Dynamic data injected via hooks at build time. See `workplan/BLOCK-ARCHITECTURE-V2.md`.
 
 **Section 1: Hero**
 - Screenshots carousel (from `hero.screenshots[]` or `preview_images[]`)
@@ -93,13 +96,13 @@ Lock context is per-entitlement: "Придбайте тему щоб отрим�
 
 Rendered from `resources` jsonb: `{public: [...], licensed: [...], premium: [...]}`.
 
-**Section 5: Custom Sections (15% unique)**
-Template reads `custom_sections[]` and renders matching component per `type`:
+**Section 5: Custom Blocks (15% unique)**
+Template positions can hold any block from DB. Examples:
 - `before-after` → image comparison slider
 - `video-demo` → YouTube embed with poster
 - `testimonial` → quote card with author + company
 - `custom-cta` → styled call-to-action block
-New types = new component file, zero template changes.
+New block = new row in blocks table, zero template changes.
 
 **Section 6: Trust Strip (bottom, full-width)**
 - Power Elite badge, customer count (95K+), theme count (65+), years (16)
@@ -116,11 +119,11 @@ New types = new component file, zero template changes.
 
 ### Data fetching
 - `generateStaticParams()` → Supabase query: all themes WHERE status='published'
-- Page fetches full theme by slug at build time (meta + sections[] + seo jsonb)
+- Page fetches full theme by slug at build time (meta + template_id + block_fills + seo)
 - On-demand revalidation: Studio publish → Hono API → `revalidatePath('/themes/[slug]')` or `revalidateTag('themes')`
 - ISR fallback: `revalidate: 3600` as safety net
 
-### Theme JSON shape reference (section-driven, WP-004)
+### Theme JSON shape reference (WP-005B — template+block model)
 ```json
 {
   "slug": "growth-hive",
@@ -144,12 +147,10 @@ New types = new component file, zero template changes.
       "premium": ["priority-support", "megakit-access"]
     }
   },
-  "sections": [
-    { "type": "theme-hero", "data": { "headline": "Build with Growth Hive", "screenshots": ["hero-1.webp"] } },
-    { "type": "feature-grid", "data": { "features": [{ "icon": "palette", "title": "12 Demos", "description": "..." }] } },
-    { "type": "plugin-comparison", "data": { "included_plugins": [{ "name": "ACF PRO", "slug": "acf-pro", "value": 59 }] } },
-    { "type": "trust-strip", "data": {} },
-    { "type": "related-themes", "data": { "limit": 4 } }
+  "template_id": "uuid-of-starter-template",
+  "block_fills": [
+    { "position": 3, "block_id": "uuid-of-custom-cta-block" },
+    { "position": 7, "block_id": "uuid-of-testimonial-block" }
   ],
   "seo": {
     "title": "Growth Hive — Consulting WordPress Theme",
@@ -229,11 +230,11 @@ New types = new component file, zero template changes.
 
 ```
 Layer 0: ██████  DONE
-Layer 1:       ████████  (3-4 days) ← CURRENT
-Layer 2:              ██████  (2-3 days)
+Layer 1:       ███████░  DONE except error boundaries + media upload + end-to-end test
+Layer 2:              ██████  (2-3 days) ← NEXT
 Layer 3:              ████████  (3-4 days, parallel)
                                 ________
-Remaining:                      ~8-11 days
+Remaining:                      ~5-8 days
 ```
 
 ---

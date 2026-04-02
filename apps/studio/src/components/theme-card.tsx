@@ -17,7 +17,7 @@ export function ThemeCard({ theme, onClick }: ThemeCardProps) {
         backgroundColor: 'hsl(var(--card-bg))',
         borderColor: 'hsl(var(--card-border))',
         borderRadius: 'var(--rounded-xl)',
-        boxShadow: '0px 2px 8px 0px rgba(0,0,0,0.06)',
+        boxShadow: 'var(--shadow-sm)',
       }}
     >
       {/* Thumbnail */}
@@ -60,9 +60,8 @@ export function ThemeCard({ theme, onClick }: ThemeCardProps) {
           style={{
             fontSize: 'var(--text-base-font-size)',
             lineHeight: '24px',
-            fontWeight: 600,
+            fontWeight: 'var(--font-weight-semibold)',
             color: 'hsl(var(--text-primary))',
-            fontFamily: "'Manrope', sans-serif",
             margin: 0,
           }}
         >
@@ -77,7 +76,6 @@ export function ThemeCard({ theme, onClick }: ThemeCardProps) {
               fontSize: 'var(--text-xs-font-size)',
               lineHeight: '18px',
               color: 'hsl(var(--text-secondary))',
-              fontFamily: "'Manrope', sans-serif",
               margin: 0,
             }}
           >
@@ -96,10 +94,9 @@ export function ThemeCard({ theme, onClick }: ThemeCardProps) {
                 borderRadius: '9999px',
                 padding: '3px 10px',
                 fontSize: '12px',
-                fontWeight: 500,
+                fontWeight: 'var(--font-weight-medium)',
                 lineHeight: '16px',
                 color: 'hsl(var(--tag-category-fg))',
-                fontFamily: "'Manrope', sans-serif",
               }}
             >
               {theme.meta.category}
@@ -114,9 +111,8 @@ export function ThemeCard({ theme, onClick }: ThemeCardProps) {
             style={{
               fontSize: 'var(--text-sm-font-size)',
               lineHeight: 'var(--text-sm-line-height)',
-              fontWeight: 600,
+              fontWeight: 'var(--font-weight-semibold)',
               color: 'hsl(var(--text-primary))',
-              fontFamily: "'Manrope', sans-serif",
             }}
           >
             {formatPrice(theme.meta.price ?? null)}
@@ -126,7 +122,6 @@ export function ThemeCard({ theme, onClick }: ThemeCardProps) {
               fontSize: '12px',
               lineHeight: 'var(--text-xs-line-height)',
               color: 'hsl(var(--text-muted))',
-              fontFamily: "'Manrope', sans-serif",
             }}
           >
             Updated {timeAgo(theme.updated_at)}

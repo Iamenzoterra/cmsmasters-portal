@@ -45,7 +45,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 backgroundColor: bgForType(t.type),
                 color: fgForType(t.type),
                 fontSize: 'var(--text-sm-font-size)',
-                fontFamily: "'Manrope', sans-serif",
                 boxShadow: 'var(--shadow-lg)',
                 animation: 'fadeIn 150ms ease-out',
               }}
@@ -76,8 +75,9 @@ function bgForType(type: ToastType): string {
 
 function fgForType(type: ToastType): string {
   switch (type) {
-    case 'success': return '#218721'
+    case 'success': return 'hsl(var(--status-success-fg))'
     case 'error': return 'hsl(var(--status-error-fg))'
     case 'info': return 'hsl(var(--text-primary))'
   }
 }
+// test

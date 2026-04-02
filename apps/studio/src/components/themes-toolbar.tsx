@@ -20,7 +20,6 @@ const inputStyle: React.CSSProperties = {
   fontSize: 'var(--text-sm-font-size)',
   lineHeight: 'var(--text-sm-line-height)',
   color: 'hsl(var(--foreground))',
-  fontFamily: "'Manrope', sans-serif",
 }
 
 export function ThemesToolbar({

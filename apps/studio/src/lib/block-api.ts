@@ -88,6 +88,29 @@ export async function updateBlockApi(
   return json.data
 }
 
+// ── Image upload ──
+
+export interface BatchUploadResult {
+  original: string
+  uploaded: string
+  error?: string
+}
+
+export async function uploadImageBatch(
+  urls: string[],
+): Promise<BatchUploadResult[]> {
+  const res = await fetch(`${apiUrl}/api/upload/batch`, {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: JSON.stringify({ urls }),
+  })
+  if (!res.ok) {
+    throw new Error(await parseError(res, 'Image upload failed'))
+  }
+  const json = await res.json() as { results: BatchUploadResult[] }
+  return json.results
+}
+
 export async function deleteBlockApi(id: string): Promise<void> {
   const res = await fetch(`${apiUrl}/api/blocks/${id}`, {
     method: 'DELETE',

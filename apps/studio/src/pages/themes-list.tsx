@@ -75,7 +75,6 @@ export function ThemesList() {
           style={{
             fontSize: 'var(--text-sm-font-size)',
             color: 'hsl(var(--status-error-fg))',
-            fontFamily: "'Manrope', sans-serif",
           }}
         >
           {error}
@@ -97,9 +96,8 @@ export function ThemesList() {
               margin: 0,
               fontSize: 'var(--h3-font-size)',
               lineHeight: 'var(--h3-line-height)',
-              fontWeight: 700,
+              fontWeight: 'var(--font-weight-bold)',
               color: 'hsl(var(--text-primary))',
-              fontFamily: "'Manrope', sans-serif",
             }}
           >
             Themes
@@ -111,7 +109,6 @@ export function ThemesList() {
                 fontSize: 'var(--text-sm-font-size)',
                 lineHeight: 'var(--text-sm-line-height)',
                 color: 'hsl(var(--text-secondary))',
-                fontFamily: "'Manrope', sans-serif",
               }}
             >
               {themes.length} theme{themes.length !== 1 ? 's' : ''}
@@ -159,9 +156,8 @@ export function ThemesList() {
             style={{
               margin: 0,
               fontSize: 'var(--h4-font-size)',
-              fontWeight: 600,
+              fontWeight: 'var(--font-weight-semibold)',
               color: 'hsl(var(--text-primary))',
-              fontFamily: "'Manrope', sans-serif",
             }}
           >
             No themes yet
@@ -171,7 +167,6 @@ export function ThemesList() {
               margin: 0,
               fontSize: 'var(--text-sm-font-size)',
               color: 'hsl(var(--text-secondary))',
-              fontFamily: "'Manrope', sans-serif",
             }}
           >
             Create your first theme to get started
@@ -191,7 +186,6 @@ export function ThemesList() {
               margin: 0,
               fontSize: 'var(--text-sm-font-size)',
               color: 'hsl(var(--text-muted))',
-              fontFamily: "'Manrope', sans-serif",
             }}
           >
             No themes match your filters
@@ -203,7 +197,6 @@ export function ThemesList() {
             style={{
               fontSize: 'var(--text-sm-font-size)',
               color: 'hsl(var(--text-link))',
-              fontFamily: "'Manrope', sans-serif",
               cursor: 'pointer',
               padding: 0,
             }}

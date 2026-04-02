@@ -25,15 +25,25 @@ export async function signOut(client: SupabaseClient) {
 }
 
 /**
- * Handle the auth callback — exchange code for session (PKCE).
+ * Handle the auth callback — supports both PKCE (?code=) and implicit (#access_token=) flows.
  * Call this on the /auth/callback route.
  */
 export async function handleAuthCallback(client: SupabaseClient) {
+  // 1. PKCE flow: code in query params
   const params = new URL(window.location.href).searchParams
   const code = params.get('code')
-  if (!code) throw new Error('No auth code in callback URL')
 
-  const { data, error } = await client.auth.exchangeCodeForSession(code)
+  if (code) {
+    const { data, error } = await client.auth.exchangeCodeForSession(code)
+    if (error) throw error
+    return data.session
+  }
+
+  // 2. Implicit flow fallback: Supabase JS auto-detects hash fragment on init
+  //    Give it a moment to process the hash, then check session
+  const { data: { session }, error } = await client.auth.getSession()
   if (error) throw error
-  return data.session
+  if (session) return session
+
+  throw new Error('No auth code in callback URL')
 }

@@ -4,13 +4,14 @@ import { useForm, useWatch, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { createBlockSchema } from '@cmsmasters/validators'
 import type { Block } from '@cmsmasters/db'
-import { AlertTriangle, ChevronLeft, Plus, X, Upload, Eye } from 'lucide-react'
+import { AlertTriangle, ChevronLeft, Plus, X, Upload, Download, Eye, Sparkles } from 'lucide-react'
 import { Button } from '@cmsmasters/ui'
 import { fetchBlockById, createBlockApi, updateBlockApi, deleteBlockApi } from '../lib/block-api'
 import { nameToSlug } from '../lib/form-defaults'
 import { useToast } from '../components/toast'
 import { FormSection } from '../components/form-section'
 import { DeleteConfirmModal } from '../components/delete-confirm-modal'
+import { BlockImportPanel } from '../components/block-import-panel'
 
 const inputStyle: React.CSSProperties = {
   height: '36px',
@@ -21,21 +22,18 @@ const inputStyle: React.CSSProperties = {
   boxShadow: 'var(--shadow-xs)',
   fontSize: 'var(--text-sm-font-size)',
   color: 'hsl(var(--foreground))',
-  fontFamily: "'Manrope', sans-serif",
   width: '100%',
 }
 
 const labelStyle: React.CSSProperties = {
   fontSize: 'var(--text-sm-font-size)',
-  fontWeight: 500,
+  fontWeight: 'var(--font-weight-medium)',
   color: 'hsl(var(--foreground))',
-  fontFamily: "'Manrope', sans-serif",
 }
 
 const errorStyle: React.CSSProperties = {
   fontSize: 'var(--text-xs-font-size)',
   color: 'hsl(var(--status-error-fg))',
-  fontFamily: "'Manrope', sans-serif",
   marginTop: '4px',
 }
 
@@ -43,7 +41,7 @@ const monoStyle: React.CSSProperties = {
   ...inputStyle,
   height: 'auto',
   padding: 'var(--spacing-md)',
-  fontFamily: "'JetBrains Mono', 'Fira Code', 'Courier New', monospace",
+  fontFamily: 'var(--font-family-monospace)',
   fontSize: '13px',
   lineHeight: '1.6',
   resize: 'vertical' as const,
@@ -214,6 +212,7 @@ export function BlockEditor() {
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
+  const [showProcess, setShowProcess] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   // beforeunload guard
@@ -288,6 +287,21 @@ export function BlockEditor() {
     }
   }
 
+  function handleExport() {
+    const code = form.getValues('code')
+    if (!code.trim()) return
+    const name = form.getValues('name') || form.getValues('slug') || 'block'
+    const blob = new Blob([
+      `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8" />\n  <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n  <title>${name}</title>\n  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />\n  <style>*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; } body { font-family: 'Manrope', system-ui, sans-serif; }</style>\n</head>\n<body>\n${code}\n</body>\n</html>`
+    ], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${name.replace(/\s+/g, '-').toLowerCase()}.html`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   function handleFileImport(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -351,7 +365,7 @@ export function BlockEditor() {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
         <AlertTriangle size={48} style={{ color: 'hsl(var(--status-error-fg))' }} />
-        <p style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--status-error-fg))', fontFamily: "'Manrope', sans-serif", margin: 0 }}>
+        <p style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--status-error-fg))', margin: 0 }}>
           {fetchError}
         </p>
         <Button variant="outline" size="sm" onClick={() => navigate('/blocks')}>Back to Blocks</Button>
@@ -380,7 +394,7 @@ export function BlockEditor() {
             style={{ color: 'hsl(var(--text-secondary))', gap: '4px' }}
           >
             <ChevronLeft size={18} />
-            <span style={{ fontSize: 'var(--text-sm-font-size)', fontFamily: "'Manrope', sans-serif" }}>
+            <span style={{ fontSize: 'var(--text-sm-font-size)' }}>
               Blocks
             </span>
           </Link>
@@ -388,9 +402,8 @@ export function BlockEditor() {
           <span
             style={{
               fontSize: 'var(--text-sm-font-size)',
-              fontWeight: 600,
+              fontWeight: 'var(--font-weight-semibold)',
               color: 'hsl(var(--text-primary))',
-              fontFamily: "'Manrope', sans-serif",
             }}
           >
             {isNew ? 'New Block' : existingBlock?.name ?? id}
@@ -398,7 +411,7 @@ export function BlockEditor() {
         </div>
         <div className="flex items-center" style={{ gap: 'var(--spacing-md)' }}>
           {formSlug && (
-            <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))', fontFamily: "'Manrope', sans-serif" }}>
+            <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>
               {formSlug}
             </span>
           )}
@@ -413,9 +426,17 @@ export function BlockEditor() {
             <Upload size={14} />
             Import HTML
           </Button>
+          <Button variant="outline" size="sm" onClick={() => setShowProcess(true)} disabled={!(watchedCode ?? '').trim()}>
+            <Sparkles size={14} />
+            Process
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setShowPreview(true)} disabled={!(watchedCode ?? '').trim()}>
             <Eye size={14} />
             Preview
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={!(watchedCode ?? '').trim()}>
+            <Download size={14} />
+            Export
           </Button>
         </div>
       </div>
@@ -441,7 +462,6 @@ export function BlockEditor() {
                 <span style={{
                   fontSize: 'var(--text-sm-font-size)',
                   color: 'hsl(var(--text-muted))',
-                  fontFamily: "'Manrope', sans-serif",
                   padding: '0 var(--spacing-sm)',
                   lineHeight: '36px',
                 }}>
@@ -463,7 +483,6 @@ export function BlockEditor() {
                 style={{
                   color: 'hsl(var(--text-link))',
                   fontSize: 'var(--text-xs-font-size)',
-                  fontFamily: "'Manrope', sans-serif",
                   cursor: 'pointer',
                   padding: 0,
                 }}
@@ -484,12 +503,12 @@ export function BlockEditor() {
             {/* Price hook */}
             <div className="flex flex-col" style={{ gap: 'var(--spacing-sm)' }}>
               <label style={labelStyle}>Price Hook</label>
-              <p style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))', fontFamily: "'Manrope', sans-serif", margin: 0 }}>
+              <p style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))', margin: 0 }}>
                 Bind dynamic pricing to an element in your block HTML.
               </p>
               <div className="flex items-center" style={{ gap: 'var(--spacing-sm)' }}>
                 <input type="checkbox" {...register('hasPriceHook')} />
-                <span style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-secondary))', fontFamily: "'Manrope', sans-serif" }}>
+                <span style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-secondary))' }}>
                   Enable price hook
                 </span>
               </div>
@@ -506,7 +525,7 @@ export function BlockEditor() {
             {/* Link hooks */}
             <div className="flex flex-col" style={{ gap: 'var(--spacing-sm)' }}>
               <label style={labelStyle}>Link Hooks</label>
-              <p style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))', fontFamily: "'Manrope', sans-serif", margin: 0 }}>
+              <p style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))', margin: 0 }}>
                 Bind dynamic links to elements. Selector targets the element, field is the data key.
               </p>
               {fields.map((field, index) => (
@@ -551,7 +570,6 @@ export function BlockEditor() {
                 style={{
                   color: 'hsl(var(--text-link))',
                   fontSize: 'var(--text-sm-font-size)',
-                  fontFamily: "'Manrope', sans-serif",
                   cursor: 'pointer',
                   padding: 0,
                 }}
@@ -577,6 +595,18 @@ export function BlockEditor() {
 
         </div>
 
+        {/* Process panel */}
+        {showProcess && (
+          <BlockImportPanel
+            code={watchedCode ?? ''}
+            onApply={(processedCode) => {
+              form.setValue('code', processedCode, { shouldDirty: true })
+              setShowProcess(false)
+              toast({ type: 'success', message: 'Block processed — tokens applied' })
+            }}
+            onClose={() => setShowProcess(false)}
+          />
+        )}
         {/* Preview modal */}
         {showPreview && <PreviewModal code={watchedCode ?? ''} onClose={() => setShowPreview(false)} />}
         {showDeleteConfirm && existingBlock && (
@@ -617,8 +647,7 @@ export function BlockEditor() {
             style={{
               color: 'hsl(var(--text-secondary))',
               fontSize: 'var(--text-sm-font-size)',
-              fontWeight: 500,
-              fontFamily: "'Manrope', sans-serif",
+              fontWeight: 'var(--font-weight-medium)',
               cursor: isDirty && !busy ? 'pointer' : 'default',
               padding: 0,
             }}
@@ -635,8 +664,7 @@ export function BlockEditor() {
               style={{
                 color: 'hsl(var(--status-error-fg))',
                 fontSize: 'var(--text-sm-font-size)',
-                fontWeight: 500,
-                fontFamily: "'Manrope', sans-serif",
+                fontWeight: 'var(--font-weight-medium)',
                 cursor: busy ? 'default' : 'pointer',
                 padding: 0,
               }}
@@ -684,7 +712,7 @@ function PreviewModal({ code, onClose }: { code: string; onClose: () => void }) 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
+      style={{ backgroundColor: 'hsl(var(--black-alpha-60))' }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
@@ -695,7 +723,7 @@ function PreviewModal({ code, onClose }: { code: string; onClose: () => void }) 
           backgroundColor: 'hsl(var(--bg-surface))',
           borderRadius: 'var(--rounded-xl)',
           overflow: 'hidden',
-          boxShadow: '0 25px 50px rgba(0,0,0,0.25)',
+          boxShadow: 'var(--shadow-2xl)',
         }}
       >
         <div
@@ -708,9 +736,8 @@ function PreviewModal({ code, onClose }: { code: string; onClose: () => void }) 
         >
           <span style={{
             fontSize: 'var(--text-sm-font-size)',
-            fontWeight: 600,
+            fontWeight: 'var(--font-weight-semibold)',
             color: 'hsl(var(--text-primary))',
-            fontFamily: "'Manrope', sans-serif",
           }}>
             Block Preview
           </span>

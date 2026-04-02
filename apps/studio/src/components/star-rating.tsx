@@ -41,7 +41,6 @@ export function StarRating({ value, onChange }: StarRatingProps) {
           borderRadius: 'var(--rounded-lg)',
           fontSize: 'var(--text-sm-font-size)',
           color: 'hsl(var(--foreground))',
-          fontFamily: "'Manrope', sans-serif",
         }}
       />
     </div>

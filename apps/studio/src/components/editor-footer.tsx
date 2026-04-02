@@ -42,8 +42,7 @@ export function EditorFooter({
           style={{
             color: 'hsl(var(--text-secondary))',
             fontSize: 'var(--text-sm-font-size)',
-            fontWeight: 500,
-            fontFamily: "'Manrope', sans-serif",
+            fontWeight: 'var(--font-weight-medium)',
             cursor: isDirty && !busy ? 'pointer' : 'default',
             padding: 0,
           }}
@@ -61,8 +60,7 @@ export function EditorFooter({
             style={{
               color: 'hsl(var(--status-error-fg))',
               fontSize: 'var(--text-sm-font-size)',
-              fontWeight: 500,
-              fontFamily: "'Manrope', sans-serif",
+              fontWeight: 'var(--font-weight-medium)',
               cursor: busy ? 'default' : 'pointer',
               padding: 0,
             }}

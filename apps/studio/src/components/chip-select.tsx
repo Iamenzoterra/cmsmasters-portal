@@ -24,9 +24,8 @@ export function ChipSelect({ values, onChange, options, label }: ChipSelectProps
         <span
           style={{
             fontSize: 'var(--text-xs-font-size)',
-            fontWeight: 600,
+            fontWeight: 'var(--font-weight-semibold)',
             color: 'hsl(var(--text-muted))',
-            fontFamily: "'Manrope', sans-serif",
             textTransform: 'uppercase',
             letterSpacing: '0.5px',
           }}
@@ -45,8 +44,7 @@ export function ChipSelect({ values, onChange, options, label }: ChipSelectProps
               borderRadius: '9999px',
               padding: '3px 8px 3px 10px',
               fontSize: '12px',
-              fontWeight: 500,
-              fontFamily: "'Manrope', sans-serif",
+              fontWeight: 'var(--font-weight-medium)',
               gap: '4px',
             }}
           >
@@ -69,8 +67,7 @@ export function ChipSelect({ values, onChange, options, label }: ChipSelectProps
             style={{
               color: 'hsl(var(--text-link))',
               fontSize: '12px',
-              fontWeight: 500,
-              fontFamily: "'Manrope', sans-serif",
+              fontWeight: 'var(--font-weight-medium)',
               cursor: 'pointer',
               padding: 0,
               gap: '2px',

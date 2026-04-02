@@ -13,10 +13,12 @@ export function TemplatePicker({ selectedId, onSelect }: TemplatePickerProps) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let cancelled = false
     fetchAllTemplates()
-      .then(setTemplates)
-      .catch(() => setTemplates([]))
-      .finally(() => setLoading(false))
+      .then((data) => { if (!cancelled) setTemplates(data) })
+      .catch(() => { if (!cancelled) setTemplates([]) })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
   }, [])
 
   if (loading) {
@@ -24,7 +26,7 @@ export function TemplatePicker({ selectedId, onSelect }: TemplatePickerProps) {
       <p style={{
         fontSize: 'var(--text-sm-font-size)',
         color: 'hsl(var(--text-muted))',
-        fontFamily: "'Manrope', sans-serif",
+
         margin: 0,
       }}>
         Loading templates...
@@ -39,7 +41,7 @@ export function TemplatePicker({ selectedId, onSelect }: TemplatePickerProps) {
         <p style={{
           fontSize: 'var(--text-sm-font-size)',
           color: 'hsl(var(--text-muted))',
-          fontFamily: "'Manrope', sans-serif",
+  
           margin: 0,
         }}>
           No templates available
@@ -49,7 +51,7 @@ export function TemplatePicker({ selectedId, onSelect }: TemplatePickerProps) {
           style={{
             fontSize: 'var(--text-sm-font-size)',
             color: 'hsl(var(--text-link))',
-            fontFamily: "'Manrope', sans-serif",
+    
           }}
         >
           Create a template
@@ -80,9 +82,9 @@ export function TemplatePicker({ selectedId, onSelect }: TemplatePickerProps) {
           >
             <span style={{
               fontSize: 'var(--text-sm-font-size)',
-              fontWeight: 600,
+              fontWeight: 'var(--font-weight-semibold)',
               color: 'hsl(var(--text-primary))',
-              fontFamily: "'Manrope', sans-serif",
+      
             }}>
               {t.name}
             </span>
@@ -92,7 +94,7 @@ export function TemplatePicker({ selectedId, onSelect }: TemplatePickerProps) {
                 style={{
                   fontSize: 'var(--text-xs-font-size)',
                   color: 'hsl(var(--text-secondary))',
-                  fontFamily: "'Manrope', sans-serif",
+          
                   width: '100%',
                 }}
               >
@@ -102,7 +104,7 @@ export function TemplatePicker({ selectedId, onSelect }: TemplatePickerProps) {
             <span style={{
               fontSize: 'var(--text-xs-font-size)',
               color: 'hsl(var(--text-muted))',
-              fontFamily: "'Manrope', sans-serif",
+      
             }}>
               {filledCount > 0
                 ? `${filledCount} / ${t.max_positions} positions filled`

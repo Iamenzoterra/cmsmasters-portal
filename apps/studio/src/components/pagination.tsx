@@ -21,7 +21,6 @@ export function Pagination({ page, totalItems, itemsPerPage, onPageChange, itemL
         style={{
           fontSize: 'var(--text-xs-font-size)',
           color: 'hsl(var(--text-muted))',
-          fontFamily: "'Manrope', sans-serif",
         }}
       >
         Showing {start}–{end} of {totalItems} {itemLabel}

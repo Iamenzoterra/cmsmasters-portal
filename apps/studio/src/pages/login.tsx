@@ -12,7 +12,7 @@ const cardStyle: React.CSSProperties = {
   backgroundColor: 'hsl(var(--bg-surface))',
   border: '1px solid hsl(var(--bg-page))',
   borderRadius: 'var(--rounded-2xl)',
-  boxShadow: '0px 8px 32px 0px rgba(0,0,0,0.03), 0px 2px 12px 0px rgba(0,0,0,0.04)',
+  boxShadow: 'var(--shadow-lg)',
 }
 
 export function LoginPage() {
@@ -104,9 +104,8 @@ export function LoginPage() {
               margin: 0,
               fontSize: 'var(--h4-font-size)',
               lineHeight: 'var(--h4-line-height)',
-              fontWeight: 700,
+              fontWeight: 'var(--font-weight-bold)',
               color: 'hsl(var(--text-primary))',
-              fontFamily: "'Manrope', sans-serif",
             }}
           >
             Check your email
@@ -117,7 +116,6 @@ export function LoginPage() {
               fontSize: 'var(--text-sm-font-size)',
               lineHeight: 'var(--text-sm-line-height)',
               color: 'hsl(var(--text-secondary))',
-              fontFamily: "'Manrope', sans-serif",
             }}
           >
             We sent a magic link to
@@ -127,9 +125,8 @@ export function LoginPage() {
               margin: 0,
               fontSize: 'var(--text-sm-font-size)',
               lineHeight: 'var(--text-sm-line-height)',
-              fontWeight: 600,
+              fontWeight: 'var(--font-weight-semibold)',
               color: 'hsl(var(--text-primary))',
-              fontFamily: "'Manrope', sans-serif",
             }}
           >
             {email}
@@ -155,7 +152,6 @@ export function LoginPage() {
               fontSize: 'var(--caption-font-size)',
               lineHeight: 'var(--caption-line-height)',
               color: 'hsl(var(--text-muted))',
-              fontFamily: "'Manrope', sans-serif",
             }}
           >
             Didn't receive it?
@@ -168,9 +164,8 @@ export function LoginPage() {
             style={{
               fontSize: 'var(--caption-font-size)',
               lineHeight: 'var(--caption-line-height)',
-              fontWeight: 500,
+              fontWeight: 'var(--font-weight-medium)',
               color: 'hsl(var(--text-link))',
-              fontFamily: "'Manrope', sans-serif",
               cursor: cooldown > 0 ? 'default' : 'pointer',
               padding: 0,
             }}
@@ -197,16 +192,15 @@ export function LoginPage() {
           height: '56px',
           borderRadius: '9999px',
           backgroundColor: 'hsl(var(--button-primary-bg))',
-          boxShadow: '0px 4px 12px rgba(21,31,79,0.25)',
+          boxShadow: 'var(--shadow-md)',
         }}
       >
         <span
           style={{
             fontSize: 'var(--h4-font-size)',
             lineHeight: 'var(--h4-line-height)',
-            fontWeight: 700,
+            fontWeight: 'var(--font-weight-bold)',
             color: 'hsl(var(--button-primary-fg))',
-            fontFamily: "'Manrope', sans-serif",
           }}
         >
           C
@@ -223,9 +217,8 @@ export function LoginPage() {
             margin: 0,
             fontSize: 'var(--h4-font-size)',
             lineHeight: 'var(--h4-line-height)',
-            fontWeight: 700,
+            fontWeight: 'var(--font-weight-bold)',
             color: 'hsl(var(--text-primary))',
-            fontFamily: "'Manrope', sans-serif",
           }}
         >
           Content Studio
@@ -236,7 +229,6 @@ export function LoginPage() {
             fontSize: 'var(--text-sm-font-size)',
             lineHeight: 'var(--text-sm-line-height)',
             color: 'hsl(var(--text-secondary))',
-            fontFamily: "'Manrope', sans-serif",
           }}
         >
           Sign in to manage themes
@@ -250,9 +242,8 @@ export function LoginPage() {
           style={{
             fontSize: 'var(--text-sm-font-size)',
             lineHeight: 'var(--text-sm-line-height)',
-            fontWeight: 500,
+            fontWeight: 'var(--font-weight-medium)',
             color: 'hsl(var(--foreground))',
-            fontFamily: "'Manrope', sans-serif",
           }}
         >
           Email address
@@ -275,7 +266,6 @@ export function LoginPage() {
             fontSize: 'var(--text-sm-font-size)',
             lineHeight: 'var(--text-sm-line-height)',
             color: 'hsl(var(--foreground))',
-            fontFamily: "'Manrope', sans-serif",
           }}
         />
       </div>
@@ -286,7 +276,6 @@ export function LoginPage() {
             margin: 0,
             fontSize: 'var(--text-xs-font-size)',
             color: 'hsl(var(--status-error-fg))',
-            fontFamily: "'Manrope', sans-serif",
           }}
         >
           {error}
@@ -311,7 +300,6 @@ export function LoginPage() {
           fontSize: 'var(--text-xs-font-size)',
           lineHeight: 'var(--text-xs-line-height)',
           color: 'hsl(var(--text-muted))',
-          fontFamily: "'Manrope', sans-serif",
         }}
       >
         We'll send a login link — no password needed

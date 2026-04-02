@@ -1,0 +1,614 @@
+import { useState, useEffect } from 'react'
+import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useForm, useWatch } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { pageSchema, type CreatePagePayload } from '@cmsmasters/validators'
+import type { Page, Block } from '@cmsmasters/db'
+import { AlertTriangle, ChevronLeft, Plus, ArrowUp, ArrowDown, Trash2, Info } from 'lucide-react'
+import { Button } from '@cmsmasters/ui'
+import { fetchPageById, createPageApi, updatePageApi, deletePageApi, fetchPageBlocks, updatePageBlocks } from '../lib/page-api'
+import { fetchAllBlocks } from '../lib/block-api'
+import { nameToSlug } from '../lib/form-defaults'
+import { useToast } from '../components/toast'
+import { FormSection } from '../components/form-section'
+import { CharCounter } from '../components/char-counter'
+import { EditorFooter } from '../components/editor-footer'
+import { BlockPickerModal } from '../components/block-picker-modal'
+import { DeleteConfirmModal } from '../components/delete-confirm-modal'
+
+const inputStyle: React.CSSProperties = {
+  height: '36px',
+  padding: '0 var(--spacing-sm)',
+  backgroundColor: 'hsl(var(--input))',
+  border: '1px solid hsl(var(--border))',
+  borderRadius: 'var(--rounded-lg)',
+  boxShadow: 'var(--shadow-xs)',
+  fontSize: 'var(--text-sm-font-size)',
+  color: 'hsl(var(--foreground))',
+  width: '100%',
+}
+
+const labelStyle: React.CSSProperties = {
+  fontSize: 'var(--text-sm-font-size)',
+  fontWeight: 'var(--font-weight-medium)',
+  color: 'hsl(var(--foreground))',
+}
+
+const errorStyle: React.CSSProperties = {
+  fontSize: 'var(--text-xs-font-size)',
+  color: 'hsl(var(--status-error-fg))',
+  marginTop: '4px',
+}
+
+interface BlockEntry {
+  block_id: string
+  position: number
+  config: Record<string, unknown>
+}
+
+export function PageEditor() {
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const isNew = !id
+
+  const [existingPage, setExistingPage] = useState<Page | null>(null)
+  const [loading, setLoading] = useState(!isNew)
+  const [fetchError, setFetchError] = useState<string | null>(null)
+
+  const form = useForm<CreatePagePayload>({
+    resolver: zodResolver(pageSchema),
+    defaultValues: {
+      slug: '',
+      title: '',
+      type: 'composed',
+      seo: { title: '', description: '' },
+      status: 'draft',
+    },
+  })
+
+  const { register, control, reset, formState: { errors, isDirty } } = form
+
+  // Block list state (composed pages only)
+  const [blockEntries, setBlockEntries] = useState<BlockEntry[]>([])
+  const [allBlocks, setAllBlocks] = useState<Block[]>([])
+  const [blockPickerOpen, setBlockPickerOpen] = useState(false)
+
+  const { toast } = useToast()
+  const [saving, setSaving] = useState(false)
+  const [publishing, setPublishing] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+
+  // Fetch existing page
+  useEffect(() => {
+    if (isNew) {
+      setExistingPage(null)
+      setFetchError(null)
+      setLoading(false)
+      reset({
+        slug: '',
+        title: '',
+        type: 'composed',
+        seo: { title: '', description: '' },
+        status: 'draft',
+      })
+      setBlockEntries([])
+      return
+    }
+    let cancelled = false
+    setLoading(true)
+    setFetchError(null)
+
+    fetchPageById(id)
+      .then((page) => {
+        if (cancelled) return
+        setExistingPage(page)
+        reset({
+          slug: page.slug,
+          title: page.title,
+          type: page.type,
+          seo: page.seo ?? { title: '', description: '' },
+          status: page.status,
+        })
+        // Fetch page blocks for composed pages
+        if (page.type === 'composed') {
+          fetchPageBlocks(page.id)
+            .then((blocks) => {
+              if (!cancelled) {
+                setBlockEntries(blocks.map((b) => ({
+                  block_id: b.block_id,
+                  position: b.position,
+                  config: b.config ?? {},
+                })))
+              }
+            })
+            .catch(() => {})
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) setFetchError(error instanceof Error ? error.message : 'Failed to load page')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => { cancelled = true }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, isNew])
+
+  // Fetch all blocks for picker
+  useEffect(() => {
+    fetchAllBlocks().then(setAllBlocks).catch(() => {})
+  }, [])
+
+  // Slug auto-generation (new pages only)
+  const watchedTitle = useWatch({ control, name: 'title' })
+  useEffect(() => {
+    if (!isNew) return
+    if (watchedTitle) {
+      form.setValue('slug', nameToSlug(watchedTitle), { shouldDirty: false })
+    }
+  }, [watchedTitle, isNew, form])
+
+  const watchedType = useWatch({ control, name: 'type' })
+  const seoTitle = useWatch({ control, name: 'seo.title' }) ?? ''
+  const seoDesc = useWatch({ control, name: 'seo.description' }) ?? ''
+  const formSlug = useWatch({ control, name: 'slug' })
+
+  // beforeunload guard
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (isDirty) { e.preventDefault(); e.returnValue = '' }
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [isDirty])
+
+  // Block list helpers
+  const blockMap = new Map(allBlocks.map((b) => [b.id, b]))
+
+  function handleAddBlock(block: Block) {
+    const nextPos = blockEntries.length > 0
+      ? Math.max(...blockEntries.map((e) => e.position)) + 1
+      : 1
+    setBlockEntries([...blockEntries, { block_id: block.id, position: nextPos, config: {} }])
+    setBlockPickerOpen(false)
+  }
+
+  function handleRemoveBlock(index: number) {
+    const updated = blockEntries.filter((_, i) => i !== index)
+    setBlockEntries(updated.map((e, i) => ({ ...e, position: i + 1 })))
+  }
+
+  function handleMoveBlock(index: number, direction: 'up' | 'down') {
+    const newIndex = direction === 'up' ? index - 1 : index + 1
+    if (newIndex < 0 || newIndex >= blockEntries.length) return
+    const updated = [...blockEntries]
+    const temp = updated[index]
+    updated[index] = updated[newIndex]
+    updated[newIndex] = temp
+    setBlockEntries(updated.map((e, i) => ({ ...e, position: i + 1 })))
+  }
+
+  function handleConfigChange(index: number, value: string) {
+    try {
+      const parsed = value.trim() ? JSON.parse(value) : {}
+      const updated = [...blockEntries]
+      updated[index] = { ...updated[index], config: parsed }
+      setBlockEntries(updated)
+    } catch {
+      // Invalid JSON, ignore
+    }
+  }
+
+  // Save draft
+  async function handleSaveDraft() {
+    const valid = await form.trigger()
+    if (!valid) { toast({ type: 'error', message: 'Fix validation errors before saving' }); return }
+
+    const data = form.getValues()
+    setSaving(true)
+    try {
+      if (existingPage) {
+        const saved = await updatePageApi(existingPage.id, {
+          title: data.title,
+          seo: data.seo,
+          status: data.status,
+        })
+        if (data.type === 'composed') {
+          await updatePageBlocks(saved.id, blockEntries)
+        }
+        setExistingPage(saved)
+        reset({
+          slug: saved.slug,
+          title: saved.title,
+          type: saved.type,
+          seo: saved.seo ?? { title: '', description: '' },
+          status: saved.status,
+        })
+      } else {
+        const saved = await createPageApi(data)
+        if (data.type === 'composed' && blockEntries.length > 0) {
+          await updatePageBlocks(saved.id, blockEntries)
+        }
+        navigate(`/pages/${saved.id}`, { replace: true })
+      }
+      toast({ type: 'success', message: 'Page saved' })
+    } catch (error) {
+      toast({ type: 'error', message: error instanceof Error ? error.message : 'Save failed' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // Publish
+  async function handlePublish() {
+    const valid = await form.trigger()
+    if (!valid) { toast({ type: 'error', message: 'Fix validation errors before publishing' }); return }
+
+    const data = form.getValues()
+    setPublishing(true)
+    try {
+      if (existingPage) {
+        const saved = await updatePageApi(existingPage.id, {
+          title: data.title,
+          seo: data.seo,
+          status: 'published',
+        })
+        if (data.type === 'composed') {
+          await updatePageBlocks(saved.id, blockEntries)
+        }
+        setExistingPage(saved)
+        reset({
+          slug: saved.slug,
+          title: saved.title,
+          type: saved.type,
+          seo: saved.seo ?? { title: '', description: '' },
+          status: saved.status,
+        })
+      } else {
+        const saved = await createPageApi({ ...data, status: 'published' })
+        if (data.type === 'composed' && blockEntries.length > 0) {
+          await updatePageBlocks(saved.id, blockEntries)
+        }
+        navigate(`/pages/${saved.id}`, { replace: true })
+      }
+      toast({ type: 'success', message: 'Page published' })
+    } catch (error) {
+      toast({ type: 'error', message: error instanceof Error ? error.message : 'Publish failed' })
+    } finally {
+      setPublishing(false)
+    }
+  }
+
+  // Delete
+  async function handleDeleteConfirmed() {
+    if (!existingPage) return
+    setShowDeleteConfirm(false)
+    setDeleting(true)
+    try {
+      await deletePageApi(existingPage.id)
+      toast({ type: 'success', message: 'Page deleted' })
+      navigate('/pages', { replace: true })
+    } catch (error) {
+      toast({ type: 'error', message: error instanceof Error ? error.message : 'Delete failed' })
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  // Discard
+  function handleDiscard() {
+    if (existingPage) {
+      reset({
+        slug: existingPage.slug,
+        title: existingPage.title,
+        type: existingPage.type,
+        seo: existingPage.seo ?? { title: '', description: '' },
+        status: existingPage.status,
+      })
+    } else {
+      reset({
+        slug: '',
+        title: '',
+        type: 'composed',
+        seo: { title: '', description: '' },
+        status: 'draft',
+      })
+      setBlockEntries([])
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex flex-col" style={{ margin: 'calc(-1 * var(--spacing-3xl)) calc(-1 * var(--spacing-4xl))', minHeight: 'calc(100% + 2 * var(--spacing-3xl))' }}>
+        <div
+          className="shrink-0 border-b"
+          style={{ height: '65px', borderColor: 'hsl(var(--border-default))', backgroundColor: 'hsl(var(--bg-surface))' }}
+        />
+        <div style={{ display: 'flex', flex: 1, padding: 'var(--spacing-xl)', gap: 'var(--spacing-xl)' }}>
+          <div className="flex flex-col" style={{ flex: '2 1 480px', minWidth: 0, gap: 'var(--spacing-lg)' }}>
+            {[120, 100, 200].map((h, i) => (
+              <div key={i} className="animate-pulse" style={{ height: `${h}px`, backgroundColor: 'hsl(var(--bg-surface-alt))', borderRadius: 'var(--rounded-xl)' }} />
+            ))}
+          </div>
+        </div>
+        <div className="shrink-0 border-t" style={{ height: '65px', borderColor: 'hsl(var(--border-default))', backgroundColor: 'hsl(var(--bg-surface))' }} />
+      </div>
+    )
+  }
+
+  if (fetchError) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
+        <AlertTriangle size={48} style={{ color: 'hsl(var(--status-error-fg))' }} />
+        <p style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--status-error-fg))', margin: 0 }}>{fetchError}</p>
+        <Button variant="outline" size="sm" onClick={() => navigate('/pages')}>Back to Pages</Button>
+      </div>
+    )
+  }
+
+  const isComposed = watchedType === 'composed'
+
+  return (
+    <div className="flex flex-col" style={{ margin: 'calc(-1 * var(--spacing-3xl)) calc(-1 * var(--spacing-4xl))', minHeight: 'calc(100% + 2 * var(--spacing-3xl))' }}>
+      {/* Header */}
+      <div
+        className="flex shrink-0 items-center justify-between border-b"
+        style={{ height: '65px', padding: '0 var(--spacing-xl)', borderColor: 'hsl(var(--border-default))', backgroundColor: 'hsl(var(--bg-surface))' }}
+      >
+        <div className="flex items-center" style={{ gap: 'var(--spacing-sm)' }}>
+          <Link to="/pages" className="flex items-center no-underline" style={{ color: 'hsl(var(--text-secondary))', gap: '4px' }}>
+            <ChevronLeft size={18} />
+            <span style={{ fontSize: 'var(--text-sm-font-size)' }}>Pages</span>
+          </Link>
+          <span style={{ color: 'hsl(var(--text-muted))' }}>/</span>
+          <span style={{ fontSize: 'var(--text-sm-font-size)', fontWeight: 'var(--font-weight-semibold)', color: 'hsl(var(--text-primary))' }}>
+            {isNew ? 'New Page' : existingPage?.title ?? id}
+          </span>
+        </div>
+        {formSlug && (
+          <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>
+            /pages/{formSlug}
+          </span>
+        )}
+      </div>
+
+      {/* Body */}
+      <div className="flex-1 overflow-y-auto" style={{ padding: 'var(--spacing-xl)', maxWidth: '720px' }}>
+        <div className="flex flex-col" style={{ gap: 'var(--spacing-lg)' }}>
+
+          {/* Basic Info */}
+          <FormSection title="Basic Info">
+            <Field label="Title" error={errors.title?.message}>
+              <input {...register('title')} className="w-full outline-none" style={inputStyle} placeholder="Page title" />
+            </Field>
+            <Field label="Slug" error={errors.slug?.message}>
+              <input
+                {...register('slug')}
+                className="w-full outline-none"
+                style={{ ...inputStyle, backgroundColor: isNew ? 'hsl(var(--input))' : 'hsl(var(--bg-surface-alt))' }}
+                readOnly={!isNew}
+                placeholder="auto-generated-slug"
+              />
+            </Field>
+            <Field label="Type">
+              <select
+                {...register('type')}
+                disabled={!isNew}
+                style={{
+                  ...inputStyle,
+                  backgroundColor: isNew ? 'hsl(var(--input))' : 'hsl(var(--bg-surface-alt))',
+                  cursor: isNew ? 'pointer' : 'default',
+                }}
+              >
+                <option value="composed">Composed</option>
+                <option value="layout">Layout</option>
+              </select>
+            </Field>
+            <Field label="Status">
+              <select {...register('status')} style={{ ...inputStyle, cursor: 'pointer' }}>
+                <option value="draft">Draft</option>
+                <option value="published">Published</option>
+                <option value="archived">Archived</option>
+              </select>
+            </Field>
+          </FormSection>
+
+          {/* Layout info */}
+          {!isComposed && (
+            <div
+              className="flex items-start border"
+              style={{
+                padding: 'var(--spacing-md)',
+                gap: 'var(--spacing-sm)',
+                borderColor: 'hsl(var(--border-default))',
+                borderRadius: 'var(--rounded-xl)',
+                backgroundColor: 'hsl(var(--bg-surface))',
+              }}
+            >
+              <Info size={18} style={{ color: 'hsl(var(--text-muted))', flexShrink: 0, marginTop: '2px' }} />
+              <p style={{ margin: 0, fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-secondary))', lineHeight: '1.5' }}>
+                Layout pages define wrapper structures for dynamic content. Header, footer, and sidebar blocks are assigned via Global Elements settings.
+              </p>
+            </div>
+          )}
+
+          {/* Composed: Block List */}
+          {isComposed && (
+            <FormSection title="Blocks">
+              {blockEntries.length === 0 && (
+                <p style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-muted))', margin: 0 }}>
+                  No blocks added yet. Add blocks to compose this page.
+                </p>
+              )}
+
+              {blockEntries.map((entry, idx) => {
+                const block = blockMap.get(entry.block_id)
+                return (
+                  <div
+                    key={`${entry.block_id}-${idx}`}
+                    className="flex items-center border"
+                    style={{
+                      padding: 'var(--spacing-sm) var(--spacing-md)',
+                      gap: 'var(--spacing-sm)',
+                      borderColor: 'hsl(var(--border-default))',
+                      borderRadius: 'var(--rounded-lg)',
+                      backgroundColor: 'hsl(var(--bg-surface-alt))',
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: 'var(--text-xs-font-size)',
+                        color: 'hsl(var(--text-muted))',
+                        width: '24px',
+                        textAlign: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {idx + 1}
+                    </span>
+                    <span
+                      className="flex-1 truncate"
+                      style={{
+                        fontSize: 'var(--text-sm-font-size)',
+                        fontWeight: 'var(--font-weight-medium)',
+                        color: 'hsl(var(--text-primary))',
+                      }}
+                    >
+                      {block?.name ?? entry.block_id}
+                    </span>
+                    <div className="flex items-center" style={{ gap: '4px' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleMoveBlock(idx, 'up')}
+                        disabled={idx === 0}
+                        className="flex items-center justify-center border-0 bg-transparent disabled:opacity-30"
+                        style={{ width: '28px', height: '28px', cursor: idx === 0 ? 'default' : 'pointer', color: 'hsl(var(--text-muted))' }}
+                      >
+                        <ArrowUp size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMoveBlock(idx, 'down')}
+                        disabled={idx === blockEntries.length - 1}
+                        className="flex items-center justify-center border-0 bg-transparent disabled:opacity-30"
+                        style={{ width: '28px', height: '28px', cursor: idx === blockEntries.length - 1 ? 'default' : 'pointer', color: 'hsl(var(--text-muted))' }}
+                      >
+                        <ArrowDown size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveBlock(idx)}
+                        className="flex items-center justify-center border-0 bg-transparent"
+                        style={{ width: '28px', height: '28px', cursor: 'pointer', color: 'hsl(var(--status-error-fg))' }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+
+              <Button variant="outline" size="sm" onClick={() => setBlockPickerOpen(true)}>
+                <Plus size={14} />
+                Add Block
+              </Button>
+
+              {/* Per-block config (JSON) */}
+              {blockEntries.length > 0 && (
+                <div className="flex flex-col" style={{ gap: 'var(--spacing-sm)', marginTop: 'var(--spacing-sm)' }}>
+                  <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Block Configs (JSON)
+                  </span>
+                  {blockEntries.map((entry, idx) => {
+                    const block = blockMap.get(entry.block_id)
+                    return (
+                      <div key={`config-${idx}`} className="flex flex-col" style={{ gap: '4px' }}>
+                        <label style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-secondary))' }}>
+                          {block?.name ?? `Block ${idx + 1}`}
+                        </label>
+                        <textarea
+                          defaultValue={Object.keys(entry.config).length > 0 ? JSON.stringify(entry.config, null, 2) : ''}
+                          onBlur={(e) => handleConfigChange(idx, e.target.value)}
+                          rows={2}
+                          className="w-full resize-y outline-none"
+                          style={{ ...inputStyle, height: 'auto', padding: 'var(--spacing-sm)', fontFamily: 'var(--font-family-monospace)', fontSize: 'var(--text-xs-font-size)' }}
+                          placeholder="{}"
+                        />
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </FormSection>
+          )}
+
+          {/* SEO (composed only) */}
+          {isComposed && (
+            <FormSection title="SEO">
+              <Field label="SEO Title" error={errors.seo?.title?.message} trailing={<CharCounter current={seoTitle.length} max={70} />}>
+                <input {...register('seo.title')} className="w-full outline-none" style={inputStyle} placeholder="Page title for search engines" maxLength={70} />
+              </Field>
+              <Field label="SEO Description" error={errors.seo?.description?.message} trailing={<CharCounter current={seoDesc.length} max={160} />}>
+                <textarea
+                  {...register('seo.description')}
+                  rows={3}
+                  className="w-full resize-y outline-none"
+                  style={{ ...inputStyle, height: 'auto', padding: 'var(--spacing-sm)' }}
+                  placeholder="Meta description for search engines"
+                  maxLength={160}
+                />
+              </Field>
+            </FormSection>
+          )}
+
+          <div aria-hidden style={{ height: '32px', flexShrink: 0 }} />
+        </div>
+      </div>
+
+      {/* Block Picker Modal */}
+      {blockPickerOpen && (
+        <BlockPickerModal
+          onSelect={handleAddBlock}
+          onClose={() => setBlockPickerOpen(false)}
+        />
+      )}
+
+      {/* Delete Confirm Modal */}
+      {showDeleteConfirm && existingPage && (
+        <DeleteConfirmModal
+          title="Delete page"
+          itemName={existingPage.title}
+          onConfirm={handleDeleteConfirmed}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
+
+      {/* Footer */}
+      <EditorFooter
+        isDirty={isDirty || blockEntries.length > 0}
+        isSaving={saving}
+        isPublishing={publishing}
+        isDeleting={deleting}
+        onDiscard={handleDiscard}
+        onSaveDraft={handleSaveDraft}
+        onPublish={handlePublish}
+        onDelete={existingPage ? () => setShowDeleteConfirm(true) : undefined}
+      />
+    </div>
+  )
+}
+
+function Field({ label, error, trailing, children }: { label: string; error?: string; trailing?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col" style={{ gap: '4px' }}>
+      <div className="flex items-center justify-between">
+        <label style={labelStyle}>{label}</label>
+        {trailing}
+      </div>
+      {children}
+      {error && <span style={errorStyle}>{error}</span>}
+    </div>
+  )
+}

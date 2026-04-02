@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Theme Page Layout — Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ============================================
+       DESIGN TOKENS
+       ============================================ */
+    :root {
+      --font-family-body: 'Manrope', sans-serif;
+
+      /* Spacing */
+      --spacing-xs: 8px;
+      --spacing-sm: 16px;
+      --spacing-md: 24px;
+      --spacing-lg: 32px;
+      --spacing-xl: 48px;
+      --spacing-2xl: 64px;
+
+      /* Layout */
+      --content-width: 615px;
+      --content-padding: 48px;
+      --content-gap: 32px;
+      --header-title-gap: 16px;
+      --title-content-gap: 64px;
+      --title-max-width: 720px;
+      --header-height: 64px;
+      --sidebar-drawer-width: 280px;
+
+      /* Colors (placeholder — will map to real DS tokens) */
+      --bg-page: hsl(0 0% 100%);
+      --bg-header: hsl(0 0% 100%);
+      --bg-title: hsl(225 40% 96%);
+      --bg-sidebar-left: hsl(30 15% 93%);
+      --bg-sidebar-right: hsl(225 50% 94%);
+      --bg-content: hsl(0 0% 94%);
+      --bg-footer: hsl(228 54% 20%);
+      --border-light: hsl(0 0% 88%);
+      --text-primary: hsl(228 54% 20%);
+      --text-inverse: hsl(0 0% 100%);
+      --text-zone-label: hsl(0 0% 50%);
+
+      /* Sidebar triggers */
+      --trigger-size: 44px;
+      --trigger-offset: 12px;
+      --trigger-bg: hsl(228 54% 20%);
+      --trigger-color: hsl(0 0% 100%);
+
+      /* Transitions */
+      --transition-sidebar: transform 0.3s ease;
+    }
+
+    /* ============================================
+       RESET & BASE
+       ============================================ */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-family-body);
+      background: var(--bg-page);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ============================================
+       DEBUG SLOT VISUALIZATION
+       Toggle: add/remove class "debug-slots" on <body>
+       Without this class, all zones are transparent/clean.
+       ============================================ */
+    .debug-slots [data-slot]::after {
+      content: "slot:" attr(data-slot);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      color: var(--text-zone-label);
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    /* ============================================
+       SLOT: HEADER
+       ============================================ */
+    [data-slot="header"] {
+      height: var(--header-height);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    /* ============================================
+       META: TITLE AREA
+       ============================================ */
+    [data-slot="meta:title"] {
+      margin-top: var(--header-title-gap);
+      min-height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ============================================
+       MAIN 3-COLUMN LAYOUT
+       ============================================ */
+    .theme-layout {
+      display: grid;
+      grid-template-columns: 1fr calc(var(--content-width) + var(--content-padding) * 2) 1fr;
+      margin-top: var(--title-content-gap);
+      min-height: 80vh;
+      transition: var(--transition-sidebar);
+    }
+
+    /* ============================================
+       SLOT: SIDEBAR LEFT
+       ============================================ */
+    [data-slot="sidebar-left"] {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: var(--spacing-xl);
+      min-height: 400px;
+    }
+
+    /* ============================================
+       SLOT: CONTENT
+       ============================================ */
+    [data-slot="content"] {
+      padding: 0 var(--content-padding);
+      min-height: 600px;
+    }
+
+    /* ============================================
+       SLOT: SIDEBAR RIGHT
+       ============================================ */
+    [data-slot="sidebar-right"] {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: var(--spacing-xl);
+      min-height: 400px;
+    }
+
+    /* ============================================
+       SLOT: FOOTER
+       ============================================ */
+    [data-slot="footer"] {
+      min-height: 120px;
+      margin-top: var(--spacing-2xl);
+    }
+
+    /* ============================================
+       DEBUG: SLOT COLORS (only with .debug-slots on body)
+       ============================================ */
+    .debug-slots [data-slot="header"] {
+      background: var(--bg-header);
+      border-bottom: 1px solid var(--border-light);
+    }
+    .debug-slots [data-slot="meta:title"] {
+      background: var(--bg-title);
+    }
+    .debug-slots [data-slot="meta:title"]::after {
+      max-width: var(--title-max-width);
+    }
+    .debug-slots [data-slot="sidebar-left"] {
+      background: var(--bg-sidebar-left);
+    }
+    .debug-slots [data-slot="content"] {
+      background: var(--bg-content);
+    }
+    .debug-slots [data-slot="content"]::after {
+      align-items: flex-start;
+      padding-top: var(--spacing-xl);
+    }
+    .debug-slots [data-slot="sidebar-right"] {
+      background: var(--bg-sidebar-right);
+    }
+    .debug-slots [data-slot="footer"] {
+      background: var(--bg-footer);
+    }
+    .debug-slots [data-slot="footer"]::after {
+      color: var(--text-inverse);
+    }
+
+    /* ============================================
+       SIDEBAR TRIGGERS (hidden on desktop)
+       ============================================ */
+    .sidebar-trigger {
+      display: none;
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%);
+      width: var(--trigger-size);
+      height: var(--trigger-size);
+      background: var(--trigger-bg);
+      color: var(--trigger-color);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 2px 8px hsl(0 0% 0% / 0.15);
+    }
+
+    .sidebar-trigger--left {
+      left: var(--trigger-offset);
+    }
+
+    .sidebar-trigger--right {
+      right: var(--trigger-offset);
+    }
+
+    /* ============================================
+       RESPONSIVE — TABLET & MOBILE (<1400px)
+       ============================================ */
+    @media (max-width: 1400px) {
+      .theme-layout {
+        grid-template-columns: 1fr;
+        max-width: calc(var(--content-width) + var(--content-padding) * 2);
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      /* Sidebars become fixed drawers */
+      [data-slot="sidebar-left"],
+      [data-slot="sidebar-right"] {
+        position: fixed;
+        top: var(--header-height);
+        bottom: 0;
+        width: var(--sidebar-drawer-width);
+        z-index: 150;
+        background: var(--bg-header);
+        overflow-y: auto;
+        box-shadow: 2px 0 12px hsl(0 0% 0% / 0.1);
+        min-height: unset;
+      }
+
+      [data-slot="sidebar-left"] {
+        left: 0;
+        transform: translateX(-100%);
+        transition: var(--transition-sidebar);
+      }
+
+      [data-slot="sidebar-right"] {
+        right: 0;
+        transform: translateX(100%);
+        transition: var(--transition-sidebar);
+      }
+
+      /* Open states */
+      [data-slot="sidebar-left"].is-open {
+        transform: translateX(0);
+      }
+
+      [data-slot="sidebar-right"].is-open {
+        transform: translateX(0);
+      }
+
+      /* Push content */
+      .theme-layout.push-left {
+        transform: translateX(var(--sidebar-drawer-width));
+      }
+
+      .theme-layout.push-right {
+        transform: translateX(calc(var(--sidebar-drawer-width) * -1));
+      }
+
+      /* Show triggers */
+      .sidebar-trigger {
+        display: flex;
+      }
+
+      /* Content full-width */
+      [data-slot="content"] {
+        padding: 0 var(--spacing-lg);
+      }
+    }
+
+    /* ============================================
+       RESPONSIVE — MOBILE (<768px)
+       ============================================ */
+    @media (max-width: 768px) {
+      [data-slot="header"] {
+        height: 56px;
+      }
+
+      [data-slot="meta:title"] {
+        min-height: 80px;
+      }
+
+      .theme-layout {
+        margin-top: var(--spacing-lg);
+      }
+
+      [data-slot="content"] {
+        padding: 0 var(--spacing-sm);
+        min-height: 400px;
+      }
+
+      [data-slot="sidebar-left"],
+      [data-slot="sidebar-right"] {
+        width: 260px;
+      }
+
+      .theme-layout.push-left {
+        transform: translateX(260px);
+      }
+
+      .theme-layout.push-right {
+        transform: translateX(-260px);
+      }
+    }
+  </style>
+</head>
+<body class="debug-slots">
+
+  <!-- DEBUG TOGGLE -->
+  <button id="debugToggle" style="
+    position: fixed; bottom: 12px; right: 12px; z-index: 9999;
+    padding: 8px 14px; border: none; border-radius: 6px;
+    background: hsl(228 54% 20%); color: #fff;
+    font-family: var(--font-family-body); font-size: 12px; font-weight: 600;
+    cursor: pointer; opacity: 0.8; box-shadow: 0 2px 8px hsl(0 0% 0% / 0.2);
+  ">Debug Slots: ON</button>
+
+  <!-- SLOT: HEADER -->
+  <div data-slot="header"></div>
+
+  <!-- META: TITLE -->
+  <div data-slot="meta:title"></div>
+
+  <!-- SIDEBAR TRIGGERS (tablet/mobile) -->
+  <button class="sidebar-trigger sidebar-trigger--left" aria-label="Open left sidebar">&#9776;</button>
+  <button class="sidebar-trigger sidebar-trigger--right" aria-label="Open right sidebar">&#9881;</button>
+
+  <!-- 3-COLUMN LAYOUT -->
+  <main class="theme-layout" id="themeLayout">
+    <div data-slot="sidebar-left" id="sidebarLeft"></div>
+    <div data-slot="content"></div>
+    <div data-slot="sidebar-right" id="sidebarRight"></div>
+  </main>
+
+  <!-- SLOT: FOOTER -->
+  <div data-slot="footer"></div>
+
+  <!-- SIDEBAR TOGGLE (~0.5KB) -->
+  <script>
+    (() => {
+      const layout = document.getElementById('themeLayout');
+      const left = document.getElementById('sidebarLeft');
+      const right = document.getElementById('sidebarRight');
+
+      function closeAll() {
+        left.classList.remove('is-open');
+        right.classList.remove('is-open');
+        layout.classList.remove('push-left', 'push-right');
+      }
+
+      document.querySelector('.sidebar-trigger--left').addEventListener('click', () => {
+        const open = left.classList.contains('is-open');
+        closeAll();
+        if (!open) { left.classList.add('is-open'); layout.classList.add('push-left'); }
+      });
+
+      document.querySelector('.sidebar-trigger--right').addEventListener('click', () => {
+        const open = right.classList.contains('is-open');
+        closeAll();
+        if (!open) { right.classList.add('is-open'); layout.classList.add('push-right'); }
+      });
+
+      let startX = 0;
+      document.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, { passive: true });
+      document.addEventListener('touchend', e => {
+        const dx = e.changedTouches[0].clientX - startX;
+        if (Math.abs(dx) < 50) return;
+        if (dx > 0 && startX < 30) { closeAll(); left.classList.add('is-open'); layout.classList.add('push-left'); }
+        if (dx < 0 && startX > innerWidth - 30) { closeAll(); right.classList.add('is-open'); layout.classList.add('push-right'); }
+        if (dx < 0 && left.classList.contains('is-open')) closeAll();
+        if (dx > 0 && right.classList.contains('is-open')) closeAll();
+      }, { passive: true });
+    })();
+  </script>
+
+  <!-- DEBUG TOGGLE SCRIPT -->
+  <script>
+    document.getElementById('debugToggle').addEventListener('click', function() {
+      const on = document.body.classList.toggle('debug-slots');
+      this.textContent = 'Debug Slots: ' + (on ? 'ON' : 'OFF');
+    });
+  </script>
+
+</body>
+</html>

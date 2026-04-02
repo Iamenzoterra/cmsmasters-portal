@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import type { SupabaseClient, Profile, UserRole } from '@cmsmasters/db'
 import type { AuthState } from './types'
@@ -48,6 +48,10 @@ export function useUser(client: SupabaseClient) {
   const { session, loading: sessionLoading } = useSession(client)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [profileLoading, setProfileLoading] = useState(true)
+  // Track which user ID we've already fetched a profile for.
+  // Prevents re-entering loading state on token refreshes (same user, new JWT),
+  // which would cause RequireAuth to flash fallback → unmount all children.
+  const fetchedUserIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (sessionLoading) return
@@ -55,8 +59,12 @@ export function useUser(client: SupabaseClient) {
     if (!session?.user) {
       setProfile(null)
       setProfileLoading(false)
+      fetchedUserIdRef.current = null
       return
     }
+
+    // Same user — skip re-fetch (token refresh, not a sign-in change)
+    if (fetchedUserIdRef.current === session.user.id) return
 
     let cancelled = false
     setProfileLoading(true)
@@ -73,6 +81,7 @@ export function useUser(client: SupabaseClient) {
           setProfile(null)
         } else {
           setProfile(data)
+          fetchedUserIdRef.current = session.user.id
         }
         setProfileLoading(false)
       })

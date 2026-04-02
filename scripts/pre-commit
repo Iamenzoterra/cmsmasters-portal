@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Pre-commit hook: block commits with DS token violations
+# Install: cp scripts/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+LINT_SCRIPT="$REPO_ROOT/scripts/lint-ds.sh"
+
+if [[ ! -f "$LINT_SCRIPT" ]]; then
+  echo "Warning: scripts/lint-ds.sh not found, skipping DS lint"
+  exit 0
+fi
+
+echo "Running DS token lint on staged files..."
+if ! bash "$LINT_SCRIPT" --staged; then
+  echo ""
+  echo "Commit blocked: fix DS violations above, then try again."
+  echo "To skip (emergency only): git commit --no-verify"
+  exit 1
+fi

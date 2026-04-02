@@ -11,6 +11,7 @@
 - Components: `PascalCase` export, `kebab-case` filename (`theme-card.tsx` → `export function ThemeCard`)
 - Types: `PascalCase` (`UserRole`, `ThemeFormData`)
 - Package imports: `@cmsmasters/ui`, `@cmsmasters/db`, `@cmsmasters/auth`, `@cmsmasters/api-client`, `@cmsmasters/validators`
+- No `packages/blocks/` — removed in WP-005A architecture pivot. Block content lives in Supabase (WP-005B).
 
 ---
 
@@ -91,6 +92,48 @@ Consumers import TypeScript directly. No compilation, no bundling of the UI pack
 
 ---
 
+## Forbidden style patterns
+
+These patterns are **banned** in all portal apps (except Command Center). Any agent or developer writing code must follow these rules.
+
+### Never hardcode font-family
+The body font is set in each app's `globals.css`. All elements inherit it. Do NOT add `fontFamily` to inline styles or CSS. If an element needs a different family, use the token:
+```tsx
+// body text — inherited, no declaration needed
+// monospace — use token
+className="font-[var(--font-family-monospace)]"
+```
+
+### Never hardcode colors
+No hex (`#xxx`), no `rgb()`/`rgba()`, no Tailwind palette colors (`bg-gray-100`). Use semantic tokens:
+```tsx
+className="bg-[hsl(var(--bg-surface))]"    // not bg-white
+className="text-[hsl(var(--text-muted))]"  // not text-gray-500
+className="border-[hsl(var(--border-default))]" // not border-gray-200
+```
+
+### Never hardcode shadows
+Use composite shadow tokens:
+```tsx
+className="shadow-[var(--shadow-sm)]"   // cards
+className="shadow-[var(--shadow-lg)]"   // modals
+className="shadow-[var(--shadow-xl)]"   // elevated panels
+```
+
+### Never hardcode overlays
+Use alpha tokens for modal backdrops:
+```tsx
+className="bg-[hsl(var(--black-alpha-60))]"  // not rgba(0,0,0,0.6)
+```
+
+### Prefer Tailwind classes over inline styles
+`style={{}}` is for dynamic/computed values only. Static styling goes in `className`.
+
+### Use `@cmsmasters/ui` components
+Check `packages/ui/src/primitives/` before building a one-off. Import what exists. If a primitive is missing and you need it, note it — don't hand-roll a replacement.
+
+---
+
 ## Supabase patterns
 
 ### Client creation
@@ -161,9 +204,9 @@ SUPABASE_SERVICE_KEY=eyJ...  # For SSG data fetching at build time
 ```
 SUPABASE_URL
 SUPABASE_SERVICE_KEY
-SUPABASE_JWT_SECRET
 R2_BUCKET_NAME
 # Future: ENVATO_API_KEY, RESEND_API_KEY, CLAUDE_API_KEY
+# NOTE: SUPABASE_JWT_SECRET removed in WP-005C — auth uses supabase.auth.getUser() instead
 ```
 
 ---
@@ -205,38 +248,129 @@ R2_BUCKET_NAME
 
 ### Hono API patterns
 - JWT = authentication (identity), requireRole = authorization (DB profile) — separate middlewares
+- Auth middleware uses `supabase.auth.getUser(token)` — do NOT use manual JWT crypto (Supabase rotated from HS256 to ES256 in WP-005C; `SUPABASE_JWT_SECRET` was removed)
 - Env type: `Env` interface in `src/env.ts`, used as `Hono<{ Bindings: Env }>`
 - `.dev.vars` for local secrets (gitignored), `wrangler secret put` for production
 - base64UrlDecode returns ArrayBuffer (CF Workers types)
+
+### API route pattern (WP-005B)
+```typescript
+const blocks = new Hono<AuthEnv>()
+blocks.post('/blocks', authMiddleware, requireRole('content_manager', 'admin'), async (c) => {
+  const body = await c.req.json()
+  const parsed = createBlockSchema.safeParse(body)
+  if (!parsed.success) return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400)
+  const supabase = createServiceClient(c.env)
+  const data = await createBlock(supabase, { ...parsed.data, created_by: c.get('userId') })
+  return c.json({ data }, 201)
+})
+```
+- Auth middleware chain: `authMiddleware` → `requireRole()` → handler
+- GET = any authenticated, POST/PUT = content_manager/admin, DELETE = admin only
+- Zod validate before DB call — fail fast on bad input
+- `created_by` injected from auth context, never from client payload
+- Service client via `createServiceClient(c.env)` — bypasses RLS
+
+### API error contract (WP-005B)
+- `400 { error: 'Validation failed', details: zodIssues }` — Zod parse failure
+- `404 { error: 'Block not found' }` — PGRST116 (no rows)
+- `409 { error: 'Slug already exists' }` — 23505 (unique violation)
+- `409 { error: 'Block is used in templates', templates: [...] }` — dependency check on delete
+- `500 { error: 'Internal server error' }` — catch-all
+
+### Dependency check pattern (WP-005B)
+- `getBlockUsage(client, blockId)` — checks templates.positions jsonb for block references (client-side filter with M2 guard against malformed jsonb)
+- `getTemplateUsage(client, templateId)` — checks themes.template_id (simple eq)
+- DELETE returns 409 if dependencies exist — never deletes through the head
 
 ### Zod patterns
 - Version 4 — `z.record(z.string(), z.unknown())` requires 2 args (not 1 like v3)
 - `safeParse()` returns `{ success, data?, error? }`
 - `ThemeFormData = z.infer<typeof themeSchema>`
+- Validator naming: `createFooSchema` (full payload) + `updateFooSchema` (partial, slug immutable)
 
-### Section registry pattern (WP-004)
+### Block model (WP-005B)
 
-Single source of truth: `packages/validators/src/sections/index.ts`
+- **Block** = HTML + scoped CSS asset in `blocks` table. Hooks for dynamic data (price, links). No `packages/blocks/` package.
+- **Template** = ordered position grid in `templates` table. `positions: [{ position, block_id: uuid|null }]`. One template → many themes.
+- **Theme** = `template_id` (FK→templates, nullable) + `block_fills: [{ position, block_id }]` (per-theme additions)
+- `template_id` empty-state contract: form layer = `''`, DB layer = `null`, validator = `z.string().uuid().or(z.literal('')).default('')`, mapper: `row.template_id ?? ''` (DB→form), `form.template_id || null` (form→DB)
+- No `sections` field — dropped in WP-005B migration
 
-- `SECTION_REGISTRY` — Record<SectionType, { schema, label, defaultData }>
-- `SECTION_TYPES` — derived from registry keys (never hardcoded separately)
-- `SECTION_LABELS` — derived from registry entries
-- `CORE_SECTION_TYPES` — 5 types shown in add-section picker
-- `getDefaultSections()` — factory, returns fresh array each call (mutation-safe)
-- `validateSectionData(section)` — per-type validation at save boundary
-- `validateSections(sections[])` — array validation
+### DB query pattern (WP-005B)
+```typescript
+export async function getBlockById(client: SupabaseClient, id: string) {
+  const { data, error } = await client.from('blocks').select('*').eq('id', id).single()
+  if (error) throw error
+  return data
+}
+```
+- Client injection as first parameter
+- `if (error) throw error` — no silent failures
+- Return raw `data` from Supabase response
+- Type-safe: functions typed via `BlockInsert`/`BlockUpdate`/`TemplateInsert`/`TemplateUpdate`
 
-Adding a new section type: create file in `packages/validators/src/sections/{type}.ts`, add to `SECTION_REGISTRY`. Types auto-propagate. No mapper changes needed.
-
-### Boundary mapper pattern (WP-004)
+### Boundary mapper pattern (WP-004 → WP-005B)
 
 `packages/db/src/mappers.ts` — the ONLY boundary between DB and form:
-- `themeRowToFormData()` — DB row to form state (null to default)
-- `formDataToThemeInsert()` — form to DB insert (empty to undefined)
+- `themeRowToFormData()` — DB row to form state (null to default, `template_id: null` → `''`)
+- `formDataToThemeInsert()` — form to DB insert (empty to undefined/null, `template_id: ''` → `null`)
 - Thin: form shape mirrors DB shape. No field-by-field translation.
 
-### Nested form convention (WP-004)
+### Nested form convention (WP-004 → WP-005B)
 
-Form shape mirrors DB shape: `{ slug, meta: {...}, sections: [...], seo: {...}, status }`.
-react-hook-form paths: `register('meta.name')`, `useFieldArray({ name: 'sections' })`, `register('sections.${i}.data.headline')`.
-`as any` casts needed for dynamic section data paths — expected, safe.
+Form shape mirrors DB shape: `{ slug, meta: {...}, template_id, block_fills: [...], seo: {...}, status }`.
+react-hook-form paths: `register('meta.name')`, `register('seo.title')`.
+Sections builder removed in WP-005B. WP-005C replaced it with template picker + position grid + per-theme block fills (all RHF fields flowing through the existing `formDataToThemeInsert` save pipeline unchanged).
+
+### Studio API fetch pattern (WP-005C)
+
+Studio SPAs call Hono API via raw `fetch` — NOT `hc<AppType>()` from `@cmsmasters/api-client`. Reason: `@cmsmasters/api-client` uses a type-only import from a relative path (`../../../apps/api/src/index`), which the Studio tsconfig doesn't include, causing all types to resolve as `unknown`.
+
+Auth helpers live in `apps/studio/src/lib/block-api.ts` and are re-used by all API modules:
+```typescript
+// block-api.ts (source of auth helpers)
+export function getAuthToken(): string { ... }     // throws if no session
+export function authHeaders(): HeadersInit { ... } // { Authorization: Bearer <token> }
+export function parseError(res: Response, fallback: string): Promise<never> { ... }
+
+// template-api.ts (consumer)
+import { authHeaders, parseError } from './block-api'
+```
+
+Raw fetch pattern:
+```typescript
+export async function fetchAllBlocks(): Promise<Block[]> {
+  const res = await fetch(`${API_URL}/api/blocks`, { headers: authHeaders() })
+  if (!res.ok) throw await parseError(res, 'Failed to fetch blocks')
+  const json = await res.json() as { data: Block[] }
+  return json.data
+}
+```
+
+### BlockPreview component pattern (WP-005C)
+
+`apps/studio/src/components/block-preview.tsx` — renders a block's HTML+CSS in a sandboxed iframe:
+- ResizeObserver tracks container width → renders iframe at 2× width, CSS `scale(0.5)` + `transformOrigin: top left`
+- `sandbox="allow-same-origin"` only (no scripts)
+- `pointerEvents: none` — purely visual, no interaction
+- `srcDoc` = concatenated `html + '<style>' + css + '</style>'`
+- Animate-reveal classes overridden with `!important` (blocks may use opacity:0 reveal patterns)
+- Props: `{ html, css, height?: number }` — height defaults to 160px in list, 120px in picker
+
+### PositionGrid component pattern (WP-005C)
+
+`apps/studio/src/components/position-grid.tsx` — controlled component, no internal state or data fetching:
+- Props: `{ positions, blocks, readonlyPositions, onAddBlock, onRemoveBlock }`
+- `readonlyPositions: number[]` — positions where [×] is hidden (template-defined slots)
+- Readonly positions show: background tint + left border accent + dimmed name + "(template)" label
+- Editable filled positions show: block name + [×] remove button
+- Empty positions show: dashed border + "+" button → triggers parent's block picker
+
+### TemplatePicker component pattern (WP-005C)
+
+`apps/studio/src/components/template-picker.tsx` — inline (not modal) template selection grid:
+- Fetches `fetchAllTemplates()` on mount via `useEffect(fn, [])`
+- 2-column grid of template cards with selected highlight
+- Used inside theme editor's "Page Layout" section; parent manages selected template state
+- Template selection passes full `Template` object (not just ID) to parent callback to avoid re-fetch

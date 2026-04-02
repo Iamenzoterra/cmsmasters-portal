@@ -49,7 +49,7 @@ export function TemplatesList() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
-        <p style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--status-error-fg))', fontFamily: "'Manrope', sans-serif" }}>
+        <p style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--status-error-fg))' }}>
           {error}
         </p>
         <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Retry</Button>
@@ -66,9 +66,8 @@ export function TemplatesList() {
             margin: 0,
             fontSize: 'var(--h3-font-size)',
             lineHeight: 'var(--h3-line-height)',
-            fontWeight: 700,
+            fontWeight: 'var(--font-weight-bold)',
             color: 'hsl(var(--text-primary))',
-            fontFamily: "'Manrope', sans-serif",
           }}>
             Templates
           </h1>
@@ -78,7 +77,6 @@ export function TemplatesList() {
               fontSize: 'var(--text-sm-font-size)',
               lineHeight: 'var(--text-sm-line-height)',
               color: 'hsl(var(--text-secondary))',
-              fontFamily: "'Manrope', sans-serif",
             }}>
               {templates.length} template{templates.length !== 1 ? 's' : ''}
             </p>
@@ -108,7 +106,6 @@ export function TemplatesList() {
               borderRadius: 'var(--rounded-lg)',
               fontSize: 'var(--text-sm-font-size)',
               color: 'hsl(var(--foreground))',
-              fontFamily: "'Manrope', sans-serif",
             }}
           />
         </div>
@@ -131,10 +128,10 @@ export function TemplatesList() {
       {!loading && templates.length === 0 && (
         <div className="flex w-full flex-col items-center justify-center gap-4 py-20 text-center">
           <LayoutTemplate size={48} style={{ color: 'hsl(var(--text-muted))' }} />
-          <h2 style={{ margin: 0, fontSize: 'var(--h4-font-size)', fontWeight: 600, color: 'hsl(var(--text-primary))', fontFamily: "'Manrope', sans-serif" }}>
+          <h2 style={{ margin: 0, fontSize: 'var(--h4-font-size)', fontWeight: 'var(--font-weight-semibold)', color: 'hsl(var(--text-primary))' }}>
             No templates yet
           </h2>
-          <p style={{ margin: 0, fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-secondary))', fontFamily: "'Manrope', sans-serif" }}>
+          <p style={{ margin: 0, fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-secondary))' }}>
             Create your first template to define page layouts
           </p>
           <Button variant="primary" onClick={() => navigate('/templates/new')}>
@@ -147,14 +144,14 @@ export function TemplatesList() {
       {/* No matches */}
       {!loading && templates.length > 0 && filteredTemplates.length === 0 && (
         <div className="flex w-full flex-col items-center justify-center gap-2 py-20 text-center">
-          <p style={{ margin: 0, fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-muted))', fontFamily: "'Manrope', sans-serif" }}>
+          <p style={{ margin: 0, fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-muted))' }}>
             No templates match your search
           </p>
           <button
             type="button"
             onClick={() => setSearch('')}
             className="border-0 bg-transparent"
-            style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-link))', fontFamily: "'Manrope', sans-serif", cursor: 'pointer', padding: 0 }}
+            style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-link))', cursor: 'pointer', padding: 0 }}
           >
             Clear search
           </button>
@@ -176,7 +173,7 @@ export function TemplatesList() {
                   backgroundColor: 'hsl(var(--card-bg))',
                   borderColor: 'hsl(var(--card-border))',
                   borderRadius: 'var(--rounded-xl)',
-                  boxShadow: '0px 2px 8px 0px rgba(0,0,0,0.06)',
+                  boxShadow: 'var(--shadow-sm)',
                   padding: 'var(--spacing-lg)',
                   gap: 'var(--spacing-sm)',
                 }}
@@ -184,9 +181,8 @@ export function TemplatesList() {
                 <p className="truncate" style={{
                   fontSize: 'var(--text-base-font-size)',
                   lineHeight: '24px',
-                  fontWeight: 600,
+                  fontWeight: 'var(--font-weight-semibold)',
                   color: 'hsl(var(--text-primary))',
-                  fontFamily: "'Manrope', sans-serif",
                   margin: 0,
                   width: '100%',
                 }}>
@@ -195,7 +191,6 @@ export function TemplatesList() {
                 <p className="truncate" style={{
                   fontSize: 'var(--text-xs-font-size)',
                   color: 'hsl(var(--text-muted))',
-                  fontFamily: "'Manrope', sans-serif",
                   margin: 0,
                 }}>
                   {template.slug}
@@ -224,14 +219,12 @@ export function TemplatesList() {
                   <span style={{
                     fontSize: 'var(--text-xs-font-size)',
                     color: 'hsl(var(--text-secondary))',
-                    fontFamily: "'Manrope', sans-serif",
                   }}>
                     {filledCount} / {template.max_positions} positions
                   </span>
                   <span style={{
                     fontSize: '12px',
                     color: 'hsl(var(--text-muted))',
-                    fontFamily: "'Manrope', sans-serif",
                   }}>
                     Updated {timeAgo(template.updated_at)}
                   </span>

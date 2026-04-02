@@ -25,13 +25,12 @@ export function FormSection({ title, children, defaultOpen = true }: FormSection
         className="flex w-full cursor-pointer items-center justify-between border-0 bg-transparent"
         style={{
           padding: 'var(--spacing-lg) var(--spacing-xl)',
-          fontFamily: "'Manrope', sans-serif",
         }}
       >
         <span
           style={{
             fontSize: 'var(--text-base-font-size)',
-            fontWeight: 600,
+            fontWeight: 'var(--font-weight-semibold)',
             color: 'hsl(var(--text-primary))',
           }}
         >

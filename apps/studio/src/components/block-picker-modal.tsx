@@ -40,7 +40,7 @@ export function BlockPickerModal({ onSelect, onClose, excludeIds = [] }: BlockPi
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
+      style={{ backgroundColor: 'hsl(var(--black-alpha-60))' }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
@@ -52,7 +52,7 @@ export function BlockPickerModal({ onSelect, onClose, excludeIds = [] }: BlockPi
           backgroundColor: 'hsl(var(--bg-surface))',
           borderRadius: 'var(--rounded-xl)',
           overflow: 'hidden',
-          boxShadow: '0 25px 50px rgba(0,0,0,0.25)',
+          boxShadow: 'var(--shadow-2xl)',
           animation: 'modalIn 200ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       >
@@ -67,9 +67,8 @@ export function BlockPickerModal({ onSelect, onClose, excludeIds = [] }: BlockPi
         >
           <span style={{
             fontSize: 'var(--text-sm-font-size)',
-            fontWeight: 600,
+            fontWeight: 'var(--font-weight-semibold)',
             color: 'hsl(var(--text-primary))',
-            fontFamily: "'Manrope', sans-serif",
           }}>
             Select a Block
           </span>
@@ -110,7 +109,6 @@ export function BlockPickerModal({ onSelect, onClose, excludeIds = [] }: BlockPi
                 borderRadius: 'var(--rounded-lg)',
                 fontSize: 'var(--text-sm-font-size)',
                 color: 'hsl(var(--foreground))',
-                fontFamily: "'Manrope', sans-serif",
               }}
               autoFocus
             />
@@ -124,7 +122,6 @@ export function BlockPickerModal({ onSelect, onClose, excludeIds = [] }: BlockPi
               textAlign: 'center',
               color: 'hsl(var(--text-muted))',
               fontSize: 'var(--text-sm-font-size)',
-              fontFamily: "'Manrope', sans-serif",
               padding: 'var(--spacing-xl) 0',
             }}>
               Loading blocks...
@@ -137,7 +134,6 @@ export function BlockPickerModal({ onSelect, onClose, excludeIds = [] }: BlockPi
               <p style={{
                 fontSize: 'var(--text-sm-font-size)',
                 color: 'hsl(var(--text-muted))',
-                fontFamily: "'Manrope', sans-serif",
                 margin: 0,
               }}>
                 No blocks in library
@@ -153,7 +149,6 @@ export function BlockPickerModal({ onSelect, onClose, excludeIds = [] }: BlockPi
               textAlign: 'center',
               color: 'hsl(var(--text-muted))',
               fontSize: 'var(--text-sm-font-size)',
-              fontFamily: "'Manrope', sans-serif",
               padding: 'var(--spacing-xl) 0',
             }}>
               No blocks match your search
@@ -183,9 +178,8 @@ export function BlockPickerModal({ onSelect, onClose, excludeIds = [] }: BlockPi
                       className="truncate"
                       style={{
                         fontSize: 'var(--text-sm-font-size)',
-                        fontWeight: 600,
+                        fontWeight: 'var(--font-weight-semibold)',
                         color: 'hsl(var(--text-primary))',
-                        fontFamily: "'Manrope', sans-serif",
                         margin: 0,
                       }}
                     >
