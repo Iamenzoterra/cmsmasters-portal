@@ -96,6 +96,20 @@ export interface BatchUploadResult {
   error?: string
 }
 
+export async function uploadFile(file: File): Promise<string> {
+  const token = await getAuthToken()
+  const formData = new FormData()
+  formData.append('file', file)
+  const res = await fetch(`${apiUrl}/api/upload`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  })
+  if (!res.ok) throw new Error(await parseError(res, 'Upload failed'))
+  const json = await res.json() as { url: string }
+  return json.url
+}
+
 export async function uploadImageBatch(
   urls: string[],
 ): Promise<BatchUploadResult[]> {

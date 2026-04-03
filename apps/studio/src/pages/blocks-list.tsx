@@ -238,7 +238,15 @@ export function BlocksList() {
                 boxShadow: 'var(--shadow-sm)',
               }}
             >
-              <BlockPreview html={block.html} css={block.css} height={224} zoom={4} />
+              {(block.metadata as Record<string, unknown>)?.thumbnail_url ? (
+                <img
+                  src={(block.metadata as Record<string, unknown>).thumbnail_url as string}
+                  alt={block.name}
+                  style={{ width: '100%', height: '224px', objectFit: 'cover' }}
+                />
+              ) : (
+                <BlockPreview html={block.html} css={block.css} height={224} zoom={4} />
+              )}
 
               <div
                 className="flex w-full flex-col"

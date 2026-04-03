@@ -6,7 +6,7 @@ import { createBlockSchema } from '@cmsmasters/validators'
 import type { Block } from '@cmsmasters/db'
 import { AlertTriangle, ChevronLeft, Plus, X, Upload, Download, Eye, Sparkles } from 'lucide-react'
 import { Button } from '@cmsmasters/ui'
-import { fetchBlockById, createBlockApi, updateBlockApi, deleteBlockApi } from '../lib/block-api'
+import { fetchBlockById, createBlockApi, updateBlockApi, deleteBlockApi, uploadFile } from '../lib/block-api'
 import { nameToSlug } from '../lib/form-defaults'
 import { useToast } from '../components/toast'
 import { FormSection } from '../components/form-section'
@@ -57,6 +57,7 @@ interface BlockFormData {
   slug: string
   code: string
   js: string
+  thumbnail_url: string
   hasPriceHook: boolean
   priceSelector: string
   links: Array<{ selector: string; field: string; label?: string }>
@@ -70,6 +71,7 @@ function getDefaults(): BlockFormData {
     slug: '',
     code: '',
     js: '',
+    thumbnail_url: '',
     hasPriceHook: false,
     priceSelector: '',
     links: [],
@@ -90,6 +92,7 @@ function blockToFormData(block: Block): BlockFormData {
     slug: block.slug,
     code: blockToCode(block),
     js: block.js ?? '',
+    thumbnail_url: (block.metadata as Record<string, unknown>)?.thumbnail_url as string ?? '',
     hasPriceHook: !!block.hooks?.price,
     priceSelector: block.hooks?.price?.selector ?? '',
     links: block.hooks?.links ?? [],
@@ -129,6 +132,7 @@ function formDataToPayload(data: BlockFormData) {
   const metadata: Record<string, unknown> = {}
   if (data.alt.trim()) metadata.alt = data.alt.trim()
   if (data.figma_node.trim()) metadata.figma_node = data.figma_node.trim()
+  if (data.thumbnail_url.trim()) metadata.thumbnail_url = data.thumbnail_url.trim()
 
   return {
     name: data.name,
@@ -648,6 +652,52 @@ ${code}${scriptTag}
             </div>
 
             {/* Divider */}
+            <div style={{ height: '1px', backgroundColor: 'hsl(var(--border-default))' }} />
+
+            {/* Thumbnail */}
+            <div className="flex flex-col" style={{ gap: 'var(--spacing-sm)' }}>
+              <label style={labelStyle}>Thumbnail</label>
+              <p style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))', margin: 0 }}>
+                Custom preview image for blocks list. Upload a screenshot of the block.
+              </p>
+              {form.watch('thumbnail_url') ? (
+                <div className="flex flex-col" style={{ gap: 'var(--spacing-xs)' }}>
+                  <img
+                    src={form.getValues('thumbnail_url')}
+                    alt="Block thumbnail"
+                    style={{ maxWidth: '300px', borderRadius: 'var(--rounded-lg)', border: '1px solid hsl(var(--border-default))' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => form.setValue('thumbnail_url', '', { shouldDirty: true })}
+                    className="flex items-center gap-1 border-0 bg-transparent"
+                    style={{ color: 'hsl(var(--status-error-fg))', fontSize: 'var(--text-xs-font-size)', cursor: 'pointer', padding: 0 }}
+                  >
+                    <X size={12} />
+                    Remove thumbnail
+                  </button>
+                </div>
+              ) : (
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0]
+                    if (!file) return
+                    try {
+                      const url = await uploadFile(file)
+                      form.setValue('thumbnail_url', url, { shouldDirty: true })
+                      toast({ type: 'success', message: 'Thumbnail uploaded' })
+                    } catch (err) {
+                      toast({ type: 'error', message: err instanceof Error ? err.message : 'Upload failed' })
+                    }
+                    e.target.value = ''
+                  }}
+                  style={{ fontSize: 'var(--text-sm-font-size)' }}
+                />
+              )}
+            </div>
+
             <div style={{ height: '1px', backgroundColor: 'hsl(var(--border-default))' }} />
 
             {/* Metadata */}
