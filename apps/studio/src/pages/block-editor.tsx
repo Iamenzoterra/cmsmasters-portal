@@ -57,6 +57,7 @@ const BLOCK_CATEGORIES = [
   { value: 'header', label: 'Header' },
   { value: 'footer', label: 'Footer' },
   { value: 'sidebar', label: 'Sidebar' },
+  { value: 'element', label: 'Element' },
 ] as const
 
 interface BlockFormData {

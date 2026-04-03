@@ -6,9 +6,10 @@ const SLOT_TO_CATEGORY: Record<string, string> = {
   footer: 'footer',
   'sidebar-left': 'sidebar',
   'sidebar-right': 'sidebar',
+  element: 'element',
 }
 
-const SLOTS = ['header', 'footer', 'sidebar-left', 'sidebar-right'] as const
+const SLOTS = ['header', 'footer', 'sidebar-left', 'sidebar-right', 'element'] as const
 
 /**
  * Resolve global element blocks for a page.

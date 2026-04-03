@@ -832,6 +832,7 @@ const SLOT_TO_CATEGORY: Record<string, string> = {
   footer: 'footer',
   'sidebar-left': 'sidebar',
   'sidebar-right': 'sidebar',
+  element: 'element',
 }
 
 function SlotPanel({ code, layoutSlots, onSlotChange, blocks }: {

@@ -9,6 +9,7 @@ const CATEGORIES = [
   { value: 'header', label: 'Header', description: 'Top navigation and branding' },
   { value: 'footer', label: 'Footer', description: 'Bottom navigation and info' },
   { value: 'sidebar', label: 'Sidebar', description: 'Side panels for themes and layouts' },
+  { value: 'element', label: 'Element', description: 'Composed page sections — hero, pricing, features' },
 ] as const
 
 export function GlobalElementsSettings() {

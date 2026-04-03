@@ -115,7 +115,7 @@ export function BlocksList() {
       {/* Category filter */}
       {!loading && blocks.length > 0 && (
         <div className="flex w-full items-center" style={{ gap: 'var(--spacing-xs)' }}>
-          {['', 'content', 'header', 'footer', 'sidebar'].map((cat) => (
+          {['', 'content', 'header', 'footer', 'sidebar', 'element'].map((cat) => (
             <button
               key={cat}
               type="button"
