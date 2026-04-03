@@ -234,7 +234,74 @@ await createPageApi({ ...data, html, css, type: 'layout' })
 
 ---
 
-## Task 1.4: Update pages list — separate layout/composed creation
+## Task 1.4: Slot detection + block assignment UI
+
+### What to Build
+
+After importing layout HTML, the system parses `{{slot:*}}` placeholders and creates a **slot assignment panel** — each detected slot gets a block picker.
+
+**Slot types determine which blocks are shown:**
+
+| Slot name | Type | Block source |
+|-----------|------|--------------|
+| `{{slot:header}}` | Global element | Global Elements settings (not block library) |
+| `{{slot:footer}}` | Global element | Global Elements settings |
+| `{{slot:sidebar-left}}` | Global element | Global Elements settings |
+| `{{slot:sidebar-right}}` | Global element | Global Elements settings |
+| `{{slot:content}}` | Content area | Template blocks (filled at theme level, not here) |
+
+**UI after import:**
+
+```
+┌─ Slot Assignments ──────────────────────────────────────┐
+│                                                          │
+│  Detected 5 slots in layout HTML:                        │
+│                                                          │
+│  header          → [Global Element ▾] Assigned in        │
+│                    Global Elements Settings               │
+│  sidebar-left    → [Global Element ▾] Assigned in        │
+│                    Global Elements Settings               │
+│  content         → Filled by template blocks per theme   │
+│  sidebar-right   → [Global Element ▾] Assigned in        │
+│                    Global Elements Settings               │
+│  footer          → [Global Element ▾] Assigned in        │
+│                    Global Elements Settings               │
+│                                                          │
+└──────────────────────────────────────────────────────────┘
+```
+
+**Key behavior:**
+- Global element slots (header, footer, sidebar-*) show a note: "Assigned in Global Elements Settings" with a link to `/global-elements`. These are NOT assigned per-layout — they're resolved by scope at build time.
+- `content` slot shows: "Filled by template blocks per theme" — read-only info.
+- Custom slots (anything not in the global list) → show block picker from block library.
+
+**Slot extraction function:**
+
+```typescript
+function extractSlots(html: string): string[] {
+  const re = /\{\{slot:([a-z0-9-]+)\}\}/g
+  const slots: string[] = []
+  let match
+  while ((match = re.exec(html)) !== null) {
+    if (!slots.includes(match[1])) slots.push(match[1])
+  }
+  return slots
+}
+
+const GLOBAL_SLOTS = ['header', 'footer', 'sidebar-left', 'sidebar-right']
+
+function isGlobalSlot(name: string): boolean {
+  return GLOBAL_SLOTS.includes(name)
+}
+```
+
+**The slot panel is informational for now** — it shows what the layout expects and where each slot gets its content from. Actual block assignment happens in:
+- Global Elements Settings (for header/footer/sidebar)
+- Theme Editor (for content blocks via template)
+
+---
+
+## Task 1.5: Update pages list — separate layout/composed creation
 
 ### What to Build
 
@@ -269,6 +336,9 @@ const defaultType = searchParams.get('type') === 'layout' ? 'layout' : 'composed
 - [ ] No Type selector shown (type is determined by creation flow)
 - [ ] No SEO section for layout pages
 - [ ] Import HTML works (file picker → fills code field)
+- [ ] After import: slot panel shows detected `{{slot:*}}` placeholders
+- [ ] Global slots (header, footer, sidebar-*) show "Assigned in Global Elements Settings"
+- [ ] Content slot shows "Filled by template blocks per theme"
 - [ ] Preview opens new window with full layout HTML
 - [ ] Save persists scope + html + css to DB
 - [ ] Pages list has "New Layout" and "New Composed Page" buttons
