@@ -3,7 +3,7 @@ import Base from '../../layouts/Base.astro'
 import SEOHead from '../../components/SEOHead.astro'
 import BlockRenderer from '../../components/BlockRenderer.astro'
 import { supabase } from '../../lib/supabase'
-import { getGlobalElements } from '../../lib/global-elements'
+import { resolveGlobalBlocks } from '../../lib/global-elements'
 import { getThemeBySlug, getTemplateById, getLayoutByScope, mergePositions, fetchBlocksById } from '../../lib/blocks'
 import { resolveSlots, resolveMetaHooks, resolveBlockHooks, renderBlock } from '../../lib/hooks'
 
@@ -25,16 +25,17 @@ const meta = (theme.meta ?? {}) as Record<string, unknown>
 const seo = (theme.seo ?? {}) as Record<string, string>
 const blockFills = (theme.block_fills ?? []) as Array<{ position: number; block_id: string }>
 
-// 2. Resolve global elements for theme pages
-const globalElements = await getGlobalElements('layout', 'themes')
-
-// 3. Fetch layout page (scope = 'theme')
-let layoutPage: { html: string; css: string } | null = null
+// 2. Fetch layout page (scope = 'theme') — needed for layout_slots
+let layoutPage: { html: string; css: string; layout_slots?: Record<string, string> } | null = null
 try {
   layoutPage = await getLayoutByScope('theme')
 } catch {
   // No layout — render blocks directly
 }
+
+// 3. Resolve global elements: layout_slots override > category default > null
+const layoutSlots = (layoutPage as Record<string, unknown>)?.layout_slots as Record<string, string> ?? {}
+const globalElements = await resolveGlobalBlocks(layoutSlots)
 
 // 4. Fetch template + merge with block fills
 let contentPositions: Array<{ position: number; block_id: string }> = []

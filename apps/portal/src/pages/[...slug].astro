@@ -1,7 +1,7 @@
 ---
 import Base from '../layouts/Base.astro'
 import { supabase } from '../lib/supabase'
-import { getGlobalElements } from '../lib/global-elements'
+import { resolveGlobalBlocks } from '../lib/global-elements'
 import { getComposedPageBySlug, getPageBlocksWithData } from '../lib/blocks'
 import { renderBlock } from '../lib/hooks'
 
@@ -24,8 +24,8 @@ const pageSlug = slug ?? 'homepage'
 // 1. Fetch page
 const page = await getComposedPageBySlug(pageSlug)
 
-// 2. Resolve global elements for composed scope
-const globalElements = await getGlobalElements('composed', pageSlug)
+// 2. Resolve global elements: defaults only (composed pages have no layout_slots)
+const globalElements = await resolveGlobalBlocks({})
 
 // 3. Fetch page blocks (ordered by position, with full block data)
 const pageBlocks = await getPageBlocksWithData(page.id)
