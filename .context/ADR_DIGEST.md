@@ -135,6 +135,19 @@ Located in `/packages/ui/`:
 
 ---
 
+## Global Elements V2 (WP-008)
+
+### Block categories + defaults + layout overrides
+- Blocks have `category` field: `header`, `footer`, `sidebar`, or empty (content block)
+- `is_default` flag: one default per category, auto-fills all matching slots
+- Layout pages have `layout_slots` jsonb: `{ "header": "block-uuid" }` for per-layout override
+- **Resolution cascade:** layout_slots[slot] > category default (is_default=true) > null
+- `global_elements` table deprecated — replaced by category + default + layout_slots
+- Studio: category dropdown in block editor, Global Elements page groups blocks by category
+- Block picker modal filters out categorized blocks (only content blocks shown)
+
+---
+
 ## What NOT to build (scope protection)
 
 1. Direct sales (ThemeForest exclusive)

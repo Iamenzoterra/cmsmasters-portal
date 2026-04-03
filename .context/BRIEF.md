@@ -100,6 +100,7 @@ Layer 0: Infrastructure           ✅ DONE (DB, Auth, Hono, packages)
 Layer 1: Studio + DB + API        ✅ DONE (WP-005A+B+C+D Phase 1)
 Block Import Pipeline             ✅ DONE (WP-006: token scanner, R2 upload, Process panel, portal-blocks.css, animate-utils.js)
 Layer 2: Portal (Astro SSG)       ✅ DONE (WP-007: layout editor, theme pages, composed pages, SEO, sitemap, CF Pages)
+Global Elements V2                ✅ DONE (WP-008: block categories, defaults, layout slot overrides, new portal resolution)
 Layer 3: Dashboard + Admin        ⬜ future
 ```
 
@@ -174,3 +175,4 @@ Dmitry communicates concisely in Ukrainian. Corrections are brief — reorient i
 - WP-005D Phase 0–1: `logs/wp-005d/` — pages + global elements types/API/Studio UI
 - WP-006 Phase 0–8: `logs/wp-006/` — block import pipeline (token scanner, R2 upload, Process panel, JS field, portal-blocks.css, animate-utils.js, component detection)
 - WP-007 Phase 1–5: `logs/wp-007/` — Portal layout system (layout editor, Astro SSG, theme pages, composed pages, SEO, sitemap, CF Pages deploy)
+- WP-008 Phase 1–5: `logs/wp-008/` — Global Elements V2 (block categories, defaults, layout slot overrides, portal cascade resolution)

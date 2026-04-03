@@ -2,11 +2,11 @@
 
 > Rethink global elements: blocks have categories (header/footer/sidebar), `is_default` flag for auto-assignment, and layout-level override. No more manual scope+priority per element.
 
-**Status:** PLANNING
+**Status:** ✅ COMPLETE
 **Priority:** P0 — current global elements UX is unusable for real content
 **Prerequisites:** WP-007 ✅ (Portal renders layouts + blocks)
 **Created:** 2026-04-03
-**Completed:** —
+**Completed:** 2026-04-03
 
 ---
 
