@@ -121,6 +121,8 @@ export function PageEditor() {
   // Layout-specific state
   const [layoutCode, setLayoutCode] = useState('')
   const [layoutScope, setLayoutScope] = useState('theme')
+  const [layoutSlots, setLayoutSlots] = useState<Record<string, string>>({})
+  const [slotBlocks, setSlotBlocks] = useState<Block[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const form = useForm<CreatePagePayload>({
@@ -197,6 +199,7 @@ export function PageEditor() {
           setLayoutCode(code)
         }
         if (page.scope) setLayoutScope(page.scope)
+        if (page.layout_slots) setLayoutSlots(page.layout_slots as Record<string, string>)
         // Fetch page blocks for composed pages
         if (page.type === 'composed') {
           fetchPageBlocks(page.id)
@@ -225,7 +228,10 @@ export function PageEditor() {
 
   // Fetch all blocks for picker
   useEffect(() => {
-    fetchAllBlocks().then(setAllBlocks).catch(() => {})
+    fetchAllBlocks().then((blocks) => {
+      setAllBlocks(blocks)
+      setSlotBlocks(blocks.filter((b) => !!b.category))
+    }).catch(() => {})
   }, [])
 
   // Slug auto-generation (new pages only)
@@ -316,6 +322,7 @@ export function PageEditor() {
           updatePayload.scope = layoutScope
           updatePayload.html = layoutHtml
           updatePayload.css = layoutCss
+          updatePayload.layout_slots = layoutSlots
         } else {
           updatePayload.seo = data.seo
         }
@@ -337,7 +344,7 @@ export function PageEditor() {
       } else {
         const createPayload = {
           ...data,
-          ...(isLayout ? { scope: layoutScope, html: layoutHtml, css: layoutCss } : {}),
+          ...(isLayout ? { scope: layoutScope, html: layoutHtml, css: layoutCss, layout_slots: layoutSlots } : {}),
         }
         const saved = await createPageApi(createPayload)
         if (!isLayout && blockEntries.length > 0) {
@@ -380,6 +387,7 @@ export function PageEditor() {
           updatePayload.scope = layoutScope
           updatePayload.html = layoutHtml
           updatePayload.css = layoutCss
+          updatePayload.layout_slots = layoutSlots
         } else {
           updatePayload.seo = data.seo
         }
@@ -402,7 +410,7 @@ export function PageEditor() {
         const createPayload = {
           ...data,
           status: 'published' as const,
-          ...(isLayout ? { scope: layoutScope, html: layoutHtml, css: layoutCss } : {}),
+          ...(isLayout ? { scope: layoutScope, html: layoutHtml, css: layoutCss, layout_slots: layoutSlots } : {}),
         }
         const saved = await createPageApi(createPayload)
         if (!isLayout && blockEntries.length > 0) {
@@ -454,6 +462,7 @@ export function PageEditor() {
         code += existingPage.html ?? ''
         setLayoutCode(code)
         setLayoutScope(existingPage.scope ?? 'theme')
+        setLayoutSlots(existingPage.layout_slots as Record<string, string> ?? {})
       }
     } else {
       reset({
@@ -469,6 +478,7 @@ export function PageEditor() {
       setBlockEntries([])
       setLayoutCode('')
       setLayoutScope('theme')
+      setLayoutSlots({})
     }
   }
 
@@ -634,7 +644,19 @@ export function PageEditor() {
               </FormSection>
 
               {/* Slot detection panel */}
-              <SlotPanel code={layoutCode} />
+              <SlotPanel
+                code={layoutCode}
+                layoutSlots={layoutSlots}
+                onSlotChange={(slot, blockId) => {
+                  setLayoutSlots((prev) => {
+                    const next = { ...prev }
+                    if (blockId) next[slot] = blockId
+                    else delete next[slot]
+                    return next
+                  })
+                }}
+                blocks={slotBlocks}
+              />
             </>
           )}
 
@@ -805,7 +827,19 @@ export function PageEditor() {
   )
 }
 
-function SlotPanel({ code }: { code: string }) {
+const SLOT_TO_CATEGORY: Record<string, string> = {
+  header: 'header',
+  footer: 'footer',
+  'sidebar-left': 'sidebar',
+  'sidebar-right': 'sidebar',
+}
+
+function SlotPanel({ code, layoutSlots, onSlotChange, blocks }: {
+  code: string
+  layoutSlots: Record<string, string>
+  onSlotChange: (slot: string, blockId: string | null) => void
+  blocks: Block[]
+}) {
   const slots = useMemo(() => extractSlots(code), [code])
   if (slots.length === 0) return null
 
@@ -816,6 +850,9 @@ function SlotPanel({ code }: { code: string }) {
           const isGlobal = GLOBAL_SLOTS.includes(slot)
           const isContent = slot === 'content'
           const isMeta = slot.startsWith('meta:')
+          const category = SLOT_TO_CATEGORY[slot]
+          const categoryBlocks = category ? blocks.filter((b) => b.category === category) : []
+          const selectedId = layoutSlots[slot] ?? ''
 
           return (
             <div
@@ -828,24 +865,47 @@ function SlotPanel({ code }: { code: string }) {
                 backgroundColor: 'hsl(var(--bg-surface-alt))',
               }}
             >
-              <div className="flex items-center" style={{ gap: 'var(--spacing-sm)' }}>
+              <div className="flex items-center" style={{ gap: 'var(--spacing-sm)', minWidth: '120px' }}>
                 <code style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-link))', backgroundColor: 'hsl(var(--bg-surface))', padding: '2px 6px', borderRadius: 'var(--rounded-sm)' }}>
                   {slot}
                 </code>
-                <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>
-                  {isGlobal ? 'global' : isContent ? 'content' : isMeta ? 'meta' : 'custom'}
-                </span>
               </div>
-              <div style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>
-                {isGlobal && (
+              <div className="flex items-center" style={{ gap: 'var(--spacing-xs)', fontSize: 'var(--text-xs-font-size)' }}>
+                {isGlobal && categoryBlocks.length > 0 ? (
+                  <select
+                    value={selectedId}
+                    onChange={(e) => onSlotChange(slot, e.target.value || null)}
+                    style={{
+                      height: '28px',
+                      padding: '0 var(--spacing-xs)',
+                      fontSize: 'var(--text-xs-font-size)',
+                      border: '1px solid hsl(var(--border-default))',
+                      borderRadius: 'var(--rounded-md)',
+                      backgroundColor: 'hsl(var(--input))',
+                      color: 'hsl(var(--foreground))',
+                      cursor: 'pointer',
+                      minWidth: '160px',
+                    }}
+                  >
+                    <option value="">(use default)</option>
+                    {categoryBlocks.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}{b.is_default ? ' ⭐' : ''}
+                      </option>
+                    ))}
+                  </select>
+                ) : isGlobal ? (
                   <Link to="/global-elements" className="flex items-center no-underline" style={{ gap: '4px', color: 'hsl(var(--text-link))' }}>
-                    Global Elements Settings
+                    Create {category} blocks first
                     <ExternalLink size={11} />
                   </Link>
+                ) : isContent ? (
+                  <span style={{ color: 'hsl(var(--text-muted))' }}>Template blocks per theme</span>
+                ) : isMeta ? (
+                  <span style={{ color: 'hsl(var(--text-muted))' }}>Resolved from theme.meta</span>
+                ) : (
+                  <span style={{ color: 'hsl(var(--text-muted))' }}>Custom slot</span>
                 )}
-                {isContent && 'Template blocks per theme'}
-                {isMeta && 'Resolved from theme.meta at build time'}
-                {!isGlobal && !isContent && !isMeta && 'Custom slot'}
               </div>
             </div>
           )
