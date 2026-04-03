@@ -62,15 +62,16 @@ const GLOBAL_SLOTS = ['header', 'footer', 'sidebar-left', 'sidebar-right']
 
 function extractSlots(html: string): string[] {
   const slots: string[] = []
-  // Match {{slot:name}} placeholders
-  for (const m of html.matchAll(/\{\{slot:([a-z0-9-]+)\}\}/g)) {
-    if (!slots.includes(m[1])) slots.push(m[1])
+  function add(name: string) {
+    const n = name.trim().toLowerCase().replace(/\s+/g, '-')
+    if (n && !slots.includes(n)) slots.push(n)
   }
-  // Also match <!-- SLOT: NAME --> HTML comments (common in layout prototypes)
-  for (const m of html.matchAll(/<!--\s*SLOT:\s*([A-Za-z0-9-_ ]+?)\s*-->/g)) {
-    const name = m[1].trim().toLowerCase().replace(/\s+/g, '-')
-    if (!slots.includes(name)) slots.push(name)
-  }
+  // 1. {{slot:name}} placeholders
+  for (const m of html.matchAll(/\{\{slot:([a-z0-9-]+)\}\}/g)) add(m[1])
+  // 2. <!-- SLOT: NAME --> HTML comments
+  for (const m of html.matchAll(/<!--\s*SLOT:\s*([A-Za-z0-9-_ :]+?)\s*-->/g)) add(m[1])
+  // 3. data-slot="name" attributes (most common in layout prototypes)
+  for (const m of html.matchAll(/data-slot=["']([^"']+)["']/g)) add(m[1])
   return slots
 }
 
@@ -814,6 +815,7 @@ function SlotPanel({ code }: { code: string }) {
         {slots.map((slot) => {
           const isGlobal = GLOBAL_SLOTS.includes(slot)
           const isContent = slot === 'content'
+          const isMeta = slot.startsWith('meta:')
 
           return (
             <div
@@ -828,8 +830,11 @@ function SlotPanel({ code }: { code: string }) {
             >
               <div className="flex items-center" style={{ gap: 'var(--spacing-sm)' }}>
                 <code style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-link))', backgroundColor: 'hsl(var(--bg-surface))', padding: '2px 6px', borderRadius: 'var(--rounded-sm)' }}>
-                  {`{{slot:${slot}}}`}
+                  {slot}
                 </code>
+                <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>
+                  {isGlobal ? 'global' : isContent ? 'content' : isMeta ? 'meta' : 'custom'}
+                </span>
               </div>
               <div style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>
                 {isGlobal && (
@@ -838,8 +843,9 @@ function SlotPanel({ code }: { code: string }) {
                     <ExternalLink size={11} />
                   </Link>
                 )}
-                {isContent && 'Filled by template blocks per theme'}
-                {!isGlobal && !isContent && 'Custom slot — block picker (coming soon)'}
+                {isContent && 'Template blocks per theme'}
+                {isMeta && 'Resolved from theme.meta at build time'}
+                {!isGlobal && !isContent && !isMeta && 'Custom slot'}
               </div>
             </div>
           )
