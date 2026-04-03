@@ -12,8 +12,8 @@ import { useToast } from '../components/toast'
 import { FormSection } from '../components/form-section'
 import { DeleteConfirmModal } from '../components/delete-confirm-modal'
 import { BlockImportPanel } from '../components/block-import-panel'
-import tokensCSS from '@cmsmasters/ui/src/theme/tokens.css?raw'
-import portalBlocksCSS from '@cmsmasters/ui/src/portal/portal-blocks.css?raw'
+import tokensCSS from '../../../../packages/ui/src/theme/tokens.css?raw'
+import portalBlocksCSS from '../../../../packages/ui/src/portal/portal-blocks.css?raw'
 
 const inputStyle: React.CSSProperties = {
   height: '36px',

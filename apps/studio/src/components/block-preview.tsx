@@ -1,9 +1,9 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
 import { RotateCcw } from 'lucide-react'
 // Import shared portal assets as raw strings for iframe injection
-import tokensCSS from '@cmsmasters/ui/src/theme/tokens.css?raw'
-import portalBlocksCSS from '@cmsmasters/ui/src/portal/portal-blocks.css?raw'
-import animateUtilsJS from '@cmsmasters/ui/src/portal/animate-utils.js?raw'
+import tokensCSS from '../../../../packages/ui/src/theme/tokens.css?raw'
+import portalBlocksCSS from '../../../../packages/ui/src/portal/portal-blocks.css?raw'
+import animateUtilsJS from '../../../../packages/ui/src/portal/animate-utils.js?raw'
 
 interface BlockPreviewProps {
   html: string
