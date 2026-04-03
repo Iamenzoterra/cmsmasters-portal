@@ -862,7 +862,7 @@ function ThumbnailUpload({ url, onUpload, onRemove, onError }: {
             {uploading ? 'Uploading...' : 'Click or drag image'}
           </span>
           <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>
-            PNG, JPG, WebP · Max 2MB
+            PNG, JPG, WebP · 600 × 448px · Max 2MB
           </span>
         </div>
       )}
