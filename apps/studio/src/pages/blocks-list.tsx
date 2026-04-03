@@ -42,10 +42,8 @@ export function BlocksList() {
   useEffect(() => { setPage(1) }, [search, categoryFilter])
 
   const filteredBlocks = useMemo(() => {
-    let result = blocks
-    // Category filter
-    if (categoryFilter === 'content') result = result.filter((b) => !b.category)
-    else if (categoryFilter) result = result.filter((b) => b.category === categoryFilter)
+    // Theme blocks only — exclude header/footer/sidebar/element (they have their own sections)
+    let result = blocks.filter((b) => !b.category)
     // Search filter
     if (search.trim()) {
       const q = search.trim().toLowerCase()
@@ -115,7 +113,9 @@ export function BlocksList() {
       {/* Category filter */}
       {!loading && blocks.length > 0 && (
         <div className="flex w-full items-center" style={{ gap: 'var(--spacing-xs)' }}>
-          {['', 'content', 'header', 'footer', 'sidebar', 'element'].map((cat) => (
+          {/* Category filter — only show for theme content blocks (category='') */}
+          {/* Future: add sub-category tabs here when theme blocks have categories */}
+          {false && ['', 'content', 'header', 'footer', 'sidebar', 'element'].map((cat) => (
             <button
               key={cat}
               type="button"
