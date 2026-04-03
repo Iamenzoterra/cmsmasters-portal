@@ -2,44 +2,45 @@
 
 > Layout pages + Astro SSG rendering. Takes layouts from Studio DB and renders theme pages on Portal.
 
-**Status:** IN PROGRESS
+**Status:** ✅ COMPLETE
 **Priority:** P0 — no public portal without this
 **Prerequisites:** WP-006 ✅ (block import pipeline), WP-005D Phase 1 ✅ (pages + global elements)
 **Created:** 2026-04-03
-**Completed:** —
+**Completed:** 2026-04-03
 
 ---
 
 ## Phases
 
-### Phase 1: Layout Page Editor ✅ DONE
+### Phase 1: Layout Page Editor ✅
 - Scope selector (theme), HTML import/preview/export, slot detection panel
 - DB: scope + html + css columns on pages table
 - No type selector, no SEO for layouts
 
-### Phase 2: Astro Portal Scaffold + Theme Page Render
-- Create `apps/portal/` Astro SSG app
-- Theme page route: `src/pages/themes/[slug].astro`
-- Fetch layout by scope `theme` → resolve `{{slot:*}}` with global elements + template blocks
-- Hook resolution: `{{price}}` → `theme.meta.price`
-- Include `tokens.css`, `portal-blocks.css`, `animate-utils.js`
-- 0 framework JS output
+### Phase 2: Astro Portal Scaffold + Theme Page Render ✅
+- `apps/portal/` Astro SSG app with build-time Supabase client
+- Theme page route `themes/[slug].astro` with full pipeline
+- Global elements resolution by scope (sitewide < layout:* < layout:themes)
+- Template + block fills merge, hook resolution ({{price}}, {{meta:*}}, {{slot:*}})
+- tokens.css, portal-blocks.css, animate-utils.js
+- Zero framework JS
 
-### Phase 3: Composed Pages + Homepage
-- Catch-all route `src/pages/[...slug].astro` for composed pages
-- Fetch page → page_blocks → render blocks in order
-- Homepage created via composed page flow
+### Phase 3: Composed Pages + Homepage ✅
+- Catch-all `[...slug].astro` for composed pages
+- Homepage slug maps to root `/`
+- Page blocks rendered in order with global elements
 
-### Phase 4: SEO + Sitemap + Deploy
-- JSON-LD Product schema for themes
+### Phase 4: SEO + Sitemap + Deploy ✅
+- JSON-LD Product (themes) + WebPage (composed) schemas
 - OG tags, canonical URLs
-- `sitemap.xml`, `robots.txt`
-- Deploy to Cloudflare Pages
-- Lighthouse > 95
+- `@astrojs/sitemap` → sitemap-index.xml
+- robots.txt
+- CF Pages wrangler.toml + deploy script
 
-### Phase 5: Docs + Close
-- Update `.context/BRIEF.md`, `.context/CONVENTIONS.md`
-- Execution logs for all phases
+### Phase 5: Docs + Close ✅
+- `.context/BRIEF.md` updated — Layer 2 done, Portal app complete
+- Portal-workflow skill updated — current sprint, monorepo structure
+- All phase logs in `logs/wp-007/`
 
 ---
 

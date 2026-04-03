@@ -123,7 +123,7 @@ cmsmasters-portal/
 │   ├── command-center/    ✅ DONE (6 pages, localhost:4000, own dark theme)
 │   ├── api/               ✅ DONE (Hono, 18+ routes: health, revalidate, upload+batch, blocks, templates, pages, global-elements CRUD, R2 image upload)
 │   ├── studio/            ✅ DONE (login, themes, blocks, templates, pages, global elements, block Process panel with token scanner + R2 upload)
-│   ├── portal/            ⬜ NOT CREATED (WP-005D — Astro SSG)
+│   ├── portal/            ✅ DONE (Astro SSG: theme pages, composed pages, SEO, sitemap, CF Pages deploy)
 │   ├── dashboard/         ⬜ NOT CREATED (Layer 3)
 │   └── admin/             ⬜ NOT CREATED (Layer 3)
 ├── packages/
@@ -146,9 +146,9 @@ cmsmasters-portal/
 9 tables, all with RLS enabled:
 - **profiles**: id, email, full_name, avatar_url, role, timestamps.
 - **themes**: slug, status, meta (jsonb), template_id (FK→templates), block_fills (jsonb), seo (jsonb), created_by, timestamps.
-- **blocks**: slug, name, html, css, hooks (jsonb), metadata (jsonb), created_by, timestamps. (js column planned — WP-006 Phase 4)
+- **blocks**: slug, name, html, css, js, hooks (jsonb), metadata (jsonb), created_by, timestamps.
 - **templates**: slug, name, description, positions (jsonb), max_positions, created_by, timestamps.
-- **pages**: slug, title, type (layout|composed), seo (jsonb), status, created_by, timestamps.
+- **pages**: slug, title, type (layout|composed), scope, html, css, seo (jsonb), status, created_by, timestamps.
 - **page_blocks**: page_id (FK→pages), block_id (FK→blocks), position, config (jsonb). UNIQUE(page_id, position).
 - **global_elements**: slot (header|footer|sidebar-left|sidebar-right), block_id (FK→blocks), scope, priority. UNIQUE(slot, scope).
 - **licenses**: user_id, theme_id, purchase_code, license_type, support_until.
@@ -160,14 +160,11 @@ cmsmasters-portal/
 
 ```
 Layer 0: Infrastructure         ✅ DONE
-Layer 1: Studio + DB + API      ✅ DONE (WP-005A+B+C)
-Layer 2: Portal (Astro SSG)     🟡 WP-005D (pages + global elements + Astro render)
-Block Import Pipeline           🟡 WP-006 Phases 0-3 DONE, 4-8 remaining
+Layer 1: Studio + DB + API      ✅ DONE (WP-005A+B+C+D)
+Block Import Pipeline           ✅ DONE (WP-006: token scanner, R2 upload, Process panel, portal-blocks.css, animate-utils.js, component detection)
+Layer 2: Portal (Astro SSG)     ✅ DONE (WP-007: layout editor, theme pages, composed pages, SEO, sitemap, CF Pages)
 Layer 3: Dashboard + Admin      ⬜ future
 ```
-
-WP-006: Token scanner, R2 image upload, Studio Process panel — done.
-Remaining: DB `js` column, portal-blocks.css, animate-utils.js, component detection.
 
 Support + AI chat — deferred.
 

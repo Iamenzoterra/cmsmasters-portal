@@ -73,7 +73,7 @@ The company operates 4 fragmented domains with no shared navigation, broken post
 |-----|--------|---------|
 | Command Center | ✅ DONE | 6 pages, localhost:4000, own dark theme |
 | Studio | ✅ DONE | Login, themes, blocks (editor + Process panel with token scanner + R2 image upload + component detection), templates, pages, global elements settings. Block editor: HTML+CSS+JS fields, import with script preservation, export. Process panel: split preview (before/after), zoom, scroll, replay, animation support. |
-| Portal | ⬜ | Not created yet |
+| Portal | ✅ DONE | Astro SSG. Theme pages (layout + global elements + template blocks + hook resolution). Composed pages (page_blocks + global elements). SEO: JSON-LD Product/WebPage, OG, canonical, sitemap.xml, robots.txt. CF Pages deploy config. Zero framework JS. |
 | Dashboard | ⬜ | Not created yet |
 | Admin | ⬜ | Not created yet |
 
@@ -97,18 +97,16 @@ The company operates 4 fragmented domains with no shared navigation, broken post
 
 ```
 Layer 0: Infrastructure           ✅ DONE (DB, Auth, Hono, packages)
-Layer 1: Studio + DB + API        ✅ DONE (WP-005A+B+C+D Phase 1: themes, blocks, templates, pages, global elements)
+Layer 1: Studio + DB + API        ✅ DONE (WP-005A+B+C+D Phase 1)
 Block Import Pipeline             ✅ DONE (WP-006: token scanner, R2 upload, Process panel, portal-blocks.css, animate-utils.js)
-Layer 2: Portal (Astro SSG)       🟡 CURRENT — WP-005D Phases 2-5
+Layer 2: Portal (Astro SSG)       ✅ DONE (WP-007: layout editor, theme pages, composed pages, SEO, sitemap, CF Pages)
 Layer 3: Dashboard + Admin        ⬜ future
 ```
 
-### What's next: Layer 2 (Portal — Astro SSG)
-- `apps/portal/` Astro app scaffold (WP-005D Phase 2)
-- Theme page render: global elements resolution + template blocks + hook resolution
-- Composed pages + homepage (WP-005D Phase 3)
-- SEO: JSON-LD, OG, sitemap (WP-005D Phase 4)
-- Blocks created via `/block-craft` skill → imported via Studio Process panel
+### What's next: Layer 3 (Dashboard + Admin)
+- `apps/dashboard/` — profile, my themes, license list
+- `apps/admin/` — users table, role management, themes overview, audit log
+- Content seeding: real blocks from Figma via `/block-craft`, real themes in Studio
 
 ### What's left for Layer 3
 - `apps/dashboard/` — profile, my themes, license list
@@ -175,3 +173,4 @@ Dmitry communicates concisely in Ukrainian. Corrections are brief — reorient i
 - WP-005C Phase 0–4: `logs/wp-005c/` — blocks/templates CRUD UI (list+editor), theme editor pivot (template picker + block fills + position grid), UX polish (responsive grids, delete modals, readonly cues)
 - WP-005D Phase 0–1: `logs/wp-005d/` — pages + global elements types/API/Studio UI
 - WP-006 Phase 0–8: `logs/wp-006/` — block import pipeline (token scanner, R2 upload, Process panel, JS field, portal-blocks.css, animate-utils.js, component detection)
+- WP-007 Phase 1–5: `logs/wp-007/` — Portal layout system (layout editor, Astro SSG, theme pages, composed pages, SEO, sitemap, CF Pages deploy)
