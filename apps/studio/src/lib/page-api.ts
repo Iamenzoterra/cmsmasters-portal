@@ -24,6 +24,9 @@ export async function createPageApi(payload: {
   slug: string
   title: string
   type: string
+  scope?: string
+  html?: string
+  css?: string
   seo?: { title?: string; description?: string }
   status?: string
 }): Promise<Page> {
@@ -45,6 +48,9 @@ export async function updatePageApi(
   id: string,
   payload: {
     title?: string
+    scope?: string
+    html?: string
+    css?: string
     seo?: { title?: string; description?: string }
     status?: string
   }

@@ -264,6 +264,9 @@ export type Database = {
           slug: string
           title: string
           type: PageType
+          scope: string
+          html: string
+          css: string
           seo: ThemeSEO | null
           status: ThemeStatus
           created_by: string | null
@@ -275,6 +278,9 @@ export type Database = {
           slug: string
           title: string
           type: PageType
+          scope?: string
+          html?: string
+          css?: string
           seo?: ThemeSEO | null
           status?: ThemeStatus
           created_by?: string | null
@@ -286,6 +292,9 @@ export type Database = {
           slug?: string
           title?: string
           type?: PageType
+          scope?: string
+          html?: string
+          css?: string
           seo?: ThemeSEO | null
           status?: ThemeStatus
           created_by?: string | null

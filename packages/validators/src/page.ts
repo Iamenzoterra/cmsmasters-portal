@@ -13,6 +13,9 @@ export const pageSchema = z.object({
   slug: z.string().regex(/^[a-z0-9-]+$/).min(2).max(100),
   title: z.string().min(1).max(200),
   type: z.enum(['layout', 'composed']),
+  scope: z.string().default(''),
+  html: z.string().default(''),
+  css: z.string().default(''),
   seo: seoSchema.optional(),
   status: z.enum(['draft', 'published', 'archived']).default('draft'),
 })
@@ -21,6 +24,9 @@ export const pageSchema = z.object({
 
 export const updatePageSchema = z.object({
   title: z.string().min(1).max(200).optional(),
+  scope: z.string().optional(),
+  html: z.string().optional(),
+  css: z.string().optional(),
   seo: seoSchema.optional(),
   status: z.enum(['draft', 'published', 'archived']).optional(),
 })

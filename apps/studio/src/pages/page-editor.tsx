@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { pageSchema, type CreatePagePayload } from '@cmsmasters/validators'
 import type { Page, Block } from '@cmsmasters/db'
-import { AlertTriangle, ChevronLeft, Plus, ArrowUp, ArrowDown, Trash2, Info } from 'lucide-react'
+import { AlertTriangle, ChevronLeft, Plus, ArrowUp, ArrowDown, Trash2, Info, Upload, Eye, Download, ExternalLink } from 'lucide-react'
 import { Button } from '@cmsmasters/ui'
 import { fetchPageById, createPageApi, updatePageApi, deletePageApi, fetchPageBlocks, updatePageBlocks } from '../lib/page-api'
 import { fetchAllBlocks } from '../lib/block-api'
@@ -15,6 +15,8 @@ import { CharCounter } from '../components/char-counter'
 import { EditorFooter } from '../components/editor-footer'
 import { BlockPickerModal } from '../components/block-picker-modal'
 import { DeleteConfirmModal } from '../components/delete-confirm-modal'
+import tokensCSS from '../../../../packages/ui/src/theme/tokens.css?raw'
+import portalBlocksCSS from '../../../../packages/ui/src/portal/portal-blocks.css?raw'
 
 const inputStyle: React.CSSProperties = {
   height: '36px',
@@ -40,6 +42,54 @@ const errorStyle: React.CSSProperties = {
   marginTop: '4px',
 }
 
+const monoStyle: React.CSSProperties = {
+  ...inputStyle,
+  height: 'auto',
+  padding: 'var(--spacing-md)',
+  fontFamily: 'var(--font-family-monospace)',
+  fontSize: '13px',
+  lineHeight: '1.6',
+  resize: 'vertical' as const,
+  backgroundColor: 'hsl(var(--bg-surface-alt))',
+  tabSize: 2,
+}
+
+const LAYOUT_SCOPES = [
+  { value: 'theme', label: 'Theme Page' },
+] as const
+
+const GLOBAL_SLOTS = ['header', 'footer', 'sidebar-left', 'sidebar-right']
+
+function extractSlots(html: string): string[] {
+  const re = /\{\{slot:([a-z0-9-]+)\}\}/g
+  const slots: string[] = []
+  for (const m of html.matchAll(re)) if (!slots.includes(m[1])) slots.push(m[1])
+  return slots
+}
+
+function splitCode(code: string): { html: string; css: string } {
+  const styleRegex = /<style[^>]*>([\s\S]*?)<\/style>/gi
+  let css = ''
+  let match
+  while ((match = styleRegex.exec(code)) !== null) {
+    css += (css ? '\n\n' : '') + match[1].trim()
+  }
+  const html = code.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '').trim()
+  return { html, css }
+}
+
+function parseHtmlFile(content: string): string {
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(content, 'text/html')
+  const styles = Array.from(doc.querySelectorAll('style')).map(el => el.textContent ?? '').join('\n\n').trim()
+  const body = doc.body?.innerHTML?.trim() ?? content
+  const cleaned = body.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '').trim()
+  let code = ''
+  if (styles) code += `<style>\n${styles}\n</style>\n\n`
+  code += cleaned
+  return code
+}
+
 interface BlockEntry {
   block_id: string
   position: number
@@ -49,18 +99,31 @@ interface BlockEntry {
 export function PageEditor() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const isNew = !id
+
+  // Detect type from URL path — /layouts/* = layout, /static-pages/* = composed
+  const isLayoutRoute = location.pathname.includes('/layouts')
+  const defaultType = isLayoutRoute ? 'layout' : 'composed'
 
   const [existingPage, setExistingPage] = useState<Page | null>(null)
   const [loading, setLoading] = useState(!isNew)
   const [fetchError, setFetchError] = useState<string | null>(null)
+
+  // Layout-specific state
+  const [layoutCode, setLayoutCode] = useState('')
+  const [layoutScope, setLayoutScope] = useState('theme')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const form = useForm<CreatePagePayload>({
     resolver: zodResolver(pageSchema),
     defaultValues: {
       slug: '',
       title: '',
-      type: 'composed',
+      type: defaultType,
+      scope: defaultType === 'layout' ? 'theme' : '',
+      html: '',
+      css: '',
       seo: { title: '', description: '' },
       status: 'draft',
     },
@@ -88,11 +151,16 @@ export function PageEditor() {
       reset({
         slug: '',
         title: '',
-        type: 'composed',
+        type: defaultType,
+        scope: defaultType === 'layout' ? 'theme' : '',
+        html: '',
+        css: '',
         seo: { title: '', description: '' },
         status: 'draft',
       })
       setBlockEntries([])
+      setLayoutCode('')
+      setLayoutScope('theme')
       return
     }
     let cancelled = false
@@ -107,9 +175,20 @@ export function PageEditor() {
           slug: page.slug,
           title: page.title,
           type: page.type,
+          scope: page.scope ?? '',
+          html: page.html ?? '',
+          css: page.css ?? '',
           seo: page.seo ?? { title: '', description: '' },
           status: page.status,
         })
+        // Restore layout code from saved html+css
+        if (page.type === 'layout' && (page.html || page.css)) {
+          let code = ''
+          if (page.css) code += `<style>\n${page.css}\n</style>\n\n`
+          code += page.html ?? ''
+          setLayoutCode(code)
+        }
+        if (page.scope) setLayoutScope(page.scope)
         // Fetch page blocks for composed pages
         if (page.type === 'composed') {
           fetchPageBlocks(page.id)
@@ -207,15 +286,33 @@ export function PageEditor() {
     if (!valid) { toast({ type: 'error', message: 'Fix validation errors before saving' }); return }
 
     const data = form.getValues()
+    const isLayout = data.type === 'layout'
+
+    // For layout: split code into html+css
+    let layoutHtml = ''
+    let layoutCss = ''
+    if (isLayout && layoutCode.trim()) {
+      const split = splitCode(layoutCode)
+      layoutHtml = split.html
+      layoutCss = split.css
+    }
+
     setSaving(true)
     try {
       if (existingPage) {
-        const saved = await updatePageApi(existingPage.id, {
+        const updatePayload: Record<string, unknown> = {
           title: data.title,
-          seo: data.seo,
           status: data.status,
-        })
-        if (data.type === 'composed') {
+        }
+        if (isLayout) {
+          updatePayload.scope = layoutScope
+          updatePayload.html = layoutHtml
+          updatePayload.css = layoutCss
+        } else {
+          updatePayload.seo = data.seo
+        }
+        const saved = await updatePageApi(existingPage.id, updatePayload)
+        if (!isLayout) {
           await updatePageBlocks(saved.id, blockEntries)
         }
         setExistingPage(saved)
@@ -223,15 +320,23 @@ export function PageEditor() {
           slug: saved.slug,
           title: saved.title,
           type: saved.type,
+          scope: saved.scope ?? '',
+          html: saved.html ?? '',
+          css: saved.css ?? '',
           seo: saved.seo ?? { title: '', description: '' },
           status: saved.status,
         })
       } else {
-        const saved = await createPageApi(data)
-        if (data.type === 'composed' && blockEntries.length > 0) {
+        const createPayload = {
+          ...data,
+          ...(isLayout ? { scope: layoutScope, html: layoutHtml, css: layoutCss } : {}),
+        }
+        const saved = await createPageApi(createPayload)
+        if (!isLayout && blockEntries.length > 0) {
           await updatePageBlocks(saved.id, blockEntries)
         }
-        navigate(`/pages/${saved.id}`, { replace: true })
+        const basePath = isLayout ? '/layouts' : '/static-pages'
+        navigate(`${basePath}/${saved.id}`, { replace: true })
       }
       toast({ type: 'success', message: 'Page saved' })
     } catch (error) {
@@ -247,15 +352,31 @@ export function PageEditor() {
     if (!valid) { toast({ type: 'error', message: 'Fix validation errors before publishing' }); return }
 
     const data = form.getValues()
+    const isLayout = data.type === 'layout'
+    let layoutHtml = ''
+    let layoutCss = ''
+    if (isLayout && layoutCode.trim()) {
+      const split = splitCode(layoutCode)
+      layoutHtml = split.html
+      layoutCss = split.css
+    }
+
     setPublishing(true)
     try {
       if (existingPage) {
-        const saved = await updatePageApi(existingPage.id, {
+        const updatePayload: Record<string, unknown> = {
           title: data.title,
-          seo: data.seo,
           status: 'published',
-        })
-        if (data.type === 'composed') {
+        }
+        if (isLayout) {
+          updatePayload.scope = layoutScope
+          updatePayload.html = layoutHtml
+          updatePayload.css = layoutCss
+        } else {
+          updatePayload.seo = data.seo
+        }
+        const saved = await updatePageApi(existingPage.id, updatePayload)
+        if (!isLayout) {
           await updatePageBlocks(saved.id, blockEntries)
         }
         setExistingPage(saved)
@@ -263,15 +384,24 @@ export function PageEditor() {
           slug: saved.slug,
           title: saved.title,
           type: saved.type,
+          scope: saved.scope ?? '',
+          html: saved.html ?? '',
+          css: saved.css ?? '',
           seo: saved.seo ?? { title: '', description: '' },
           status: saved.status,
         })
       } else {
-        const saved = await createPageApi({ ...data, status: 'published' })
-        if (data.type === 'composed' && blockEntries.length > 0) {
+        const createPayload = {
+          ...data,
+          status: 'published' as const,
+          ...(isLayout ? { scope: layoutScope, html: layoutHtml, css: layoutCss } : {}),
+        }
+        const saved = await createPageApi(createPayload)
+        if (!isLayout && blockEntries.length > 0) {
           await updatePageBlocks(saved.id, blockEntries)
         }
-        navigate(`/pages/${saved.id}`, { replace: true })
+        const basePath = isLayout ? '/layouts' : '/static-pages'
+        navigate(`${basePath}/${saved.id}`, { replace: true })
       }
       toast({ type: 'success', message: 'Page published' })
     } catch (error) {
@@ -304,18 +434,33 @@ export function PageEditor() {
         slug: existingPage.slug,
         title: existingPage.title,
         type: existingPage.type,
+        scope: existingPage.scope ?? '',
+        html: existingPage.html ?? '',
+        css: existingPage.css ?? '',
         seo: existingPage.seo ?? { title: '', description: '' },
         status: existingPage.status,
       })
+      if (existingPage.type === 'layout') {
+        let code = ''
+        if (existingPage.css) code += `<style>\n${existingPage.css}\n</style>\n\n`
+        code += existingPage.html ?? ''
+        setLayoutCode(code)
+        setLayoutScope(existingPage.scope ?? 'theme')
+      }
     } else {
       reset({
         slug: '',
         title: '',
-        type: 'composed',
+        type: defaultType,
+        scope: '',
+        html: '',
+        css: '',
         seo: { title: '', description: '' },
         status: 'draft',
       })
       setBlockEntries([])
+      setLayoutCode('')
+      setLayoutScope('theme')
     }
   }
 
@@ -381,7 +526,7 @@ export function PageEditor() {
           {/* Basic Info */}
           <FormSection title="Basic Info">
             <Field label="Title" error={errors.title?.message}>
-              <input {...register('title')} className="w-full outline-none" style={inputStyle} placeholder="Page title" />
+              <input {...register('title')} className="w-full outline-none" style={inputStyle} placeholder={isComposed ? 'Page title' : 'Layout name'} />
             </Field>
             <Field label="Slug" error={errors.slug?.message}>
               <input
@@ -392,20 +537,20 @@ export function PageEditor() {
                 placeholder="auto-generated-slug"
               />
             </Field>
-            <Field label="Type">
-              <select
-                {...register('type')}
-                disabled={!isNew}
-                style={{
-                  ...inputStyle,
-                  backgroundColor: isNew ? 'hsl(var(--input))' : 'hsl(var(--bg-surface-alt))',
-                  cursor: isNew ? 'pointer' : 'default',
-                }}
-              >
-                <option value="composed">Composed</option>
-                <option value="layout">Layout</option>
-              </select>
-            </Field>
+            {/* Scope — layout only */}
+            {!isComposed && (
+              <Field label="Scope">
+                <select
+                  value={layoutScope}
+                  onChange={(e) => setLayoutScope(e.target.value)}
+                  style={{ ...inputStyle, cursor: 'pointer' }}
+                >
+                  {LAYOUT_SCOPES.map((s) => (
+                    <option key={s.value} value={s.value}>{s.label}</option>
+                  ))}
+                </select>
+              </Field>
+            )}
             <Field label="Status">
               <select {...register('status')} style={{ ...inputStyle, cursor: 'pointer' }}>
                 <option value="draft">Draft</option>
@@ -415,23 +560,74 @@ export function PageEditor() {
             </Field>
           </FormSection>
 
-          {/* Layout info */}
+          {/* Layout: HTML code + import/preview/export */}
           {!isComposed && (
-            <div
-              className="flex items-start border"
-              style={{
-                padding: 'var(--spacing-md)',
-                gap: 'var(--spacing-sm)',
-                borderColor: 'hsl(var(--border-default))',
-                borderRadius: 'var(--rounded-xl)',
-                backgroundColor: 'hsl(var(--bg-surface))',
-              }}
-            >
-              <Info size={18} style={{ color: 'hsl(var(--text-muted))', flexShrink: 0, marginTop: '2px' }} />
-              <p style={{ margin: 0, fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-secondary))', lineHeight: '1.5' }}>
-                Layout pages define wrapper structures for dynamic content. Header, footer, and sidebar blocks are assigned via Global Elements settings.
-              </p>
-            </div>
+            <>
+              <FormSection title="Layout HTML">
+                <div className="flex items-center" style={{ gap: 'var(--spacing-sm)' }}>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".html,.htm"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      const reader = new FileReader()
+                      reader.onload = () => {
+                        const code = parseHtmlFile(reader.result as string)
+                        setLayoutCode(code)
+                        if (!form.getValues('title')) {
+                          const name = file.name.replace(/\.html?$/i, '').replace(/[-_]/g, ' ')
+                          form.setValue('title', name, { shouldDirty: true })
+                          if (isNew) form.setValue('slug', nameToSlug(name), { shouldDirty: false })
+                        }
+                        toast({ type: 'success', message: `Imported ${file.name}` })
+                      }
+                      reader.readAsText(file)
+                      e.target.value = ''
+                    }}
+                    style={{ display: 'none' }}
+                  />
+                  <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                    <Upload size={14} />
+                    Import HTML
+                  </Button>
+                  <Button variant="outline" size="sm" disabled={!layoutCode.trim()} onClick={() => {
+                    const name = form.getValues('title') || 'Layout Preview'
+                    const html = `<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8" />\n<meta name="viewport" content="width=device-width, initial-scale=1.0" />\n<title>${name}</title>\n<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />\n<style>*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; } body { font-family:'Manrope',system-ui,sans-serif; background:hsl(20 23% 97%); }\n${tokensCSS}\n${portalBlocksCSS}</style>\n</head>\n<body style="display:flex;justify-content:center;padding-top:200px">\n${layoutCode}\n</body>\n</html>`
+                    const win = window.open('', '_blank')
+                    if (win) { win.document.write(html); win.document.close() }
+                  }}>
+                    <Eye size={14} />
+                    Preview
+                  </Button>
+                  <Button variant="outline" size="sm" disabled={!layoutCode.trim()} onClick={() => {
+                    const name = form.getValues('title') || form.getValues('slug') || 'layout'
+                    const blob = new Blob([`<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8" />\n<title>${name}</title>\n<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />\n<style>*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; } body { font-family:'Manrope',system-ui,sans-serif; }</style>\n</head>\n<body>\n${layoutCode}\n</body>\n</html>`], { type: 'text/html' })
+                    const url = URL.createObjectURL(blob)
+                    const a = document.createElement('a')
+                    a.href = url
+                    a.download = `${(name).replace(/\s+/g, '-').toLowerCase()}.html`
+                    a.click()
+                    URL.revokeObjectURL(url)
+                  }}>
+                    <Download size={14} />
+                    Export
+                  </Button>
+                </div>
+                <textarea
+                  value={layoutCode}
+                  onChange={(e) => setLayoutCode(e.target.value)}
+                  rows={20}
+                  className="w-full outline-none"
+                  style={monoStyle}
+                  placeholder={'<style>\n  .layout-theme-page { display: grid; ... }\n</style>\n\n<div class="layout-theme-page">\n  {{slot:header}}\n  {{slot:sidebar-left}}\n  {{slot:content}}\n  {{slot:sidebar-right}}\n  {{slot:footer}}\n</div>'}
+                />
+              </FormSection>
+
+              {/* Slot detection panel */}
+              <SlotPanel code={layoutCode} />
+            </>
           )}
 
           {/* Composed: Block List */}
@@ -597,6 +793,51 @@ export function PageEditor() {
         onDelete={existingPage ? () => setShowDeleteConfirm(true) : undefined}
       />
     </div>
+  )
+}
+
+function SlotPanel({ code }: { code: string }) {
+  const slots = useMemo(() => extractSlots(code), [code])
+  if (slots.length === 0) return null
+
+  return (
+    <FormSection title={`Slot Assignments (${slots.length})`}>
+      <div className="flex flex-col" style={{ gap: 'var(--spacing-sm)' }}>
+        {slots.map((slot) => {
+          const isGlobal = GLOBAL_SLOTS.includes(slot)
+          const isContent = slot === 'content'
+
+          return (
+            <div
+              key={slot}
+              className="flex items-center justify-between border"
+              style={{
+                padding: 'var(--spacing-sm) var(--spacing-md)',
+                borderColor: 'hsl(var(--border-default))',
+                borderRadius: 'var(--rounded-lg)',
+                backgroundColor: 'hsl(var(--bg-surface-alt))',
+              }}
+            >
+              <div className="flex items-center" style={{ gap: 'var(--spacing-sm)' }}>
+                <code style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-link))', backgroundColor: 'hsl(var(--bg-surface))', padding: '2px 6px', borderRadius: 'var(--rounded-sm)' }}>
+                  {`{{slot:${slot}}}`}
+                </code>
+              </div>
+              <div style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>
+                {isGlobal && (
+                  <Link to="/global-elements" className="flex items-center no-underline" style={{ gap: '4px', color: 'hsl(var(--text-link))' }}>
+                    Global Elements Settings
+                    <ExternalLink size={11} />
+                  </Link>
+                )}
+                {isContent && 'Filled by template blocks per theme'}
+                {!isGlobal && !isContent && 'Custom slot — block picker (coming soon)'}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </FormSection>
   )
 }
 
