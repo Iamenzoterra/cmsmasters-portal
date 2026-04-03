@@ -1,6 +1,6 @@
 ---
 name: block-craft
-description: "Create production-ready portal blocks from Figma designs. Use when user shares a Figma link/node, says 'create block', 'зроби блок', 'зверстай секцію', or wants to build an HTML+CSS+JS block for the CMSMasters portal. Serves live preview on port 7777."
+description: Create production-ready portal blocks from Figma designs. Use when user shares a Figma link/node, says create block, зроби блок, зверстай секцію, or wants to build an HTML+CSS+JS block for the CMSMasters portal. Serves live preview on port 7777.
 ---
 
 # Block Craft — Figma → Production Block
@@ -231,43 +231,32 @@ h1 { ... }
 
 Animations are a key differentiator. Each block should have unique, thoughtful animations.
 
-### Layer 1: CSS Entrance Animations (preferred, 0 JS)
+### Shared reveal classes (DO NOT redefine in block CSS)
 
-```css
-/* CSS scroll-driven — zero JS, compositor thread */
-.block-{slug} .hero-title {
-  animation: heroReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
-  animation-timeline: view();
-  animation-range: entry 0% entry 80%;
-}
-@keyframes heroReveal {
-  from { opacity: 0; transform: translateY(60px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@supports not (animation-timeline: view()) {
-  .block-{slug} .hero-title {
-    animation: heroReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
-}
+`portal-blocks.css` provides these classes globally. Just use them in HTML + trigger with JS:
+- `.reveal` — fade up (translateY 30px)
+- `.reveal-left` — slide from left (translateX -60px)
+- `.reveal-right` — slide from right (translateX 60px)
+- `.reveal-scale` — scale up from 0.8
+- Add `.visible` class to trigger (via IntersectionObserver in block JS)
+- Use `style="transition-delay: 0.1s"` for stagger
+
+```html
+<div class="reveal" style="transition-delay: 0.1s">...</div>
+<div class="reveal-scale" style="transition-delay: 0.2s">...</div>
 ```
 
-**Or** class-based reveals (IntersectionObserver):
-```css
-.block-{slug} .reveal {
-  opacity: 0;
-  transform: translateY(40px);
-  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.block-{slug} .reveal.visible { opacity: 1; transform: translateY(0); }
-```
 ```javascript
 const block = document.querySelector('.block-{slug}');
 const io = new IntersectionObserver((entries) => {
-  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
 }, { threshold: 0.15 });
-block.querySelectorAll('.reveal').forEach(el => io.observe(el));
+block.querySelectorAll('.reveal, .reveal-left, .reveal-right, .reveal-scale').forEach(el => io.observe(el));
 ```
+
+### Block-specific animations (define in block CSS)
+
+For unique keyframe animations (gauge fills, counters, custom effects) — define in block's own `<style>`. Only block-unique stuff.
 
 ### Layer 2: Behavioral Animations (per-block JS)
 
@@ -352,6 +341,35 @@ Don't add `@media` queries. Use `max-width`, flexbox, grid, relative units.
 
 ---
 
+## CSS Size Optimization
+
+`portal-blocks.css` provides shared classes. **DO NOT redefine** these in block CSS:
+- `.reveal`, `.reveal-left`, `.reveal-right`, `.reveal-scale` — entrance animations
+- `.cms-btn`, `.cms-btn--primary/secondary/outline/cta` — button system
+- `.cms-card` — card hover
+- `.cms-icon` — icon container (flex + img object-fit)
+- `[data-tooltip]` — tooltips
+- `@media (prefers-reduced-motion)` — handled globally
+
+**Block CSS should ONLY contain:**
+- `.block-{slug}` container styles (bg, padding, gap, width)
+- Block-specific element styles (scoped under `.block-{slug}`)
+- Block-specific `@keyframes` (unique animations like gauge fills)
+
+**Use `.cms-icon` instead of custom icon containers:**
+```html
+<!-- CORRECT — uses shared class -->
+<div class="cms-icon" style="width: 64px; height: 64px">
+  <img src="..." alt="..." />
+</div>
+
+<!-- WRONG — duplicates icon styling -->
+<div class="block-slug__icon"><img ... /></div>
+<!-- with CSS: .block-slug__icon img { width:100%; object-fit:contain } -->
+```
+
+---
+
 ## What NOT to Do
 
 1. **Don't use React/Vue/Svelte** — vanilla HTML+CSS+JS only
@@ -362,3 +380,5 @@ Don't add `@media` queries. Use `max-width`, flexbox, grid, relative units.
 6. **Don't animate layout properties** — only transform/opacity
 7. **Don't add media queries** — Studio handles responsive
 8. **Don't embed token tables in this skill** — tokens.css is the source of truth
+9. **Don't redefine `.reveal` or `.cms-btn`** — use shared classes from portal-blocks.css
+10. **Don't add `@media (prefers-reduced-motion)`** — it's in portal-blocks.css globally
