@@ -17,6 +17,7 @@ export function BlocksList() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('')
   const [page, setPage] = useState(1)
 
   useEffect(() => {
@@ -38,15 +39,20 @@ export function BlocksList() {
     return () => { cancelled = true }
   }, [])
 
-  useEffect(() => { setPage(1) }, [search])
+  useEffect(() => { setPage(1) }, [search, categoryFilter])
 
   const filteredBlocks = useMemo(() => {
-    if (!search.trim()) return blocks
-    const q = search.trim().toLowerCase()
-    return blocks.filter(
-      (b) => b.name.toLowerCase().includes(q) || b.slug.toLowerCase().includes(q)
-    )
-  }, [blocks, search])
+    let result = blocks
+    // Category filter
+    if (categoryFilter === 'content') result = result.filter((b) => !b.category)
+    else if (categoryFilter) result = result.filter((b) => b.category === categoryFilter)
+    // Search filter
+    if (search.trim()) {
+      const q = search.trim().toLowerCase()
+      result = result.filter((b) => b.name.toLowerCase().includes(q) || b.slug.toLowerCase().includes(q))
+    }
+    return result
+  }, [blocks, search, categoryFilter])
 
   const paginatedBlocks = useMemo(() => {
     const start = (page - 1) * ITEMS_PER_PAGE
@@ -105,6 +111,31 @@ export function BlocksList() {
           Create Block
         </Button>
       </div>
+
+      {/* Category filter */}
+      {!loading && blocks.length > 0 && (
+        <div className="flex w-full items-center" style={{ gap: 'var(--spacing-xs)' }}>
+          {['', 'content', 'header', 'footer', 'sidebar'].map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => setCategoryFilter(cat)}
+              className="border-0"
+              style={{
+                fontSize: 'var(--text-xs-font-size)',
+                fontWeight: categoryFilter === cat ? 'var(--font-weight-semibold)' : 'var(--font-weight-regular)',
+                color: categoryFilter === cat ? 'hsl(var(--text-primary))' : 'hsl(var(--text-muted))',
+                backgroundColor: categoryFilter === cat ? 'hsl(var(--bg-surface-alt))' : 'transparent',
+                padding: '4px 10px',
+                borderRadius: 'var(--rounded-md)',
+                cursor: 'pointer',
+              }}
+            >
+              {cat === '' ? 'All' : cat === 'content' ? 'Content' : cat.charAt(0).toUpperCase() + cat.slice(1)}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Search */}
       {!loading && blocks.length > 0 && (
@@ -274,6 +305,20 @@ export function BlocksList() {
                 >
                   {block.slug}
                 </p>
+                {(block.category || block.is_default) && (
+                  <div className="flex items-center" style={{ gap: '4px' }}>
+                    {block.category && (
+                      <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 'var(--rounded-sm)', backgroundColor: 'hsl(var(--tag-active-bg))', color: 'hsl(var(--tag-active-fg))' }}>
+                        {block.category}
+                      </span>
+                    )}
+                    {block.is_default && (
+                      <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 'var(--rounded-sm)', backgroundColor: 'hsl(var(--status-success-bg))', color: 'hsl(var(--status-success-fg))' }}>
+                        default
+                      </span>
+                    )}
+                  </div>
+                )}
                 <div className="flex w-full items-center justify-end">
                   <span
                     style={{

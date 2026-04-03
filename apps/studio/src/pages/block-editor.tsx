@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
 import { useForm, useWatch, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { createBlockSchema } from '@cmsmasters/validators'
@@ -52,9 +52,18 @@ const monoStyle: React.CSSProperties = {
   letterSpacing: '-0.01em',
 }
 
+const BLOCK_CATEGORIES = [
+  { value: '', label: '(none) — Content block' },
+  { value: 'header', label: 'Header' },
+  { value: 'footer', label: 'Footer' },
+  { value: 'sidebar', label: 'Sidebar' },
+] as const
+
 interface BlockFormData {
   name: string
   slug: string
+  category: string
+  is_default: boolean
   code: string
   js: string
   thumbnail_url: string
@@ -69,6 +78,8 @@ function getDefaults(): BlockFormData {
   return {
     name: '',
     slug: '',
+    category: '',
+    is_default: false,
     code: '',
     js: '',
     thumbnail_url: '',
@@ -90,6 +101,8 @@ function blockToFormData(block: Block): BlockFormData {
   return {
     name: block.name,
     slug: block.slug,
+    category: block.category ?? '',
+    is_default: block.is_default ?? false,
     code: blockToCode(block),
     js: block.js ?? '',
     thumbnail_url: (block.metadata as Record<string, unknown>)?.thumbnail_url as string ?? '',
@@ -139,6 +152,8 @@ function formDataToPayload(data: BlockFormData) {
     html: html || data.code,
     css: css || undefined,
     js: data.js,
+    category: data.category,
+    is_default: data.is_default,
     hooks: Object.keys(hooks).length > 0 ? hooks : undefined,
     metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
   }
@@ -186,7 +201,10 @@ function parseHtmlFile(content: string): { code: string; js: string } {
 export function BlockEditor() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const isNew = !id
+  // Pre-fill category from URL param (e.g., /blocks/new?category=header)
+  const urlCategory = isNew ? new URLSearchParams(location.search).get('category') ?? '' : ''
 
   const [existingBlock, setExistingBlock] = useState<Block | null>(null)
   const [loading, setLoading] = useState(!isNew)
@@ -197,7 +215,7 @@ export function BlockEditor() {
     resolver: isNew ? zodResolver(createBlockSchema, {
       // Map our form shape to createBlockSchema shape for validation
     }) : undefined,
-    defaultValues: getDefaults(),
+    defaultValues: { ...getDefaults(), category: urlCategory },
   })
 
   const { register, control, reset, formState: { errors, isDirty } } = form
@@ -528,6 +546,31 @@ ${code}${scriptTag}
                 </span>
               )}
             </Field>
+            <Field label="Category">
+              <select
+                {...register('category')}
+                style={{ ...inputStyle, cursor: 'pointer' }}
+              >
+                {BLOCK_CATEGORIES.map((c) => (
+                  <option key={c.value} value={c.value}>{c.label}</option>
+                ))}
+              </select>
+            </Field>
+            {form.watch('category') && (
+              <div className="flex flex-col" style={{ gap: 'var(--spacing-xs)' }}>
+                <label className="flex items-center" style={{ gap: 'var(--spacing-sm)', cursor: 'pointer' }}>
+                  <input type="checkbox" {...register('is_default')} />
+                  <span style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-secondary))' }}>
+                    Set as default
+                  </span>
+                </label>
+                {form.watch('is_default') && (
+                  <p style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))', margin: 0, paddingLeft: 'var(--spacing-xl)' }}>
+                    This block will auto-fill all {form.watch('category')} slots unless overridden by a layout.
+                  </p>
+                )}
+              </div>
+            )}
           </FormSection>
 
           <FormSection title="Code *" defaultOpen={false}>
