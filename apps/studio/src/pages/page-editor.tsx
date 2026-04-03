@@ -61,9 +61,16 @@ const LAYOUT_SCOPES = [
 const GLOBAL_SLOTS = ['header', 'footer', 'sidebar-left', 'sidebar-right']
 
 function extractSlots(html: string): string[] {
-  const re = /\{\{slot:([a-z0-9-]+)\}\}/g
   const slots: string[] = []
-  for (const m of html.matchAll(re)) if (!slots.includes(m[1])) slots.push(m[1])
+  // Match {{slot:name}} placeholders
+  for (const m of html.matchAll(/\{\{slot:([a-z0-9-]+)\}\}/g)) {
+    if (!slots.includes(m[1])) slots.push(m[1])
+  }
+  // Also match <!-- SLOT: NAME --> HTML comments (common in layout prototypes)
+  for (const m of html.matchAll(/<!--\s*SLOT:\s*([A-Za-z0-9-_ ]+?)\s*-->/g)) {
+    const name = m[1].trim().toLowerCase().replace(/\s+/g, '-')
+    if (!slots.includes(name)) slots.push(name)
+  }
   return slots
 }
 
@@ -787,6 +794,7 @@ export function PageEditor() {
         isSaving={saving}
         isPublishing={publishing}
         isDeleting={deleting}
+        isPublished={existingPage?.status === 'published'}
         onDiscard={handleDiscard}
         onSaveDraft={handleSaveDraft}
         onPublish={handlePublish}

@@ -9,6 +9,7 @@ interface EditorFooterProps {
   isSaving: boolean
   isPublishing: boolean
   isDeleting: boolean
+  isPublished?: boolean
 }
 
 export function EditorFooter({
@@ -20,6 +21,7 @@ export function EditorFooter({
   isSaving,
   isPublishing,
   isDeleting,
+  isPublished = false,
 }: EditorFooterProps) {
   const busy = isSaving || isPublishing || isDeleting
 
@@ -87,7 +89,7 @@ export function EditorFooter({
           disabled={busy}
           loading={isPublishing}
         >
-          Publish
+          {isPublished ? 'Update & Publish' : 'Publish'}
         </Button>
       </div>
     </div>
