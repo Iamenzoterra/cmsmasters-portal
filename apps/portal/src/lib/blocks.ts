@@ -101,3 +101,35 @@ export async function getThemeBySlug(slug: string) {
   if (error) throw error
   return data
 }
+
+// ── Composed pages ──
+
+/**
+ * Fetch a published composed page by slug.
+ */
+export async function getComposedPageBySlug(slug: string) {
+  const { data, error } = await supabase
+    .from('pages')
+    .select('*')
+    .eq('type', 'composed')
+    .eq('slug', slug)
+    .eq('status', 'published')
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+/**
+ * Fetch page blocks with full block data, ordered by position.
+ */
+export async function getPageBlocksWithData(pageId: string) {
+  const { data, error } = await supabase
+    .from('page_blocks')
+    .select('*, blocks(*)')
+    .eq('page_id', pageId)
+    .order('position', { ascending: true })
+
+  if (error) throw error
+  return data ?? []
+}
