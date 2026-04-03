@@ -1,0 +1,10 @@
+{
+  "extends": "astro/tsconfigs/strict",
+  "compilerOptions": {
+    "paths": {
+      "@cmsmasters/db": ["../../packages/db/src/index.ts"],
+      "@cmsmasters/validators": ["../../packages/validators/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.astro", "env.d.ts"]
+}

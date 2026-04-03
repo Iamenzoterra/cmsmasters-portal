@@ -1,0 +1,17 @@
+/* Portal global styles */
+@import '../../../../packages/ui/src/theme/tokens.css';
+@import '../../../../packages/ui/src/portal/portal-blocks.css';
+
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Manrope', system-ui, sans-serif;
+  background: hsl(var(--bg-page));
+  color: hsl(var(--text-primary));
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

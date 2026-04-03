@@ -1,0 +1,114 @@
+---
+import Base from '../../layouts/Base.astro'
+import SEOHead from '../../components/SEOHead.astro'
+import BlockRenderer from '../../components/BlockRenderer.astro'
+import { supabase } from '../../lib/supabase'
+import { getGlobalElements } from '../../lib/global-elements'
+import { getThemeBySlug, getTemplateById, getLayoutByScope, mergePositions, fetchBlocksById } from '../../lib/blocks'
+import { resolveSlots, resolveMetaHooks, resolveBlockHooks, renderBlock } from '../../lib/hooks'
+
+// SSG: generate paths for all published themes
+export async function getStaticPaths() {
+  const { data: themes } = await supabase
+    .from('themes')
+    .select('slug')
+    .eq('status', 'published')
+
+  return (themes ?? []).map((t) => ({ params: { slug: t.slug } }))
+}
+
+const { slug } = Astro.params
+
+// 1. Fetch theme
+const theme = await getThemeBySlug(slug)
+const meta = (theme.meta ?? {}) as Record<string, unknown>
+const seo = (theme.seo ?? {}) as Record<string, string>
+const blockFills = (theme.block_fills ?? []) as Array<{ position: number; block_id: string }>
+
+// 2. Resolve global elements for theme pages
+const globalElements = await getGlobalElements('layout', 'themes')
+
+// 3. Fetch layout page (scope = 'theme')
+let layoutPage: { html: string; css: string } | null = null
+try {
+  layoutPage = await getLayoutByScope('theme')
+} catch {
+  // No layout — render blocks directly
+}
+
+// 4. Fetch template + merge with block fills
+let contentPositions: Array<{ position: number; block_id: string }> = []
+if (theme.template_id) {
+  try {
+    const template = await getTemplateById(theme.template_id)
+    const templatePositions = (template.positions ?? []) as Array<{ position: number; block_id: string | null }>
+    contentPositions = mergePositions(templatePositions, blockFills)
+  } catch {
+    // Template not found — use block fills only
+    contentPositions = blockFills
+  }
+} else {
+  contentPositions = blockFills
+}
+
+// 5. Collect all block IDs and fetch
+const globalBlockIds = Object.values(globalElements)
+  .filter((b): b is NonNullable<typeof b> => b !== null)
+  .map((b) => b.id)
+const contentBlockIds = contentPositions.map((p) => p.block_id)
+const allBlockIds = [...new Set([...globalBlockIds, ...contentBlockIds])]
+const blockMap = await fetchBlocksById(allBlockIds)
+
+// 6. Render content blocks with hooks resolved
+const contentHTML = contentPositions
+  .map((pos) => {
+    const block = blockMap.get(pos.block_id)
+    if (!block) return ''
+    const html = resolveBlockHooks(block.html, block.hooks as Record<string, unknown>, meta)
+    return renderBlock(html, block.css, block.slug, block.js || undefined)
+  })
+  .join('\n')
+
+// 7. Render global element blocks
+function renderGlobalBlock(block: Record<string, unknown> | null): string {
+  if (!block) return ''
+  const b = block as unknown as { html: string; css: string; slug: string; js?: string; hooks?: Record<string, unknown> }
+  const html = resolveBlockHooks(b.html, b.hooks ?? null, meta)
+  return renderBlock(html, b.css, b.slug, b.js || undefined)
+}
+
+// 8. Assemble page
+let pageHTML: string
+if (layoutPage?.html) {
+  // Layout with slots
+  pageHTML = resolveSlots(layoutPage.html, {
+    header: renderGlobalBlock(globalElements.header as Record<string, unknown>),
+    footer: renderGlobalBlock(globalElements.footer as Record<string, unknown>),
+    'sidebar-left': renderGlobalBlock(globalElements['sidebar-left'] as Record<string, unknown>),
+    'sidebar-right': renderGlobalBlock(globalElements['sidebar-right'] as Record<string, unknown>),
+    content: contentHTML,
+  })
+  pageHTML = resolveMetaHooks(pageHTML, meta)
+} else {
+  // No layout — render blocks directly
+  const header = renderGlobalBlock(globalElements.header as Record<string, unknown>)
+  const footer = renderGlobalBlock(globalElements.footer as Record<string, unknown>)
+  pageHTML = `${header}\n<main>${contentHTML}</main>\n${footer}`
+}
+
+const title = seo.title || (meta.name as string) || slug
+const description = seo.description || (meta.tagline as string) || ''
+---
+<Base title={title}>
+  <SEOHead
+    slot="head"
+    title={title}
+    description={description}
+    price={meta.price as number | undefined}
+    rating={meta.rating as number | undefined}
+    name={meta.name as string | undefined}
+    slug={slug}
+  />
+  {layoutPage?.css && <style set:html={layoutPage.css} />}
+  <Fragment set:html={pageHTML} />
+</Base>

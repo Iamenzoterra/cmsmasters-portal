@@ -1,0 +1,24 @@
+---
+import { resolveBlockHooks, renderBlock } from '../lib/hooks'
+
+interface Props {
+  html: string
+  css: string
+  js?: string
+  slug: string
+  hooks?: Record<string, unknown> | null
+  themeMeta?: Record<string, unknown>
+}
+
+const { html, css, js, slug, hooks, themeMeta } = Astro.props
+
+// Resolve hooks if theme meta provided
+const resolvedHtml = themeMeta
+  ? resolveBlockHooks(html, hooks, themeMeta)
+  : html
+---
+{css.trim() && <style set:html={css} />}
+<div class={`block-${slug}`}>
+  <Fragment set:html={resolvedHtml} />
+</div>
+{js?.trim() && <script type="module" set:html={js} />}
