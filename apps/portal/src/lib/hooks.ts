@@ -4,14 +4,52 @@
  */
 
 /**
- * Resolve {{slot:*}} placeholders in layout HTML.
- * @param html — layout HTML with {{slot:header}}, {{slot:content}}, etc.
+ * Resolve slot placeholders in layout HTML.
+ * Supports three formats:
+ *   1. {{slot:name}} — mustache placeholders
+ *   2. <div data-slot="name"></div> — attribute-based (replaces innerHTML)
+ *   3. <!-- SLOT: NAME --> — HTML comment markers
+ * @param html — layout HTML
  * @param slots — map of slot name → rendered HTML
  */
 export function resolveSlots(html: string, slots: Record<string, string>): string {
-  return html.replace(/\{\{slot:([a-z0-9-]+)\}\}/g, (_, name) => {
-    return slots[name] ?? ''
+  let result = html
+
+  // 1. {{slot:name}}
+  result = result.replace(/\{\{slot:([a-z0-9-]+)\}\}/g, (_, name) => slots[name] ?? '')
+
+  // 2. <div data-slot="name"></div> — only match actual HTML elements (not CSS selectors)
+  // Use a function to avoid matching inside <style> blocks
+  const styleBlocks: string[] = []
+  // Temporarily remove <style> blocks to avoid matching CSS selectors
+  result = result.replace(/<style[\s\S]*?<\/style>/g, (m) => {
+    styleBlocks.push(m)
+    return `<!--STYLE_PLACEHOLDER_${styleBlocks.length - 1}-->`
   })
+  // Now safely replace data-slot elements
+  result = result.replace(
+    /<(\w+)([^>]*)\s+data-slot="([^"]+)"([^>]*)><\/\1>/g,
+    (_, tag, before, name, after) => {
+      const slotName = name.toLowerCase().replace(/\s+/g, '-')
+      const content = slots[slotName] ?? ''
+      return `<${tag}${before} data-slot="${name}"${after}>${content}</${tag}>`
+    }
+  )
+  // Restore <style> blocks
+  result = result.replace(/<!--STYLE_PLACEHOLDER_(\d+)-->/g, (_, i) => styleBlocks[parseInt(i)])
+
+  return result
+}
+
+/**
+ * Strip debug elements from layout HTML (debug toggle buttons, debug scripts).
+ */
+export function stripDebug(html: string): string {
+  // Remove debug toggle button
+  return html
+    .replace(/<button\s+id="debugToggle"[\s\S]*?<\/button>/g, '')
+    .replace(/<!--\s*DEBUG[^>]*-->/g, '')
+    .replace(/<script>[\s\S]*?debugToggle[\s\S]*?<\/script>/g, '')
 }
 
 /**

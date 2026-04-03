@@ -5,7 +5,7 @@ import BlockRenderer from '../../components/BlockRenderer.astro'
 import { supabase } from '../../lib/supabase'
 import { resolveGlobalBlocks } from '../../lib/global-elements'
 import { getThemeBySlug, getTemplateById, getLayoutByScope, mergePositions, fetchBlocksById } from '../../lib/blocks'
-import { resolveSlots, resolveMetaHooks, resolveBlockHooks, renderBlock } from '../../lib/hooks'
+import { resolveSlots, resolveMetaHooks, resolveBlockHooks, renderBlock, stripDebug } from '../../lib/hooks'
 
 // SSG: generate paths for all published themes
 export async function getStaticPaths() {
@@ -81,8 +81,9 @@ function renderGlobalBlock(block: Record<string, unknown> | null): string {
 // 8. Assemble page
 let pageHTML: string
 if (layoutPage?.html) {
-  // Layout with slots
-  pageHTML = resolveSlots(layoutPage.html, {
+  // Layout with slots — strip debug elements, resolve slots
+  const cleanLayout = stripDebug(layoutPage.html)
+  pageHTML = resolveSlots(cleanLayout, {
     header: renderGlobalBlock(globalElements.header as Record<string, unknown>),
     footer: renderGlobalBlock(globalElements.footer as Record<string, unknown>),
     'sidebar-left': renderGlobalBlock(globalElements['sidebar-left'] as Record<string, unknown>),
