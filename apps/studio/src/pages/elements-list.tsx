@@ -28,7 +28,7 @@ export function ElementsList() {
             Page sections — hero, pricing, features, testimonials. Used in composed pages and element slots.
           </p>
         </div>
-        <Button variant="primary" onClick={() => navigate('/blocks/new?category=element')}>
+        <Button variant="primary" onClick={() => navigate('/elements/new?category=element')}>
           <Plus size={16} />
           Create Element
         </Button>
@@ -48,7 +48,7 @@ export function ElementsList() {
           <p style={{ margin: 0, fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-muted))' }}>
             No elements yet. Create your first page section.
           </p>
-          <Button variant="outline" size="sm" onClick={() => navigate('/blocks/new?category=element')}>
+          <Button variant="outline" size="sm" onClick={() => navigate('/elements/new?category=element')}>
             <Plus size={14} />
             Create Element
           </Button>
@@ -61,7 +61,7 @@ export function ElementsList() {
             <button
               key={block.id}
               type="button"
-              onClick={() => navigate(`/blocks/${block.id}`)}
+              onClick={() => navigate(`/elements/${block.id}`)}
               className="flex w-full cursor-pointer items-center justify-between border text-left transition-shadow hover:shadow-sm"
               style={{
                 padding: 'var(--spacing-sm) var(--spacing-md)',

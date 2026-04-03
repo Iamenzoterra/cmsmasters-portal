@@ -206,6 +206,10 @@ export function BlockEditor() {
   const isNew = !id
   // Pre-fill category from URL param (e.g., /blocks/new?category=header)
   const urlCategory = isNew ? new URLSearchParams(location.search).get('category') ?? '' : ''
+  // Detect section: /elements/* uses elements routes, /blocks/* uses blocks routes
+  const isElementRoute = location.pathname.startsWith('/elements')
+  const basePath = isElementRoute ? '/elements' : '/blocks'
+  const sectionLabel = isElementRoute ? 'Elements' : 'Blocks'
 
   const [existingBlock, setExistingBlock] = useState<Block | null>(null)
   const [loading, setLoading] = useState(!isNew)
@@ -297,7 +301,7 @@ export function BlockEditor() {
           slug: data.slug,
           ...payload,
         })
-        navigate(`/blocks/${saved.id}`, { replace: true })
+        navigate(`${basePath}/${saved.id}`, { replace: true })
         toast({ type: 'success', message: 'Block created' })
       } else {
         const saved = await updateBlockApi(id, payload)
@@ -319,7 +323,7 @@ export function BlockEditor() {
     try {
       await deleteBlockApi(existingBlock.id)
       toast({ type: 'success', message: 'Block deleted' })
-      navigate('/blocks', { replace: true })
+      navigate(basePath, { replace: true })
     } catch (error) {
       toast({ type: 'error', message: error instanceof Error ? error.message : 'Delete failed' })
     } finally {
@@ -419,7 +423,7 @@ export function BlockEditor() {
         <p style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--status-error-fg))', margin: 0 }}>
           {fetchError}
         </p>
-        <Button variant="outline" size="sm" onClick={() => navigate('/blocks')}>Back to Blocks</Button>
+        <Button variant="outline" size="sm" onClick={() => navigate(basePath)}>Back to {sectionLabel}</Button>
       </div>
     )
   }
@@ -440,13 +444,13 @@ export function BlockEditor() {
       >
         <div className="flex items-center" style={{ gap: 'var(--spacing-sm)' }}>
           <Link
-            to="/blocks"
+            to={basePath}
             className="flex items-center no-underline"
             style={{ color: 'hsl(var(--text-secondary))', gap: '4px' }}
           >
             <ChevronLeft size={18} />
             <span style={{ fontSize: 'var(--text-sm-font-size)' }}>
-              Blocks
+              {sectionLabel}
             </span>
           </Link>
           <span style={{ color: 'hsl(var(--text-muted))' }}>/</span>

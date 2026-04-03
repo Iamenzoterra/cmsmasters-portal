@@ -87,6 +87,8 @@ export function App() {
         <Route path="/static-pages/:id" element={<PageEditor />} />
         <Route path="/global-elements" element={<GlobalElementsSettings />} />
         <Route path="/elements" element={<ElementsList />} />
+        <Route path="/elements/new" element={<BlockEditor />} />
+        <Route path="/elements/:id" element={<BlockEditor />} />
 
         {/* Standalone */}
         <Route path="/media" element={<MediaPage />} />
