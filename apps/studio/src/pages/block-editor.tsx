@@ -655,48 +655,16 @@ ${code}${scriptTag}
             <div style={{ height: '1px', backgroundColor: 'hsl(var(--border-default))' }} />
 
             {/* Thumbnail */}
-            <div className="flex flex-col" style={{ gap: 'var(--spacing-sm)' }}>
-              <label style={labelStyle}>Thumbnail</label>
-              <p style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))', margin: 0 }}>
-                Custom preview image for blocks list. Upload a screenshot of the block.
-              </p>
-              {form.watch('thumbnail_url') ? (
-                <div className="flex flex-col" style={{ gap: 'var(--spacing-xs)' }}>
-                  <img
-                    src={form.getValues('thumbnail_url')}
-                    alt="Block thumbnail"
-                    style={{ maxWidth: '300px', borderRadius: 'var(--rounded-lg)', border: '1px solid hsl(var(--border-default))' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => form.setValue('thumbnail_url', '', { shouldDirty: true })}
-                    className="flex items-center gap-1 border-0 bg-transparent"
-                    style={{ color: 'hsl(var(--status-error-fg))', fontSize: 'var(--text-xs-font-size)', cursor: 'pointer', padding: 0 }}
-                  >
-                    <X size={12} />
-                    Remove thumbnail
-                  </button>
-                </div>
-              ) : (
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0]
-                    if (!file) return
-                    try {
-                      const url = await uploadFile(file)
-                      form.setValue('thumbnail_url', url, { shouldDirty: true })
-                      toast({ type: 'success', message: 'Thumbnail uploaded' })
-                    } catch (err) {
-                      toast({ type: 'error', message: err instanceof Error ? err.message : 'Upload failed' })
-                    }
-                    e.target.value = ''
-                  }}
-                  style={{ fontSize: 'var(--text-sm-font-size)' }}
-                />
-              )}
-            </div>
+            <ThumbnailUpload
+              url={form.watch('thumbnail_url')}
+              onUpload={async (file) => {
+                const url = await uploadFile(file)
+                form.setValue('thumbnail_url', url, { shouldDirty: true })
+                toast({ type: 'success', message: 'Thumbnail uploaded' })
+              }}
+              onRemove={() => form.setValue('thumbnail_url', '', { shouldDirty: true })}
+              onError={(msg) => toast({ type: 'error', message: msg })}
+            />
 
             <div style={{ height: '1px', backgroundColor: 'hsl(var(--border-default))' }} />
 
@@ -803,6 +771,113 @@ ${code}${scriptTag}
           {saving ? 'Saving...' : isNew ? 'Create Block' : 'Save Changes'}
         </Button>
       </div>
+    </div>
+  )
+}
+
+function ThumbnailUpload({ url, onUpload, onRemove, onError }: {
+  url: string
+  onUpload: (file: File) => Promise<void>
+  onRemove: () => void
+  onError: (msg: string) => void
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+  const [dragOver, setDragOver] = useState(false)
+
+  async function handleFile(file: File) {
+    if (!file.type.match(/^image\/(png|jpeg|webp)$/)) {
+      onError('Only PNG, JPG, WebP allowed')
+      return
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      onError('Max 2MB')
+      return
+    }
+    setUploading(true)
+    try { await onUpload(file) } catch (err) { onError(err instanceof Error ? err.message : 'Upload failed') }
+    finally { setUploading(false) }
+  }
+
+  return (
+    <div className="flex flex-col" style={{ gap: 'var(--spacing-sm)' }}>
+      <label style={{ fontSize: 'var(--text-sm-font-size)', fontWeight: 'var(--font-weight-medium)', color: 'hsl(var(--foreground))' }}>
+        Thumbnail
+      </label>
+
+      {url ? (
+        <div className="flex items-start" style={{ gap: 'var(--spacing-md)' }}>
+          <img
+            src={url}
+            alt="Block thumbnail"
+            style={{
+              width: '160px',
+              height: '100px',
+              objectFit: 'cover',
+              borderRadius: 'var(--rounded-lg)',
+              border: '1px solid hsl(var(--border-default))',
+            }}
+          />
+          <div className="flex flex-col" style={{ gap: 'var(--spacing-xs)' }}>
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              className="flex items-center gap-1 border-0 bg-transparent"
+              style={{ color: 'hsl(var(--text-link))', fontSize: 'var(--text-xs-font-size)', cursor: 'pointer', padding: 0 }}
+            >
+              Replace
+            </button>
+            <button
+              type="button"
+              onClick={onRemove}
+              className="flex items-center gap-1 border-0 bg-transparent"
+              style={{ color: 'hsl(var(--status-error-fg))', fontSize: 'var(--text-xs-font-size)', cursor: 'pointer', padding: 0 }}
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div
+          onClick={() => !uploading && inputRef.current?.click()}
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={(e) => {
+            e.preventDefault(); setDragOver(false)
+            const file = e.dataTransfer.files[0]
+            if (file) handleFile(file)
+          }}
+          className="flex flex-col items-center justify-center"
+          style={{
+            padding: 'var(--spacing-xl) var(--spacing-md)',
+            border: `2px dashed hsl(var(${dragOver ? '--border-focus' : '--border-default'}))`,
+            borderRadius: 'var(--rounded-lg)',
+            backgroundColor: dragOver ? 'hsl(var(--bg-surface-alt))' : 'transparent',
+            cursor: uploading ? 'wait' : 'pointer',
+            transition: 'border-color 0.15s ease, background-color 0.15s ease',
+          }}
+        >
+          <Upload size={20} style={{ color: 'hsl(var(--text-muted))', marginBottom: '8px' }} />
+          <span style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-secondary))' }}>
+            {uploading ? 'Uploading...' : 'Click or drag image'}
+          </span>
+          <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>
+            PNG, JPG, WebP · Max 2MB
+          </span>
+        </div>
+      )}
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          if (file) handleFile(file)
+          e.target.value = ''
+        }}
+      />
     </div>
   )
 }
