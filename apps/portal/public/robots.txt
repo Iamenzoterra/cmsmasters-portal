@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://portal.cmsmasters.net/sitemap-index.xml

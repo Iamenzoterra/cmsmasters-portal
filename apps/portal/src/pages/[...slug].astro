@@ -61,6 +61,13 @@ const canonicalPath = pageSlug === 'homepage' ? '' : pageSlug
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={new URL(`/${canonicalPath}`, Astro.site).href} />
+    <script type="application/ld+json" set:html={JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      name: title,
+      description: description,
+      url: new URL(`/${canonicalPath}`, Astro.site).href,
+    })} />
   </Fragment>
   <Fragment set:html={headerHTML} />
   <main>
