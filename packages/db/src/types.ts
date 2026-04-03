@@ -155,6 +155,8 @@ export type Database = {
           html: string
           css: string
           js: string
+          category: string
+          is_default: boolean
           hooks: BlockHooks
           metadata: BlockMetadata
           created_by: string | null
@@ -168,6 +170,8 @@ export type Database = {
           html: string
           css?: string
           js?: string
+          category?: string
+          is_default?: boolean
           hooks?: BlockHooks
           metadata?: BlockMetadata
           created_by?: string | null
@@ -181,6 +185,8 @@ export type Database = {
           html?: string
           css?: string
           js?: string
+          category?: string
+          is_default?: boolean
           hooks?: BlockHooks
           metadata?: BlockMetadata
           created_by?: string | null
@@ -267,6 +273,7 @@ export type Database = {
           scope: string
           html: string
           css: string
+          layout_slots: Record<string, string>
           seo: ThemeSEO | null
           status: ThemeStatus
           created_by: string | null
@@ -281,6 +288,7 @@ export type Database = {
           scope?: string
           html?: string
           css?: string
+          layout_slots?: Record<string, string>
           seo?: ThemeSEO | null
           status?: ThemeStatus
           created_by?: string | null
@@ -295,6 +303,7 @@ export type Database = {
           scope?: string
           html?: string
           css?: string
+          layout_slots?: Record<string, string>
           seo?: ThemeSEO | null
           status?: ThemeStatus
           created_by?: string | null

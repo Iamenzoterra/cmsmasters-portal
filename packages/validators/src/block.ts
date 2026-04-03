@@ -32,6 +32,8 @@ export const createBlockSchema = z.object({
   html: z.string().min(1),
   css: z.string().default(''),
   js: z.string().default(''),
+  category: z.string().default(''),
+  is_default: z.boolean().default(false),
   hooks: hooksSchema,
   metadata: metadataSchema,
 })
@@ -43,6 +45,8 @@ export const updateBlockSchema = z.object({
   html: z.string().min(1).optional(),
   css: z.string().optional(),
   js: z.string().optional(),
+  category: z.string().optional(),
+  is_default: z.boolean().optional(),
   hooks: hooksSchema.optional(),
   metadata: metadataSchema.optional(),
 })

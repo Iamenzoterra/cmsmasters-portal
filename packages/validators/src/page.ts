@@ -16,6 +16,7 @@ export const pageSchema = z.object({
   scope: z.string().default(''),
   html: z.string().default(''),
   css: z.string().default(''),
+  layout_slots: z.record(z.string(), z.string()).default({}),
   seo: seoSchema.optional(),
   status: z.enum(['draft', 'published', 'archived']).default('draft'),
 })
@@ -27,6 +28,7 @@ export const updatePageSchema = z.object({
   scope: z.string().optional(),
   html: z.string().optional(),
   css: z.string().optional(),
+  layout_slots: z.record(z.string(), z.string()).optional(),
   seo: seoSchema.optional(),
   status: z.enum(['draft', 'published', 'archived']).optional(),
 })
