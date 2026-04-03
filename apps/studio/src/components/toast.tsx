@@ -32,8 +32,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       {toasts.length > 0 && (
         <div
-          className="fixed z-50 flex flex-col"
-          style={{ bottom: '24px', right: '24px', gap: '8px', maxWidth: '360px' }}
+          className="fixed z-50 flex flex-col items-center"
+          style={{ bottom: '24px', left: '50%', transform: 'translateX(-50%)', gap: '8px', maxWidth: '420px', width: 'max-content' }}
         >
           {toasts.map((t) => (
             <div
@@ -75,7 +75,7 @@ function bgForType(type: ToastType): string {
 
 function fgForType(type: ToastType): string {
   switch (type) {
-    case 'success': return 'hsl(var(--status-success-fg))'
+    case 'success': return 'hsl(var(--text-primary))'
     case 'error': return 'hsl(var(--status-error-fg))'
     case 'info': return 'hsl(var(--text-primary))'
   }
