@@ -172,7 +172,15 @@ export function BlockPickerModal({ onSelect, onClose, excludeIds = [] }: BlockPi
                     borderRadius: 'var(--rounded-lg)',
                   }}
                 >
-                  <BlockPreview html={block.html} css={block.css} height={120} />
+                  {(block.metadata as Record<string, unknown>)?.thumbnail_url ? (
+                    <img
+                      src={(block.metadata as Record<string, unknown>).thumbnail_url as string}
+                      alt={block.name}
+                      style={{ width: '100%', height: '120px', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <BlockPreview html={block.html} css={block.css} height={120} zoom={4} />
+                  )}
                   <div style={{ padding: 'var(--spacing-sm)' }}>
                     <p
                       className="truncate"
