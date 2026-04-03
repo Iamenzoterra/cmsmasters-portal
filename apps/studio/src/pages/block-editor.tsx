@@ -226,7 +226,6 @@ export function BlockEditor() {
   const { toast } = useToast()
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const [showPreview, setShowPreview] = useState(false)
   const [showProcess, setShowProcess] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
@@ -448,7 +447,34 @@ export function BlockEditor() {
             <Sparkles size={14} />
             Process
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setShowPreview(true)} disabled={!(watchedCode ?? '').trim()}>
+          <Button variant="outline" size="sm" onClick={() => {
+            const code = form.getValues('code') ?? ''
+            const js = form.getValues('js') ?? ''
+            const name = form.getValues('name') || 'Block Preview'
+            const scriptTag = js.trim() ? `\n<script type="module">\n${js}\n</script>` : ''
+            const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${name} — Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Manrope', system-ui, sans-serif; background: hsl(20 23% 97%); display: flex; justify-content: center; padding-top: 300px; padding-bottom: 100px; min-height: 100vh; }
+    ${tokensCSS}
+    ${portalBlocksCSS}
+  </style>
+</head>
+<body>
+${code}${scriptTag}
+</body>
+</html>`
+            const win = window.open('', '_blank')
+            if (win) { win.document.write(html); win.document.close() }
+          }} disabled={!(watchedCode ?? '').trim()}>
             <Eye size={14} />
             Preview
           </Button>
@@ -640,8 +666,6 @@ export function BlockEditor() {
             onClose={() => setShowProcess(false)}
           />
         )}
-        {/* Preview modal */}
-        {showPreview && <PreviewModal code={watchedCode ?? ''} onClose={() => setShowPreview(false)} />}
         {showDeleteConfirm && existingBlock && (
           <DeleteConfirmModal
             title="Delete block"
@@ -716,79 +740,6 @@ export function BlockEditor() {
         >
           {saving ? 'Saving...' : isNew ? 'Create Block' : 'Save Changes'}
         </Button>
-      </div>
-    </div>
-  )
-}
-
-function PreviewModal({ code, onClose }: { code: string; onClose: () => void }) {
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [onClose])
-
-  const srcdoc = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, sans-serif; }
-  </style>
-</head>
-<body>${code}
-<style>[class*="reveal"] { opacity: 1 !important; transform: none !important; transition: none !important; }</style>
-</body>
-</html>`
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ backgroundColor: 'hsl(var(--black-alpha-60))' }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
-    >
-      <div
-        className="flex flex-col"
-        style={{
-          width: '90vw',
-          height: '90vh',
-          backgroundColor: 'hsl(var(--bg-surface))',
-          borderRadius: 'var(--rounded-xl)',
-          overflow: 'hidden',
-          boxShadow: 'var(--shadow-2xl)',
-        }}
-      >
-        <div
-          className="flex shrink-0 items-center justify-between"
-          style={{
-            height: '48px',
-            padding: '0 var(--spacing-lg)',
-            borderBottom: '1px solid hsl(var(--border-default))',
-          }}
-        >
-          <span style={{
-            fontSize: 'var(--text-sm-font-size)',
-            fontWeight: 'var(--font-weight-semibold)',
-            color: 'hsl(var(--text-primary))',
-          }}>
-            Block Preview
-          </span>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex items-center justify-center border-0 bg-transparent"
-            style={{ width: '32px', height: '32px', cursor: 'pointer', color: 'hsl(var(--text-muted))' }}
-          >
-            <X size={18} />
-          </button>
-        </div>
-        <iframe
-          srcDoc={srcdoc}
-          sandbox="allow-same-origin"
-          title="Block preview"
-          style={{ flex: 1, width: '100%', border: 'none' }}
-        />
       </div>
     </div>
   )
