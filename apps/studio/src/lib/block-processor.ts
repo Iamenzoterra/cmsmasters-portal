@@ -39,11 +39,14 @@ export interface Suggestion {
   warning?: string
 }
 
+export type ImageStatus = 'new' | 'existing' | 'removed'
+
 export interface ImageRef {
   id: string
   type: 'img-src' | 'css-url'
   original: string          // original URL
   context: string           // element/selector context for display
+  status: ImageStatus       // new = needs upload, existing = already on R2, removed = was in prev version
 }
 
 // ── CSS Scanner ──
@@ -561,12 +564,28 @@ function escapeRegExp(s: string): string {
 
 // ── Image Extractor ──
 
+/** R2 public URL prefix — images already on our CDN */
+const R2_URL_PATTERN = /\.r2\.dev\//
+
+function isR2Url(url: string): boolean {
+  return R2_URL_PATTERN.test(url)
+}
+
+function isExternalUrl(url: string): boolean {
+  return url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')
+}
+
 /**
  * Extract image references from HTML and CSS.
+ * Classifies each image as: existing (R2), new (needs upload), or removed (in prev, not in current).
+ * @param html — current block HTML
+ * @param css — current block CSS
+ * @param previousUrls — R2 URLs from the previously saved version of this block (optional)
  */
-export function extractImages(html: string, css: string = ''): ImageRef[] {
+export function extractImages(html: string, css: string = '', previousUrls: string[] = []): ImageRef[] {
   const refs: ImageRef[] = []
   const seen = new Set<string>()
+  const currentUrls = new Set<string>()
   let imgId = 0
 
   // <img src="..."> in HTML
@@ -575,12 +594,14 @@ export function extractImages(html: string, css: string = ''): ImageRef[] {
     const url = match[1]
     if (isExternalUrl(url) && !seen.has(url)) {
       seen.add(url)
+      currentUrls.add(url)
       const altMatch = match[0].match(/alt=["']([^"']*)["']/)
       refs.push({
         id: `img-${++imgId}`,
         type: 'img-src',
         original: url,
         context: altMatch?.[1] || 'image',
+        status: isR2Url(url) ? 'existing' : 'new',
       })
     }
   }
@@ -591,20 +612,31 @@ export function extractImages(html: string, css: string = ''): ImageRef[] {
     const url = match[1]
     if (isExternalUrl(url) && !seen.has(url)) {
       seen.add(url)
+      currentUrls.add(url)
       refs.push({
         id: `img-${++imgId}`,
         type: 'css-url',
         original: url,
         context: 'CSS background',
+        status: isR2Url(url) ? 'existing' : 'new',
+      })
+    }
+  }
+
+  // Detect removed: was in previous version, not in current
+  for (const prevUrl of previousUrls) {
+    if (isR2Url(prevUrl) && !currentUrls.has(prevUrl)) {
+      refs.push({
+        id: `img-${++imgId}`,
+        type: 'img-src',
+        original: prevUrl,
+        context: 'removed from block',
+        status: 'removed',
       })
     }
   }
 
   return refs
-}
-
-function isExternalUrl(url: string): boolean {
-  return url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')
 }
 
 /**

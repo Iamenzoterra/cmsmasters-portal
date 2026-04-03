@@ -16,6 +16,7 @@ import { uploadImageBatch, type BatchUploadResult } from '../lib/block-api'
 interface BlockImportPanelProps {
   code: string                          // current HTML+CSS (combined with <style>)
   js: string                            // current JS (separate from code)
+  previousImageUrls?: string[]          // R2 URLs from saved block (for detecting removed images)
   onApply: (processedCode: string, js: string) => void
   onClose: () => void
 }
@@ -102,7 +103,7 @@ const CATEGORY_LABEL: Record<string, string> = {
   component: 'Components',
 }
 
-export function BlockImportPanel({ code, js: jsProp, onApply, onClose }: BlockImportPanelProps) {
+export function BlockImportPanel({ code, js: jsProp, previousImageUrls = [], onApply, onClose }: BlockImportPanelProps) {
   const { html: originalHtml, css: originalCss, js: codeJs } = useMemo(() => splitCode(code), [code])
   // JS from prop takes priority (even empty string = intentionally cleared).
   // Only fall back to codeJs when prop is null/undefined (legacy blocks with no js field).
@@ -114,8 +115,8 @@ export function BlockImportPanel({ code, js: jsProp, onApply, onClose }: BlockIm
     ...scanHTML(originalHtml, originalCss),
   ])
 
-  // Image state
-  const images = useMemo(() => extractImages(originalHtml, originalCss), [originalHtml, originalCss])
+  // Image state — detect existing R2, new external, removed
+  const images = useMemo(() => extractImages(originalHtml, originalCss, previousImageUrls), [originalHtml, originalCss, previousImageUrls])
   const [imageResults, setImageResults] = useState<BatchUploadResult[]>([])
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
@@ -153,9 +154,12 @@ export function BlockImportPanel({ code, js: jsProp, onApply, onClose }: BlockIm
     return replaceImages(originalHtml, processedCss, imageUrlMap)
   }, [originalHtml, processedCss, imageUrlMap])
 
-  // Upload images
+  // Upload images — only new ones (not existing R2 URLs)
   async function handleUploadImages() {
-    const urls = images.map((img) => img.original).filter((url) => !url.startsWith('data:'))
+    const urls = images
+      .filter((img) => img.status === 'new')
+      .map((img) => img.original)
+      .filter((url) => !url.startsWith('data:'))
     if (urls.length === 0) return
 
     setUploading(true)
@@ -304,16 +308,25 @@ export function BlockImportPanel({ code, js: jsProp, onApply, onClose }: BlockIm
               <div className="flex items-center justify-between">
                 <span style={{ fontSize: 'var(--text-sm-font-size)', fontWeight: 'var(--font-weight-semibold)', color: 'hsl(var(--text-primary))' }}>
                   Images ({images.length})
+                  {images.some(i => i.status === 'existing') && (
+                    <span style={{ fontSize: 'var(--text-xs-font-size)', fontWeight: 'var(--font-weight-regular)', color: 'hsl(var(--text-muted))', marginLeft: '6px' }}>
+                      {images.filter(i => i.status === 'existing').length} on R2
+                    </span>
+                  )}
                 </span>
                 {imageResults.length > 0 ? (
                   <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--status-success-fg))' }}>
-                    {imagesUploaded}/{images.length} uploaded
+                    {imagesUploaded} uploaded
                   </span>
-                ) : (
+                ) : images.some(i => i.status === 'new') ? (
                   <Button variant="outline" size="sm" onClick={handleUploadImages} disabled={uploading}>
                     {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-                    {uploading ? 'Uploading...' : 'Upload to R2'}
+                    {uploading ? 'Uploading...' : `Upload ${images.filter(i => i.status === 'new').length} new`}
                   </Button>
+                ) : (
+                  <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--status-success-fg))' }}>
+                    All on R2
+                  </span>
                 )}
               </div>
               {uploadError && (
@@ -477,10 +490,17 @@ function SuggestionRow({ suggestion: s, onToggle }: { suggestion: Suggestion; on
   )
 }
 
+const STATUS_ICON: Record<string, { color: string; label: string }> = {
+  existing: { color: 'hsl(var(--status-success-fg))', label: 'R2' },
+  new: { color: 'hsl(var(--text-link))', label: 'new' },
+  removed: { color: 'hsl(var(--status-error-fg))', label: 'removed' },
+}
+
 function ImageRow({ image, result }: { image: ImageRef; result?: BatchUploadResult }) {
   const shortUrl = image.original.length > 45
     ? image.original.slice(0, 20) + '...' + image.original.slice(-20)
     : image.original
+  const statusInfo = STATUS_ICON[image.status]
 
   return (
     <div
@@ -489,6 +509,7 @@ function ImageRow({ image, result }: { image: ImageRef; result?: BatchUploadResu
         gap: 'var(--spacing-xs)',
         padding: '4px var(--spacing-xs)',
         fontSize: 'var(--text-xs-font-size)',
+        opacity: image.status === 'removed' ? 0.5 : 1,
       }}
     >
       {result ? (
@@ -497,14 +518,26 @@ function ImageRow({ image, result }: { image: ImageRef; result?: BatchUploadResu
         ) : (
           <Check size={12} style={{ color: 'hsl(var(--status-success-fg))', flexShrink: 0 }} />
         )
+      ) : image.status === 'existing' ? (
+        <Check size={12} style={{ color: statusInfo.color, flexShrink: 0 }} />
       ) : (
         <span style={{ width: '12px', height: '12px', flexShrink: 0 }} />
       )}
-      <span className="truncate" style={{ color: 'hsl(var(--text-secondary))', fontFamily: 'var(--font-family-monospace)' }}>
+      <span className="truncate" style={{ color: 'hsl(var(--text-secondary))' }}>
         {shortUrl}
       </span>
-      <span className="truncate" style={{ color: 'hsl(var(--text-muted))', flexShrink: 0 }}>
-        {image.context}
+      <span
+        style={{
+          fontSize: '10px',
+          fontWeight: 'var(--font-weight-medium)',
+          color: statusInfo.color,
+          backgroundColor: image.status === 'removed' ? 'hsl(var(--status-error-bg))' : 'transparent',
+          padding: '0 4px',
+          borderRadius: '3px',
+          flexShrink: 0,
+        }}
+      >
+        {statusInfo.label}
       </span>
     </div>
   )

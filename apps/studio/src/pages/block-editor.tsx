@@ -140,6 +140,17 @@ function formDataToPayload(data: BlockFormData) {
   }
 }
 
+/** Extract R2 URLs from a saved block (for detecting removed images on re-import) */
+function extractR2Urls(block: Block): string[] {
+  const urls: string[] = []
+  const re = /https?:\/\/[^"'\s]+\.r2\.dev\/[^"'\s)]+/g
+  const html = block.html || ''
+  const css = block.css || ''
+  for (const match of html.matchAll(re)) urls.push(match[0])
+  for (const match of css.matchAll(re)) urls.push(match[0])
+  return [...new Set(urls)]
+}
+
 function parseHtmlFile(content: string): { code: string; js: string } {
   const parser = new DOMParser()
   const doc = parser.parseFromString(content, 'text/html')
@@ -657,6 +668,7 @@ ${code}${scriptTag}
           <BlockImportPanel
             code={watchedCode ?? ''}
             js={form.getValues('js') ?? ''}
+            previousImageUrls={existingBlock ? extractR2Urls(existingBlock) : []}
             onApply={(processedCode, js) => {
               form.setValue('code', processedCode, { shouldDirty: true })
               form.setValue('js', js, { shouldDirty: true })
