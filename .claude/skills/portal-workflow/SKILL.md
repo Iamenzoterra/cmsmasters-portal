@@ -31,8 +31,10 @@ We separate **Brain** (planning, strategy, specs) from **Hands** (Claude Code ex
 
 **Non-negotiables:**
 - RECON before planning
-- One phase at a time (no "Phase 1–5 detailed prompts upfront")
+- **Read domain skill before modifying a domain** (`.claude/skills/domains/{slug}/SKILL.md`)
+- One phase at a time (no "Phase 1-5 detailed prompts upfront")
 - Everything logged (`logs/` directory)
+- **`npm run arch-test` before every commit** (286 tests, ~400ms)
 - Docs last, based on logs
 
 ### Execution Log (mandatory per phase)
@@ -99,6 +101,29 @@ Process panel (token scan + R2 image upload) → save to DB → Portal renders v
 
 Full spec: `workplan/BLOCK-ARCHITECTURE-V2.md`, `workplan/PORTAL-BLOCK-ARCHITECTURE.md`
 
+### Living Documentation (WP-009)
+
+**Domain manifest** (`src/__arch__/domain-manifest.ts`) is the source of truth for code ownership. 11 domains, every source file assigned to exactly one domain.
+
+```
+┌─────────────────────────────────────────────┐
+│  Arch Tests (286 tests, ~400ms)             │  ← npm run arch-test
+│  Fails if code diverges from docs           │
+├─────────────────────────────────────────────┤
+│  Domain Skills (11 SKILL.md)                │  ← human knowledge: traps, invariants
+│  .claude/skills/domains/{slug}/SKILL.md     │
+├─────────────────────────────────────────────┤
+│  Domain Manifest (source of truth)          │  ← who owns what
+│  src/__arch__/domain-manifest.ts            │
+└─────────────────────────────────────────────┘
+```
+
+**11 domains:** pkg-db, pkg-auth, pkg-ui, pkg-validators, pkg-api-client, app-portal, studio-blocks (4 files: block processing pipeline), studio-core (47 files: CRUD shell), app-api, app-command-center, infra-tooling.
+
+**Query ownership:** `getOwnerDomain('path/to/file.ts')` from `src/__arch__/helpers.ts`
+
+**When adding/moving/deleting files:** update `owned_files` in `domain-manifest.ts`, run `npm run arch-test`.
+
 ### Context folder (.context/)
 
 **Always read `.context/BRIEF.md` first** when starting work. It has the full picture.
@@ -110,7 +135,8 @@ Full spec: `workplan/BLOCK-ARCHITECTURE-V2.md`, `workplan/PORTAL-BLOCK-ARCHITECT
 ├── LAYER_0_SPEC.md   — Infrastructure spec (✅ DONE — reference only)
 ├── CONVENTIONS.md    — Code style, naming, token usage, Supabase/Hono patterns
 ├── ROADMAP.md        — Layers 1–3 specs with block model details
-└── SKILL.md          — How the context system works
+├── SKILL.md          — How the context system works
+└── templates/        — WP-TEMPLATE, TASK-TEMPLATE, CC-WORKFLOW, HOW-WE-WORK
 ```
 
 Reading order: **BRIEF.md → ROADMAP.md (current layer) → CONVENTIONS.md** (before writing code).
@@ -136,7 +162,9 @@ cmsmasters-portal/
 ├── tools/studio-mockups/  ✅ Block preview HTML files (served on :7777 during /block-craft)
 ├── workplan/              ✅ WP-005 + WP-006, ADRs 001-024, BLOCK-ARCHITECTURE-V2.md
 ├── .context/              ✅ 6 context files for agents
-├── .claude/skills/        ✅ block-craft, portal-workflow, lint-ds, sync-tokens, figma-component-vars
+├── src/__arch__/          ✅ domain-manifest.ts (11 domains), helpers.ts, arch tests (286 tests)
+├── .claude/skills/        ✅ block-craft, portal-workflow, lint-ds, sync-tokens, figma-component-vars, debug-with-reliability
+│   └── domains/           ✅ 11 domain skills (invariants, traps, blast radius)
 ├── CLAUDE.md              ✅ agent entry point
 └── nx.json                ✅ Nx monorepo configured
 ```
@@ -177,21 +205,33 @@ Support + AI chat — deferred.
 1. Read `.context/BRIEF.md` — understand project state
 2. Read `.context/ROADMAP.md` — find your current layer spec
 3. Read `.context/CONVENTIONS.md` — know the patterns before writing code
-4. Run RECON: check actual file state vs what the spec expects
+4. **Identify affected domains** via `src/__arch__/domain-manifest.ts`
+5. **Read domain skills** for each affected domain: `.claude/skills/domains/{slug}/SKILL.md`
+   - Check **Invariants** (what must remain true)
+   - Check **Traps** (what goes wrong)
+   - Check **Blast Radius** (what else might break)
+6. Run RECON: check actual file state vs what the spec expects
 
 ### During execution
 
-5. Implement ONE phase at a time
-6. After each phase: verify (run tests, check types, manual smoke test)
-7. Write execution log to `logs/{task}/phase-{N}-result.md`
-8. Commit with descriptive message
+7. Implement ONE phase at a time
+8. After each phase: verify (`npm run arch-test` + domain-specific checks)
+9. Write execution log to `logs/wp-{NNN}/phase-{N}-result.md`
+10. Commit with descriptive message
+
+### When adding or modifying files
+
+11. **Update `src/__arch__/domain-manifest.ts`** — add new files to `owned_files`, new tables to `owned_tables`
+12. **Run `npm run arch-test`** — must pass before committing (286 tests, ~400ms)
+13. If a domain's contracts changed — update its SKILL.md (invariants, traps, blast radius)
 
 ### After completing a layer
 
-9. Update `.context/BRIEF.md` — mark layer done, update current task
-10. Create/update next layer spec if needed
-11. Update `CONVENTIONS.md` if new patterns discovered
-12. Final commit with context updates
+14. Update `.context/BRIEF.md` — mark layer done, update current task
+15. Create/update next layer spec if needed
+16. Update `CONVENTIONS.md` if new patterns discovered
+17. Update domain skills if contracts changed
+18. Final commit with context updates
 
 ---
 
@@ -217,6 +257,9 @@ Support + AI chat — deferred.
 | **Secrets** | ONLY in Hono API, never in SPA bundles |
 | **CSS scoping** | `.block-{slug}` class prefix per block — no leaking between blocks |
 | **Hook resolution** | Build-time string replacement in Next.js RSC (`{{price}}` → theme.meta.price) |
+| **Living Docs** | Domain manifest (11 domains) + domain skills (invariants, traps) + arch tests (286, ~400ms) |
+| **Domain ownership** | Every source file assigned to exactly one domain in `src/__arch__/domain-manifest.ts` |
+| **Arch tests** | `npm run arch-test` — path existence, no dual ownership, table access, skill parity |
 
 ### Token conventions (critical for UI code)
 
@@ -250,3 +293,7 @@ className="text-[length:var(--type-body-size)]"  // Font — need length hint
 10. **Don't store content in Git files** — Supabase tables
 11. **Don't hardcode block IDs or schemas** — blocks are dynamic DB assets, not compile-time constants
 12. **Don't create page files per block** — blocks are HTML+CSS in DB, rendered at build time via BlockRenderer server component
+13. **Don't add files without updating manifest** — `src/__arch__/domain-manifest.ts` must know about every source file
+14. **Don't skip `npm run arch-test`** — 286 tests catch manifest drift, dual ownership, missing skills
+15. **Don't modify code without reading domain skill** — `.claude/skills/domains/{slug}/SKILL.md` has invariants, traps, blast radius
+16. **Don't guess file ownership** — use `getOwnerDomain()` from `src/__arch__/helpers.ts`
