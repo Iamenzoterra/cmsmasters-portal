@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fast Loading Speed</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Manrope', system-ui, sans-serif;
+      background: hsl(var(--bg-page, 20 23% 97%));
+    }
+
+    /* ── BLOCK: fast-loading-speed (unique styles only) ── */
+
+    .block-fast-loading-speed {
+      background: hsl(206 100% 92%);
+      border-radius: 32px;
+      padding: var(--spacing-5xl, 64px) var(--spacing-3xl, 40px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 36px;
+      width: 615px;
+      color: hsl(231 68% 29%);
+    }
+
+    .block-fast-loading-speed .heading {
+      font-size: var(--h2-font-size, 42px);
+      font-weight: var(--font-weight-medium, 500);
+      line-height: var(--h2-line-height, 46px);
+      text-align: center;
+      max-width: 475px;
+    }
+
+    .block-fast-loading-speed .gauge-wrap {
+      position: relative;
+      width: 220px;
+      height: 220px;
+    }
+    .block-fast-loading-speed .gauge-svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .block-fast-loading-speed .gauge-score {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 60px;
+      font-weight: var(--font-weight-semibold, 600);
+      line-height: 1;
+      letter-spacing: -3px;
+      opacity: 0;
+    }
+
+    .block-fast-loading-speed .bottom-info {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    .block-fast-loading-speed .score-label {
+      font-size: var(--h4-font-size, 26px);
+      font-weight: var(--font-weight-regular, 400);
+      line-height: var(--h4-line-height, 34px);
+    }
+    .block-fast-loading-speed .score-source {
+      font-size: var(--text-sm-font-size, 15px);
+      line-height: var(--text-sm-line-height, 20px);
+    }
+
+    /* ── Gauge-specific animations ── */
+    @keyframes cyanDraw {
+      from { stroke-dashoffset: 540; }
+      to { stroke-dashoffset: 0; }
+    }
+    .block-fast-loading-speed .ring-fill-animated {
+      stroke-dashoffset: 540;
+    }
+    .block-fast-loading-speed .ring-fill-animated.animate {
+      animation: cyanDraw 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+  </style>
+</head>
+<body>
+  <section class="block-fast-loading-speed" data-block>
+
+    <div class="cms-icon reveal" style="width:64px;height:64px">
+      <img src="https://www.figma.com/api/mcp/asset/271b0e44-ea1d-4c40-a826-16e70ad9d406" alt="Speed meter icon" />
+    </div>
+
+    <h2 class="heading reveal" style="transition-delay: 0.1s">
+      Optimized for Fast Loading Speed
+    </h2>
+
+    <div class="gauge-wrap reveal-scale" style="transition-delay: 0.2s">
+      <svg class="gauge-svg" viewBox="0 0 220 220">
+        <circle class="ring-fill-animated" cx="110" cy="110" r="86" fill="none" stroke="#67CBFF" stroke-width="6" stroke-dasharray="14 1" stroke-linecap="butt" transform="rotate(-90 110 110)" />
+        <circle cx="110" cy="110" r="95" fill="none" stroke="white" stroke-width="12" stroke-dasharray="14 0.6" stroke-linecap="butt" transform="rotate(-90 110 110)" />
+        <circle id="whiteRingEraser" cx="110" cy="110" r="95" fill="none" stroke="hsl(206 100% 92%)" stroke-width="13" stroke-dasharray="597 0" stroke-linecap="butt" transform="rotate(-90 110 110)" />
+        <circle cx="110" cy="110" r="72" fill="hsl(206 100% 92%)" />
+      </svg>
+      <div class="gauge-score"><span id="scoreNum">90</span><span id="scorePlus" style="opacity:0">+</span></div>
+    </div>
+
+    <div class="bottom-info reveal" style="transition-delay: 0.4s">
+      <div class="cms-icon" style="width:64px;height:64px">
+        <img src="https://www.figma.com/api/mcp/asset/3a311765-31ce-4ad9-94fd-9966bafcf230" alt="Google logo" />
+      </div>
+      <p class="score-label">Performance Score 90+</p>
+      <p class="score-source">Google PageSpeed Insights</p>
+    </div>
+
+  </section>
+
+  <script type="module">
+    const block = document.querySelector('.block-fast-loading-speed');
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+    }, { threshold: 0.15 });
+    block.querySelectorAll('.reveal, .reveal-scale').forEach(el => io.observe(el));
+
+    const gaugeWrap = block.querySelector('.gauge-wrap');
+    const eraser = block.querySelector('#whiteRingEraser');
+    const gaugeIO = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          block.querySelector('.ring-fill-animated').classList.add('animate');
+          eraser.animate([
+            { strokeDasharray: '597 0', strokeDashoffset: 0 },
+            { strokeDasharray: '60 537', strokeDashoffset: -537 }
+          ], { duration: 1400, easing: 'cubic-bezier(0.16, 1, 0.3, 1)', fill: 'forwards' });
+
+          const scoreNum = block.querySelector('#scoreNum');
+          const scorePlus = block.querySelector('#scorePlus');
+          let count = 65;
+          scoreNum.textContent = count;
+          scoreNum.parentElement.style.opacity = '1';
+          const counter = setInterval(() => {
+            count++;
+            scoreNum.textContent = count;
+            if (count >= 90) { clearInterval(counter); scorePlus.style.opacity = '1'; scorePlus.style.transition = 'opacity 0.3s ease'; }
+          }, 40);
+
+          gaugeIO.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.3 });
+    gaugeIO.observe(gaugeWrap);
+  </script>
+</body>
+</html>

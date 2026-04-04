@@ -103,19 +103,21 @@ Every block MUST follow this structure:
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Manrope', system-ui, sans-serif;
-      background: hsl(var(--bg-page, 20 23% 97%));
-    }
-
     /* ══════════════════════════════════════
        BLOCK: {block-name}
        Scoped under .block-{slug}
        ══════════════════════════════════════ */
 
+    /* Preview-only: body styles for standalone preview.
+       IMPORTANT: These are stripped on Studio import.
+       NEVER put display, padding, gap, or layout on body — they leak on the portal page. */
+    body {
+      font-family: 'Manrope', system-ui, sans-serif;
+      margin: 0;
+    }
+
     .block-{slug} {
-      /* block container styles */
+      /* block container styles — ALL styles go under this prefix */
     }
 
     /* ... all block CSS, prefixed with .block-{slug} ... */
@@ -216,13 +218,18 @@ Figma URLs are temporary — Studio uploads to R2 on import. Always include `alt
 
 ALL selectors MUST be prefixed with `.block-{slug}` to prevent leaking.
 
+**NEVER style global selectors** — `body`, `html`, `*`, `h1`, `p`, `a`, `ul`, `li`, etc.
+These leak to the entire portal page and break other blocks. The only allowed `body` rule is `font-family` + `margin: 0` for standalone preview (stripped on import).
+
 ```css
 /* CORRECT */
 .block-clinic-services .section-header { ... }
 
-/* WRONG — will leak */
+/* WRONG — will leak to other blocks and page layout */
 .section-header { ... }
 h1 { ... }
+body { display: flex; padding: 40px; }
+*, *::before, *::after { margin: 0; padding: 0; }
 ```
 
 ---
@@ -382,3 +389,4 @@ Don't add `@media` queries. Use `max-width`, flexbox, grid, relative units.
 8. **Don't embed token tables in this skill** — tokens.css is the source of truth
 9. **Don't redefine `.reveal` or `.cms-btn`** — use shared classes from portal-blocks.css
 10. **Don't add `@media (prefers-reduced-motion)`** — it's in portal-blocks.css globally
+11. **Don't style global selectors** (`body`, `html`, `*`, `h1`, `p`, `a`, `ul`, `li`) — they leak to the entire page and break other blocks. Only `body { font-family; margin: 0 }` is allowed for standalone preview.
