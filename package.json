@@ -12,7 +12,8 @@
     "lint": "nx run-many -t lint",
     "cc:scan": "npx tsx apps/command-center/cli/scan.ts",
     "cc:report": "npx tsx apps/command-center/cli/report.ts",
-    "quality": "bash quality-check.sh"
+    "quality": "bash quality-check.sh",
+    "arch-test": "npx vitest run --config src/__arch__/vitest.config.ts --reporter=verbose"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -24,10 +25,12 @@
     "eslint-plugin-sonarjs": "^4.0.2",
     "eslint-plugin-unicorn": "^63.0.0",
     "globals": "^17.4.0",
+    "gray-matter": "^4.0.3",
     "jscpd": "^4.0.8",
     "knip": "^5.86.0",
     "nx": "latest",
     "typescript": "^5.0.0",
-    "typescript-eslint": "^8.57.0"
+    "typescript-eslint": "^8.57.0",
+    "vitest": "^4.1.2"
   }
 }

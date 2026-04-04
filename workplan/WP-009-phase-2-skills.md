@@ -1,0 +1,363 @@
+# WP-009 Phase 2: Domain Skills — Human Knowledge Layer
+
+> Workplan: WP-009 Living Documentation System
+> Phase: 2 of 5
+> Priority: P1
+> Estimated: 3-4 hours
+> Type: Config
+> Previous: Phase 1 ✅ (Domain Manifest — 11 domains typed)
+> Next: Phase 3 (Arch Tests — enforcement)
+
+---
+
+## Context
+
+Phase 1 created the typed domain manifest with 11 domains. Now we write domain skills — markdown files with **human knowledge that can't be derived from code**: invariants, traps, blast radius, recipes.
+
+```
+CURRENT:  src/__arch__/domain-manifest.ts with 11 domains   ✅
+CURRENT:  src/__arch__/helpers.ts with utility functions      ✅
+MISSING:  .claude/skills/domains/ directory                   ❌
+MISSING:  11 SKILL.md files with frontmatter + sections       ❌
+```
+
+Skills are the **diagnostic map** for agents and contributors. When something breaks:
+1. Find the domain owner via manifest
+2. Open skill → Traps (is the bug already documented?)
+3. Invariants (which invariant was violated?)
+4. Start Here (where to find root cause?)
+5. Blast Radius (what else broke?)
+
+---
+
+## PHASE 0: Audit (do FIRST — CRITICAL)
+
+```bash
+# 1. Confirm manifest exists and loads
+cd "C:/work/cmsmasters portal/app/cmsmasters-portal"
+npx tsx -e "import { DOMAINS } from './src/__arch__/domain-manifest'; console.log(Object.keys(DOMAINS).join(', '))"
+
+# 2. Confirm .claude/skills/domains/ does not exist yet
+ls .claude/skills/domains/ 2>/dev/null || echo "Ready to create"
+
+# 3. Read Phase 1 log for any deviations
+cat logs/wp-009/phase-1-result.md
+
+# 4. Read key files to write accurate invariants/traps
+# (CC should read the actual code before writing skills — not from memory)
+head -30 packages/db/src/mappers.ts
+head -30 packages/auth/src/hooks.ts
+head -30 apps/portal/lib/blocks.ts
+head -30 apps/api/src/middleware/auth.ts
+head -50 apps/studio/src/lib/block-processor.ts
+```
+
+**Document your findings before writing any skill files.**
+
+**IMPORTANT:** Skills must contain **real knowledge from reading the code**, not placeholder text. If a domain is simple (pkg-api-client: 2 files), write a `skeleton` status skill — don't pad with boilerplate.
+
+---
+
+## Task 2.1: Skill Template & Directory Structure
+
+### What to Build
+
+Create `.claude/skills/domains/` directory with a consistent template.
+
+**YAML frontmatter** (required for all skills):
+
+```yaml
+---
+domain: {slug}                            # MUST match manifest slug exactly
+description: {one-line description}       # Same as manifest description
+source_of_truth: src/__arch__/domain-manifest.ts
+status: full | skeleton                   # full = all sections populated; skeleton = minimal
+---
+```
+
+**Required sections for `status: full`:**
+
+| Section | Purpose |
+|---------|---------|
+| `## Start Here` | 3 files to read to understand the domain |
+| `## Public API` | What other domains may import (MUST match manifest `public_entrypoints`) |
+| `## Invariants` | What ALWAYS must be true — for diagnosing violations |
+| `## Traps & Gotchas` | Documented pitfalls — the "bugs" that are actually expected |
+| `## Blast Radius` | What breaks if you change key files |
+| `## Recipes` | Code snippets for common tasks |
+| `## Known Gaps` | Auto-generated from manifest `known_gaps` — do not edit manually |
+
+**For `status: skeleton`**, only Start Here and Public API are required.
+
+---
+
+## Task 2.2: Package Domain Skills (5 files)
+
+### What to Build
+
+**Read each package's actual code first**, then write skills with real invariants.
+
+#### `.claude/skills/domains/pkg-db/SKILL.md`
+Status: `full` — 13 files, 9 tables, core data layer.
+
+Key invariants to document (verify by reading code):
+- All queries return typed results via `Database['public']['Tables']`
+- mappers.ts converts snake_case DB rows → camelCase TS objects
+- No runtime validation in mappers — trusts DB types
+- All query functions take a Supabase client as first arg (dependency injection)
+
+Key traps:
+- types.ts is auto-generated — manual edits get overwritten
+- `.from('table')` returns `PostgrestQueryBuilder` not data — must `.select()` or similar
+- JSON columns (meta, hooks, seo, block_fills, positions, config, metadata, details) parsed as `any` — need manual type assertion
+
+#### `.claude/skills/domains/pkg-auth/SKILL.md`
+Status: `full` — 7 files, PKCE auth flow.
+
+Key invariants:
+- Auth uses Supabase PKCE flow (not implicit)
+- Magic link is the primary login method
+- `useRole()` hook reads from profiles table — requires profile to exist
+- `RequireAuth` guard redirects to login if no session
+
+Key traps:
+- `on_auth_user_created` trigger creates profile — but race condition possible on first load
+- Session refresh happens automatically but may fail silently
+
+#### `.claude/skills/domains/pkg-ui/SKILL.md`
+Status: `full` — 6 files, design system core.
+
+Key invariants:
+- tokens.css is auto-generated by /sync-tokens skill — do not edit manually
+- HSL values stored without `hsl()` wrapper: `228 54% 20%`
+- portal-blocks.css provides `.cms-btn` system for blocks
+- animate-utils.js exports 5 behavioral animation utilities
+
+Key traps:
+- Tailwind v4 font-size: `text-[length:var(--x)]` not `text-[var(--x)]`
+- Tailwind v4 bare var: `h-[--button-height-sm]` not `h-[var(--button-height-sm)]`
+- Color in Tailwind: `bg-[hsl(var(--primary))]` — need hsl() wrapper
+
+#### `.claude/skills/domains/pkg-validators/SKILL.md`
+Status: `skeleton` — 5 files, straightforward Zod schemas.
+
+#### `.claude/skills/domains/pkg-api-client/SKILL.md`
+Status: `skeleton` — 2 files, thin Hono RPC wrapper.
+
+---
+
+## Task 2.3: App Domain Skills (4 files)
+
+### What to Build
+
+#### `.claude/skills/domains/app-portal/SKILL.md`
+Status: `full` — SSG+ISR rendering engine, public-facing.
+
+Key invariants:
+- Next.js 15 App Router with SSG + ISR
+- Block rendering: DB HTML → BlockRenderer RSC → `.block-{slug}` scoping
+- Hook resolution: `{{price}}` → theme.meta.price (build-time string replacement)
+- Global elements: header/footer from `global_elements` table by scope
+- Revalidation: POST /api/revalidate with `secret` + `path` → `revalidatePath()`
+- `[[...slug]]` catch-all handles composed pages
+- `/themes/[slug]` handles theme pages
+
+Key traps:
+- ISR revalidation requires matching secret between API and Portal
+- `generateStaticParams` fetches all slugs at build time — new pages need revalidation
+- Block CSS is injected as `<style>` tag per block — ordering matters for specificity
+
+Blast radius:
+- Changing BlockRenderer affects ALL theme and composed pages
+- Changing lib/blocks.ts affects all page rendering
+- Changing global-elements.ts affects every page's header/footer
+
+#### `.claude/skills/domains/app-api/SKILL.md`
+Status: `full` — Hono on CF Workers, secrets boundary.
+
+Key invariants:
+- ONLY place where secrets live (Envato, Resend, Claude API, R2 creds, service_role)
+- Auth middleware validates Supabase JWT on every protected route
+- Role middleware checks profile role for admin-only routes
+- R2 upload: `/upload` (single) and `/upload/batch` (multiple)
+- Revalidate route calls Portal's `/api/revalidate` endpoint
+
+Key traps:
+- Hono `env()` reads from CF Workers env — not process.env
+- Supabase client in API uses `service_role` key — bypasses RLS
+- Route order matters in Hono — middleware must be registered before routes
+
+#### `.claude/skills/domains/app-command-center/SKILL.md`
+Status: `skeleton` — isolated internal tool, own theme.
+
+Key notes:
+- Policy: `isolated` — has own dark theme (zinc), NOT Portal DS
+- Uses own `tailwind.config.ts` and `theme/tokens.ts`
+- Does NOT import from `@cmsmasters/ui` for its own UI (has `ui/` directory)
+- Safe to ignore in Portal DS changes
+
+#### `.claude/skills/domains/infra-tooling/SKILL.md`
+Status: `skeleton` — meta domain, non-code files.
+
+Key notes:
+- Policy: `meta` — owns docs, workplans, tools, root configs
+- `.context/` folder is the agent entry point (BRIEF.md first)
+- `tools/studio-mockups/` serves block previews on :7777
+- `tools/sync-tokens/` has Figma token sync config
+- Workplan convention: `WP-{NNN}-{name}.md` + phase files
+
+---
+
+## Task 2.4: Studio Sub-domain Skills (2 files)
+
+### What to Build
+
+#### `.claude/skills/domains/studio-blocks/SKILL.md`
+Status: `full` — Block processing pipeline (4 files, 2583 LOC).
+
+Key invariants:
+- block-editor.tsx is the 941-line editor with Process panel UI
+- block-import-panel imports HTML with script tag preservation
+- block-processor.ts scans CSS for hardcoded values → suggests token replacements
+- token-map.ts maps hardcoded values (hex, px, font names) → DS tokens
+- Processing is 100% client-side — no API calls for token analysis
+- CSS scoping: every block gets `.block-{slug}` prefix
+
+Key traps:
+- block-processor depends on token-map — if tokens.css changes, token-map must be updated
+- Import preserves `<script>` tags but strips `<html>`, `<head>`, `<body>` wrappers
+- Preview iframe uses srcdoc — CSP headers can interfere
+- Confidence levels: `exact`, `close`, `approximate` — only `exact` is auto-applied
+
+Blast radius:
+- Changing block-processor affects ALL block import/processing flows
+- Changing token-map affects token suggestion accuracy
+- Changing block-editor affects block CRUD + import + process panel
+
+#### `.claude/skills/domains/studio-core/SKILL.md`
+Status: `full` — Studio app shell + entity CRUD (47 files).
+
+Key invariants:
+- Vite + React Router SPA
+- Every entity (blocks, themes, templates, pages, global-elements) has: list page + editor page + API wrapper
+- block-api.ts exports shared utilities: `authHeaders()`, `parseError()` — used by ALL entity API wrappers
+- All editors use react-hook-form + zodResolver + validators from pkg-validators
+- Auth: login page → magic link → auth-callback → redirect to app
+
+Key traps:
+- block-api.ts is in studio-core despite the name — it contains shared auth utilities
+- block-picker-modal is shared — used by theme, page, and template editors for block selection
+- Elements page (`elements-list.tsx`) is just blocks filtered by `category === 'element'`
+- All editors duplicate `inputStyle`/`labelStyle` inline objects — no shared style component
+
+Blast radius:
+- Changing block-api.ts (especially authHeaders/parseError) affects ALL entity API wrappers
+- Changing app.tsx routing affects ALL pages
+- Changing toast.tsx affects all user feedback
+- Changing app-layout.tsx affects the entire authenticated shell
+
+---
+
+## Files to Modify
+
+- `.claude/skills/domains/pkg-db/SKILL.md` — **NEW**
+- `.claude/skills/domains/pkg-auth/SKILL.md` — **NEW**
+- `.claude/skills/domains/pkg-ui/SKILL.md` — **NEW**
+- `.claude/skills/domains/pkg-validators/SKILL.md` — **NEW**
+- `.claude/skills/domains/pkg-api-client/SKILL.md` — **NEW**
+- `.claude/skills/domains/app-portal/SKILL.md` — **NEW**
+- `.claude/skills/domains/app-api/SKILL.md` — **NEW**
+- `.claude/skills/domains/app-command-center/SKILL.md` — **NEW**
+- `.claude/skills/domains/infra-tooling/SKILL.md` — **NEW**
+- `.claude/skills/domains/studio-blocks/SKILL.md` — **NEW**
+- `.claude/skills/domains/studio-core/SKILL.md` — **NEW**
+
+---
+
+## Acceptance Criteria
+
+- [ ] `.claude/skills/domains/` directory exists with 11 subdirectories
+- [ ] Each subdirectory has a `SKILL.md` file
+- [ ] Every SKILL.md has valid YAML frontmatter: domain, description, source_of_truth, status
+- [ ] Every `domain` in frontmatter matches the manifest slug exactly
+- [ ] Every `source_of_truth` points to `src/__arch__/domain-manifest.ts`
+- [ ] Skills with `status: full` have ALL required sections: Start Here, Public API, Invariants, Traps & Gotchas, Blast Radius, Recipes, Known Gaps
+- [ ] Skills with `status: skeleton` have at minimum: Start Here, Public API
+- [ ] Public API paths in each skill match `public_entrypoints` from the manifest exactly
+- [ ] Known Gaps sections match `known_gaps` from the manifest
+- [ ] Invariants and Traps are written from **reading actual code**, not assumptions
+
+---
+
+## Verification (do NOT skip)
+
+```bash
+echo "=== Phase 2 Verification ==="
+
+# 1. All 11 skill files exist
+for domain in pkg-db pkg-auth pkg-ui pkg-validators pkg-api-client app-portal studio-blocks studio-core app-api app-command-center infra-tooling; do
+  f=".claude/skills/domains/$domain/SKILL.md"
+  [ -f "$f" ] && echo "  ✅ $f" || echo "  ❌ MISSING: $f"
+done
+
+# 2. Frontmatter domain matches directory name
+for domain in pkg-db pkg-auth pkg-ui pkg-validators pkg-api-client app-portal studio-blocks studio-core app-api app-command-center infra-tooling; do
+  f=".claude/skills/domains/$domain/SKILL.md"
+  if grep -q "domain: $domain" "$f" 2>/dev/null; then
+    echo "  ✅ $domain frontmatter matches"
+  else
+    echo "  ❌ $domain frontmatter MISMATCH"
+  fi
+done
+
+# 3. source_of_truth points to manifest
+for domain in pkg-db pkg-auth pkg-ui pkg-validators pkg-api-client app-portal studio-blocks studio-core app-api app-command-center infra-tooling; do
+  f=".claude/skills/domains/$domain/SKILL.md"
+  if grep -q "source_of_truth: src/__arch__/domain-manifest.ts" "$f" 2>/dev/null; then
+    echo "  ✅ $domain source_of_truth correct"
+  else
+    echo "  ❌ $domain source_of_truth WRONG"
+  fi
+done
+
+# 4. Required sections for full-status skills
+for domain in pkg-db pkg-auth pkg-ui app-portal app-api studio-blocks studio-core; do
+  f=".claude/skills/domains/$domain/SKILL.md"
+  for section in "Start Here" "Public API" "Invariants" "Traps" "Blast Radius" "Recipes"; do
+    if grep -q "## $section" "$f" 2>/dev/null; then
+      echo "  ✅ $domain: $section"
+    else
+      echo "  ❌ $domain: MISSING $section"
+    fi
+  done
+done
+
+echo "=== Verification complete ==="
+```
+
+---
+
+## MANDATORY: Write Execution Log (do NOT skip)
+
+After verification, create:
+`logs/wp-009/phase-2-result.md`
+
+---
+
+## Git
+
+```bash
+git add .claude/skills/domains/ logs/wp-009/phase-2-result.md
+git commit -m "feat: 11 domain skills with invariants, traps, and blast radius [WP-009 phase 2]"
+```
+
+---
+
+## IMPORTANT Notes for CC
+
+- **Read the actual code** before writing invariants and traps. Do NOT write from memory or assumptions
+- Skeleton skills are OK for simple domains (pkg-validators, pkg-api-client, app-command-center, infra-tooling) — don't pad with boilerplate
+- Public API section MUST exactly match `public_entrypoints` from the manifest — cross-reference
+- Known Gaps section MUST exactly match `known_gaps` from the manifest — copy verbatim
+- Do NOT add files to `src/__arch__/` in this phase
+- Do NOT create tests in this phase — that's Phase 3
