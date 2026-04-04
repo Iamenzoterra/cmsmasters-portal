@@ -2,13 +2,13 @@
 
 > Automated domain manifest, domain skills, and arch tests that enforce documentation ↔ code parity across the entire monorepo.
 
-**Status:** PLANNING
+**Status:** ✅ DONE
 **Priority:** P1 — Important
 **Prerequisites:** None (all layers 0-2 done, codebase stable)
 **Milestone/Wave:** Developer Experience / Quality Infrastructure
 **Estimated effort:** 8-14 hours across 5 phases
 **Created:** 2026-04-04
-**Completed:** —
+**Completed:** 2026-04-04
 
 ---
 

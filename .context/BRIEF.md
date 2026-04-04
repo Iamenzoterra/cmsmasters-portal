@@ -89,6 +89,16 @@ The company operates 4 fragmented domains with no shared navigation, broken post
 - CLAUDE.md agent instructions
 - 5 skills: block-craft, portal-workflow, lint-ds, sync-tokens, figma-component-vars
 
+### Living Documentation ✅
+| Component | Status | Details |
+|-----------|--------|---------|
+| Domain Manifest | ✅ | `src/__arch__/domain-manifest.ts` — 11 domains, typed DomainDefinition interface |
+| Domain Skills | ✅ | `.claude/skills/domains/` — 11 SKILL.md files (invariants, traps, blast radius) |
+| Arch Tests | ✅ | `src/__arch__/domain-manifest.test.ts` — 286 tests: path existence, dual ownership, table access, skill parity |
+| `npm run arch-test` | ✅ | Runs all enforcement tests in ~400ms |
+
+> Source: [WP-009 Living Documentation](../workplan/WP-009-living-documentation.md) | Logs: `logs/wp-009/`
+
 ---
 
 ## Current sprint: MVP Slice

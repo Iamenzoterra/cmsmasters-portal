@@ -16,6 +16,30 @@ The `.context/` folder contains everything an agent needs to orient itself:
 
 ---
 
+## Living Documentation
+
+### Domain Manifest
+`src/__arch__/domain-manifest.ts` is the **source of truth** for code ownership across the monorepo.
+
+- 11 domains covering all packages and apps
+- Every source file assigned to exactly one domain
+- Query ownership: `getOwnerDomain('path/to/file.ts')` from `src/__arch__/helpers.ts`
+- Run `npm run arch-test` to verify (286 tests, ~400ms)
+
+### Domain Skills
+`.claude/skills/domains/{slug}/SKILL.md` — human knowledge per domain:
+- **Start Here** — 3 files to read to understand the domain
+- **Invariants** — what must ALWAYS be true
+- **Traps & Gotchas** — known pitfalls
+- **Blast Radius** — what breaks if you change key files
+
+### When Adding or Moving Files
+1. Update `owned_files` in `src/__arch__/domain-manifest.ts`
+2. Run `npm run arch-test` to verify
+3. If domain boundaries change, update the relevant SKILL.md
+
+---
+
 ## Design System Architecture
 
 ### Token scope

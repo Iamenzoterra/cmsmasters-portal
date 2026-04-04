@@ -15,6 +15,16 @@
 
 ---
 
+## Living Documentation
+
+- **When adding a new source file:** add its path to the correct domain in `src/__arch__/domain-manifest.ts`
+- **When deleting/renaming a file:** update the path in `domain-manifest.ts`
+- **When adding a new Supabase table:** add it to `owned_tables` of the owning domain
+- **Run `npm run arch-test`** after any structural change — it catches manifest drift
+- **Domain skills** (`.claude/skills/domains/`) should be updated when invariants or traps change, not after every code change
+
+---
+
 ## TypeScript
 
 - Strict mode everywhere
