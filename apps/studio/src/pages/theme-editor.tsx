@@ -460,7 +460,7 @@ export function ThemeEditor() {
         {formSlug && (
           existingTheme?.status === 'published' ? (
             <a
-              href={`https://portal.cmsmasters.net/themes/${formSlug}`}
+              href={`https://portal.cmsmasters.studio/themes/${formSlug}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center no-underline"

@@ -93,7 +93,7 @@ apps/portal/                        ← Next.js 15 App Router
 **Revalidation:**
 ```
 Studio publish → Hono API POST /api/content/revalidate
-  → POST https://portal.cmsmasters.net/api/revalidate
+  → POST https://portal.cmsmasters.studio/api/revalidate
     → revalidatePath('/themes/flavor')
     → single page re-rendered in <1s
 ```

@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://portal.cmsmasters.net/sitemap-index.xml
+Sitemap: https://portal.cmsmasters.studio/sitemap-index.xml

@@ -64,7 +64,7 @@ export default async function ComposedPage({ params }: Props) {
     '@type': 'WebPage',
     name: title,
     description,
-    url: `https://portal.cmsmasters.net/${canonicalPath}`,
+    url: `https://portal.cmsmasters.studio/${canonicalPath}`,
   }
 
   // Render global blocks

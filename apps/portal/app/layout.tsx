@@ -11,7 +11,7 @@ const manrope = Manrope({
 
 export const metadata: Metadata = {
   title: { default: 'CMSMasters Portal', template: '%s | CMSMasters' },
-  metadataBase: new URL('https://portal.cmsmasters.net'),
+  metadataBase: new URL('https://portal.cmsmasters.studio'),
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

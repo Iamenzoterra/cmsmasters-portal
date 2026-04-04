@@ -147,7 +147,7 @@ export default async function ThemePage({ params }: Props) {
     '@type': 'Product',
     name: meta.name || title,
     description,
-    url: `https://portal.cmsmasters.net/themes/${slug}`,
+    url: `https://portal.cmsmasters.studio/themes/${slug}`,
   }
   if (meta.price) {
     jsonLd.offers = { '@type': 'Offer', price: String(meta.price), priceCurrency: 'USD' }
