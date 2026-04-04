@@ -15,6 +15,8 @@ export interface Env {
 
   // Secrets (from `wrangler secret put`)
   SUPABASE_SERVICE_KEY: string
+  PORTAL_REVALIDATE_URL: string   // e.g. https://portal.cmsmasters.net/api/revalidate
+  PORTAL_REVALIDATE_SECRET: string
 
   // R2 bucket binding (from wrangler.toml [[r2_buckets]])
   ASSETS_BUCKET: R2BucketBinding

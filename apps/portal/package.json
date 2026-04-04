@@ -1,21 +1,23 @@
 {
   "name": "@cmsmasters/portal",
-  "type": "module",
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
-    "preview": "astro preview",
-    "check": "astro check",
-    "deploy": "astro build && wrangler pages deploy dist --project-name cmsmasters-portal"
+    "dev": "next dev -p 3100",
+    "build": "next build",
+    "start": "next start -p 3100",
+    "lint": "next lint"
   },
   "dependencies": {
-    "@astrojs/sitemap": "^3.7.2",
     "@supabase/supabase-js": "^2.49.0",
-    "astro": "^5.0.0"
+    "next": "^15.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
     "typescript": "^5.7.0"
   }
 }

@@ -1,19 +1,20 @@
 # ADR Digest — Architecture Decisions for Implementation
 
-> Condensed from 24 ADRs (V2/V3 versions). Only implementation-relevant decisions.
+> Condensed from 24 ADRs (V2/V3/V4 versions). Only implementation-relevant decisions.
 > Full ADR Bible: workplan/adr/ (22 files) or docs/ARCHITECTURE.md
 
 ---
 
 ## Stack decisions
 
-### ADR-007 V2: Split-stack
-- **Portal** → Next.js 15 App Router, SSG. Public, no auth, SEO.
+### ADR-007 V4: Split-stack
+- **Portal** → Next.js 15 App Router, SSG + ISR. Deployed on **Vercel**. Public, SEO, on-demand revalidation.
 - **Dashboard, Support, Studio, Admin** → Vite + React Router. SPA, auth required.
 - **API** → Hono on Cloudflare Workers. Business logic with secrets.
 - **Command Center** → Next.js (localhost, already built, don't change).
 
-Why: internal apps don't need SSR/SSG. Vite = faster HMR, simpler, zero caching gotchas.
+Why: Portal needs ISR (500+ pages), middleware (auth-gated content), streaming (search). Astro V3 was for static marketing — Portal is a product.
+Revalidation: Studio publish → Hono API → `revalidatePath()` on Portal (< 1 sec).
 
 ### ADR-017 V3: Nx monorepo
 - Nx (not Turborepo). Chosen for polyglot future (potential Python AI service).
@@ -34,7 +35,7 @@ Why: internal apps don't need SSR/SSG. Vite = faster HMR, simpler, zero caching 
 - V1 was Content-as-Code (JSON + Markdown in Git). V2 moved to Supabase.
 - Themes, docs, blog = Supabase tables with RLS.
 - Portal SSG fetches from Supabase at build time.
-- On-demand revalidation: Studio saves → Hono API → `revalidatePath()`.
+- On-demand revalidation: Studio saves → Hono API → Portal `/api/revalidate` → `revalidatePath()`.
 - custom_sections = jsonb column on themes table.
 - Many-to-many via junction tables (themes ↔ plugins, features, badges).
 

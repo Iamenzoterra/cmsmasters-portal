@@ -1,0 +1,11 @@
+{
+  "extends": "next/core-web-vitals",
+  "rules": {
+    "@typescript-eslint/no-non-null-assertion": "off",
+    "unicorn/prefer-string-replace-all": "off",
+    "unicorn/no-array-sort": "off",
+    "unicorn/no-negated-condition": "off",
+    "unicorn/prefer-number-properties": "off",
+    "sonarjs/slow-regex": "off"
+  }
+}

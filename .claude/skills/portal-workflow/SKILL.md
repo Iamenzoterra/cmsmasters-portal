@@ -60,7 +60,7 @@ CMSMasters Portal — unified customer platform replacing 4 fragmented domains. 
 ### Architecture
 
 ```
-Portal (Astro SSG, public)    ─┐
+Portal (Next.js SSG+ISR, Vercel) ─┐
 Dashboard (Vite SPA, auth)    ─┤
 Studio (Vite SPA, auth)       ─┼─→ packages/ui, db, auth, api-client, validators
 Admin (Vite SPA, auth)        ─┤
@@ -94,7 +94,7 @@ Theme    = template_id + block_fills (CM fills empty positions per-theme).
 Block creation pipeline:
 ```
 Figma → /block-craft → HTML+CSS+JS → preview :7777 → iterate → Studio import →
-Process panel (token scan + R2 image upload) → save to DB → Portal renders via Astro SSG
+Process panel (token scan + R2 image upload) → save to DB → Portal renders via Next.js SSG+ISR
 ```
 
 Full spec: `workplan/BLOCK-ARCHITECTURE-V2.md`, `workplan/PORTAL-BLOCK-ARCHITECTURE.md`
@@ -123,7 +123,7 @@ cmsmasters-portal/
 │   ├── command-center/    ✅ DONE (6 pages, localhost:4000, own dark theme)
 │   ├── api/               ✅ DONE (Hono, 18+ routes: health, revalidate, upload+batch, blocks, templates, pages, global-elements CRUD, R2 image upload)
 │   ├── studio/            ✅ DONE (login, themes, blocks, templates, pages, global elements, block Process panel with token scanner + R2 upload)
-│   ├── portal/            ✅ DONE (Astro SSG: theme pages, composed pages, SEO, sitemap, CF Pages deploy)
+│   ├── portal/            ✅ DONE (Next.js 15 SSG+ISR: theme pages, composed pages, SEO, sitemap, Vercel deploy, on-demand revalidation)
 │   ├── dashboard/         ⬜ NOT CREATED (Layer 3)
 │   └── admin/             ⬜ NOT CREATED (Layer 3)
 ├── packages/
@@ -162,7 +162,7 @@ cmsmasters-portal/
 Layer 0: Infrastructure         ✅ DONE
 Layer 1: Studio + DB + API      ✅ DONE (WP-005A+B+C+D)
 Block Import Pipeline           ✅ DONE (WP-006: token scanner, R2 upload, Process panel, portal-blocks.css, animate-utils.js, component detection)
-Layer 2: Portal (Astro SSG)     ✅ DONE (WP-007: layout editor, theme pages, composed pages, SEO, sitemap, CF Pages)
+Layer 2: Portal (Next.js 15)    ✅ DONE (WP-007 + migration: theme pages, composed pages, SEO, sitemap, ISR, Vercel)
 Layer 3: Dashboard + Admin      ⬜ future
 ```
 
@@ -200,7 +200,7 @@ Support + AI chat — deferred.
 | Rule | Detail |
 |------|--------|
 | **Monorepo** | Nx (not Turborepo) |
-| **Portal** | Astro SSG, public, 0 JS framework output |
+| **Portal** | Next.js 15 SSG+ISR, public, Vercel, on-demand revalidation |
 | **Internal apps** | Vite + React Router SPA |
 | **API** | Hono on Cloudflare Workers, 18+ routes (incl. R2 image upload) |
 | **DB** | Supabase (Postgres + Auth + RLS), 9 tables |
@@ -216,7 +216,7 @@ Support + AI chat — deferred.
 | **CC isolation** | Command Center has own dark theme, not affected by Portal DS |
 | **Secrets** | ONLY in Hono API, never in SPA bundles |
 | **CSS scoping** | `.block-{slug}` class prefix per block — no leaking between blocks |
-| **Hook resolution** | Compile-time string replacement in Astro (`{{price}}` → theme.meta.price) |
+| **Hook resolution** | Build-time string replacement in Next.js RSC (`{{price}}` → theme.meta.price) |
 
 ### Token conventions (critical for UI code)
 
@@ -249,4 +249,4 @@ className="text-[length:var(--type-body-size)]"  // Font — need length hint
 9. **Don't use Next.js for internal apps** — Vite + React Router
 10. **Don't store content in Git files** — Supabase tables
 11. **Don't hardcode block IDs or schemas** — blocks are dynamic DB assets, not compile-time constants
-12. **Don't create .astro files per block** — blocks are HTML+CSS in DB, rendered at build time via BlockRenderer
+12. **Don't create page files per block** — blocks are HTML+CSS in DB, rendered at build time via BlockRenderer server component

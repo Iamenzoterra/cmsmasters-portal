@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { themeSchema, type ThemeFormData } from '@cmsmasters/validators'
 import type { Theme, Template, Block, ThemeBlockFill } from '@cmsmasters/db'
 import { upsertTheme, logAction, themeRowToFormData, formDataToThemeInsert } from '@cmsmasters/db'
-import { AlertTriangle, ChevronLeft, LayoutTemplate } from 'lucide-react'
+import { AlertTriangle, ChevronLeft, ExternalLink, LayoutTemplate } from 'lucide-react'
 import { Button } from '@cmsmasters/ui'
 import { fetchThemeBySlug, deleteTheme } from '../lib/queries'
 import { supabase } from '../lib/supabase'
@@ -231,7 +231,7 @@ export function ThemeEditor() {
         await fetch(`${apiUrl}/api/content/revalidate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ slug: saved.slug }),
+          body: JSON.stringify({ slug: saved.slug, type: 'theme' }),
         })
       } catch {
         console.warn('Revalidation failed — Portal will update via ISR')
@@ -458,9 +458,26 @@ export function ThemeEditor() {
           </span>
         </div>
         {formSlug && (
-          <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>
-            /themes/{formSlug}
-          </span>
+          existingTheme?.status === 'published' ? (
+            <a
+              href={`https://portal.cmsmasters.net/themes/${formSlug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center no-underline"
+              style={{
+                fontSize: 'var(--text-xs-font-size)',
+                color: 'hsl(var(--text-link))',
+                gap: '4px',
+              }}
+            >
+              <ExternalLink size={12} />
+              /themes/{formSlug}
+            </a>
+          ) : (
+            <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>
+              /themes/{formSlug}
+            </span>
+          )
         )}
       </div>
 

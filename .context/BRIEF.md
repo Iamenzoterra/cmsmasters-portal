@@ -2,7 +2,7 @@
 
 > Read this file FIRST. It gives you the full picture in 5 minutes.
 > Then read the specific layer spec for your current task.
-> Last updated: 2 April 2026
+> Last updated: 4 April 2026
 
 ---
 
@@ -16,16 +16,17 @@ The company operates 4 fragmented domains with no shared navigation, broken post
 
 ---
 
-## Architecture (ADR-007 V2, ADR-011 V3, ADR-022)
+## Architecture (ADR-007 V4, ADR-011 V3, ADR-022)
 
 ```
 ┌──────────────────────────────────────────────────────────┐
 │                     CLIENT (browser)                      │
 ├──────────┬───────────┬───────────┬──────────┬────────────┤
 │ Portal   │ Dashboard │ Support   │ Studio   │ Admin      │
-│ Astro    │ Vite SPA  │ Vite SPA  │ Vite SPA │ Vite SPA   │
-│ SSG      │           │           │          │            │
+│ Next.js  │ Vite SPA  │ Vite SPA  │ Vite SPA │ Vite SPA   │
+│ SSG+ISR  │           │           │          │            │
 │ (public) │ (auth)    │ (auth)    │ (auth)   │ (auth)     │
+│ Vercel   │ CF Pages  │ CF Pages  │ CF Pages │ CF Pages   │
 ├──────────┴───────────┴───────────┴──────────┴────────────┤
 │  /packages/ui   /packages/auth   /packages/api-client     │
 │  /packages/db   /packages/validators                      │
@@ -38,10 +39,11 @@ The company operates 4 fragmented domains with no shared navigation, broken post
 ```
 
 **Key rules:**
-- Portal = Astro SSG, public, no auth, zero framework JS, SEO-first
-- Dashboard, Support, Studio, Admin = Vite + React Router SPAs
+- Portal = Next.js 15 App Router (SSG + ISR), public, SEO-first, deployed on **Vercel**
+- Dashboard, Support, Studio, Admin = Vite + React Router SPAs on CF Pages
 - Hono API on Cloudflare Workers = the ONLY place secrets live
 - **Secrets boundary**: Envato key, Resend key, Claude API key, R2 creds, Supabase service_role — ONLY in Hono API. NEVER in SPA bundles.
+- **Revalidation**: Studio publish → Hono API → Portal `/api/revalidate` → `revalidatePath()` (< 1 sec)
 - Monorepo managed by **Nx** (not Turborepo)
 - Command Center is an internal tool (localhost:4000) with its own design — NOT affected by Portal DS
 
@@ -73,12 +75,12 @@ The company operates 4 fragmented domains with no shared navigation, broken post
 |-----|--------|---------|
 | Command Center | ✅ DONE | 6 pages, localhost:4000, own dark theme |
 | Studio | ✅ DONE | Login, themes, blocks (editor + Process panel with token scanner + R2 image upload + component detection), templates, pages, global elements settings. Block editor: HTML+CSS+JS fields, import with script preservation, export. Process panel: split preview (before/after), zoom, scroll, replay, animation support. |
-| Portal | ✅ DONE | Astro SSG. Theme pages (layout + global elements + template blocks + hook resolution). Composed pages (page_blocks + global elements). SEO: JSON-LD Product/WebPage, OG, canonical, sitemap.xml, robots.txt. CF Pages deploy config. Zero framework JS. |
+| Portal | ✅ DONE | **Next.js 15 App Router (SSG + ISR)** on Vercel. Theme pages (layout + global elements + template blocks + hook resolution). Composed pages (page_blocks + global elements). SEO: JSON-LD Product/WebPage, OG, canonical, sitemap.xml, robots.txt. On-demand revalidation via `/api/revalidate`. Dev port: 3100. |
 | Dashboard | ⬜ | Not created yet |
 | Admin | ⬜ | Not created yet |
 
 ### Also done
-- 24 ADR files (V2/V3) in workplan/adr/ — incl. ADR-023 (Block Animations), ADR-024 (Block Components)
+- 24 ADR files (V2/V3/V4) in workplan/adr/ — incl. ADR-007 V4 (Next.js Portal), ADR-023 (Block Animations), ADR-024 (Block Components)
 - WP-006 Block Import Pipeline: token scanner, R2 upload, Process panel, portal-blocks.css, animate-utils.js, component detection
 - R2 bucket `cmsmasters-assets` configured on Cloudflare
 - `/block-craft` skill for Figma → production block pipeline (preview on :7777)
@@ -99,7 +101,7 @@ The company operates 4 fragmented domains with no shared navigation, broken post
 Layer 0: Infrastructure           ✅ DONE (DB, Auth, Hono, packages)
 Layer 1: Studio + DB + API        ✅ DONE (WP-005A+B+C+D Phase 1)
 Block Import Pipeline             ✅ DONE (WP-006: token scanner, R2 upload, Process panel, portal-blocks.css, animate-utils.js)
-Layer 2: Portal (Astro SSG)       ✅ DONE (WP-007: layout editor, theme pages, composed pages, SEO, sitemap, CF Pages)
+Layer 2: Portal (Next.js 15)      ✅ DONE (WP-007: layout editor, theme pages, composed pages, SEO, sitemap. Migrated Astro→Next.js 4 Apr 2026)
 Global Elements V2                ✅ DONE (WP-008: block categories, defaults, layout slot overrides, new portal resolution)
 Layer 3: Dashboard + Admin        ⬜ future
 ```
@@ -176,3 +178,4 @@ Dmitry communicates concisely in Ukrainian. Corrections are brief — reorient i
 - WP-006 Phase 0–8: `logs/wp-006/` — block import pipeline (token scanner, R2 upload, Process panel, JS field, portal-blocks.css, animate-utils.js, component detection)
 - WP-007 Phase 1–5: `logs/wp-007/` — Portal layout system (layout editor, Astro SSG, theme pages, composed pages, SEO, sitemap, CF Pages deploy)
 - WP-008 Phase 1–5: `logs/wp-008/` — Global Elements V2 (block categories, defaults, layout slot overrides, portal cascade resolution)
+- Portal Next.js Migration: `logs/portal-nextjs-migration/` — Astro → Next.js 15, ISR, Vercel deploy, revalidation endpoint, portal link in Studio
