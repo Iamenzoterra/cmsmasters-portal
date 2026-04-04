@@ -96,7 +96,7 @@ export async function getThemeBySlug(slug: string) {
     .select('*')
     .eq('slug', slug)
     .eq('status', 'published')
-    .single()
+    .maybeSingle()
 
   if (error) throw error
   return data
@@ -114,7 +114,7 @@ export async function getComposedPageBySlug(slug: string) {
     .eq('type', 'composed')
     .eq('slug', slug)
     .eq('status', 'published')
-    .single()
+    .maybeSingle()
 
   if (error) throw error
   return data
