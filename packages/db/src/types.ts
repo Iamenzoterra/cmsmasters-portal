@@ -404,6 +404,88 @@ export type Database = {
         }
         Relationships: []
       }
+      categories: {
+        Row: {
+          id: string
+          name: string
+          slug: string
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug: string
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          slug?: string
+          created_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tags: {
+        Row: {
+          id: string
+          name: string
+          slug: string
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug: string
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          slug?: string
+          created_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      theme_categories: {
+        Row: {
+          theme_id: string
+          category_id: string
+        }
+        Insert: {
+          theme_id: string
+          category_id: string
+        }
+        Update: {
+          theme_id?: string
+          category_id?: string
+        }
+        Relationships: []
+      }
+      theme_tags: {
+        Row: {
+          theme_id: string
+          tag_id: string
+        }
+        Insert: {
+          theme_id: string
+          tag_id: string
+        }
+        Update: {
+          theme_id?: string
+          tag_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: {
@@ -451,3 +533,17 @@ export type GlobalElementUpdate = Database['public']['Tables']['global_elements'
 
 export type AuditEntry = Database['public']['Tables']['audit_log']['Row']
 export type AuditEntryInsert = Database['public']['Tables']['audit_log']['Insert']
+
+export type Category = Database['public']['Tables']['categories']['Row']
+export type CategoryInsert = Database['public']['Tables']['categories']['Insert']
+export type CategoryUpdate = Database['public']['Tables']['categories']['Update']
+
+export type Tag = Database['public']['Tables']['tags']['Row']
+export type TagInsert = Database['public']['Tables']['tags']['Insert']
+export type TagUpdate = Database['public']['Tables']['tags']['Update']
+
+export type ThemeCategory = Database['public']['Tables']['theme_categories']['Row']
+export type ThemeCategoryInsert = Database['public']['Tables']['theme_categories']['Insert']
+
+export type ThemeTag = Database['public']['Tables']['theme_tags']['Row']
+export type ThemeTagInsert = Database['public']['Tables']['theme_tags']['Insert']

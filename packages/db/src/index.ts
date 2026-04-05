@@ -38,6 +38,16 @@ export type {
   GlobalElementUpdate,
   AuditEntry,
   AuditEntryInsert,
+  Category,
+  CategoryInsert,
+  CategoryUpdate,
+  Tag,
+  TagInsert,
+  TagUpdate,
+  ThemeCategory,
+  ThemeCategoryInsert,
+  ThemeTag,
+  ThemeTagInsert,
 } from './types'
 
 export { themeRowToFormData, formDataToThemeInsert } from './mappers'
@@ -84,3 +94,23 @@ export {
   deleteGlobalElement,
   resolveGlobalElementsForPage,
 } from './queries/global-elements'
+
+export {
+  getCategories,
+  getCategoryById,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  getThemeCategories,
+  setThemeCategories,
+} from './queries/categories'
+
+export {
+  getTags,
+  getTagById,
+  createTag,
+  updateTag,
+  deleteTag,
+  getThemeTags,
+  setThemeTags,
+} from './queries/tags'

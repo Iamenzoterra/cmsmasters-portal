@@ -48,7 +48,7 @@ export const DOMAINS: Record<string, DomainDefinition> = {
   'pkg-db': {
     name: 'Database Package',
     slug: 'pkg-db',
-    description: 'Supabase client, typed queries, mappers for all 9 tables.',
+    description: 'Supabase client, typed queries, mappers for all 13 tables.',
     owned_files: [
       'packages/db/src/index.ts',
       'packages/db/src/client.ts',
@@ -61,6 +61,8 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'packages/db/src/queries/profiles.ts',
       'packages/db/src/queries/templates.ts',
       'packages/db/src/queries/themes.ts',
+      'packages/db/src/queries/categories.ts',
+      'packages/db/src/queries/tags.ts',
       'packages/db/src/__tests__/mappers.test.ts',
       'packages/db/src/__tests__/phase2-smoke.test.ts',
     ],
@@ -74,6 +76,10 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'global_elements',
       'licenses',
       'audit_log',
+      'categories',
+      'tags',
+      'theme_categories',
+      'theme_tags',
     ],
     owned_routes: [],
     public_entrypoints: ['packages/db/src/index.ts'],

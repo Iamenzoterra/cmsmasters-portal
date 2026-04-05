@@ -1,6 +1,6 @@
 ---
 domain: pkg-db
-description: "Supabase client, typed queries, mappers for all 9 tables."
+description: "Supabase client, typed queries, mappers for all 13 tables."
 source_of_truth: src/__arch__/domain-manifest.ts
 status: full
 ---
@@ -21,7 +21,7 @@ status: full
 - **types.ts is auto-generated from Supabase.** Running `supabase gen types` overwrites it. Manual edits will be lost.
 - **mappers.ts is the ONLY place DB→form and form→DB conversion happens.** Currently only theme mappers exist (`themeRowToFormData`, `formDataToThemeInsert`). Other entities don't need mappers yet — they map 1:1.
 - **JSON columns are typed via branded types** in types.ts (ThemeMeta, ThemeSEO, BlockHooks, BlockMetadata, TemplatePosition, ThemeBlockFill). Access sub-fields through these types, not raw `any`.
-- **9 tables, all with RLS.** profiles, themes, blocks, templates, pages, page_blocks, global_elements, licenses, audit_log.
+- **13 tables, all with RLS.** profiles, themes, blocks, templates, pages, page_blocks, global_elements, licenses, audit_log, categories, tags, theme_categories, theme_tags.
 
 ## Traps & Gotchas
 
