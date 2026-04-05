@@ -248,6 +248,7 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'apps/studio/src/pages/themes-list.tsx',
       'apps/studio/src/pages/theme-meta.tsx',
       'apps/studio/src/components/taxonomy-list.tsx',
+      'apps/studio/src/components/taxonomy-picker-modal.tsx',
       // components (19, excl block-import-panel which is in studio-blocks)
       'apps/studio/src/components/block-picker-modal.tsx',
       'apps/studio/src/components/block-preview.tsx',

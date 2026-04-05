@@ -460,14 +460,17 @@ export type Database = {
         Row: {
           theme_id: string
           category_id: string
+          is_primary: boolean
         }
         Insert: {
           theme_id: string
           category_id: string
+          is_primary?: boolean
         }
         Update: {
           theme_id?: string
           category_id?: string
+          is_primary?: boolean
         }
         Relationships: []
       }

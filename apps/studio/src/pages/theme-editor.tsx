@@ -3,9 +3,10 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { themeSchema, type ThemeFormData } from '@cmsmasters/validators'
-import type { Theme, Template, Block, ThemeBlockFill } from '@cmsmasters/db'
-import { upsertTheme, logAction, themeRowToFormData, formDataToThemeInsert } from '@cmsmasters/db'
-import { AlertTriangle, ChevronLeft, ExternalLink, LayoutTemplate } from 'lucide-react'
+import type { Theme, Template, Block, ThemeBlockFill, Category, Tag } from '@cmsmasters/db'
+import { upsertTheme, logAction, themeRowToFormData, formDataToThemeInsert, getCategories, getThemeCategories, setThemeCategories, getTags, getThemeTags, setThemeTags } from '@cmsmasters/db'
+import { AlertTriangle, ChevronLeft, ExternalLink, Eye, LayoutTemplate } from 'lucide-react'
+import { useLocalPortal } from '../lib/use-local-portal'
 import { Button } from '@cmsmasters/ui'
 import { fetchThemeBySlug, deleteTheme } from '../lib/queries'
 import { supabase } from '../lib/supabase'
@@ -51,9 +52,14 @@ export function ThemeEditor() {
   const navigate = useNavigate()
   const isNew = !slug
 
+  const localPortal = useLocalPortal()
   const [existingTheme, setExistingTheme] = useState<Theme | null>(null)
   const [loading, setLoading] = useState(!isNew)
   const [fetchError, setFetchError] = useState<string | null>(null)
+  const [allCategories, setAllCategories] = useState<Category[]>([])
+  const [allTags, setAllTags] = useState<Tag[]>([])
+  const [selectedCategories, setSelectedCategories] = useState<Array<{ id: string; is_primary: boolean }>>([])
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
 
   const form = useForm<ThemeFormData>({
     resolver: zodResolver(themeSchema),
@@ -61,6 +67,13 @@ export function ThemeEditor() {
   })
 
   const { register, control, reset, formState: { errors, isDirty } } = form
+
+  // Fetch all categories + tags on mount (for picker modals)
+  useEffect(() => {
+    getCategories(supabase).then(setAllCategories).catch(() => {})
+    getTags(supabase).then(setAllTags).catch(() => {})
+  }, [])
+
   // Fetch existing theme — OR reset all state for new themes (route reuse)
   useEffect(() => {
     if (isNew) {
@@ -73,6 +86,8 @@ export function ThemeEditor() {
       setCurrentBlockFills([])
       setSelectedTemplate(null)
       setShowTemplatePicker(false)
+      setSelectedCategories([])
+      setSelectedTags([])
       return
     }
     let cancelled = false
@@ -89,6 +104,13 @@ export function ThemeEditor() {
         setExistingTheme(theme)
         reset(themeRowToFormData(theme))
         setCurrentTemplateId(theme.template_id ?? ''); setCurrentBlockFills(theme.block_fills ?? [])
+        // Fetch category/tag assignments for this theme
+        getThemeCategories(supabase, theme.id).then((cats) => {
+          if (!cancelled) setSelectedCategories(cats.map((c: any) => ({ id: c.id, is_primary: c.is_primary })))
+        })
+        getThemeTags(supabase, theme.id).then((tags) => {
+          if (!cancelled) setSelectedTags(tags.map((t: any) => t.id))
+        })
       })
       .catch((error) => {
         if (!cancelled) setFetchError(error instanceof Error ? error.message : 'Failed to load theme')
@@ -164,10 +186,20 @@ export function ThemeEditor() {
     if (!valid) { toast({ type: 'error', message: 'Fix validation errors before saving' }); return }
 
     const data = form.getValues()
+    // Backward compat: populate meta.category with first primary category name
+    const primaryCat = allCategories.find((c) => selectedCategories.find((s) => s.id === c.id && s.is_primary))
+    if (primaryCat) data.meta.category = primaryCat.name
+
     setSaving(true)
     try {
       const payload = formDataToThemeInsert(data, existingTheme?.id)
       const saved = await upsertTheme(supabase, payload)
+
+      // Save category/tag junction tables
+      await Promise.all([
+        setThemeCategories(supabase, saved.id, selectedCategories.map((s) => ({ category_id: s.id, is_primary: s.is_primary }))),
+        setThemeTags(supabase, saved.id, selectedTags),
+      ])
 
       // M2: audit non-blocking with explicit marker
       try {
@@ -207,12 +239,22 @@ export function ThemeEditor() {
     if (!valid) { toast({ type: 'error', message: 'Fix validation errors before publishing' }); return }
 
     const data = form.getValues()
+    // Backward compat: populate meta.category with first primary category name
+    const primaryCat = allCategories.find((c) => selectedCategories.find((s) => s.id === c.id && s.is_primary))
+    if (primaryCat) data.meta.category = primaryCat.name
+
     setPublishing(true)
     try {
       // M3: force status at payload level, not relying on form state
       const payload = formDataToThemeInsert(data, existingTheme?.id)
       payload.status = 'published'
       const saved = await upsertTheme(supabase, payload)
+
+      // Save category/tag junction tables
+      await Promise.all([
+        setThemeCategories(supabase, saved.id, selectedCategories.map((s) => ({ category_id: s.id, is_primary: s.is_primary }))),
+        setThemeTags(supabase, saved.id, selectedTags),
+      ])
 
       try {
         await logAction(supabase, {
@@ -458,26 +500,44 @@ export function ThemeEditor() {
           </span>
         </div>
         {formSlug && (
-          existingTheme?.status === 'published' ? (
-            <a
-              href={`https://portal.cmsmasters.studio/themes/${formSlug}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center no-underline"
-              style={{
-                fontSize: 'var(--text-xs-font-size)',
-                color: 'hsl(var(--text-link))',
-                gap: '4px',
-              }}
-            >
-              <ExternalLink size={12} />
-              /themes/{formSlug}
-            </a>
-          ) : (
-            <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>
-              /themes/{formSlug}
-            </span>
-          )
+          <div className="flex items-center" style={{ gap: 'var(--spacing-md)' }}>
+            {localPortal.isAvailable && (
+              <a
+                href={`${localPortal.baseUrl}/themes/${formSlug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center no-underline"
+                style={{
+                  fontSize: 'var(--text-xs-font-size)',
+                  color: 'hsl(var(--status-success-fg))',
+                  gap: '4px',
+                }}
+              >
+                <Eye size={12} />
+                Local Preview
+              </a>
+            )}
+            {existingTheme?.status === 'published' ? (
+              <a
+                href={`https://portal.cmsmasters.studio/themes/${formSlug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center no-underline"
+                style={{
+                  fontSize: 'var(--text-xs-font-size)',
+                  color: 'hsl(var(--text-link))',
+                  gap: '4px',
+                }}
+              >
+                <ExternalLink size={12} />
+                /themes/{formSlug}
+              </a>
+            ) : (
+              <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>
+                /themes/{formSlug}
+              </span>
+            )}
+          </div>
         )}
       </div>
 
@@ -679,6 +739,12 @@ export function ThemeEditor() {
             watch={form.watch}
             setValue={form.setValue}
             existingTheme={existingTheme}
+            allCategories={allCategories}
+            allTags={allTags}
+            selectedCategories={selectedCategories}
+            selectedTags={selectedTags}
+            onCategoriesChange={setSelectedCategories}
+            onTagsChange={setSelectedTags}
           />
         </div>
       </div>

@@ -54,27 +54,34 @@ export async function deleteCategory(client: SupabaseClient, id: string) {
   if (error) throw error
 }
 
-/** Get categories assigned to a theme (via junction table) */
+/** Get categories assigned to a theme (via junction table, includes is_primary) */
 export async function getThemeCategories(client: SupabaseClient, themeId: string) {
   const { data, error } = await client
     .from('theme_categories')
-    .select('category_id, categories(id, name, slug)')
+    .select('category_id, is_primary, categories(id, name, slug)')
     .eq('theme_id', themeId)
   if (error) throw error
-  return data?.map((r) => (r as any).categories) ?? []
+  return data?.map((r) => ({
+    ...(r as any).categories,
+    is_primary: r.is_primary,
+  })) ?? []
 }
 
-/** Replace all category assignments for a theme */
-export async function setThemeCategories(client: SupabaseClient, themeId: string, categoryIds: string[]) {
+/** Replace all category assignments for a theme (with is_primary per item) */
+export async function setThemeCategories(
+  client: SupabaseClient,
+  themeId: string,
+  items: Array<{ category_id: string; is_primary: boolean }>
+) {
   const { error: delError } = await client
     .from('theme_categories')
     .delete()
     .eq('theme_id', themeId)
   if (delError) throw delError
 
-  if (categoryIds.length === 0) return
+  if (items.length === 0) return
 
-  const rows = categoryIds.map((category_id) => ({ theme_id: themeId, category_id }))
+  const rows = items.map((item) => ({ theme_id: themeId, ...item }))
   const { error: insError } = await client
     .from('theme_categories')
     .insert(rows)

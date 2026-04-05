@@ -1,10 +1,13 @@
+import { useState } from 'react'
 import type { Control, UseFormRegister, UseFormWatch, UseFormSetValue } from 'react-hook-form'
 import type { ThemeFormData } from '@cmsmasters/validators'
 import type { Theme } from '@cmsmasters/db'
 import { useController } from 'react-hook-form'
+import { Pencil, Star } from 'lucide-react'
 import { StatusSelect } from './status-select'
 import { StarRating } from './star-rating'
 import { ChipSelect } from './chip-select'
+import { TaxonomyPickerModal } from './taxonomy-picker-modal'
 import { timeAgo } from '../lib/format'
 
 /** M3 cut: empty number input → NaN with valueAsNumber. Normalize to undefined. */
@@ -19,6 +22,12 @@ interface EditorSidebarProps {
   watch: UseFormWatch<ThemeFormData>
   setValue: UseFormSetValue<ThemeFormData>
   existingTheme: Theme | null
+  allCategories: Array<{ id: string; name: string; slug: string }>
+  allTags: Array<{ id: string; name: string; slug: string }>
+  selectedCategories: Array<{ id: string; is_primary: boolean }>
+  selectedTags: string[]
+  onCategoriesChange: (items: Array<{ id: string; is_primary: boolean }>) => void
+  onTagsChange: (ids: string[]) => void
 }
 
 const labelStyle: React.CSSProperties = {
@@ -44,14 +53,15 @@ const inputStyle: React.CSSProperties = {
 
 const BADGE_OPTIONS = ['Power Elite', 'Starter', 'Starter Developer', 'Elementor', 'GDPR', 'Starter Starter Developer']
 const PLUGIN_OPTIONS = ['Elementor', 'WooCommerce', 'WPML', 'Yoast SEO', 'Rank Math', 'Contact Form 7', 'ACF']
-const CATEGORY_OPTIONS = ['Creative', 'Business', 'Blog', 'Portfolio', 'Technology', 'Health', 'Education', 'eCommerce']
 
 const RESOURCE_PUBLIC = ['docs', 'changelog', 'faq', 'demos']
 const RESOURCE_LICENSED = ['download', 'child-theme', 'psd', 'support']
 const RESOURCE_PREMIUM = ['priority-support', 'megakit-access']
 
-export function EditorSidebar({ control, register, watch, setValue: _setValue, existingTheme }: EditorSidebarProps) {
+export function EditorSidebar({ control, register, watch, setValue: _setValue, existingTheme, allCategories, allTags, selectedCategories, selectedTags, onCategoriesChange, onTagsChange }: EditorSidebarProps) {
   const status = watch('status')
+  const [catPickerOpen, setCatPickerOpen] = useState(false)
+  const [tagPickerOpen, setTagPickerOpen] = useState(false)
   const thumbnailUrl = watch('meta.thumbnail_url')
 
   const { field: statusField } = useController({ control, name: 'status' })
@@ -105,20 +115,122 @@ export function EditorSidebar({ control, register, watch, setValue: _setValue, e
         <StatusSelect value={statusField.value} onChange={statusField.onChange} />
       </div>
 
-      {/* Category */}
+      {/* Categories */}
       <div className="flex flex-col" style={{ gap: 'var(--spacing-xs)' }}>
-        <span style={labelStyle}>Category</span>
-        <select
-          {...register('meta.category')}
-          className="w-full appearance-none outline-none"
-          style={inputStyle}
-        >
-          <option value="">Select category</option>
-          {CATEGORY_OPTIONS.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </select>
+        <div className="flex items-center justify-between">
+          <span style={labelStyle}>Categories</span>
+          <button
+            type="button"
+            onClick={() => setCatPickerOpen(true)}
+            className="flex items-center border-0 bg-transparent"
+            style={{ color: 'hsl(var(--text-link))', fontSize: 'var(--text-xs-font-size)', cursor: 'pointer', gap: '3px', padding: 0 }}
+          >
+            <Pencil size={11} /> Edit
+          </button>
+        </div>
+        {selectedCategories.length === 0 ? (
+          <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>None selected</span>
+        ) : (
+          <div className="flex flex-wrap" style={{ gap: '4px' }}>
+            {selectedCategories.slice(0, 3).map((s) => {
+              const cat = allCategories.find((c) => c.id === s.id)
+              if (!cat) return null
+              return (
+                <span
+                  key={s.id}
+                  className="inline-flex items-center"
+                  style={{
+                    backgroundColor: 'hsl(var(--tag-active-bg))',
+                    color: 'hsl(var(--tag-active-fg))',
+                    borderRadius: '9999px',
+                    padding: '2px 8px',
+                    fontSize: '11px',
+                    fontWeight: 'var(--font-weight-medium)',
+                    gap: '3px',
+                  }}
+                >
+                  {s.is_primary && <Star size={10} fill="currentColor" />}
+                  {cat.name}
+                </span>
+              )
+            })}
+            {selectedCategories.length > 3 && (
+              <span style={{ fontSize: '11px', color: 'hsl(var(--text-muted))', alignSelf: 'center' }}>
+                +{selectedCategories.length - 3} more
+              </span>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Tags */}
+      <div className="flex flex-col" style={{ gap: 'var(--spacing-xs)' }}>
+        <div className="flex items-center justify-between">
+          <span style={labelStyle}>Tags</span>
+          <button
+            type="button"
+            onClick={() => setTagPickerOpen(true)}
+            className="flex items-center border-0 bg-transparent"
+            style={{ color: 'hsl(var(--text-link))', fontSize: 'var(--text-xs-font-size)', cursor: 'pointer', gap: '3px', padding: 0 }}
+          >
+            <Pencil size={11} /> Edit
+          </button>
+        </div>
+        {selectedTags.length === 0 ? (
+          <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>None selected</span>
+        ) : (
+          <div className="flex flex-wrap" style={{ gap: '4px' }}>
+            {selectedTags.slice(0, 3).map((id) => {
+              const tag = allTags.find((t) => t.id === id)
+              if (!tag) return null
+              return (
+                <span
+                  key={id}
+                  className="inline-flex items-center"
+                  style={{
+                    backgroundColor: 'hsl(var(--bg-surface-alt))',
+                    color: 'hsl(var(--text-secondary))',
+                    borderRadius: '9999px',
+                    padding: '2px 8px',
+                    fontSize: '11px',
+                    fontWeight: 'var(--font-weight-medium)',
+                  }}
+                >
+                  {tag.name}
+                </span>
+              )
+            })}
+            {selectedTags.length > 3 && (
+              <span style={{ fontSize: '11px', color: 'hsl(var(--text-muted))', alignSelf: 'center' }}>
+                +{selectedTags.length - 3} more
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Category picker modal */}
+      {catPickerOpen && (
+        <TaxonomyPickerModal
+          title="Select Categories"
+          items={allCategories}
+          selected={selectedCategories}
+          showPrimary
+          onSave={(items) => { onCategoriesChange(items); setCatPickerOpen(false) }}
+          onClose={() => setCatPickerOpen(false)}
+        />
+      )}
+
+      {/* Tag picker modal */}
+      {tagPickerOpen && (
+        <TaxonomyPickerModal
+          title="Select Tags"
+          items={allTags}
+          selected={selectedTags.map((id) => ({ id, is_primary: false }))}
+          onSave={(items) => { onTagsChange(items.map((i) => i.id)); setTagPickerOpen(false) }}
+          onClose={() => setTagPickerOpen(false)}
+        />
+      )}
 
       {/* Price */}
       <div className="flex flex-col" style={{ gap: 'var(--spacing-xs)' }}>
