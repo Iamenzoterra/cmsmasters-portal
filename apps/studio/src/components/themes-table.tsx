@@ -1,4 +1,5 @@
 import type { Theme } from '@cmsmasters/db'
+import { Palette } from 'lucide-react'
 import { StatusBadge } from './status-badge'
 import { timeAgo, formatPrice } from '../lib/format'
 
@@ -8,7 +9,8 @@ interface ThemesTableProps {
 }
 
 const cellStyle: React.CSSProperties = {
-  padding: 'var(--spacing-sm) var(--spacing-md)',
+  padding: 'var(--spacing-xs) var(--spacing-md)',
+  verticalAlign: 'middle',
 }
 
 export function ThemesTable({ themes, onThemeClick }: ThemesTableProps) {
@@ -51,7 +53,21 @@ export function ThemesTable({ themes, onThemeClick }: ThemesTableProps) {
             }}
           >
             <td style={{ ...cellStyle, fontSize: 'var(--text-sm-font-size)', fontWeight: 'var(--font-weight-semibold)', color: 'hsl(var(--text-primary))' }}>
-              {theme.meta.name}
+              <div className="flex items-center" style={{ gap: 'var(--spacing-sm)' }}>
+                {theme.meta.thumbnail_url ? (
+                  <img
+                    src={theme.meta.thumbnail_url}
+                    alt=""
+                    style={{
+                      borderRadius: 'var(--rounded-md)',
+                      flexShrink: 0,
+                    }}
+                  />
+                ) : (
+                  <Palette size={16} style={{ color: 'hsl(var(--text-muted))', flexShrink: 0 }} />
+                )}
+                {theme.meta.name}
+              </div>
             </td>
             <td style={{ ...cellStyle, fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-secondary))' }}>
               {theme.meta.category ?? '—'}

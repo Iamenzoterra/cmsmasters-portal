@@ -8,6 +8,9 @@ import { StatusSelect } from './status-select'
 import { StarRating } from './star-rating'
 import { ChipSelect } from './chip-select'
 import { TaxonomyPickerModal } from './taxonomy-picker-modal'
+import { ThumbnailUpload } from './thumbnail-upload'
+import { useToast } from './toast'
+import { uploadFile } from '../lib/block-api'
 import { timeAgo } from '../lib/format'
 
 /** M3 cut: empty number input → NaN with valueAsNumber. Normalize to undefined. */
@@ -58,11 +61,12 @@ const RESOURCE_PUBLIC = ['docs', 'changelog', 'faq', 'demos']
 const RESOURCE_LICENSED = ['download', 'child-theme', 'psd', 'support']
 const RESOURCE_PREMIUM = ['priority-support', 'megakit-access']
 
-export function EditorSidebar({ control, register, watch, setValue: _setValue, existingTheme, allCategories, allTags, selectedCategories, selectedTags, onCategoriesChange, onTagsChange }: EditorSidebarProps) {
+export function EditorSidebar({ control, register, watch, setValue, existingTheme, allCategories, allTags, selectedCategories, selectedTags, onCategoriesChange, onTagsChange }: EditorSidebarProps) {
   const status = watch('status')
   const [catPickerOpen, setCatPickerOpen] = useState(false)
   const [tagPickerOpen, setTagPickerOpen] = useState(false)
   const thumbnailUrl = watch('meta.thumbnail_url')
+  const { toast } = useToast()
 
   const { field: statusField } = useController({ control, name: 'status' })
   const { field: ratingField } = useController({ control, name: 'meta.rating' })
@@ -86,26 +90,15 @@ export function EditorSidebar({ control, register, watch, setValue: _setValue, e
       {/* Thumbnail */}
       <div className="flex flex-col" style={{ gap: 'var(--spacing-xs)' }}>
         <span style={labelStyle}>Thumbnail</span>
-        <div
-          className="flex items-center justify-center overflow-hidden"
-          style={{
-            height: '140px',
-            backgroundColor: 'hsl(var(--bg-surface-alt))',
-            borderRadius: 'var(--rounded-lg)',
+        <ThumbnailUpload
+          url={thumbnailUrl ?? ''}
+          onUpload={async (file) => {
+            const url = await uploadFile(file)
+            setValue('meta.thumbnail_url', url, { shouldDirty: true })
+            toast({ type: 'success', message: 'Thumbnail uploaded' })
           }}
-        >
-          {thumbnailUrl ? (
-            <img src={thumbnailUrl} alt="Thumbnail" className="h-full w-full object-cover" />
-          ) : (
-            <span style={{ fontSize: '32px', color: 'hsl(var(--text-muted))' }}>🖼</span>
-          )}
-        </div>
-        <input
-          {...register('meta.thumbnail_url')}
-          type="text"
-          placeholder="Image URL"
-          className="w-full outline-none"
-          style={inputStyle}
+          onRemove={() => setValue('meta.thumbnail_url', '', { shouldDirty: true })}
+          onError={(msg) => toast({ type: 'error', message: msg })}
         />
       </div>
 

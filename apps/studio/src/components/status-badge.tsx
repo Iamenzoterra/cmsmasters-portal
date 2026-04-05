@@ -30,8 +30,12 @@ export function StatusBadge({ status }: StatusBadgeProps) {
       className="inline-flex items-center shrink-0"
       style={{
         backgroundColor: v.bg,
+        color: v.fg,
         borderRadius: '9999px',
-        padding: '6px',
+        padding: '2px 10px 2px 8px',
+        fontSize: 'var(--text-xs-font-size)',
+        fontWeight: 'var(--font-weight-medium)',
+        gap: '6px',
       }}
     >
       <span
@@ -43,6 +47,7 @@ export function StatusBadge({ status }: StatusBadgeProps) {
           flexShrink: 0,
         }}
       />
+      {status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
   )
 }

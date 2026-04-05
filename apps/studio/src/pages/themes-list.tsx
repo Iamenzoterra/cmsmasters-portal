@@ -20,7 +20,7 @@ export function ThemesList() {
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
-  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid')
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('table')
   const [page, setPage] = useState(1)
 
   // ── Fetch (single fetch point — Task B) ──

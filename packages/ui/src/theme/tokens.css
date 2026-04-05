@@ -118,7 +118,7 @@
 
   /* ── brand semantics: status (from Portal-DS) ── */
   --status-success-bg: 115 53% 92%;
-  --status-success-fg: 118 45% 89%;
+  --status-success-fg: 118 45% 35%;
   --status-error-bg: 0 86% 97%;
   --status-error-fg: 0 72% 51%;
   --status-warn-bg: 48 100% 96%;
