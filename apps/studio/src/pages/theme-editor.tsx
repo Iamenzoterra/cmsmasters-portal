@@ -134,7 +134,7 @@ export function ThemeEditor() {
       })
 
     return () => { cancelled = true }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [slug, isNew])
 
   // Slug auto-generation (new themes only)
@@ -178,7 +178,7 @@ export function ThemeEditor() {
     fetchTemplateById(currentTemplateId)
       .then(setSelectedTemplate)
       .catch(() => setSelectedTemplate(null))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  
   }, [currentTemplateId])
 
   // M5: beforeunload only when dirty, cleanup in return

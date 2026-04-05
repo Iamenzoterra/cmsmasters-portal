@@ -38,7 +38,6 @@ const labelStyle: React.CSSProperties = {
 }
 
 export function EditorSidebar({ control, watch, setValue, existingTheme, allCategories, allTags, selectedCategories, selectedTags, onCategoriesChange, onTagsChange, allPrices, selectedPriceId, onPriceChange, authorName }: EditorSidebarProps) {
-  const status = watch('status')
   const [catPickerOpen, setCatPickerOpen] = useState(false)
   const [tagPickerOpen, setTagPickerOpen] = useState(false)
   const [pricePickerOpen, setPricePickerOpen] = useState(false)

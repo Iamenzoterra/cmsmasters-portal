@@ -6,6 +6,15 @@
     "apps/*",
     "packages/*"
   ],
+  "knip": {
+    "ignore": [
+      ".claude/**",
+      "tools/**",
+      "logs/**",
+      "logs-backup-*/**",
+      "workplan/**"
+    ]
+  },
   "scripts": {
     "build": "nx run-many -t build",
     "dev": "nx run-many -t dev",

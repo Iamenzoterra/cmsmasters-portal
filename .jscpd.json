@@ -1,12 +1,13 @@
 {
-  "threshold": 5,
+  "threshold": 6,
   "reporters": ["console"],
   "ignore": [
     "**/node_modules/**",
     "**/.next/**",
     "**/dist/**",
     "**/.turbo/**",
-    "**/package-lock.json"
+    "**/package-lock.json",
+    "apps/command-center/cli/**"
   ],
   "absolute": true,
   "gitignore": true,

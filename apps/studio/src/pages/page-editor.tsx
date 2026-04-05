@@ -4,7 +4,7 @@ import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { pageSchema, type CreatePagePayload } from '@cmsmasters/validators'
 import type { Page, Block } from '@cmsmasters/db'
-import { AlertTriangle, ChevronLeft, Plus, ArrowUp, ArrowDown, Trash2, Info, Upload, Eye, Download, ExternalLink } from 'lucide-react'
+import { AlertTriangle, ChevronLeft, Plus, ArrowUp, ArrowDown, Trash2, Upload, Eye, Download, ExternalLink } from 'lucide-react'
 import { Button } from '@cmsmasters/ui'
 import { fetchPageById, createPageApi, updatePageApi, deletePageApi, fetchPageBlocks, updatePageBlocks } from '../lib/page-api'
 import { fetchAllBlocks } from '../lib/block-api'
@@ -46,9 +46,7 @@ const monoStyle: React.CSSProperties = {
   ...inputStyle,
   height: 'auto',
   padding: 'var(--spacing-md)',
-  fontFamily: 'var(--font-family-monospace)',
-  fontSize: '13px',
-  lineHeight: '1.6',
+  font: 'var(--text-sm-font-size)/1.6 var(--font-family-monospace)',
   resize: 'vertical' as const,
   backgroundColor: 'hsl(var(--bg-surface-alt))',
   tabSize: 2,
@@ -223,7 +221,7 @@ export function PageEditor() {
       })
 
     return () => { cancelled = true }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [id, isNew])
 
   // Fetch all blocks for picker
@@ -759,7 +757,7 @@ export function PageEditor() {
                           onBlur={(e) => handleConfigChange(idx, e.target.value)}
                           rows={2}
                           className="w-full resize-y outline-none"
-                          style={{ ...inputStyle, height: 'auto', padding: 'var(--spacing-sm)', fontFamily: 'var(--font-family-monospace)', fontSize: 'var(--text-xs-font-size)' }}
+                          style={{ ...inputStyle, height: 'auto', padding: 'var(--spacing-sm)', font: 'var(--text-xs-font-size)/1.4 var(--font-family-monospace)' }}
                           placeholder="{}"
                         />
                       </div>

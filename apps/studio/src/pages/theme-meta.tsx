@@ -32,7 +32,7 @@ export function ThemeMeta() {
     try {
       const data = await getCategories(supabase)
       setCategories(data)
-    } catch (err) {
+    } catch {
       toast({ type: 'error', message: 'Failed to load categories' })
     } finally {
       setLoadingCats(false)
@@ -44,7 +44,7 @@ export function ThemeMeta() {
     try {
       const data = await getTags(supabase)
       setTags(data)
-    } catch (err) {
+    } catch {
       toast({ type: 'error', message: 'Failed to load tags' })
     } finally {
       setLoadingTags(false)
@@ -56,7 +56,7 @@ export function ThemeMeta() {
     try {
       const data = await getPrices(supabase)
       setPrices(data)
-    } catch (err) {
+    } catch {
       toast({ type: 'error', message: 'Failed to load prices' })
     } finally {
       setLoadingPrices(false)
@@ -95,7 +95,7 @@ export function ThemeMeta() {
       await deleteCategory(supabase, id)
       toast({ type: 'success', message: `Category "${name}" deleted` })
       await fetchCategories()
-    } catch (err) {
+    } catch {
       toast({ type: 'error', message: 'Failed to delete category' })
     }
   }
@@ -125,7 +125,7 @@ export function ThemeMeta() {
       await deleteTag(supabase, id)
       toast({ type: 'success', message: `Tag "${name}" deleted` })
       await fetchTags()
-    } catch (err) {
+    } catch {
       toast({ type: 'error', message: 'Failed to delete tag' })
     }
   }
@@ -155,7 +155,7 @@ export function ThemeMeta() {
       await deletePrice(supabase, id)
       toast({ type: 'success', message: `Price "${name}" deleted` })
       await fetchPrices()
-    } catch (err) {
+    } catch {
       toast({ type: 'error', message: 'Failed to delete price' })
     }
   }
