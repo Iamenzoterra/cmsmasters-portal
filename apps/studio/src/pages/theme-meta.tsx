@@ -1,26 +1,30 @@
 import { useState, useEffect, useCallback } from 'react'
-import type { Category, Tag } from '@cmsmasters/db'
+import type { Category, Tag, Price, PriceType } from '@cmsmasters/db'
 import {
   getCategories, createCategory, updateCategory, deleteCategory,
   getTags, createTag, updateTag, deleteTag,
+  getPrices, createPrice, updatePrice, deletePrice,
 } from '@cmsmasters/db'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../components/toast'
 import { TaxonomyList } from '../components/taxonomy-list'
 
-type TabKey = 'categories' | 'tags'
+type TabKey = 'categories' | 'tags' | 'prices'
 
 const tabs: { key: TabKey; label: string }[] = [
   { key: 'categories', label: 'Categories' },
   { key: 'tags', label: 'Tags' },
+  { key: 'prices', label: 'Prices' },
 ]
 
 export function ThemeMeta() {
   const [tab, setTab] = useState<TabKey>('categories')
   const [categories, setCategories] = useState<Category[]>([])
   const [tags, setTags] = useState<Tag[]>([])
+  const [prices, setPrices] = useState<Price[]>([])
   const [loadingCats, setLoadingCats] = useState(true)
   const [loadingTags, setLoadingTags] = useState(true)
+  const [loadingPrices, setLoadingPrices] = useState(true)
   const { toast } = useToast()
 
   const fetchCategories = useCallback(async () => {
@@ -47,11 +51,24 @@ export function ThemeMeta() {
     }
   }, [toast])
 
+  const fetchPrices = useCallback(async () => {
+    setLoadingPrices(true)
+    try {
+      const data = await getPrices(supabase)
+      setPrices(data)
+    } catch (err) {
+      toast({ type: 'error', message: 'Failed to load prices' })
+    } finally {
+      setLoadingPrices(false)
+    }
+  }, [toast])
+
   useEffect(() => { fetchCategories() }, [fetchCategories])
   useEffect(() => { fetchTags() }, [fetchTags])
+  useEffect(() => { fetchPrices() }, [fetchPrices])
 
-  const activeItems = tab === 'categories' ? categories : tags
-  const activeLoading = tab === 'categories' ? loadingCats : loadingTags
+  const activeItems = tab === 'categories' ? categories : tab === 'tags' ? tags : prices
+  const activeLoading = tab === 'categories' ? loadingCats : tab === 'tags' ? loadingTags : loadingPrices
 
   async function handleAddCategory(name: string, slug: string) {
     try {
@@ -113,6 +130,36 @@ export function ThemeMeta() {
     }
   }
 
+  async function handleAddPrice(name: string, slug: string, type?: string) {
+    try {
+      await createPrice(supabase, { name, slug, type: (type as PriceType) ?? 'normal' })
+      toast({ type: 'success', message: `Price "${name}" created` })
+      await fetchPrices()
+    } catch (err: any) {
+      toast({ type: 'error', message: err?.message?.includes('unique') ? `Slug already exists` : 'Failed to create price' })
+    }
+  }
+
+  async function handleUpdatePrice(id: string, name: string, slug: string, type?: string) {
+    try {
+      await updatePrice(supabase, id, { name, slug, ...(type ? { type: type as PriceType } : {}) })
+      toast({ type: 'success', message: 'Price updated' })
+      await fetchPrices()
+    } catch (err: any) {
+      toast({ type: 'error', message: err?.message?.includes('unique') ? `Slug already exists` : 'Failed to update price' })
+    }
+  }
+
+  async function handleDeletePrice(id: string, name: string) {
+    try {
+      await deletePrice(supabase, id)
+      toast({ type: 'success', message: `Price "${name}" deleted` })
+      await fetchPrices()
+    } catch (err) {
+      toast({ type: 'error', message: 'Failed to delete price' })
+    }
+  }
+
   return (
     <div className="flex flex-col" style={{ padding: 'var(--spacing-xl)', gap: 'var(--spacing-lg)', maxWidth: '720px' }}>
       {/* Header */}
@@ -127,7 +174,7 @@ export function ThemeMeta() {
           Theme Meta
         </h1>
         <p style={{ margin: 0, fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-secondary))' }}>
-          Manage categories and tags for your themes.
+          Manage categories, tags, and prices for your themes.
         </p>
       </div>
 
@@ -156,7 +203,7 @@ export function ThemeMeta() {
               color: 'hsl(var(--text-muted))',
               fontWeight: 'var(--font-weight-medium)',
             }}>
-              {t.key === 'categories' ? categories.length : tags.length}
+              {t.key === 'categories' ? categories.length : t.key === 'tags' ? tags.length : prices.length}
             </span>
           </button>
         ))}
@@ -164,11 +211,13 @@ export function ThemeMeta() {
 
       {/* Content */}
       <TaxonomyList
+        key={tab}
         items={activeItems}
         loading={activeLoading}
-        onAdd={tab === 'categories' ? handleAddCategory : handleAddTag}
-        onUpdate={tab === 'categories' ? handleUpdateCategory : handleUpdateTag}
-        onDelete={tab === 'categories' ? handleDeleteCategory : handleDeleteTag}
+        onAdd={tab === 'categories' ? handleAddCategory : tab === 'tags' ? handleAddTag : handleAddPrice}
+        onUpdate={tab === 'categories' ? handleUpdateCategory : tab === 'tags' ? handleUpdateTag : handleUpdatePrice}
+        onDelete={tab === 'categories' ? handleDeleteCategory : tab === 'tags' ? handleDeleteTag : handleDeletePrice}
+        typeOptions={tab === 'prices' ? ['normal', 'discount'] : undefined}
       />
     </div>
   )

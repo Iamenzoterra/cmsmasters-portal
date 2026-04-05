@@ -69,6 +69,8 @@ export type ThemeStatus = 'draft' | 'published' | 'archived'
 
 export type LicenseType = 'regular' | 'extended'
 
+export type PriceType = 'normal' | 'discount'
+
 // ── Page types ──
 
 export type PageType = 'layout' | 'composed'
@@ -489,6 +491,50 @@ export type Database = {
         }
         Relationships: []
       }
+      prices: {
+        Row: {
+          id: string
+          name: string
+          slug: string
+          type: PriceType
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug: string
+          type?: PriceType
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          slug?: string
+          type?: PriceType
+          created_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      theme_prices: {
+        Row: {
+          theme_id: string
+          price_id: string
+        }
+        Insert: {
+          theme_id: string
+          price_id: string
+        }
+        Update: {
+          theme_id?: string
+          price_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: {
@@ -550,3 +596,10 @@ export type ThemeCategoryInsert = Database['public']['Tables']['theme_categories
 
 export type ThemeTag = Database['public']['Tables']['theme_tags']['Row']
 export type ThemeTagInsert = Database['public']['Tables']['theme_tags']['Insert']
+
+export type Price = Database['public']['Tables']['prices']['Row']
+export type PriceInsert = Database['public']['Tables']['prices']['Insert']
+export type PriceUpdate = Database['public']['Tables']['prices']['Update']
+
+export type ThemePrice = Database['public']['Tables']['theme_prices']['Row']
+export type ThemePriceInsert = Database['public']['Tables']['theme_prices']['Insert']

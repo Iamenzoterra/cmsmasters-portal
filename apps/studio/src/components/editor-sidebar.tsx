@@ -30,6 +30,9 @@ interface EditorSidebarProps {
   selectedTags: string[]
   onCategoriesChange: (items: Array<{ id: string; is_primary: boolean }>) => void
   onTagsChange: (ids: string[]) => void
+  allPrices: Array<{ id: string; name: string; slug: string; type: string }>
+  selectedPriceId: string | null
+  onPriceChange: (id: string | null) => void
 }
 
 const labelStyle: React.CSSProperties = {
@@ -60,10 +63,11 @@ const RESOURCE_PUBLIC = ['docs', 'changelog', 'faq', 'demos']
 const RESOURCE_LICENSED = ['download', 'child-theme', 'psd', 'support']
 const RESOURCE_PREMIUM = ['priority-support', 'megakit-access']
 
-export function EditorSidebar({ control, register, watch, setValue, existingTheme, allCategories, allTags, selectedCategories, selectedTags, onCategoriesChange, onTagsChange }: EditorSidebarProps) {
+export function EditorSidebar({ control, register, watch, setValue, existingTheme, allCategories, allTags, selectedCategories, selectedTags, onCategoriesChange, onTagsChange, allPrices, selectedPriceId, onPriceChange }: EditorSidebarProps) {
   const status = watch('status')
   const [catPickerOpen, setCatPickerOpen] = useState(false)
   const [tagPickerOpen, setTagPickerOpen] = useState(false)
+  const [pricePickerOpen, setPricePickerOpen] = useState(false)
   const thumbnailUrl = watch('meta.thumbnail_url')
   const { toast } = useToast()
 
@@ -241,25 +245,72 @@ export function EditorSidebar({ control, register, watch, setValue, existingThem
 
       {/* Price */}
       <div className="flex flex-col" style={{ gap: 'var(--spacing-xs)' }}>
-        <span style={labelStyle}>Price</span>
-        <div className="relative">
-          <span
-            className="pointer-events-none absolute top-1/2 -translate-y-1/2"
-            style={{ left: '12px', color: 'hsl(var(--text-muted))', fontSize: 'var(--text-sm-font-size)' }}
+        <div className="flex items-center justify-between">
+          <span style={labelStyle}>Price</span>
+          <button
+            type="button"
+            onClick={() => setPricePickerOpen(true)}
+            style={{
+              height: '28px',
+              padding: '0 var(--spacing-sm)',
+              fontSize: 'var(--text-xs-font-size)',
+              color: 'hsl(var(--text-secondary))',
+              backgroundColor: 'transparent',
+              border: '1px solid hsl(var(--border-default))',
+              borderRadius: 'var(--rounded-md)',
+              cursor: 'pointer',
+            }}
           >
-            $
-          </span>
-          <input
-            type="number"
-            min={0}
-            step={1}
-            {...register('meta.price', { setValueAs: nanToUndefined })}
-            placeholder="0"
-            className="w-full outline-none"
-            style={{ ...inputStyle, paddingLeft: '28px' }}
-          />
+            {selectedPriceId ? 'Change' : 'Select'}
+          </button>
         </div>
+        {selectedPriceId ? (
+          (() => {
+            const price = allPrices.find((p) => p.id === selectedPriceId)
+            if (!price) return <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>Unknown price</span>
+            return (
+              <div className="flex items-center" style={{ gap: '6px' }}>
+                <span
+                  className="inline-flex items-center"
+                  style={{
+                    backgroundColor: 'hsl(var(--tag-active-bg))',
+                    color: 'hsl(var(--tag-active-fg))',
+                    borderRadius: '9999px',
+                    padding: '2px 8px',
+                    fontSize: '11px',
+                    fontWeight: 'var(--font-weight-medium)',
+                  }}
+                >
+                  {price.name}
+                </span>
+                <span
+                  style={{
+                    fontSize: 'var(--text-xs-font-size)',
+                    color: price.type === 'discount' ? 'hsl(var(--status-warn-fg))' : 'hsl(var(--text-muted))',
+                    fontWeight: 'var(--font-weight-medium)',
+                  }}
+                >
+                  {price.type}
+                </span>
+              </div>
+            )
+          })()
+        ) : (
+          <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>None selected</span>
+        )}
       </div>
+
+      {/* Price picker modal */}
+      {pricePickerOpen && (
+        <TaxonomyPickerModal
+          title="Select Price"
+          items={allPrices}
+          selected={selectedPriceId ? [{ id: selectedPriceId, is_primary: false }] : []}
+          singleSelect
+          onSave={(items) => { onPriceChange(items[0]?.id ?? null); setPricePickerOpen(false) }}
+          onClose={() => setPricePickerOpen(false)}
+        />
+      )}
 
       {/* Trust Badges */}
       <ChipSelect

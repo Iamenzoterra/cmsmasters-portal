@@ -48,6 +48,12 @@ export type {
   ThemeCategoryInsert,
   ThemeTag,
   ThemeTagInsert,
+  PriceType,
+  Price,
+  PriceInsert,
+  PriceUpdate,
+  ThemePrice,
+  ThemePriceInsert,
 } from './types'
 
 export { themeRowToFormData, formDataToThemeInsert } from './mappers'
@@ -114,3 +120,13 @@ export {
   getThemeTags,
   setThemeTags,
 } from './queries/tags'
+
+export {
+  getPrices,
+  getPriceById,
+  createPrice,
+  updatePrice,
+  deletePrice,
+  getThemePrices,
+  setThemePrices,
+} from './queries/prices'

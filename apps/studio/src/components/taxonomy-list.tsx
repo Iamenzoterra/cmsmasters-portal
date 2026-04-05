@@ -7,14 +7,17 @@ interface TaxonomyItem {
   id: string
   name: string
   slug: string
+  type?: string
 }
 
 interface TaxonomyListProps {
   items: TaxonomyItem[]
   loading: boolean
-  onAdd: (name: string, slug: string) => Promise<void>
-  onUpdate: (id: string, name: string, slug: string) => Promise<void>
+  onAdd: (name: string, slug: string, type?: string) => Promise<void>
+  onUpdate: (id: string, name: string, slug: string, type?: string) => Promise<void>
   onDelete: (id: string, name: string) => Promise<void>
+  /** When provided, shows a type selector with these options */
+  typeOptions?: string[]
 }
 
 function nameToSlug(name: string) {
@@ -32,11 +35,23 @@ const inputStyle: React.CSSProperties = {
   color: 'hsl(var(--foreground))',
 }
 
-export function TaxonomyList({ items, loading, onAdd, onUpdate, onDelete }: TaxonomyListProps) {
+const selectStyle: React.CSSProperties = {
+  ...inputStyle,
+  width: 'auto',
+  paddingRight: '28px',
+  appearance: 'none',
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'right 8px center',
+}
+
+export function TaxonomyList({ items, loading, onAdd, onUpdate, onDelete, typeOptions }: TaxonomyListProps) {
   const [newName, setNewName] = useState('')
+  const [newType, setNewType] = useState(typeOptions?.[0] ?? '')
   const [adding, setAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
+  const [editType, setEditType] = useState('')
   const [deleteItem, setDeleteItem] = useState<TaxonomyItem | null>(null)
   const addInputRef = useRef<HTMLInputElement>(null)
   const editInputRef = useRef<HTMLInputElement>(null)
@@ -50,7 +65,7 @@ export function TaxonomyList({ items, loading, onAdd, onUpdate, onDelete }: Taxo
     if (!name) return
     setAdding(true)
     try {
-      await onAdd(name, nameToSlug(name))
+      await onAdd(name, nameToSlug(name), typeOptions ? newType : undefined)
       setNewName('')
       addInputRef.current?.focus()
     } finally {
@@ -61,6 +76,7 @@ export function TaxonomyList({ items, loading, onAdd, onUpdate, onDelete }: Taxo
   function startEdit(item: TaxonomyItem) {
     setEditingId(item.id)
     setEditName(item.name)
+    setEditType(item.type ?? typeOptions?.[0] ?? '')
   }
 
   async function handleSaveEdit() {
@@ -68,7 +84,7 @@ export function TaxonomyList({ items, loading, onAdd, onUpdate, onDelete }: Taxo
     const name = editName.trim()
     if (!name) return
     try {
-      await onUpdate(editingId, name, nameToSlug(name))
+      await onUpdate(editingId, name, nameToSlug(name), typeOptions ? editType : undefined)
     } finally {
       setEditingId(null)
     }
@@ -101,6 +117,18 @@ export function TaxonomyList({ items, loading, onAdd, onUpdate, onDelete }: Taxo
           style={inputStyle}
           disabled={adding}
         />
+        {typeOptions && (
+          <select
+            value={newType}
+            onChange={(e) => setNewType(e.target.value)}
+            className="outline-none"
+            style={selectStyle}
+          >
+            {typeOptions.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        )}
         <Button variant="primary" size="sm" onClick={handleAdd} disabled={!newName.trim() || adding}>
           Add
         </Button>
@@ -144,6 +172,17 @@ export function TaxonomyList({ items, loading, onAdd, onUpdate, onDelete }: Taxo
                     className="flex-1 outline-none"
                     style={{ ...inputStyle, flex: 1 }}
                   />
+                  {typeOptions && (
+                    <select
+                      value={editType}
+                      onChange={(e) => setEditType(e.target.value)}
+                      style={{ ...inputStyle, width: 'auto' }}
+                    >
+                      {typeOptions.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  )}
                   <button
                     type="button"
                     onClick={handleSaveEdit}
@@ -168,9 +207,25 @@ export function TaxonomyList({ items, loading, onAdd, onUpdate, onDelete }: Taxo
                     <span style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-primary))', fontWeight: 'var(--font-weight-medium)' }}>
                       {item.name}
                     </span>
-                    <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>
-                      {item.slug}
-                    </span>
+                    <div className="flex items-center" style={{ gap: '6px' }}>
+                      <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>
+                        {item.slug}
+                      </span>
+                      {item.type && (
+                        <span
+                          style={{
+                            fontSize: 'var(--text-xs-font-size)',
+                            color: item.type === 'discount' ? 'hsl(var(--status-warn-fg))' : 'hsl(var(--text-secondary))',
+                            backgroundColor: item.type === 'discount' ? 'hsl(var(--status-warn-bg))' : 'hsl(var(--bg-surface-alt))',
+                            borderRadius: '9999px',
+                            padding: '1px 8px',
+                            fontWeight: 'var(--font-weight-medium)',
+                          }}
+                        >
+                          {item.type}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center" style={{ gap: 'var(--spacing-xs)' }}>
                     <button

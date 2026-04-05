@@ -3,8 +3,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { themeSchema, type ThemeFormData } from '@cmsmasters/validators'
-import type { Theme, Template, Block, ThemeBlockFill, Category, Tag } from '@cmsmasters/db'
-import { upsertTheme, logAction, themeRowToFormData, formDataToThemeInsert, getCategories, getThemeCategories, setThemeCategories, getTags, getThemeTags, setThemeTags } from '@cmsmasters/db'
+import type { Theme, Template, Block, ThemeBlockFill, Category, Tag, Price } from '@cmsmasters/db'
+import { upsertTheme, logAction, themeRowToFormData, formDataToThemeInsert, getCategories, getThemeCategories, setThemeCategories, getTags, getThemeTags, setThemeTags, getPrices, getThemePrices, setThemePrices } from '@cmsmasters/db'
 import { AlertTriangle, ChevronLeft, ExternalLink, Eye, LayoutTemplate } from 'lucide-react'
 import { useLocalPortal } from '../lib/use-local-portal'
 import { Button } from '@cmsmasters/ui'
@@ -60,6 +60,8 @@ export function ThemeEditor() {
   const [allTags, setAllTags] = useState<Tag[]>([])
   const [selectedCategories, setSelectedCategories] = useState<Array<{ id: string; is_primary: boolean }>>([])
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [allPrices, setAllPrices] = useState<Price[]>([])
+  const [selectedPriceId, setSelectedPriceId] = useState<string | null>(null)
 
   const form = useForm<ThemeFormData>({
     resolver: zodResolver(themeSchema),
@@ -72,6 +74,7 @@ export function ThemeEditor() {
   useEffect(() => {
     getCategories(supabase).then(setAllCategories).catch(() => {})
     getTags(supabase).then(setAllTags).catch(() => {})
+    getPrices(supabase).then(setAllPrices).catch(() => {})
   }, [])
 
   // Fetch existing theme — OR reset all state for new themes (route reuse)
@@ -88,6 +91,7 @@ export function ThemeEditor() {
       setShowTemplatePicker(false)
       setSelectedCategories([])
       setSelectedTags([])
+      setSelectedPriceId(null)
       return
     }
     let cancelled = false
@@ -110,6 +114,9 @@ export function ThemeEditor() {
         })
         getThemeTags(supabase, theme.id).then((tags) => {
           if (!cancelled) setSelectedTags(tags.map((t: any) => t.id))
+        })
+        getThemePrices(supabase, theme.id).then((prices) => {
+          if (!cancelled) setSelectedPriceId(prices[0]?.id ?? null)
         })
       })
       .catch((error) => {
@@ -199,6 +206,7 @@ export function ThemeEditor() {
       await Promise.all([
         setThemeCategories(supabase, saved.id, selectedCategories.map((s) => ({ category_id: s.id, is_primary: s.is_primary }))),
         setThemeTags(supabase, saved.id, selectedTags),
+        setThemePrices(supabase, saved.id, selectedPriceId ? [selectedPriceId] : []),
       ])
 
       // M2: audit non-blocking with explicit marker
@@ -254,6 +262,7 @@ export function ThemeEditor() {
       await Promise.all([
         setThemeCategories(supabase, saved.id, selectedCategories.map((s) => ({ category_id: s.id, is_primary: s.is_primary }))),
         setThemeTags(supabase, saved.id, selectedTags),
+        setThemePrices(supabase, saved.id, selectedPriceId ? [selectedPriceId] : []),
       ])
 
       try {
@@ -745,6 +754,9 @@ export function ThemeEditor() {
             selectedTags={selectedTags}
             onCategoriesChange={setSelectedCategories}
             onTagsChange={setSelectedTags}
+            allPrices={allPrices}
+            selectedPriceId={selectedPriceId}
+            onPriceChange={setSelectedPriceId}
           />
         </div>
       </div>

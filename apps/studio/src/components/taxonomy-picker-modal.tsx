@@ -18,11 +18,13 @@ interface TaxonomyPickerModalProps {
   items: TaxonomyPickerItem[]
   selected: SelectedItem[]
   showPrimary?: boolean
+  /** When true, only one item can be selected at a time */
+  singleSelect?: boolean
   onSave: (selected: SelectedItem[]) => void
   onClose: () => void
 }
 
-export function TaxonomyPickerModal({ title, items, selected, showPrimary = false, onSave, onClose }: TaxonomyPickerModalProps) {
+export function TaxonomyPickerModal({ title, items, selected, showPrimary = false, singleSelect = false, onSave, onClose }: TaxonomyPickerModalProps) {
   const [draft, setDraft] = useState<SelectedItem[]>(() => selected.map((s) => ({ ...s })))
   const [search, setSearch] = useState('')
 
@@ -44,7 +46,11 @@ export function TaxonomyPickerModal({ title, items, selected, showPrimary = fals
   }, [items, selectedIds, search])
 
   function addItem(id: string) {
-    setDraft((prev) => [...prev, { id, is_primary: false }])
+    if (singleSelect) {
+      setDraft([{ id, is_primary: false }])
+    } else {
+      setDraft((prev) => [...prev, { id, is_primary: false }])
+    }
   }
 
   function removeItem(id: string) {
