@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { LayoutGrid, Boxes, LayoutTemplate, Image, FileText, Layout, Globe, Component, ChevronDown, HelpCircle, LogOut } from 'lucide-react'
+import { LayoutGrid, Boxes, LayoutTemplate, Image, FileText, Layout, Globe, Component, ChevronDown, HelpCircle, LogOut, Tag } from 'lucide-react'
 import { signOut } from '@cmsmasters/auth'
 import { supabase } from '../lib/supabase'
 
@@ -21,6 +21,7 @@ const navGroups: NavGroup[] = [
     label: 'Themes',
     items: [
       { to: '/', label: 'Themes', icon: LayoutGrid, end: true },
+      { to: '/theme-meta', label: 'Theme Meta', icon: Tag },
       { to: '/blocks', label: 'Theme Blocks', icon: Boxes },
       { to: '/templates', label: 'Templates', icon: LayoutTemplate },
     ],

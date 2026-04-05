@@ -11,6 +11,7 @@ import { ThemeEditor } from './pages/theme-editor'
 import { MediaPage } from './pages/media'
 import { BlocksList } from './pages/blocks-list'
 import { BlockEditor } from './pages/block-editor'
+import { ThemeMeta } from './pages/theme-meta'
 import { TemplatesList } from './pages/templates-list'
 import { TemplateEditor } from './pages/template-editor'
 import { PagesList } from './pages/pages-list'
@@ -71,6 +72,7 @@ export function App() {
         <Route index element={<ThemesList />} />
         <Route path="/themes/new" element={<ThemeEditor />} />
         <Route path="/themes/:slug" element={<ThemeEditor />} />
+        <Route path="/theme-meta" element={<ThemeMeta />} />
         <Route path="/blocks" element={<BlocksList />} />
         <Route path="/blocks/new" element={<BlockEditor />} />
         <Route path="/blocks/:id" element={<BlockEditor />} />
