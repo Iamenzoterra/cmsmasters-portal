@@ -154,10 +154,10 @@ cmsmasters-portal/
 │   └── admin/             ⬜ NOT CREATED (Layer 3)
 ├── packages/
 │   ├── ui/                🟡 tokens.css + button primitive + Three-Layer dirs
-│   ├── db/                ✅ client, types (9 tables), queries (themes, blocks, templates, pages, global-elements), mappers
+│   ├── db/                ✅ client, types (13 tables), queries (themes, blocks, templates, pages, global-elements, categories, tags), mappers
 │   ├── auth/              ✅ client, hooks, guards, actions, types
 │   ├── api-client/        ✅ Hono RPC typed client
-│   ├── validators/        ✅ theme, block, template, page Zod schemas
+│   ├── validators/        ✅ theme, block, template, page, category, tag Zod schemas
 │   └── email/             ⬜ deferred
 ├── tools/studio-mockups/  ✅ Block preview HTML files (served on :7777 during /block-craft)
 ├── workplan/              ✅ WP-005 + WP-006, ADRs 001-024, BLOCK-ARCHITECTURE-V2.md
@@ -171,7 +171,7 @@ cmsmasters-portal/
 
 ### Supabase (project: yxcqtwuyktbjxstahfqj)
 
-9 tables, all with RLS enabled:
+13 tables, all with RLS enabled:
 - **profiles**: id, email, full_name, avatar_url, role, timestamps.
 - **themes**: slug, status, meta (jsonb), template_id (FK→templates), block_fills (jsonb), seo (jsonb), created_by, timestamps.
 - **blocks**: slug, name, html, css, js, hooks (jsonb), metadata (jsonb), created_by, timestamps.
@@ -181,6 +181,10 @@ cmsmasters-portal/
 - **global_elements**: slot (header|footer|sidebar-left|sidebar-right), block_id (FK→blocks), scope, priority. UNIQUE(slot, scope).
 - **licenses**: user_id, theme_id, purchase_code, license_type, support_until.
 - **audit_log**: actor_id, action, target_type, target_id, details.
+- **categories**: name, slug, created_by, timestamps. Theme taxonomy.
+- **tags**: name, slug, created_by, timestamps. Theme taxonomy.
+- **theme_categories**: theme_id (FK→themes), category_id (FK→categories), is_primary. Many-to-many junction.
+- **theme_tags**: theme_id (FK→themes), tag_id (FK→tags). Many-to-many junction.
 
 3 functions: get_user_role, handle_new_user, update_updated_at.
 
@@ -243,7 +247,7 @@ Support + AI chat — deferred.
 | **Portal** | Next.js 15 SSG+ISR, public, Vercel, on-demand revalidation |
 | **Internal apps** | Vite + React Router SPA |
 | **API** | Hono on Cloudflare Workers, 18+ routes (incl. R2 image upload) |
-| **DB** | Supabase (Postgres + Auth + RLS), 9 tables |
+| **DB** | Supabase (Postgres + Auth + RLS), 13 tables |
 | **Auth** | Supabase PKCE, magic link, per-app sessions |
 | **Block model** | HTML+CSS+JS in DB, hooks for dynamic data, templates as position grids, themes reference template_id + block_fills |
 | **Block creation** | Figma → /block-craft skill → preview :7777 → Studio import → Process panel → DB |

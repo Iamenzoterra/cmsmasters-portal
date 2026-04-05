@@ -55,7 +55,7 @@ The company operates 4 fragmented domains with no shared navigation, broken post
 | Component | Status | Details |
 |-----------|--------|---------|
 | Nx monorepo | ✅ | nx.json, workspaces, eslint, knip |
-| Supabase DB | ✅ | **9 tables** (profiles, themes, licenses, audit_log, **blocks**, **templates**, **pages**, **page_blocks**, **global_elements**). blocks: html+css+js with hooks/metadata. templates: ordered position grids. pages: layout/composed. global_elements: scope-bound header/footer/sidebars. RLS on all tables |
+| Supabase DB | ✅ | **13 tables** (profiles, themes, licenses, audit_log, **blocks**, **templates**, **pages**, **page_blocks**, **global_elements**, **categories**, **tags**, **theme_categories**, **theme_tags**). blocks: html+css+js with hooks/metadata. templates: ordered position grids. pages: layout/composed. global_elements: scope-bound header/footer/sidebars. categories/tags: theme taxonomies with many-to-many junctions (theme_categories has is_primary flag). RLS on all tables |
 | Supabase Auth | ✅ | PKCE configured, magic link, on_auth_user_created trigger |
 | Hono API | ✅ | `apps/api/` — 18+ routes: health, revalidate, upload + upload/batch (R2), blocks CRUD, templates CRUD, pages CRUD, global-elements CRUD. Auth + role guards. R2 bucket `cmsmasters-assets` configured |
 | Design tokens | ✅ | `packages/ui/src/theme/tokens.css` (222 lines, Figma MCP sync) |
@@ -64,7 +64,7 @@ The company operates 4 fragmented domains with no shared navigation, broken post
 ### Shared packages ✅
 | Package | Status | Contents |
 |---------|--------|----------|
-| `@cmsmasters/db` | ✅ | client.ts, types.ts (9 tables: Block with html+css+js, Template, Theme, Page, PageBlock, GlobalElement), mappers.ts, queries for all entities |
+| `@cmsmasters/db` | ✅ | client.ts, types.ts (13 tables: Block with html+css+js, Template, Theme, Page, PageBlock, GlobalElement, Category, Tag, ThemeCategory, ThemeTag), mappers.ts, queries for all entities |
 | `@cmsmasters/auth` | ✅ | client.ts, hooks.ts (useSession/useUser/useRole), guards.tsx (RequireAuth), actions.ts (magic link + signout) |
 | `@cmsmasters/api-client` | ✅ | Hono RPC typed client |
 | `@cmsmasters/validators` | ✅ | theme, block (with js), template, page Zod schemas |
@@ -74,7 +74,7 @@ The company operates 4 fragmented domains with no shared navigation, broken post
 | App | Status | Details |
 |-----|--------|---------|
 | Command Center | ✅ DONE | 6 pages, localhost:4000, own dark theme |
-| Studio | ✅ DONE | Login, themes, blocks (editor + Process panel with token scanner + R2 image upload + component detection), templates, pages, global elements settings. Block editor: HTML+CSS+JS fields, import with script preservation, export. Process panel: split preview (before/after), zoom, scroll, replay, animation support. |
+| Studio | ✅ DONE | Login, themes, blocks (editor + Process panel with token scanner + R2 image upload + component detection), templates, pages, global elements settings, **theme meta (categories + tags CRUD with tabbed UI + picker modals)**. Block editor: HTML+CSS+JS fields, import with script preservation, export. Process panel: split preview (before/after), zoom, scroll, replay, animation support. Theme editor: category/tag picker modals with is_primary toggle, junction table save/load. |
 | Portal | ✅ DONE | **Next.js 15 App Router (SSG + ISR)** on Vercel. Theme pages (layout + global elements + template blocks + hook resolution). Composed pages (page_blocks + global elements). SEO: JSON-LD Product/WebPage, OG, canonical, sitemap.xml, robots.txt. On-demand revalidation via `/api/revalidate`. Dev port: 3100. |
 | Dashboard | ⬜ | Not created yet |
 | Admin | ⬜ | Not created yet |
