@@ -2,7 +2,7 @@ import type { Control, UseFormRegister, UseFormWatch, UseFormSetValue } from 're
 import type { ThemeFormData } from '@cmsmasters/validators'
 import type { Theme } from '@cmsmasters/db'
 import { useController } from 'react-hook-form'
-import { StatusBadge } from './status-badge'
+import { StatusSelect } from './status-select'
 import { StarRating } from './star-rating'
 import { ChipSelect } from './chip-select'
 import { timeAgo } from '../lib/format'
@@ -54,6 +54,7 @@ export function EditorSidebar({ control, register, watch, setValue: _setValue, e
   const status = watch('status')
   const thumbnailUrl = watch('meta.thumbnail_url')
 
+  const { field: statusField } = useController({ control, name: 'status' })
   const { field: ratingField } = useController({ control, name: 'meta.rating' })
   const { field: trustField } = useController({ control, name: 'meta.trust_badges' })
   const { field: compatField } = useController({ control, name: 'meta.compatible_plugins' })
@@ -101,23 +102,7 @@ export function EditorSidebar({ control, register, watch, setValue: _setValue, e
       {/* Status */}
       <div className="flex flex-col" style={{ gap: 'var(--spacing-xs)' }}>
         <span style={labelStyle}>Status</span>
-        <div className="flex items-center" style={{ gap: 'var(--spacing-xs)' }}>
-          <StatusBadge status={status} />
-          <select
-            {...register('status')}
-            className="appearance-none border-0 bg-transparent outline-none"
-            style={{
-              fontSize: 'var(--text-xs-font-size)',
-              color: 'hsl(var(--text-link))',
-            
-              cursor: 'pointer',
-            }}
-          >
-            <option value="draft">Draft</option>
-            <option value="published">Published</option>
-            <option value="archived">Archived</option>
-          </select>
-        </div>
+        <StatusSelect value={statusField.value} onChange={statusField.onChange} />
       </div>
 
       {/* Category */}

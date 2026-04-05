@@ -27,27 +27,22 @@ export function StatusBadge({ status }: StatusBadgeProps) {
 
   return (
     <span
-      className="inline-flex items-center gap-[5px] shrink-0"
+      className="inline-flex items-center shrink-0"
       style={{
         backgroundColor: v.bg,
-        color: v.fg,
         borderRadius: '9999px',
-        padding: '3px 10px',
-        fontSize: '12px',
-        fontWeight: 'var(--font-weight-semibold)',
-        lineHeight: '16px',
+        padding: '6px',
       }}
     >
       <span
         style={{
-          width: '5px',
-          height: '5px',
+          width: '6px',
+          height: '6px',
           borderRadius: '9999px',
           backgroundColor: v.dot,
           flexShrink: 0,
         }}
       />
-      {status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
   )
 }
