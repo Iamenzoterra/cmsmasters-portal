@@ -4,7 +4,7 @@ import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { themeSchema, type ThemeFormData } from '@cmsmasters/validators'
 import type { Theme, Template, Block, ThemeBlockFill, Category, Tag, Price } from '@cmsmasters/db'
-import { upsertTheme, logAction, themeRowToFormData, formDataToThemeInsert, getCategories, getThemeCategories, setThemeCategories, getTags, getThemeTags, setThemeTags, getPrices, getThemePrices, setThemePrices } from '@cmsmasters/db'
+import { upsertTheme, logAction, themeRowToFormData, formDataToThemeInsert, getCategories, getThemeCategories, setThemeCategories, getTags, getThemeTags, setThemeTags, getPrices, getThemePrices, setThemePrices, getProfile } from '@cmsmasters/db'
 import { AlertTriangle, ChevronLeft, ExternalLink, Eye, LayoutTemplate } from 'lucide-react'
 import { useLocalPortal } from '../lib/use-local-portal'
 import { Button } from '@cmsmasters/ui'
@@ -62,6 +62,7 @@ export function ThemeEditor() {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [allPrices, setAllPrices] = useState<Price[]>([])
   const [selectedPriceId, setSelectedPriceId] = useState<string | null>(null)
+  const [authorName, setAuthorName] = useState<string | undefined>(undefined)
 
   const form = useForm<ThemeFormData>({
     resolver: zodResolver(themeSchema),
@@ -92,6 +93,7 @@ export function ThemeEditor() {
       setSelectedCategories([])
       setSelectedTags([])
       setSelectedPriceId(null)
+      setAuthorName(undefined)
       return
     }
     let cancelled = false
@@ -118,6 +120,11 @@ export function ThemeEditor() {
         getThemePrices(supabase, theme.id).then((prices) => {
           if (!cancelled) setSelectedPriceId(prices[0]?.id ?? null)
         })
+        if (theme.created_by) {
+          getProfile(supabase, theme.created_by).then((profile) => {
+            if (!cancelled) setAuthorName(profile.full_name ?? profile.email ?? undefined)
+          }).catch(() => {})
+        }
       })
       .catch((error) => {
         if (!cancelled) setFetchError(error instanceof Error ? error.message : 'Failed to load theme')
@@ -744,7 +751,7 @@ export function ThemeEditor() {
         <div style={{ flex: '0 0 320px' }}>
           <EditorSidebar
             control={control}
-            register={register}
+
             watch={form.watch}
             setValue={form.setValue}
             existingTheme={existingTheme}
@@ -757,6 +764,7 @@ export function ThemeEditor() {
             allPrices={allPrices}
             selectedPriceId={selectedPriceId}
             onPriceChange={setSelectedPriceId}
+            authorName={authorName}
           />
         </div>
       </div>

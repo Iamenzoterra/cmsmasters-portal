@@ -1,26 +1,18 @@
 import { useState } from 'react'
-import type { Control, UseFormRegister, UseFormWatch, UseFormSetValue } from 'react-hook-form'
+import type { Control, UseFormWatch, UseFormSetValue } from 'react-hook-form'
 import type { ThemeFormData } from '@cmsmasters/validators'
 import type { Theme } from '@cmsmasters/db'
 import { useController } from 'react-hook-form'
 import { Star } from 'lucide-react'
 import { StatusSelect } from './status-select'
-import { ChipSelect } from './chip-select'
 import { TaxonomyPickerModal } from './taxonomy-picker-modal'
 import { ThumbnailUpload } from './thumbnail-upload'
 import { useToast } from './toast'
 import { uploadFile } from '../lib/block-api'
 import { timeAgo } from '../lib/format'
 
-/** M3 cut: empty number input → NaN with valueAsNumber. Normalize to undefined. */
-function nanToUndefined(v: string) {
-  const n = Number(v)
-  return v === '' || Number.isNaN(n) ? undefined : n
-}
-
 interface EditorSidebarProps {
   control: Control<ThemeFormData>
-  register: UseFormRegister<ThemeFormData>
   watch: UseFormWatch<ThemeFormData>
   setValue: UseFormSetValue<ThemeFormData>
   existingTheme: Theme | null
@@ -33,6 +25,7 @@ interface EditorSidebarProps {
   allPrices: Array<{ id: string; name: string; slug: string; type: string }>
   selectedPriceId: string | null
   onPriceChange: (id: string | null) => void
+  authorName?: string
 }
 
 const labelStyle: React.CSSProperties = {
@@ -44,26 +37,7 @@ const labelStyle: React.CSSProperties = {
   letterSpacing: '0.5px',
 }
 
-const inputStyle: React.CSSProperties = {
-  height: '36px',
-  padding: '0 var(--spacing-sm)',
-  backgroundColor: 'hsl(var(--input))',
-  border: '1px solid hsl(var(--border))',
-  borderRadius: 'var(--rounded-lg)',
-  fontSize: 'var(--text-sm-font-size)',
-  color: 'hsl(var(--foreground))',
-
-  width: '100%',
-}
-
-const BADGE_OPTIONS = ['Power Elite', 'Starter', 'Starter Developer', 'Elementor', 'GDPR', 'Starter Starter Developer']
-const PLUGIN_OPTIONS = ['Elementor', 'WooCommerce', 'WPML', 'Yoast SEO', 'Rank Math', 'Contact Form 7', 'ACF']
-
-const RESOURCE_PUBLIC = ['docs', 'changelog', 'faq', 'demos']
-const RESOURCE_LICENSED = ['download', 'child-theme', 'psd', 'support']
-const RESOURCE_PREMIUM = ['priority-support', 'megakit-access']
-
-export function EditorSidebar({ control, register, watch, setValue, existingTheme, allCategories, allTags, selectedCategories, selectedTags, onCategoriesChange, onTagsChange, allPrices, selectedPriceId, onPriceChange }: EditorSidebarProps) {
+export function EditorSidebar({ control, watch, setValue, existingTheme, allCategories, allTags, selectedCategories, selectedTags, onCategoriesChange, onTagsChange, allPrices, selectedPriceId, onPriceChange, authorName }: EditorSidebarProps) {
   const status = watch('status')
   const [catPickerOpen, setCatPickerOpen] = useState(false)
   const [tagPickerOpen, setTagPickerOpen] = useState(false)
@@ -72,11 +46,6 @@ export function EditorSidebar({ control, register, watch, setValue, existingThem
   const { toast } = useToast()
 
   const { field: statusField } = useController({ control, name: 'status' })
-  const { field: trustField } = useController({ control, name: 'meta.trust_badges' })
-  const { field: compatField } = useController({ control, name: 'meta.compatible_plugins' })
-  const { field: resPubField } = useController({ control, name: 'meta.resources.public' })
-  const { field: resLicField } = useController({ control, name: 'meta.resources.licensed' })
-  const { field: resPreField } = useController({ control, name: 'meta.resources.premium' })
 
   return (
     <div
@@ -312,30 +281,6 @@ export function EditorSidebar({ control, register, watch, setValue, existingThem
         />
       )}
 
-      {/* Trust Badges */}
-      <ChipSelect
-        label="Trust Badges"
-        values={trustField.value}
-        onChange={trustField.onChange}
-        options={BADGE_OPTIONS}
-      />
-
-      {/* Compatible Plugins */}
-      <ChipSelect
-        label="Compatible With"
-        values={compatField.value}
-        onChange={compatField.onChange}
-        options={PLUGIN_OPTIONS}
-      />
-
-      {/* Resources */}
-      <div className="flex flex-col" style={{ gap: 'var(--spacing-sm)' }}>
-        <span style={labelStyle}>Resources</span>
-        <ChipSelect label="🔓 PUBLIC" values={resPubField.value} onChange={resPubField.onChange} options={RESOURCE_PUBLIC} />
-        <ChipSelect label="🔒 LICENSED" values={resLicField.value} onChange={resLicField.onChange} options={RESOURCE_LICENSED} />
-        <ChipSelect label="⭐ PREMIUM" values={resPreField.value} onChange={resPreField.onChange} options={RESOURCE_PREMIUM} />
-      </div>
-
       {/* Separator */}
       <div style={{ height: '1px', backgroundColor: 'hsl(var(--border-default))' }} />
 
@@ -346,7 +291,7 @@ export function EditorSidebar({ control, register, watch, setValue, existingThem
           <div className="flex flex-col" style={{ gap: '4px' }}>
             <MetaRow label="Created" value={new Date(existingTheme.created_at).toLocaleDateString()} />
             <MetaRow label="Updated" value={timeAgo(existingTheme.updated_at)} />
-            <MetaRow label="By" value={existingTheme.created_by ?? '—'} />
+            <MetaRow label="By" value={authorName ?? '—'} />
           </div>
         </div>
       )}
