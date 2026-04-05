@@ -3,9 +3,8 @@ import type { Control, UseFormRegister, UseFormWatch, UseFormSetValue } from 're
 import type { ThemeFormData } from '@cmsmasters/validators'
 import type { Theme } from '@cmsmasters/db'
 import { useController } from 'react-hook-form'
-import { Pencil, Star } from 'lucide-react'
+import { Star } from 'lucide-react'
 import { StatusSelect } from './status-select'
-import { StarRating } from './star-rating'
 import { ChipSelect } from './chip-select'
 import { TaxonomyPickerModal } from './taxonomy-picker-modal'
 import { ThumbnailUpload } from './thumbnail-upload'
@@ -69,7 +68,6 @@ export function EditorSidebar({ control, register, watch, setValue, existingThem
   const { toast } = useToast()
 
   const { field: statusField } = useController({ control, name: 'status' })
-  const { field: ratingField } = useController({ control, name: 'meta.rating' })
   const { field: trustField } = useController({ control, name: 'meta.trust_badges' })
   const { field: compatField } = useController({ control, name: 'meta.compatible_plugins' })
   const { field: resPubField } = useController({ control, name: 'meta.resources.public' })
@@ -115,10 +113,18 @@ export function EditorSidebar({ control, register, watch, setValue, existingThem
           <button
             type="button"
             onClick={() => setCatPickerOpen(true)}
-            className="flex items-center border-0 bg-transparent"
-            style={{ color: 'hsl(var(--text-link))', fontSize: 'var(--text-xs-font-size)', cursor: 'pointer', gap: '3px', padding: 0 }}
+            style={{
+              height: '28px',
+              padding: '0 var(--spacing-sm)',
+              fontSize: 'var(--text-xs-font-size)',
+              color: 'hsl(var(--text-secondary))',
+              backgroundColor: 'transparent',
+              border: '1px solid hsl(var(--border-default))',
+              borderRadius: 'var(--rounded-md)',
+              cursor: 'pointer',
+            }}
           >
-            <Pencil size={11} /> Edit
+            Edit
           </button>
         </div>
         {selectedCategories.length === 0 ? (
@@ -163,10 +169,18 @@ export function EditorSidebar({ control, register, watch, setValue, existingThem
           <button
             type="button"
             onClick={() => setTagPickerOpen(true)}
-            className="flex items-center border-0 bg-transparent"
-            style={{ color: 'hsl(var(--text-link))', fontSize: 'var(--text-xs-font-size)', cursor: 'pointer', gap: '3px', padding: 0 }}
+            style={{
+              height: '28px',
+              padding: '0 var(--spacing-sm)',
+              fontSize: 'var(--text-xs-font-size)',
+              color: 'hsl(var(--text-secondary))',
+              backgroundColor: 'transparent',
+              border: '1px solid hsl(var(--border-default))',
+              borderRadius: 'var(--rounded-md)',
+              cursor: 'pointer',
+            }}
           >
-            <Pencil size={11} /> Edit
+            Edit
           </button>
         </div>
         {selectedTags.length === 0 ? (
@@ -245,26 +259,6 @@ export function EditorSidebar({ control, register, watch, setValue, existingThem
             style={{ ...inputStyle, paddingLeft: '28px' }}
           />
         </div>
-      </div>
-
-      {/* Rating */}
-      <div className="flex flex-col" style={{ gap: 'var(--spacing-xs)' }}>
-        <span style={labelStyle}>Rating</span>
-        <StarRating value={ratingField.value} onChange={ratingField.onChange} />
-      </div>
-
-      {/* Sales */}
-      <div className="flex flex-col" style={{ gap: 'var(--spacing-xs)' }}>
-        <span style={labelStyle}>Sales</span>
-        <input
-          type="number"
-          min={0}
-          step={1}
-          {...register('meta.sales', { setValueAs: nanToUndefined })}
-          placeholder="0"
-          className="w-full outline-none"
-          style={inputStyle}
-        />
       </div>
 
       {/* Trust Badges */}
