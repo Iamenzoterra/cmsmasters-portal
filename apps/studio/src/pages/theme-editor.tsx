@@ -236,7 +236,11 @@ export function ThemeEditor() {
       if (!authorName && saved.created_by) {
         getProfile(supabase, saved.created_by)
           .then((p) => setAuthorName(p.full_name ?? p.email ?? undefined))
-          .catch(() => {})
+          .catch(async () => {
+            // Fallback: use session email if profile lookup fails
+            const { data: { session } } = await supabase.auth.getSession()
+            if (session?.user?.email) setAuthorName(session.user.email)
+          })
       }
 
       // M4: create flow → navigate first, then data resets from route change
