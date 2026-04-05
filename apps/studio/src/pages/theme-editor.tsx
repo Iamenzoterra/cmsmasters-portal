@@ -207,6 +207,10 @@ export function ThemeEditor() {
     setSaving(true)
     try {
       const payload = formDataToThemeInsert(data, existingTheme?.id)
+      if (!existingTheme?.created_by) {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user?.id) payload.created_by = session.user.id
+      }
       const saved = await upsertTheme(supabase, payload)
 
       // Save category/tag junction tables
@@ -226,6 +230,13 @@ export function ThemeEditor() {
         })
       } catch {
         console.warn('AUDIT_LOG_FAILED', existingTheme ? 'theme.updated' : 'theme.created', saved.slug)
+      }
+
+      // Resolve author name after save if newly set
+      if (!authorName && saved.created_by) {
+        getProfile(supabase, saved.created_by)
+          .then((p) => setAuthorName(p.full_name ?? p.email ?? undefined))
+          .catch(() => {})
       }
 
       // M4: create flow → navigate first, then data resets from route change
