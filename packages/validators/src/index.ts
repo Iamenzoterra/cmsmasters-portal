@@ -36,3 +36,11 @@ export type {
   CreateGlobalElementPayload,
   UpdateGlobalElementPayload,
 } from './page'
+
+// ── Category schemas ──
+export { categorySchema } from './category'
+export type { CategoryFormData } from './category'
+
+// ── Tag schemas ──
+export { tagSchema } from './tag'
+export type { TagFormData } from './tag'

@@ -145,6 +145,8 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'packages/validators/src/page.ts',
       'packages/validators/src/template.ts',
       'packages/validators/src/theme.ts',
+      'packages/validators/src/category.ts',
+      'packages/validators/src/tag.ts',
     ],
     owned_tables: [],
     owned_routes: [],
