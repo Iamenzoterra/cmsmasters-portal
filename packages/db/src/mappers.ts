@@ -68,7 +68,7 @@ export function formDataToThemeInsert(
       resources: form.meta.resources,
     },
     template_id: form.template_id || null,
-    block_fills: form.block_fills.length > 0 ? form.block_fills : undefined,
+    block_fills: form.block_fills,
     seo: {
       title: emptyToNull(form.seo.title),
       description: emptyToNull(form.seo.description),

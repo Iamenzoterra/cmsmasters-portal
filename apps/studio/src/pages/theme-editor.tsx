@@ -435,7 +435,7 @@ export function ThemeEditor() {
 
   function handleRemoveFill(pos: number) {
     if (getReadonlyPositions().includes(pos)) return
-    setCurrentBlockFills(currentBlockFills.filter((f) => f.position !== pos))
+    setCurrentBlockFills((prev) => prev.filter((f) => f.position !== pos))
   }
 
   if (loading) {
