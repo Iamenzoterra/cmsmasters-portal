@@ -29,15 +29,6 @@ const getCachedTheme = cache(async (slug: string) => {
   }
 })
 
-export async function generateStaticParams() {
-  const { data: themes } = await supabase
-    .from('themes')
-    .select('slug')
-    .eq('status', 'published')
-
-  return (themes ?? []).map((t) => ({ slug: t.slug }))
-}
-
 type Props = { params: Promise<{ slug: string }> }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

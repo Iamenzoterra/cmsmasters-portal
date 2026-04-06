@@ -75,7 +75,8 @@ export type PriceType = 'normal' | 'discount'
 
 export type PageType = 'layout' | 'composed'
 
-export type GlobalSlot = 'header' | 'footer' | 'sidebar-left' | 'sidebar-right'
+import type { GlobalSlot } from './slot-registry'
+export type { GlobalSlot }
 
 // Database type (column-for-column from 002_section_architecture migration)
 

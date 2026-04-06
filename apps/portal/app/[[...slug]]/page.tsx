@@ -1,23 +1,10 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
 import { getComposedPageBySlug, getPageBlocksWithData } from '@/lib/blocks'
 import { resolveGlobalBlocks } from '@/lib/global-elements'
 import { BlockRenderer } from '@/app/_components/block-renderer'
 
 export const revalidate = 3600
-
-export async function generateStaticParams() {
-  const { data: pages } = await supabase
-    .from('pages')
-    .select('slug')
-    .eq('type', 'composed')
-    .eq('status', 'published')
-
-  return (pages ?? []).map((p) => ({
-    slug: p.slug === 'homepage' ? [] : [p.slug],
-  }))
-}
 
 type Props = { params: Promise<{ slug?: string[] }> }
 

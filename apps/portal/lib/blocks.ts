@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache'
 import { supabase } from './supabase'
 import type { Block } from '@cmsmasters/db'
 
@@ -45,91 +46,117 @@ export function mergePositions(
 export async function fetchBlocksById(ids: string[]): Promise<Map<string, Block>> {
   if (ids.length === 0) return new Map()
 
-  const unique = [...new Set(ids)]
-  const { data, error } = await supabase
-    .from('blocks')
-    .select('*')
-    .in('id', unique)
+  const unique = [...new Set(ids)].sort()
+  const data = await unstable_cache(
+    async (sortedIds: string[]) => {
+      const { data, error } = await supabase
+        .from('blocks')
+        .select('*')
+        .in('id', sortedIds)
+      if (error) throw error
+      return data ?? []
+    },
+    ['blocks', ...unique],
+    { tags: ['blocks'], revalidate: 3600 },
+  )(unique)
 
-  if (error) throw error
-
-  return new Map((data ?? []).map((b) => [b.id, b as Block]))
+  return new Map(data.map((b) => [b.id, b as Block]))
 }
 
 /**
  * Fetch layout page by scope (e.g., 'theme').
  */
-export async function getLayoutByScope(scope: string) {
-  const { data, error } = await supabase
-    .from('pages')
-    .select('*')
-    .eq('type', 'layout')
-    .eq('scope', scope)
-    .eq('status', 'published')
-    .limit(1)
-    .single()
-
-  if (error) throw error
-  return data
-}
+export const getLayoutByScope = (scope: string) =>
+  unstable_cache(
+    async () => {
+      const { data, error } = await supabase
+        .from('pages')
+        .select('*')
+        .eq('type', 'layout')
+        .eq('scope', scope)
+        .eq('status', 'published')
+        .limit(1)
+        .single()
+      if (error) throw error
+      return data
+    },
+    ['layout', scope],
+    { tags: ['layouts', `layout-${scope}`], revalidate: 3600 },
+  )()
 
 /**
  * Fetch template by ID.
  */
-export async function getTemplateById(templateId: string) {
-  const { data, error } = await supabase
-    .from('templates')
-    .select('*')
-    .eq('id', templateId)
-    .single()
-
-  if (error) throw error
-  return data
-}
+export const getTemplateById = (templateId: string) =>
+  unstable_cache(
+    async () => {
+      const { data, error } = await supabase
+        .from('templates')
+        .select('*')
+        .eq('id', templateId)
+        .single()
+      if (error) throw error
+      return data
+    },
+    ['template', templateId],
+    { tags: ['templates'], revalidate: 3600 },
+  )()
 
 /**
  * Fetch theme by slug.
  */
-export async function getThemeBySlug(slug: string) {
-  const { data, error } = await supabase
-    .from('themes')
-    .select('*')
-    .eq('slug', slug)
-    .eq('status', 'published')
-    .maybeSingle()
-
-  if (error) throw error
-  return data
-}
+export const getThemeBySlug = (slug: string) =>
+  unstable_cache(
+    async () => {
+      const { data, error } = await supabase
+        .from('themes')
+        .select('*')
+        .eq('slug', slug)
+        .eq('status', 'published')
+        .maybeSingle()
+      if (error) throw error
+      return data
+    },
+    ['theme', slug],
+    { tags: ['themes', `theme-${slug}`], revalidate: 3600 },
+  )()
 
 // ── Composed pages ──
 
 /**
  * Fetch a published composed page by slug.
  */
-export async function getComposedPageBySlug(slug: string) {
-  const { data, error } = await supabase
-    .from('pages')
-    .select('*')
-    .eq('type', 'composed')
-    .eq('slug', slug)
-    .eq('status', 'published')
-    .maybeSingle()
-
-  if (error) throw error
-  return data
-}
+export const getComposedPageBySlug = (slug: string) =>
+  unstable_cache(
+    async () => {
+      const { data, error } = await supabase
+        .from('pages')
+        .select('*')
+        .eq('type', 'composed')
+        .eq('slug', slug)
+        .eq('status', 'published')
+        .maybeSingle()
+      if (error) throw error
+      return data
+    },
+    ['page', slug],
+    { tags: ['pages', `page-${slug}`], revalidate: 3600 },
+  )()
 
 /**
  * Fetch page blocks with full block data, ordered by position.
  */
-export async function getPageBlocksWithData(pageId: string) {
-  const { data, error } = await supabase
-    .from('page_blocks')
-    .select('*, blocks(*)')
-    .eq('page_id', pageId)
-    .order('position', { ascending: true })
-
-  if (error) throw error
-  return data ?? []
-}
+export const getPageBlocksWithData = (pageId: string) =>
+  unstable_cache(
+    async () => {
+      const { data, error } = await supabase
+        .from('page_blocks')
+        .select('*, blocks(*)')
+        .eq('page_id', pageId)
+        .order('position', { ascending: true })
+      if (error) throw error
+      return data ?? []
+    },
+    ['page-blocks', pageId],
+    { tags: ['blocks', 'pages'], revalidate: 3600 },
+  )()

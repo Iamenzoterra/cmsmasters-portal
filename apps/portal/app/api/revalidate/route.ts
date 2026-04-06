@@ -1,4 +1,4 @@
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
@@ -9,9 +9,34 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const path = body.path || '/'
+  const path = body.path as string | undefined
+  const tags = body.tags as string[] | undefined
 
-  revalidatePath(path, 'page')
+  const revalidated: { paths: string[]; tags: string[] } = { paths: [], tags: [] }
 
-  return NextResponse.json({ revalidated: true, path, timestamp: new Date().toISOString() })
+  if (tags && tags.length > 0) {
+    for (const tag of tags) {
+      revalidateTag(tag)
+      revalidated.tags.push(tag)
+    }
+  }
+
+  if (path) {
+    revalidatePath(path, 'page')
+    revalidated.paths.push(path)
+  }
+
+  // If neither path nor tags provided, revalidate everything
+  if (!path && (!tags || tags.length === 0)) {
+    for (const tag of ['themes', 'blocks', 'layouts', 'pages', 'templates', 'global-elements']) {
+      revalidateTag(tag)
+      revalidated.tags.push(tag)
+    }
+  }
+
+  return NextResponse.json({
+    revalidated: true,
+    ...revalidated,
+    timestamp: new Date().toISOString(),
+  })
 }
