@@ -368,7 +368,19 @@ function scanLegacyTasks(workplanDir: string, ignore: ScanIgnore): ComponentSumm
 function scanComponents(monorepoRoot: string, workplanDir: string, ignore: ScanIgnore): ComponentSummary[] {
   const uiComponents = scanUIComponents(monorepoRoot);
   const legacyTasks = scanLegacyTasks(workplanDir, ignore);
-  return [...uiComponents, ...legacyTasks];
+
+  // Deduplicate: skip legacy tasks when a filesystem component covers the same thing.
+  // Match by normalized name — e.g. legacy "Primitive — Badge" matches filesystem "Badge".
+  const uiNames = new Set(uiComponents.map(c => c.name.toLowerCase()));
+  const dedupedLegacy = legacyTasks.filter(task => {
+    // Extract component name from legacy title patterns like "Primitive — Badge" or "Domain component — ThemeCard"
+    const match = task.name.match(/(?:Primitive|Domain component)\s*[—–-]\s*(.+)/i);
+    if (!match) return true;
+    const extractedName = match[1].trim().toLowerCase();
+    return !uiNames.has(extractedName);
+  });
+
+  return [...uiComponents, ...dedupedLegacy];
 }
 
 function scanContent(workplanDir: string, ignore: ScanIgnore): ContentStatus[] {

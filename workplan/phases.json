@@ -17,7 +17,7 @@
           "app": "infra",
           "group": "setup",
           "description": "Initialize Nx monorepo with workspace configuration, nx.json, and root package.json. Configure apps/ and packages/ directories per ADR-017 V3.",
-          "completedAt": "2026-03-25T17:33:42.005Z"
+          "completedAt": "2026-04-05T20:36:17.402Z"
         },
         {
           "id": "P0-T2",
@@ -46,7 +46,7 @@
           "app": "command-center",
           "group": "data",
           "description": "Create workplan/phases.json with all 7 phases (0-6), project metadata, and full V2 task list. Serves as the primary data source for Command Center dashboards.",
-          "completedAt": "2026-03-27T07:45:55.230Z"
+          "completedAt": "2026-04-06T13:43:32.154Z"
         },
         {
           "id": "P0-T5",
@@ -56,7 +56,7 @@
           "app": "command-center",
           "group": "documentation",
           "description": "Create 22 Architecture Decision Record markdown files in workplan/adr/ covering all major architectural decisions: monorepo, auth, DB schema, design system, API strategy, deployment, etc.",
-          "completedAt": "2026-03-12T22:55:37.536Z"
+          "completedAt": "2026-04-04T17:00:03.488Z"
         },
         {
           "id": "P0-T6",
@@ -66,7 +66,7 @@
           "app": "command-center",
           "group": "cli",
           "description": "Implement cc:scan CLI script that traverses the monorepo, collects component counts, ADR status, phase progress, and writes scan results to workplan/scan-results.json.",
-          "completedAt": "2026-03-27T07:46:52.621Z"
+          "completedAt": "2026-04-06T13:49:17.861Z"
         },
         {
           "id": "P0-T7",
@@ -86,7 +86,7 @@
           "app": "command-center",
           "group": "pages",
           "description": "Build all 6 Command Center pages: Mission Control (overview), Phase Tracker (phases.json viewer), Components (design system status), Content (ADR/docs), Architecture (dependency graph), Dependencies (package audit).",
-          "completedAt": "2026-03-27T07:44:58.960Z"
+          "completedAt": "2026-03-27T07:47:58.415Z"
         }
       ],
       "status": "in-progress"
@@ -173,10 +173,11 @@
           "id": "P1-T9",
           "phase": 1,
           "title": "Primitive — Badge",
-          "status": "todo",
+          "status": "done",
           "app": "ui",
           "group": "primitives",
-          "description": "Build Badge primitive using shadcn/ui base — variants (default, secondary, destructive, outline), status colors mapped to design tokens."
+          "description": "Build Badge primitive using shadcn/ui base — variants (default, secondary, destructive, outline), status colors mapped to design tokens.",
+          "completedAt": "2026-04-06T13:42:42.173Z"
         },
         {
           "id": "P1-T10",
@@ -425,10 +426,11 @@
           "id": "P1-T37",
           "phase": 1,
           "title": "DB schema — 6 domains, 25+ tables",
-          "status": "todo",
+          "status": "done",
           "app": "db",
           "group": "database",
-          "description": "Define Supabase PostgreSQL schema per ADR-020 V3 — 6 domains: identity, commerce, content, support, analytics, notifications — 25+ tables with relations, indexes, constraints."
+          "description": "Define Supabase PostgreSQL schema per ADR-020 V3 — 6 domains: identity, commerce, content, support, analytics, notifications — 25+ tables with relations, indexes, constraints.",
+          "completedAt": "2026-04-06T12:50:56.316Z"
         },
         {
           "id": "P1-T38",
@@ -465,43 +467,47 @@
           "app": "ui",
           "group": "packages",
           "description": "Finalize packages/ui shared package — export all primitives and domain components, configure package.json with proper exports map, build pipeline, Storybook integration.",
-          "completedAt": "2026-03-26T17:48:07.807Z"
+          "completedAt": "2026-04-02T21:24:37.450Z"
         },
         {
           "id": "P1-T42",
           "phase": 1,
           "title": "Package — @cmsmasters/db",
-          "status": "in-progress",
+          "status": "done",
           "app": "db",
           "group": "packages",
-          "description": "Finalize packages/db shared package — Supabase client factory, type-safe query helpers, migration runner, schema type exports generated from Supabase."
+          "description": "Finalize packages/db shared package — Supabase client factory, type-safe query helpers, migration runner, schema type exports generated from Supabase.",
+          "completedAt": "2026-04-06T12:50:56.316Z"
         },
         {
           "id": "P1-T43",
           "phase": 1,
           "title": "Package — @cmsmasters/auth",
-          "status": "in-progress",
+          "status": "done",
           "app": "auth",
           "group": "packages",
-          "description": "Finalize packages/auth shared package — auth utilities, session helpers, middleware factories, entitlement hooks, role constants, type exports."
+          "description": "Finalize packages/auth shared package — auth utilities, session helpers, middleware factories, entitlement hooks, role constants, type exports.",
+          "completedAt": "2026-03-31T21:56:12.903Z"
         },
         {
           "id": "P1-T44",
           "phase": 1,
           "title": "Package — @cmsmasters/api-client",
-          "status": "in-progress",
+          "status": "done",
           "app": "infra",
           "group": "packages",
-          "description": "Finalize packages/api-client shared package — typed API client for CF Workers API, request/response types, error handling, retry logic, auth header injection."
+          "description": "Finalize packages/api-client shared package — typed API client for CF Workers API, request/response types, error handling, retry logic, auth header injection.",
+          "completedAt": "2026-03-29T10:32:05.958Z"
         },
         {
           "id": "P1-T45",
           "phase": 1,
           "title": "Package — @cmsmasters/validators",
-          "status": "in-progress",
+          "status": "done",
           "app": "infra",
           "group": "packages",
-          "description": "Finalize packages/validators shared package — Zod schemas for all domain entities (user, theme, plugin, ticket, order), shared validation utilities, parse helpers."
+          "description": "Finalize packages/validators shared package — Zod schemas for all domain entities (user, theme, plugin, ticket, order), shared validation utilities, parse helpers.",
+          "completedAt": "2026-04-06T12:51:25.167Z"
         },
         {
           "id": "P1-T46",
@@ -579,19 +585,21 @@
           "id": "P2-T1",
           "phase": 2,
           "title": "Portal app bootstrap",
-          "status": "todo",
+          "status": "done",
           "app": "portal",
           "group": "setup",
-          "description": "Bootstrap Next.js 15 Portal app at apps/portal — App Router, Tailwind v4, shared packages integration, layout shell, metadata config."
+          "description": "Bootstrap Next.js 15 Portal app at apps/portal — App Router, Tailwind v4, shared packages integration, layout shell, metadata config.",
+          "completedAt": "2026-04-04T16:59:59.026Z"
         },
         {
           "id": "P2-T2",
           "phase": 2,
           "title": "Portal — Theme marketplace",
-          "status": "todo",
+          "status": "done",
           "app": "portal",
           "group": "features",
-          "description": "Build theme marketplace pages — browsable catalog of 65 themes with filters (category, price, rating), search, ThemeCard grid, theme detail page with preview."
+          "description": "Build theme marketplace pages — browsable catalog of 65 themes with filters (category, price, rating), search, ThemeCard grid, theme detail page with preview.",
+          "completedAt": "2026-04-04T08:43:50.143Z"
         },
         {
           "id": "P2-T3",
@@ -648,7 +656,7 @@
           "description": "Implement checkout flow — cart, payment method (Stripe), order confirmation, billing history, invoice downloads, subscription management."
         }
       ],
-      "status": "todo"
+      "status": "in-progress"
     },
     {
       "id": 3,
@@ -792,10 +800,11 @@
           "id": "P5-T1",
           "phase": 5,
           "title": "Studio app bootstrap",
-          "status": "todo",
+          "status": "done",
           "app": "studio",
           "group": "setup",
-          "description": "Bootstrap Studio SPA at apps/studio — Vite + React 19, Tailwind v4, react-router, auth guard, canvas rendering setup, shared packages integration."
+          "description": "Bootstrap Studio SPA at apps/studio — Vite + React 19, Tailwind v4, react-router, auth guard, canvas rendering setup, shared packages integration.",
+          "completedAt": "2026-04-06T12:53:18.878Z"
         },
         {
           "id": "P5-T2",
@@ -861,7 +870,7 @@
           "description": "Build admin analytics — revenue metrics, user growth charts, product performance, support volume, conversion funnels, exportable reports."
         }
       ],
-      "status": "todo"
+      "status": "in-progress"
     },
     {
       "id": 6,
@@ -872,19 +881,21 @@
           "id": "P6-T1",
           "phase": 6,
           "title": "API service bootstrap",
-          "status": "todo",
+          "status": "done",
           "app": "api",
           "group": "setup",
-          "description": "Bootstrap Cloudflare Workers API service at apps/api — Hono framework, TypeScript, D1 database bindings, KV cache, Zod validation, OpenAPI spec generation."
+          "description": "Bootstrap Cloudflare Workers API service at apps/api — Hono framework, TypeScript, D1 database bindings, KV cache, Zod validation, OpenAPI spec generation.",
+          "completedAt": "2026-04-03T17:21:51.524Z"
         },
         {
           "id": "P6-T2",
           "phase": 6,
           "title": "API — Core domain routes",
-          "status": "todo",
+          "status": "done",
           "app": "api",
           "group": "features",
-          "description": "Implement core API routes — /themes, /plugins, /licenses, /users, /orders, /tickets — CRUD operations, auth middleware, rate limiting, caching headers."
+          "description": "Implement core API routes — /themes, /plugins, /licenses, /users, /orders, /tickets — CRUD operations, auth middleware, rate limiting, caching headers.",
+          "completedAt": "2026-04-06T08:05:35.302Z"
         },
         {
           "id": "P6-T3",
@@ -923,7 +934,7 @@
           "description": "Production launch checklist — DNS cutover, SSL certificates, monitoring setup (Sentry, Grafana), runbook documentation, on-call rotation, go-live announcement."
         }
       ],
-      "status": "todo"
+      "status": "in-progress"
     }
   ]
 }

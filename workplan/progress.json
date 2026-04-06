@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-03-27T07:47:04.929Z",
+  "lastUpdated": "2026-04-06T13:49:32.385Z",
   "phases": [
     {
       "phaseId": "0",
@@ -14,22 +14,22 @@
     {
       "phaseId": "1",
       "tasksTotal": 52,
-      "tasksDone": 3,
-      "tasksInProgress": 5,
+      "tasksDone": 9,
+      "tasksInProgress": 1,
       "tasksBlocked": 0,
       "estimatedHours": 0,
       "actualHours": 0,
-      "percentComplete": 5.769230769230769
+      "percentComplete": 17.307692307692307
     },
     {
       "phaseId": "2",
       "tasksTotal": 8,
-      "tasksDone": 0,
+      "tasksDone": 2,
       "tasksInProgress": 0,
       "tasksBlocked": 0,
       "estimatedHours": 0,
       "actualHours": 0,
-      "percentComplete": 0
+      "percentComplete": 25
     },
     {
       "phaseId": "3",
@@ -54,22 +54,22 @@
     {
       "phaseId": "5",
       "tasksTotal": 8,
-      "tasksDone": 0,
+      "tasksDone": 1,
       "tasksInProgress": 0,
       "tasksBlocked": 0,
       "estimatedHours": 0,
       "actualHours": 0,
-      "percentComplete": 0
+      "percentComplete": 12.5
     },
     {
       "phaseId": "6",
       "tasksTotal": 6,
-      "tasksDone": 0,
+      "tasksDone": 2,
       "tasksInProgress": 0,
       "tasksBlocked": 0,
       "estimatedHours": 0,
       "actualHours": 0,
-      "percentComplete": 0
+      "percentComplete": 33.33333333333333
     }
   ]
 }

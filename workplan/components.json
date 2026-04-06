@@ -1,6 +1,79 @@
 {
-  "lastScanned": "2026-03-27T07:47:04.914Z",
+  "lastScanned": "2026-04-06T13:49:32.378Z",
   "components": [
+    {
+      "id": "ui-primitives-badge",
+      "name": "Badge",
+      "description": "primitives component",
+      "app": "ui",
+      "status": "done",
+      "phase": "C",
+      "source": "filesystem",
+      "layer": "primitives",
+      "hasStory": false,
+      "hasTests": false,
+      "usedBy": [
+        "studio"
+      ],
+      "loc": 118,
+      "filePath": "packages/ui/src/primitives/badge.tsx",
+      "propsInterface": "type BadgeProps = React.HTMLAttributes<HTMLDivElement> &\n  VariantProps<typeof badgeVariants> & {\n    asChild?: boolean;\n  }",
+      "cssVars": [
+        "--border",
+        "--destructive",
+        "--destructive-foreground",
+        "--foreground",
+        "--ghost",
+        "--outline",
+        "--primary",
+        "--primary-foreground",
+        "--ring",
+        "--ring-error",
+        "--rounded-full",
+        "--rounded-lg",
+        "--secondary",
+        "--secondary-foreground",
+        "--spacing-2xs",
+        "--spacing-3xs",
+        "--spacing-md",
+        "--spacing-xs",
+        "--text-sm-font-size",
+        "--text-sm-line-height",
+        "--text-xs-font-size",
+        "--text-xs-line-height"
+      ],
+      "structuredProps": [
+        {
+          "name": "variant",
+          "type": "'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive'",
+          "required": false,
+          "default": "'primary'"
+        },
+        {
+          "name": "roundness",
+          "type": "'default' | 'round'",
+          "required": false,
+          "default": "'default'"
+        },
+        {
+          "name": "asChild",
+          "type": "boolean",
+          "required": false
+        }
+      ],
+      "usageExamples": [
+        "import { Badge } from '@cmsmasters/ui';",
+        "",
+        "// variant variants:",
+        "<Badge variant=\"secondary\">secondary</Badge>",
+        "<Badge variant=\"outline\">outline</Badge>",
+        "<Badge variant=\"ghost\">ghost</Badge>",
+        "",
+        "// roundness variants:",
+        "<Badge roundness=\"round\">round</Badge>",
+        ""
+      ]
+    },
     {
       "id": "ui-primitives-button",
       "name": "Button",
@@ -12,7 +85,9 @@
       "layer": "primitives",
       "hasStory": true,
       "hasTests": false,
-      "usedBy": [],
+      "usedBy": [
+        "studio"
+      ],
       "loc": 219,
       "filePath": "packages/ui/src/primitives/button.tsx",
       "propsInterface": "type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> &\n  VariantProps<typeof buttonVariants> & {\n    asChild?: boolean;\n    loading?: boolean;\n    size?: 'mini' | 'sm' | 'default' | 'lg' | 'xl' | null;\n  }",
@@ -238,24 +313,6 @@
       "id": "P1-T7",
       "name": "cn() helper and token utilities",
       "description": "Implement cn() class composition helper using clsx + tailwind-merge, plus color getter utilities and token accessor functions in packages/ui/src/utils/.",
-      "app": "ui",
-      "status": "planned",
-      "phase": "1",
-      "source": "phases-json"
-    },
-    {
-      "id": "P1-T8",
-      "name": "Primitive — Button",
-      "description": "Build Button primitive using shadcn/ui base — variants (default, destructive, outline, ghost, link), sizes (sm, md, lg), loading state, icon support.",
-      "app": "ui",
-      "status": "done",
-      "phase": "1",
-      "source": "phases-json"
-    },
-    {
-      "id": "P1-T9",
-      "name": "Primitive — Badge",
-      "description": "Build Badge primitive using shadcn/ui base — variants (default, secondary, destructive, outline), status colors mapped to design tokens.",
       "app": "ui",
       "status": "planned",
       "phase": "1",
@@ -509,7 +566,7 @@
       "name": "DB schema — 6 domains, 25+ tables",
       "description": "Define Supabase PostgreSQL schema per ADR-020 V3 — 6 domains: identity, commerce, content, support, analytics, notifications — 25+ tables with relations, indexes, constraints.",
       "app": "db",
-      "status": "planned",
+      "status": "done",
       "phase": "1",
       "source": "phases-json"
     },
@@ -554,7 +611,7 @@
       "name": "Package — @cmsmasters/db",
       "description": "Finalize packages/db shared package — Supabase client factory, type-safe query helpers, migration runner, schema type exports generated from Supabase.",
       "app": "db",
-      "status": "in-progress",
+      "status": "done",
       "phase": "1",
       "source": "phases-json"
     },
@@ -563,7 +620,7 @@
       "name": "Package — @cmsmasters/auth",
       "description": "Finalize packages/auth shared package — auth utilities, session helpers, middleware factories, entitlement hooks, role constants, type exports.",
       "app": "auth",
-      "status": "in-progress",
+      "status": "done",
       "phase": "1",
       "source": "phases-json"
     },
@@ -572,7 +629,7 @@
       "name": "Package — @cmsmasters/api-client",
       "description": "Finalize packages/api-client shared package — typed API client for CF Workers API, request/response types, error handling, retry logic, auth header injection.",
       "app": "infra",
-      "status": "in-progress",
+      "status": "done",
       "phase": "1",
       "source": "phases-json"
     },
@@ -581,7 +638,7 @@
       "name": "Package — @cmsmasters/validators",
       "description": "Finalize packages/validators shared package — Zod schemas for all domain entities (user, theme, plugin, ticket, order), shared validation utilities, parse helpers.",
       "app": "infra",
-      "status": "in-progress",
+      "status": "done",
       "phase": "1",
       "source": "phases-json"
     },
@@ -653,7 +710,7 @@
       "name": "Portal app bootstrap",
       "description": "Bootstrap Next.js 15 Portal app at apps/portal — App Router, Tailwind v4, shared packages integration, layout shell, metadata config.",
       "app": "portal",
-      "status": "planned",
+      "status": "done",
       "phase": "2",
       "source": "phases-json"
     },
@@ -662,7 +719,7 @@
       "name": "Portal — Theme marketplace",
       "description": "Build theme marketplace pages — browsable catalog of 65 themes with filters (category, price, rating), search, ThemeCard grid, theme detail page with preview.",
       "app": "portal",
-      "status": "planned",
+      "status": "done",
       "phase": "2",
       "source": "phases-json"
     },
@@ -842,7 +899,7 @@
       "name": "Studio app bootstrap",
       "description": "Bootstrap Studio SPA at apps/studio — Vite + React 19, Tailwind v4, react-router, auth guard, canvas rendering setup, shared packages integration.",
       "app": "studio",
-      "status": "planned",
+      "status": "done",
       "phase": "5",
       "source": "phases-json"
     },
@@ -914,7 +971,7 @@
       "name": "API service bootstrap",
       "description": "Bootstrap Cloudflare Workers API service at apps/api — Hono framework, TypeScript, D1 database bindings, KV cache, Zod validation, OpenAPI spec generation.",
       "app": "api",
-      "status": "planned",
+      "status": "done",
       "phase": "6",
       "source": "phases-json"
     },
@@ -923,7 +980,7 @@
       "name": "API — Core domain routes",
       "description": "Implement core API routes — /themes, /plugins, /licenses, /users, /orders, /tickets — CRUD operations, auth middleware, rate limiting, caching headers.",
       "app": "api",
-      "status": "planned",
+      "status": "done",
       "phase": "6",
       "source": "phases-json"
     },

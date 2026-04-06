@@ -1,7 +1,7 @@
 'use client';
 
 import type React from 'react';
-import { Button } from '@cmsmasters/ui';
+import { Badge, Button } from '@cmsmasters/ui';
 
 const VARIANTS = ['primary', 'secondary', 'outline', 'ghost', 'destructive', 'cta'] as const;
 const SIZES = ['mini', 'sm', 'default', 'lg', 'xl'] as const;
@@ -42,8 +42,37 @@ function ButtonPreview(): React.ReactElement {
   );
 }
 
+const BADGE_VARIANTS = ['primary', 'secondary', 'outline', 'ghost', 'destructive'] as const;
+
+function BadgePreview(): React.ReactElement {
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Default roundness */}
+      <div className="flex flex-col gap-3">
+        <span className="text-xs font-mono text-zinc-400">default</span>
+        <div className="flex items-center gap-2 flex-wrap">
+          {BADGE_VARIANTS.map((v) => (
+            <Badge key={v} variant={v}>{v}</Badge>
+          ))}
+        </div>
+      </div>
+
+      {/* Round roundness */}
+      <div className="flex flex-col gap-3 pt-3 border-t border-zinc-200">
+        <span className="text-xs font-mono text-zinc-400">round</span>
+        <div className="flex items-center gap-2 flex-wrap">
+          {BADGE_VARIANTS.map((v) => (
+            <Badge key={v} variant={v} roundness="round">{v}</Badge>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Registry: componentId → preview renderer
 const PREVIEW_REGISTRY: Record<string, () => React.ReactElement> = {
+  'ui-primitives-badge': BadgePreview,
   'ui-primitives-button': ButtonPreview,
 };
 
