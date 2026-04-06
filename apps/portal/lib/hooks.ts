@@ -112,7 +112,7 @@ export function renderBlock(
 ): string {
   let output = ''
   if (css.trim()) output += `<style>${css}</style>\n`
-  output += `<div class="block-${slug}">${html}</div>\n`
+  output += `<div data-block-shell="${slug}">${html}</div>\n`
   if (js?.trim()) output += `<script type="module">${js}</script>\n`
   return output
 }
