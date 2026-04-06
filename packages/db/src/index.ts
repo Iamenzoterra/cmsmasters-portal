@@ -1,6 +1,13 @@
 export { createClient } from './client'
 export type { SupabaseClient } from './client'
 
+export {
+  SLOT_DEFINITIONS,
+  GLOBAL_SLOT_NAMES,
+  SLOT_TO_CATEGORY,
+} from './slot-registry'
+export type { GlobalSlot } from './slot-registry'
+
 export type {
   Database,
   UserRole,
@@ -27,7 +34,6 @@ export type {
   TemplateInsert,
   TemplateUpdate,
   PageType,
-  GlobalSlot,
   Page,
   PageInsert,
   PageUpdate,
