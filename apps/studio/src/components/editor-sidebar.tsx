@@ -23,8 +23,10 @@ interface EditorSidebarProps {
   onCategoriesChange: (items: Array<{ id: string; is_primary: boolean }>) => void
   onTagsChange: (ids: string[]) => void
   allPrices: Array<{ id: string; name: string; slug: string; type: string }>
-  selectedPriceId: string | null
-  onPriceChange: (id: string | null) => void
+  selectedRegularPriceId: string | null
+  selectedDiscountPriceId: string | null
+  onRegularPriceChange: (id: string | null) => void
+  onDiscountPriceChange: (id: string | null) => void
   authorName?: string
 }
 
@@ -37,10 +39,11 @@ const labelStyle: React.CSSProperties = {
   letterSpacing: '0.5px',
 }
 
-export function EditorSidebar({ control, watch, setValue, existingTheme, allCategories, allTags, selectedCategories, selectedTags, onCategoriesChange, onTagsChange, allPrices, selectedPriceId, onPriceChange, authorName }: EditorSidebarProps) {
+export function EditorSidebar({ control, watch, setValue, existingTheme, allCategories, allTags, selectedCategories, selectedTags, onCategoriesChange, onTagsChange, allPrices, selectedRegularPriceId, selectedDiscountPriceId, onRegularPriceChange, onDiscountPriceChange, authorName }: EditorSidebarProps) {
   const [catPickerOpen, setCatPickerOpen] = useState(false)
   const [tagPickerOpen, setTagPickerOpen] = useState(false)
-  const [pricePickerOpen, setPricePickerOpen] = useState(false)
+  const [regularPricePickerOpen, setRegularPricePickerOpen] = useState(false)
+  const [discountPricePickerOpen, setDiscountPricePickerOpen] = useState(false)
   const thumbnailUrl = watch('meta.thumbnail_url')
   const { toast } = useToast()
 
@@ -212,71 +215,157 @@ export function EditorSidebar({ control, watch, setValue, existingTheme, allCate
       )}
 
       {/* Price */}
-      <div className="flex flex-col" style={{ gap: 'var(--spacing-xs)' }}>
-        <div className="flex items-center justify-between">
-          <span style={labelStyle}>Price</span>
-          <button
-            type="button"
-            onClick={() => setPricePickerOpen(true)}
-            style={{
-              height: '28px',
-              padding: '0 var(--spacing-sm)',
-              fontSize: 'var(--text-xs-font-size)',
-              color: 'hsl(var(--text-secondary))',
-              backgroundColor: 'transparent',
-              border: '1px solid hsl(var(--border-default))',
-              borderRadius: 'var(--rounded-md)',
-              cursor: 'pointer',
-            }}
-          >
-            {selectedPriceId ? 'Change' : 'Select'}
-          </button>
+      <div className="flex flex-col" style={{ gap: 'var(--spacing-sm)' }}>
+        <span style={labelStyle}>Price</span>
+
+        {/* Regular price row */}
+        <div className="flex items-center justify-between" style={{ minHeight: '28px' }}>
+          <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>Regular</span>
+          {selectedRegularPriceId ? (
+            <div className="flex items-center" style={{ gap: '6px' }}>
+              <span
+                className="inline-flex items-center"
+                style={{
+                  backgroundColor: 'hsl(var(--tag-active-bg))',
+                  color: 'hsl(var(--tag-active-fg))',
+                  borderRadius: '9999px',
+                  padding: '2px 10px',
+                  fontSize: '11px',
+                  fontWeight: 'var(--font-weight-semibold)',
+                  letterSpacing: '0.02em',
+                }}
+              >
+                ${allPrices.find((p) => p.id === selectedRegularPriceId)?.name ?? '?'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setRegularPricePickerOpen(true)}
+                style={{
+                  fontSize: '11px',
+                  color: 'hsl(var(--text-muted))',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 0,
+                  textDecoration: 'underline',
+                  textUnderlineOffset: '2px',
+                }}
+              >
+                change
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setRegularPricePickerOpen(true)}
+              style={{
+                height: '24px',
+                padding: '0 var(--spacing-sm)',
+                fontSize: '11px',
+                color: 'hsl(var(--text-secondary))',
+                backgroundColor: 'transparent',
+                border: '1px solid hsl(var(--border-default))',
+                borderRadius: 'var(--rounded-md)',
+                cursor: 'pointer',
+              }}
+            >
+              Select
+            </button>
+          )}
         </div>
-        {selectedPriceId ? (
-          (() => {
-            const price = allPrices.find((p) => p.id === selectedPriceId)
-            if (!price) return <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>Unknown price</span>
-            return (
-              <div className="flex items-center" style={{ gap: '6px' }}>
-                <span
-                  className="inline-flex items-center"
-                  style={{
-                    backgroundColor: 'hsl(var(--tag-active-bg))',
-                    color: 'hsl(var(--tag-active-fg))',
-                    borderRadius: '9999px',
-                    padding: '2px 8px',
-                    fontSize: '11px',
-                    fontWeight: 'var(--font-weight-medium)',
-                  }}
-                >
-                  {price.name}
-                </span>
-                <span
-                  style={{
-                    fontSize: 'var(--text-xs-font-size)',
-                    color: price.type === 'discount' ? 'hsl(var(--status-warn-fg))' : 'hsl(var(--text-muted))',
-                    fontWeight: 'var(--font-weight-medium)',
-                  }}
-                >
-                  {price.type}
-                </span>
-              </div>
-            )
-          })()
-        ) : (
-          <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>None selected</span>
-        )}
+
+        {/* Discount price row */}
+        <div className="flex items-center justify-between" style={{ minHeight: '28px' }}>
+          <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>Discount</span>
+          {selectedDiscountPriceId ? (
+            <div className="flex items-center" style={{ gap: '6px' }}>
+              <span
+                className="inline-flex items-center"
+                style={{
+                  backgroundColor: 'hsl(var(--status-success-bg, var(--tag-active-bg)))',
+                  color: 'hsl(var(--status-success-fg, var(--tag-active-fg)))',
+                  borderRadius: '9999px',
+                  padding: '2px 10px',
+                  fontSize: '11px',
+                  fontWeight: 'var(--font-weight-semibold)',
+                  letterSpacing: '0.02em',
+                }}
+              >
+                ${allPrices.find((p) => p.id === selectedDiscountPriceId)?.name ?? '?'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setDiscountPricePickerOpen(true)}
+                style={{
+                  fontSize: '11px',
+                  color: 'hsl(var(--text-muted))',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 0,
+                  textDecoration: 'underline',
+                  textUnderlineOffset: '2px',
+                }}
+              >
+                change
+              </button>
+              <button
+                type="button"
+                onClick={() => onDiscountPriceChange(null)}
+                style={{
+                  fontSize: '11px',
+                  color: 'hsl(var(--text-muted))',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 0,
+                  lineHeight: 1,
+                }}
+                title="Remove discount"
+              >
+                ×
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setDiscountPricePickerOpen(true)}
+              style={{
+                height: '24px',
+                padding: '0 var(--spacing-sm)',
+                fontSize: '11px',
+                color: 'hsl(var(--text-muted))',
+                backgroundColor: 'transparent',
+                border: '1px dashed hsl(var(--border-default))',
+                borderRadius: 'var(--rounded-md)',
+                cursor: 'pointer',
+              }}
+            >
+              + Add
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Price picker modal */}
-      {pricePickerOpen && (
+      {/* Price picker modals */}
+      {regularPricePickerOpen && (
         <TaxonomyPickerModal
-          title="Select Price"
-          items={allPrices}
-          selected={selectedPriceId ? [{ id: selectedPriceId, is_primary: false }] : []}
+          title="Select Regular Price"
+          items={allPrices.filter((p) => p.type === 'normal')}
+          selected={selectedRegularPriceId ? [{ id: selectedRegularPriceId, is_primary: false }] : []}
           singleSelect
-          onSave={(items) => { onPriceChange(items[0]?.id ?? null); setPricePickerOpen(false) }}
-          onClose={() => setPricePickerOpen(false)}
+          onSave={(items) => { onRegularPriceChange(items[0]?.id ?? null); setRegularPricePickerOpen(false) }}
+          onClose={() => setRegularPricePickerOpen(false)}
+        />
+      )}
+      {discountPricePickerOpen && (
+        <TaxonomyPickerModal
+          title="Select Discount Price"
+          items={allPrices.filter((p) => p.type === 'discount')}
+          selected={selectedDiscountPriceId ? [{ id: selectedDiscountPriceId, is_primary: false }] : []}
+          singleSelect
+          onSave={(items) => { onDiscountPriceChange(items[0]?.id ?? null); setDiscountPricePickerOpen(false) }}
+          onClose={() => setDiscountPricePickerOpen(false)}
         />
       )}
 

@@ -77,10 +77,16 @@ export function resolveBlockHooks(
 ): string {
   let result = html
 
-  // {{price}} → $XX from theme.meta.price
+  // {{price}} → $XX from theme.meta.price (regular price)
   result = result.replace(/\{\{price\}\}/g, () => {
     const price = meta.price
     return price != null ? `$${price}` : ''
+  })
+
+  // {{discount_price}} → $XX from theme.meta.discount_price
+  result = result.replace(/\{\{discount_price\}\}/g, () => {
+    const dp = meta.discount_price
+    return dp != null ? `$${dp}` : ''
   })
 
   // {{meta:*}} — same as layout meta hooks

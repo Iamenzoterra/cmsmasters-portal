@@ -9,6 +9,7 @@ import {
   mergePositions,
   fetchBlocksById,
 } from '@/lib/blocks'
+import { getThemePrices } from '@cmsmasters/db'
 import { resolveGlobalBlocks } from '@/lib/global-elements'
 import {
   resolveSlots,
@@ -70,6 +71,17 @@ export default async function ThemePage({ params }: Props) {
   const meta = (theme.meta ?? {}) as Record<string, unknown>
   const seo = (theme.seo ?? {}) as Record<string, string>
   const blockFills = (theme.block_fills ?? []) as Array<{ position: number; block_id: string }>
+
+  // Enrich meta with prices from junction table
+  try {
+    const prices = await getThemePrices(supabase, theme.id)
+    const regularPrice = prices.find((p: any) => p.type === 'normal')
+    const discountPrice = prices.find((p: any) => p.type === 'discount')
+    if (regularPrice) meta.price = regularPrice.name
+    if (discountPrice) meta.discount_price = discountPrice.name
+  } catch {
+    // Fall through — use meta.price if set
+  }
 
   // 1. Fetch layout page (scope = 'theme')
   let layoutPage: { html: string; css: string; layout_slots?: Record<string, string> } | null = null
@@ -150,7 +162,9 @@ export default async function ThemePage({ params }: Props) {
     url: `https://portal.cmsmasters.studio/themes/${slug}`,
   }
   if (meta.price) {
-    jsonLd.offers = { '@type': 'Offer', price: String(meta.price), priceCurrency: 'USD' }
+    const offer: Record<string, unknown> = { '@type': 'Offer', price: String(meta.discount_price ?? meta.price), priceCurrency: 'USD' }
+    if (meta.discount_price) offer.priceValidUntil = undefined // signals discounted price
+    jsonLd.offers = offer
   }
   if (meta.rating) {
     jsonLd.aggregateRating = { '@type': 'AggregateRating', ratingValue: String(meta.rating), bestRating: '5' }

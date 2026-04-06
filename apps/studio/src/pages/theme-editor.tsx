@@ -61,7 +61,8 @@ export function ThemeEditor() {
   const [selectedCategories, setSelectedCategories] = useState<Array<{ id: string; is_primary: boolean }>>([])
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [allPrices, setAllPrices] = useState<Price[]>([])
-  const [selectedPriceId, setSelectedPriceId] = useState<string | null>(null)
+  const [selectedRegularPriceId, setSelectedRegularPriceId] = useState<string | null>(null)
+  const [selectedDiscountPriceId, setSelectedDiscountPriceId] = useState<string | null>(null)
   const [authorName, setAuthorName] = useState<string | undefined>(undefined)
 
   const form = useForm<ThemeFormData>({
@@ -92,7 +93,8 @@ export function ThemeEditor() {
       setShowTemplatePicker(false)
       setSelectedCategories([])
       setSelectedTags([])
-      setSelectedPriceId(null)
+      setSelectedRegularPriceId(null)
+      setSelectedDiscountPriceId(null)
       setAuthorName(undefined)
       return
     }
@@ -118,7 +120,10 @@ export function ThemeEditor() {
           if (!cancelled) setSelectedTags(tags.map((t: any) => t.id))
         })
         getThemePrices(supabase, theme.id).then((prices) => {
-          if (!cancelled) setSelectedPriceId(prices[0]?.id ?? null)
+          if (!cancelled) {
+            setSelectedRegularPriceId(prices.find((p: any) => p.type === 'normal')?.id ?? null)
+            setSelectedDiscountPriceId(prices.find((p: any) => p.type === 'discount')?.id ?? null)
+          }
         })
         if (theme.created_by) {
           getProfile(supabase, theme.created_by).then((profile) => {
@@ -217,7 +222,7 @@ export function ThemeEditor() {
       await Promise.all([
         setThemeCategories(supabase, saved.id, selectedCategories.map((s) => ({ category_id: s.id, is_primary: s.is_primary }))),
         setThemeTags(supabase, saved.id, selectedTags),
-        setThemePrices(supabase, saved.id, selectedPriceId ? [selectedPriceId] : []),
+        setThemePrices(supabase, saved.id, [selectedRegularPriceId, selectedDiscountPriceId].filter((id): id is string => id !== null)),
       ])
 
       // M2: audit non-blocking with explicit marker
@@ -284,7 +289,7 @@ export function ThemeEditor() {
       await Promise.all([
         setThemeCategories(supabase, saved.id, selectedCategories.map((s) => ({ category_id: s.id, is_primary: s.is_primary }))),
         setThemeTags(supabase, saved.id, selectedTags),
-        setThemePrices(supabase, saved.id, selectedPriceId ? [selectedPriceId] : []),
+        setThemePrices(supabase, saved.id, [selectedRegularPriceId, selectedDiscountPriceId].filter((id): id is string => id !== null)),
       ])
 
       try {
@@ -777,8 +782,10 @@ export function ThemeEditor() {
             onCategoriesChange={setSelectedCategories}
             onTagsChange={setSelectedTags}
             allPrices={allPrices}
-            selectedPriceId={selectedPriceId}
-            onPriceChange={setSelectedPriceId}
+            selectedRegularPriceId={selectedRegularPriceId}
+            selectedDiscountPriceId={selectedDiscountPriceId}
+            onRegularPriceChange={setSelectedRegularPriceId}
+            onDiscountPriceChange={setSelectedDiscountPriceId}
             authorName={authorName}
           />
         </div>
