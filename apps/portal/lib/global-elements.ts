@@ -38,8 +38,8 @@ export async function resolveGlobalBlocks(
     .from('blocks')
     .select('*')
     .eq('is_default', true)
-    .neq('category', '')
-  const defaultMap = new Map((defaults ?? []).map((b) => [b.category, b as Block]))
+    .neq('block_type', '')
+  const defaultMap = new Map((defaults ?? []).map((b) => [b.block_type, b as Block]))
 
   // 3. Resolve: override > default > null
   for (const slot of SLOTS) {

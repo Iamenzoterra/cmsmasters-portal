@@ -61,9 +61,9 @@ blocks.post(
     const supabase = createServiceClient(c.env)
     try {
       // Un-set previous default for same category
-      if (parsed.data.is_default && parsed.data.category) {
+      if (parsed.data.is_default && parsed.data.block_type) {
         await supabase.from('blocks').update({ is_default: false })
-          .eq('category', parsed.data.category).eq('is_default', true)
+          .eq('block_type', parsed.data.block_type).eq('is_default', true)
       }
       const data = await createBlock(supabase, {
         ...parsed.data,
@@ -96,9 +96,9 @@ blocks.put(
     const supabase = createServiceClient(c.env)
     try {
       // Un-set previous default for same category (skip self)
-      if (parsed.data.is_default && parsed.data.category) {
+      if (parsed.data.is_default && parsed.data.block_type) {
         await supabase.from('blocks').update({ is_default: false })
-          .eq('category', parsed.data.category).eq('is_default', true)
+          .eq('block_type', parsed.data.block_type).eq('is_default', true)
           .neq('id', c.req.param('id'))
       }
       const data = await updateBlock(supabase, c.req.param('id'), parsed.data)

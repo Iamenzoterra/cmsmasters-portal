@@ -228,7 +228,7 @@ export function PageEditor() {
   useEffect(() => {
     fetchAllBlocks().then((blocks) => {
       setAllBlocks(blocks)
-      setSlotBlocks(blocks.filter((b) => !!b.category))
+      setSlotBlocks(blocks.filter((b) => !!b.block_type))
     }).catch(() => {})
   }, [])
 
@@ -850,7 +850,7 @@ function SlotPanel({ code, layoutSlots, onSlotChange, blocks }: {
           const isContent = slot === 'content'
           const isMeta = slot.startsWith('meta:')
           const category = SLOT_TO_CATEGORY[slot]
-          const categoryBlocks = category ? blocks.filter((b) => b.category === category) : []
+          const categoryBlocks = category ? blocks.filter((b) => b.block_type === category) : []
           const selectedId = layoutSlots[slot] ?? ''
 
           return (

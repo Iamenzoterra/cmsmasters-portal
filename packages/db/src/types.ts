@@ -157,7 +157,8 @@ export type Database = {
           html: string
           css: string
           js: string
-          category: string
+          block_type: string
+          block_category_id: string | null
           is_default: boolean
           hooks: BlockHooks
           metadata: BlockMetadata
@@ -172,7 +173,8 @@ export type Database = {
           html: string
           css?: string
           js?: string
-          category?: string
+          block_type?: string
+          block_category_id?: string | null
           is_default?: boolean
           hooks?: BlockHooks
           metadata?: BlockMetadata
@@ -187,10 +189,37 @@ export type Database = {
           html?: string
           css?: string
           js?: string
-          category?: string
+          block_type?: string
+          block_category_id?: string | null
           is_default?: boolean
           hooks?: BlockHooks
           metadata?: BlockMetadata
+          created_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      block_categories: {
+        Row: {
+          id: string
+          name: string
+          slug: string
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug: string
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          slug?: string
           created_by?: string | null
           updated_at?: string
         }
@@ -603,3 +632,7 @@ export type PriceUpdate = Database['public']['Tables']['prices']['Update']
 
 export type ThemePrice = Database['public']['Tables']['theme_prices']['Row']
 export type ThemePriceInsert = Database['public']['Tables']['theme_prices']['Insert']
+
+export type BlockCategory = Database['public']['Tables']['block_categories']['Row']
+export type BlockCategoryInsert = Database['public']['Tables']['block_categories']['Insert']
+export type BlockCategoryUpdate = Database['public']['Tables']['block_categories']['Update']

@@ -25,7 +25,7 @@ export function GlobalElementsSettings() {
 
   const grouped = CATEGORIES.map((cat) => ({
     ...cat,
-    blocks: blocks.filter((b) => b.category === cat.value),
+    blocks: blocks.filter((b) => b.block_type === cat.value),
   }))
 
   return (
@@ -66,7 +66,7 @@ export function GlobalElementsSettings() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => navigate(`/blocks/new?category=${group.value}`)}
+                  onClick={() => navigate(`/global-elements/new?category=${group.value}`)}
                 >
                   <Plus size={14} />
                   Create {group.label}
@@ -94,7 +94,7 @@ export function GlobalElementsSettings() {
                     <button
                       key={block.id}
                       type="button"
-                      onClick={() => navigate(`/blocks/${block.id}`)}
+                      onClick={() => navigate(`/global-elements/${block.id}`)}
                       className="flex w-full cursor-pointer items-center justify-between border text-left transition-shadow hover:shadow-sm"
                       style={{
                         padding: 'var(--spacing-sm) var(--spacing-md)',

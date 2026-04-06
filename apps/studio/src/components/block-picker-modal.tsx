@@ -31,7 +31,7 @@ export function BlockPickerModal({ onSelect, onClose, excludeIds = [] }: BlockPi
 
   const filtered = blocks
     .filter((b) => !excludeIds.includes(b.id))
-    .filter((b) => !b.category || b.category === 'element') // Content blocks + elements (exclude header/footer/sidebar)
+    .filter((b) => !b.block_type || b.block_type === 'element') // Content blocks + elements (exclude header/footer/sidebar)
     .filter((b) => {
       if (!search.trim()) return true
       const q = search.trim().toLowerCase()

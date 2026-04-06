@@ -7,6 +7,9 @@ import type { Block } from '@cmsmasters/db'
 import { AlertTriangle, ChevronLeft, Plus, X, Upload, Download, Eye, Sparkles } from 'lucide-react'
 import { Button } from '@cmsmasters/ui'
 import { fetchBlockById, createBlockApi, updateBlockApi, deleteBlockApi, uploadFile } from '../lib/block-api'
+import type { BlockCategory } from '@cmsmasters/db'
+import { getBlockCategories } from '@cmsmasters/db'
+import { supabase } from '../lib/supabase'
 import { nameToSlug } from '../lib/form-defaults'
 import { useToast } from '../components/toast'
 import { FormSection } from '../components/form-section'
@@ -51,18 +54,17 @@ const monoStyle: React.CSSProperties = {
   letterSpacing: '-0.01em',
 }
 
-const BLOCK_CATEGORIES = [
-  { value: '', label: '(none) — Content block' },
+const GLOBAL_ELEMENT_TYPES = [
   { value: 'header', label: 'Header' },
   { value: 'footer', label: 'Footer' },
   { value: 'sidebar', label: 'Sidebar' },
-  { value: 'element', label: 'Element' },
 ] as const
 
 interface BlockFormData {
   name: string
   slug: string
-  category: string
+  block_type: string
+  block_category_id: string
   is_default: boolean
   code: string
   js: string
@@ -78,7 +80,8 @@ function getDefaults(): BlockFormData {
   return {
     name: '',
     slug: '',
-    category: '',
+    block_type: '',
+    block_category_id: '',
     is_default: false,
     code: '',
     js: '',
@@ -101,7 +104,8 @@ function blockToFormData(block: Block): BlockFormData {
   return {
     name: block.name,
     slug: block.slug,
-    category: block.category ?? '',
+    block_type: block.block_type ?? '',
+    block_category_id: block.block_category_id ?? '',
     is_default: block.is_default ?? false,
     code: blockToCode(block),
     js: block.js ?? '',
@@ -152,7 +156,8 @@ function formDataToPayload(data: BlockFormData) {
     html: html || data.code,
     css: css || undefined,
     js: data.js,
-    category: data.category,
+    block_type: data.block_type,
+    block_category_id: data.block_category_id || null,
     is_default: data.is_default,
     hooks: Object.keys(hooks).length > 0 ? hooks : undefined,
     metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
@@ -205,10 +210,14 @@ export function BlockEditor() {
   const isNew = !id
   // Pre-fill category from URL param (e.g., /blocks/new?category=header)
   const urlCategory = isNew ? new URLSearchParams(location.search).get('category') ?? '' : ''
-  // Detect section: /elements/* uses elements routes, /blocks/* uses blocks routes
+  // Detect section: /global-elements, /elements, or /blocks
+  const isGlobalElementRoute = location.pathname.startsWith('/global-elements')
   const isElementRoute = location.pathname.startsWith('/elements')
-  const basePath = isElementRoute ? '/elements' : '/blocks'
-  const sectionLabel = isElementRoute ? 'Elements' : 'Blocks'
+  const basePath = isGlobalElementRoute ? '/global-elements' : isElementRoute ? '/elements' : '/blocks'
+  const sectionLabel = isGlobalElementRoute ? 'Global Elements' : isElementRoute ? 'Elements' : 'Blocks'
+
+  // Compute default block_type based on context
+  const defaultBlockType = isGlobalElementRoute ? urlCategory : isElementRoute ? 'element' : ''
 
   const [existingBlock, setExistingBlock] = useState<Block | null>(null)
   const [loading, setLoading] = useState(!isNew)
@@ -219,7 +228,7 @@ export function BlockEditor() {
     resolver: isNew ? zodResolver(createBlockSchema, {
       // Map our form shape to createBlockSchema shape for validation
     }) : undefined,
-    defaultValues: { ...getDefaults(), category: urlCategory },
+    defaultValues: { ...getDefaults(), block_type: defaultBlockType },
   })
 
   const { register, control, reset, formState: { errors, isDirty } } = form
@@ -265,6 +274,13 @@ export function BlockEditor() {
   const [deleting, setDeleting] = useState(false)
   const [showProcess, setShowProcess] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [blockCategories, setBlockCategories] = useState<BlockCategory[]>([])
+
+  // Fetch block categories for theme blocks context
+  useEffect(() => {
+    if (isGlobalElementRoute || isElementRoute) return
+    getBlockCategories(supabase).then(setBlockCategories).catch(() => {})
+  }, [isGlobalElementRoute, isElementRoute])
 
   // beforeunload guard
   useEffect(() => {
@@ -550,30 +566,46 @@ ${code}${scriptTag}
                 </span>
               )}
             </Field>
-            <Field label="Category">
-              <select
-                {...register('category')}
-                style={{ ...inputStyle, cursor: 'pointer' }}
-              >
-                {BLOCK_CATEGORIES.map((c) => (
-                  <option key={c.value} value={c.value}>{c.label}</option>
-                ))}
-              </select>
-            </Field>
-            {form.watch('category') && (
-              <div className="flex flex-col" style={{ gap: 'var(--spacing-xs)' }}>
-                <label className="flex items-center" style={{ gap: 'var(--spacing-sm)', cursor: 'pointer' }}>
-                  <input type="checkbox" {...register('is_default')} />
-                  <span style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-secondary))' }}>
-                    Set as default
-                  </span>
-                </label>
-                {form.watch('is_default') && (
-                  <p style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))', margin: 0, paddingLeft: 'var(--spacing-xl)' }}>
-                    This block will auto-fill all {form.watch('category')} slots unless overridden by a layout.
-                  </p>
-                )}
-              </div>
+            {/* Context-dependent type/category fields */}
+            {isGlobalElementRoute && (
+              <>
+                <Field label="Type">
+                  <select
+                    {...register('block_type')}
+                    style={{ ...inputStyle, cursor: 'pointer' }}
+                  >
+                    {GLOBAL_ELEMENT_TYPES.map((t) => (
+                      <option key={t.value} value={t.value}>{t.label}</option>
+                    ))}
+                  </select>
+                </Field>
+                <div className="flex flex-col" style={{ gap: 'var(--spacing-xs)' }}>
+                  <label className="flex items-center" style={{ gap: 'var(--spacing-sm)', cursor: 'pointer' }}>
+                    <input type="checkbox" {...register('is_default')} />
+                    <span style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-secondary))' }}>
+                      Set as default
+                    </span>
+                  </label>
+                  {form.watch('is_default') && (
+                    <p style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))', margin: 0, paddingLeft: 'var(--spacing-xl)' }}>
+                      This block will auto-fill all {form.watch('block_type')} slots unless overridden by a layout.
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
+            {!isGlobalElementRoute && !isElementRoute && blockCategories.length > 0 && (
+              <Field label="Category">
+                <select
+                  {...register('block_category_id')}
+                  style={{ ...inputStyle, cursor: 'pointer' }}
+                >
+                  <option value="">(none)</option>
+                  {blockCategories.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </Field>
             )}
           </FormSection>
 

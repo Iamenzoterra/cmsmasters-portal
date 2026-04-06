@@ -12,7 +12,7 @@ export function ElementsList() {
 
   useEffect(() => {
     fetchAllBlocks()
-      .then((all) => setBlocks(all.filter((b) => b.category === 'element')))
+      .then((all) => setBlocks(all.filter((b) => b.block_type === 'element')))
       .catch(() => setBlocks([]))
       .finally(() => setLoading(false))
   }, [])

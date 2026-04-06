@@ -43,7 +43,7 @@ export function BlocksList() {
 
   const filteredBlocks = useMemo(() => {
     // Theme blocks only — exclude header/footer/sidebar/element (they have their own sections)
-    let result = blocks.filter((b) => !b.category)
+    let result = blocks.filter((b) => !b.block_type || b.block_type === '')
     // Search filter
     if (search.trim()) {
       const q = search.trim().toLowerCase()
@@ -305,18 +305,11 @@ export function BlocksList() {
                 >
                   {block.slug}
                 </p>
-                {(block.category || block.is_default) && (
+                {block.is_default && (
                   <div className="flex items-center" style={{ gap: '4px' }}>
-                    {block.category && (
-                      <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 'var(--rounded-sm)', backgroundColor: 'hsl(var(--tag-active-bg))', color: 'hsl(var(--tag-active-fg))' }}>
-                        {block.category}
-                      </span>
-                    )}
-                    {block.is_default && (
-                      <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 'var(--rounded-sm)', backgroundColor: 'hsl(var(--status-success-bg))', color: 'hsl(var(--status-success-fg))' }}>
-                        default
-                      </span>
-                    )}
+                    <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 'var(--rounded-sm)', backgroundColor: 'hsl(var(--status-success-bg))', color: 'hsl(var(--status-success-fg))' }}>
+                      default
+                    </span>
                   </div>
                 )}
                 <div className="flex w-full items-center justify-end">

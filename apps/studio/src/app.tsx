@@ -88,6 +88,8 @@ export function App() {
         <Route path="/static-pages/new" element={<PageEditor />} />
         <Route path="/static-pages/:id" element={<PageEditor />} />
         <Route path="/global-elements" element={<GlobalElementsSettings />} />
+        <Route path="/global-elements/new" element={<BlockEditor />} />
+        <Route path="/global-elements/:id" element={<BlockEditor />} />
         <Route path="/elements" element={<ElementsList />} />
         <Route path="/elements/new" element={<BlockEditor />} />
         <Route path="/elements/:id" element={<BlockEditor />} />

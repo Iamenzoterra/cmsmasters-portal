@@ -54,6 +54,9 @@ export type {
   PriceUpdate,
   ThemePrice,
   ThemePriceInsert,
+  BlockCategory,
+  BlockCategoryInsert,
+  BlockCategoryUpdate,
 } from './types'
 
 export { themeRowToFormData, formDataToThemeInsert } from './mappers'
@@ -130,3 +133,11 @@ export {
   getThemePrices,
   setThemePrices,
 } from './queries/prices'
+
+export {
+  getBlockCategories,
+  getBlockCategoryById,
+  createBlockCategory,
+  updateBlockCategory,
+  deleteBlockCategory,
+} from './queries/block-categories'

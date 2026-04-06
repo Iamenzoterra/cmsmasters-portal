@@ -44,3 +44,7 @@ export type { CategoryFormData } from './category'
 // ── Tag schemas ──
 export { tagSchema } from './tag'
 export type { TagFormData } from './tag'
+
+// ── Block category schemas ──
+export { blockCategorySchema } from './block-category'
+export type { BlockCategoryFormData } from './block-category'
