@@ -3,7 +3,7 @@ import type { Database } from './types'
 
 export function createClient(url: string, key: string) {
   return supabaseCreateClient<Database>(url, key, {
-    auth: { flowType: 'pkce' },
+    auth: { flowType: 'pkce', detectSessionInUrl: false },
   })
 }
 
