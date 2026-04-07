@@ -9,7 +9,7 @@ import {
   mergePositions,
   fetchBlocksById,
 } from '@/lib/blocks'
-import { getThemePrices } from '@cmsmasters/db'
+import { getThemePrices, getThemeUseCases } from '@cmsmasters/db'
 import type { Block } from '@cmsmasters/db'
 import { resolveGlobalBlocks } from '@/lib/global-elements'
 import {
@@ -73,6 +73,16 @@ export default async function ThemePage({ params }: Props) {
     if (discountPrice) meta.discount_price = discountPrice.name
   } catch {
     // Fall through — use meta.price if set
+  }
+
+  // Enrich meta with use cases from junction table
+  try {
+    const useCases = await getThemeUseCases(supabase, theme.id)
+    if (useCases.length > 0) {
+      meta._use_cases = useCases.map((uc: any) => uc.name)
+    }
+  } catch {
+    // Fall through — {{perfect_for}} resolves to empty
   }
 
   // 1. Fetch layout page (scope = 'theme')
@@ -165,6 +175,13 @@ export default async function ThemePage({ params }: Props) {
   }
   if (meta.rating) {
     jsonLd.aggregateRating = { '@type': 'AggregateRating', ratingValue: String(meta.rating), bestRating: '5' }
+  }
+  const useCaseNames = meta._use_cases as string[] | undefined
+  if (useCaseNames && useCaseNames.length > 0) {
+    jsonLd.audience = useCaseNames.map((name) => ({
+      '@type': 'Audience',
+      audienceType: name,
+    }))
   }
 
   return (

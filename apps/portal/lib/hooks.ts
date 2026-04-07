@@ -98,6 +98,14 @@ export function resolveBlockHooks(
     return value != null ? String(value) : '#'
   })
 
+  // {{perfect_for}} → HTML list of use cases (injected via meta._use_cases)
+  result = result.replace(/\{\{perfect_for\}\}/g, () => {
+    const useCases = meta._use_cases as string[] | undefined
+    if (!useCases || useCases.length === 0) return ''
+    const items = useCases.map((name) => `<li>${name}</li>`).join('\n')
+    return `<ul class="perfect-for-list">\n${items}\n</ul>`
+  })
+
   return result
 }
 
