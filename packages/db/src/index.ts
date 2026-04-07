@@ -19,6 +19,7 @@ export type {
   BlockMetadata,
   TemplatePosition,
   ThemeBlockFill,
+  SlotConfig,
   Profile,
   ProfileInsert,
   ProfileUpdate,

@@ -27,7 +27,8 @@ export async function createPageApi(payload: {
   scope?: string
   html?: string
   css?: string
-  layout_slots?: Record<string, string>
+  layout_slots?: Record<string, string | string[]>
+  slot_config?: Record<string, { gap?: string }>
   seo?: { title?: string; description?: string }
   status?: string
 }): Promise<Page> {
@@ -52,7 +53,8 @@ export async function updatePageApi(
     scope?: string
     html?: string
     css?: string
-    layout_slots?: Record<string, string>
+    layout_slots?: Record<string, string | string[]>
+  slot_config?: Record<string, { gap?: string }>
     seo?: { title?: string; description?: string }
     status?: string
   }

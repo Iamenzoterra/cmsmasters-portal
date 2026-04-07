@@ -49,6 +49,12 @@ export interface ThemeBlockFill {
   block_id: string
 }
 
+// ── Slot configuration (stored in pages.slot_config jsonb) ──
+
+export interface SlotConfig {
+  [slot: string]: { gap?: string }
+}
+
 // ── SEO (stored in themes.seo jsonb) ──
 
 export interface ThemeSEO {
@@ -161,6 +167,7 @@ export type Database = {
           block_type: string
           block_category_id: string | null
           is_default: boolean
+          sort_order: number
           hooks: BlockHooks
           metadata: BlockMetadata
           created_by: string | null
@@ -177,6 +184,7 @@ export type Database = {
           block_type?: string
           block_category_id?: string | null
           is_default?: boolean
+          sort_order?: number
           hooks?: BlockHooks
           metadata?: BlockMetadata
           created_by?: string | null
@@ -193,6 +201,7 @@ export type Database = {
           block_type?: string
           block_category_id?: string | null
           is_default?: boolean
+          sort_order?: number
           hooks?: BlockHooks
           metadata?: BlockMetadata
           created_by?: string | null
@@ -305,7 +314,8 @@ export type Database = {
           scope: string
           html: string
           css: string
-          layout_slots: Record<string, string>
+          layout_slots: Record<string, string | string[]>
+          slot_config: SlotConfig
           seo: ThemeSEO | null
           status: ThemeStatus
           created_by: string | null
@@ -320,7 +330,8 @@ export type Database = {
           scope?: string
           html?: string
           css?: string
-          layout_slots?: Record<string, string>
+          layout_slots?: Record<string, string | string[]>
+          slot_config?: SlotConfig
           seo?: ThemeSEO | null
           status?: ThemeStatus
           created_by?: string | null
@@ -335,7 +346,8 @@ export type Database = {
           scope?: string
           html?: string
           css?: string
-          layout_slots?: Record<string, string>
+          layout_slots?: Record<string, string | string[]>
+          slot_config?: SlotConfig
           seo?: ThemeSEO | null
           status?: ThemeStatus
           created_by?: string | null

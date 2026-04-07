@@ -121,7 +121,7 @@ export function PageEditor() {
   // Layout-specific state
   const [layoutCode, setLayoutCode] = useState('')
   const [layoutScope, setLayoutScope] = useState('theme')
-  const [layoutSlots, setLayoutSlots] = useState<Record<string, string>>({})
+  const [layoutSlots, setLayoutSlots] = useState<Record<string, string | string[]>>({})
   const [slotBlocks, setSlotBlocks] = useState<Block[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -828,7 +828,7 @@ export function PageEditor() {
 
 function SlotPanel({ code, layoutSlots, onSlotChange, blocks }: {
   code: string
-  layoutSlots: Record<string, string>
+  layoutSlots: Record<string, string | string[]>
   onSlotChange: (slot: string, blockId: string | null) => void
   blocks: Block[]
 }) {
@@ -844,7 +844,8 @@ function SlotPanel({ code, layoutSlots, onSlotChange, blocks }: {
           const isMeta = slot.startsWith('meta:')
           const category = SLOT_TO_CATEGORY[slot]
           const categoryBlocks = category ? blocks.filter((b) => b.block_type === category) : []
-          const selectedId = layoutSlots[slot] ?? ''
+          const rawVal = layoutSlots[slot]
+          const selectedId = Array.isArray(rawVal) ? (rawVal[0] ?? '') : (rawVal ?? '')
 
           return (
             <div
