@@ -62,7 +62,7 @@ export function EditorSidebar({ control, watch, setValue, existingTheme, allCate
     <div
       className="flex flex-col"
       style={{
-        gap: 'var(--spacing-lg)',
+        gap: 'var(--spacing-xl)',
         padding: 'var(--spacing-xl)',
         backgroundColor: 'hsl(var(--bg-surface))',
         border: '1px solid hsl(var(--border-default))',
@@ -84,11 +84,15 @@ export function EditorSidebar({ control, watch, setValue, existingTheme, allCate
         />
       </div>
 
+      <div style={{ height: '1px', backgroundColor: 'hsl(var(--border-default))' }} />
+
       {/* Status */}
       <div className="flex flex-col" style={{ gap: 'var(--spacing-xs)' }}>
         <span style={labelStyle}>Status</span>
         <StatusSelect value={statusField.value} onChange={statusField.onChange} />
       </div>
+
+      <div style={{ height: '1px', backgroundColor: 'hsl(var(--border-default))' }} />
 
       {/* Categories */}
       <div className="flex flex-col" style={{ gap: 'var(--spacing-xs)' }}>
@@ -132,6 +136,8 @@ export function EditorSidebar({ control, watch, setValue, existingTheme, allCate
           </div>
         )}
       </div>
+
+      <div style={{ height: '1px', backgroundColor: 'hsl(var(--border-default))' }} />
 
       {/* Tags */}
       <div className="flex flex-col" style={{ gap: 'var(--spacing-xs)' }}>
@@ -197,19 +203,7 @@ export function EditorSidebar({ control, watch, setValue, existingTheme, allCate
         />
       )}
 
-      {/* Perfect For */}
-      <div className="flex flex-col" style={{ gap: 'var(--spacing-xs)' }}>
-        <span style={labelStyle}>Perfect For</span>
-        <TagInput
-          items={allUseCases}
-          selectedIds={selectedUseCaseIds}
-          onChange={onUseCasesChange}
-          onSearch={onUseCaseSearch}
-          onCreate={onUseCaseCreate}
-          onDelete={onUseCaseDelete}
-          placeholder="Type to add..."
-        />
-      </div>
+      <div style={{ height: '1px', backgroundColor: 'hsl(var(--border-default))' }} />
 
       {/* Price */}
       <div className="flex flex-col" style={{ gap: 'var(--spacing-sm)' }}>
@@ -300,6 +294,22 @@ export function EditorSidebar({ control, watch, setValue, existingTheme, allCate
           onClose={() => setDiscountPricePickerOpen(false)}
         />
       )}
+
+      <div style={{ height: '1px', backgroundColor: 'hsl(var(--border-default))' }} />
+
+      {/* Perfect For */}
+      <div className="flex flex-col" style={{ gap: 'var(--spacing-xs)' }}>
+        <span style={labelStyle}>Perfect For</span>
+        <TagInput
+          items={allUseCases}
+          selectedIds={selectedUseCaseIds}
+          onChange={onUseCasesChange}
+          onSearch={onUseCaseSearch}
+          onCreate={onUseCaseCreate}
+          onDelete={onUseCaseDelete}
+          placeholder="Type to add..."
+        />
+      </div>
 
       {/* Separator */}
       <div style={{ height: '1px', backgroundColor: 'hsl(var(--border-default))' }} />
