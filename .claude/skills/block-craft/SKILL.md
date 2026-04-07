@@ -296,17 +296,63 @@ block.addEventListener('mousemove', (e) => {
 
 ---
 
-## Hooks — Dynamic Data Placeholders
+## Slots & Hooks — Dynamic Data Placeholders
 
-For blocks on theme pages — resolved at build time:
+**Source of truth:** `packages/db/src/slot-registry.ts`
+**Full reference in Studio:** `/slots` page
+
+All hooks are resolved at build time. Static blocks (homepage) don't need hooks.
+
+### Layout Slots
+
+Used in layout page HTML. Each slot is filled by a global element or per-layout override.
+
+| Slot | Category | Syntax |
+|------|----------|--------|
+| header | header | `{{slot:header}}` or `<div data-slot="header"></div>` or `<!-- SLOT: HEADER -->` |
+| footer | footer | `{{slot:footer}}` or `<div data-slot="footer"></div>` or `<!-- SLOT: FOOTER -->` |
+| sidebar-left | sidebar | `{{slot:sidebar-left}}` or `<div data-slot="sidebar-left"></div>` |
+| sidebar-right | sidebar | `{{slot:sidebar-right}}` or `<div data-slot="sidebar-right"></div>` |
+
+### Meta Slots
+
+Resolved from `theme.meta` at build time. Use in block HTML for dynamic theme data.
+
+| Field | Syntax | Description |
+|-------|--------|-------------|
+| name | `{{meta:name}}` | Theme display name |
+| tagline | `{{meta:tagline}}` | Short tagline |
+| description | `{{meta:description}}` | Full description |
+| category | `{{meta:category}}` | Theme category |
+| price | `{{meta:price}}` | Regular price (number) |
+| discount_price | `{{meta:discount_price}}` | Discount price (number) |
+| demo_url | `{{meta:demo_url}}` | Live demo link |
+| themeforest_url | `{{meta:themeforest_url}}` | ThemeForest product page |
+| themeforest_id | `{{meta:themeforest_id}}` | ThemeForest item ID |
+| thumbnail_url | `{{meta:thumbnail_url}}` | Theme thumbnail image |
+| rating | `{{meta:rating}}` | Star rating (number) |
+| sales | `{{meta:sales}}` | Total sales count |
+
+### Hook Shortcuts
+
+Convenience hooks with special formatting:
+
+| Pattern | Resolves to | Description |
+|---------|-------------|-------------|
+| `{{price}}` | `theme.meta.price` | Price with $ prefix |
+| `{{discount_price}}` | `theme.meta.discount_price` | Discount price with $ prefix |
+| `{{link:field}}` | `theme.meta[field]` | URL from meta field (e.g. `{{link:demo_url}}`) |
+
+### Examples
 
 ```html
-<span>{{price}}</span>           <!-- theme.meta.price -->
-<h1>{{meta:name}}</h1>           <!-- theme.meta.name -->
-<a href="{{link:demo_url}}">     <!-- theme.meta.demo_url -->
+<span>{{price}}</span>           <!-- renders "$59" from theme.meta.price -->
+<h1>{{meta:name}}</h1>           <!-- renders "Theme Name" from theme.meta.name -->
+<a href="{{link:demo_url}}">     <!-- renders URL from theme.meta.demo_url -->
+<p>{{meta:tagline}}</p>          <!-- renders tagline text -->
 ```
 
-Hooks are configured in Studio after import. Static blocks (homepage) don't need hooks.
+> **Note:** When adding new slots, update `packages/db/src/slot-registry.ts` AND this section.
 
 ---
 

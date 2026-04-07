@@ -6,3 +6,7 @@ dist/
 .mcp.json
 .dev.vars
 .wrangler/
+
+.vercel
+.env*.local
+.claude/skills/revalidate/

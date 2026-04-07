@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { GLOBAL_SLOT_NAMES } from '@cmsmasters/db'
 
 // ── SEO schema (reused from theme) ──
 
@@ -44,7 +45,7 @@ export const pageBlockSchema = z.object({
 // ── Create global element ──
 
 export const globalElementSchema = z.object({
-  slot: z.enum(['header', 'footer', 'sidebar-left', 'sidebar-right']),
+  slot: z.enum(GLOBAL_SLOT_NAMES),
   block_id: z.string().uuid(),
   scope: z.string().min(1),
   priority: z.number().int().min(0).max(100).default(0),
@@ -53,7 +54,7 @@ export const globalElementSchema = z.object({
 // ── Update global element ──
 
 export const updateGlobalElementSchema = z.object({
-  slot: z.enum(['header', 'footer', 'sidebar-left', 'sidebar-right']).optional(),
+  slot: z.enum(GLOBAL_SLOT_NAMES).optional(),
   block_id: z.string().uuid().optional(),
   scope: z.string().min(1).optional(),
   priority: z.number().int().min(0).max(100).optional(),

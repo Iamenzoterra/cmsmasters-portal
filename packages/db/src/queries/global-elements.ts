@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '../client'
 import type { GlobalElementInsert, GlobalElementUpdate, GlobalSlot } from '../types'
+import { GLOBAL_SLOT_NAMES } from '../slot-registry'
 
 /** List all global elements with block details */
 export async function getGlobalElements(client: SupabaseClient) {
@@ -79,7 +80,7 @@ export async function resolveGlobalElementsForPage(
     .order('priority', { ascending: false })
   if (error) throw error
 
-  const slots = ['header', 'footer', 'sidebar-left', 'sidebar-right'] as const
+  const slots = GLOBAL_SLOT_NAMES
   const result: Record<string, (typeof data)[number] | null> = {}
 
   for (const slot of slots) {

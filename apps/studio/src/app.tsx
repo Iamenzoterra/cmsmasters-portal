@@ -18,6 +18,7 @@ import { PagesList } from './pages/pages-list'
 import { PageEditor } from './pages/page-editor'
 import { GlobalElementsSettings } from './pages/global-elements-settings'
 import { ElementsList } from './pages/elements-list'
+import { SlotsList } from './pages/slots-list'
 import { NotFound } from './pages/not-found'
 import { ErrorBoundary } from './components/error-boundary'
 
@@ -87,6 +88,7 @@ export function App() {
         <Route path="/static-pages" element={<StaticPagesList />} />
         <Route path="/static-pages/new" element={<PageEditor />} />
         <Route path="/static-pages/:id" element={<PageEditor />} />
+        <Route path="/slots" element={<SlotsList />} />
         <Route path="/global-elements" element={<GlobalElementsSettings />} />
         <Route path="/global-elements/new" element={<BlockEditor />} />
         <Route path="/global-elements/:id" element={<BlockEditor />} />

@@ -17,6 +17,21 @@ export async function signInWithMagicLink(
 }
 
 /**
+ * Sign in with Google OAuth (redirect flow).
+ * The redirectTo URL should be the app's auth callback route.
+ */
+export async function signInWithGoogle(
+  client: SupabaseClient,
+  redirectTo: string
+) {
+  const { error } = await client.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo },
+  })
+  if (error) throw error
+}
+
+/**
  * Sign out and clear session.
  */
 export async function signOut(client: SupabaseClient) {
@@ -25,7 +40,7 @@ export async function signOut(client: SupabaseClient) {
 }
 
 /**
- * Handle the auth callback — supports both PKCE (?code=) and implicit (#access_token=) flows.
+ * Handle the auth callback — supports both PKCE (?code=) and implicit (hash access_token) flows. ds-lint-ignore
  * Call this on the /auth/callback route.
  */
 export async function handleAuthCallback(client: SupabaseClient) {

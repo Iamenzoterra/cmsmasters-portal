@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Block } from '@cmsmasters/db'
+import { SLOT_DEFINITIONS } from '@cmsmasters/db'
 import { Button } from '@cmsmasters/ui'
 import { Plus, Star } from 'lucide-react'
 import { fetchAllBlocks } from '../lib/block-api'
 
-const CATEGORIES = [
-  { value: 'header', label: 'Header', description: 'Top navigation and branding' },
-  { value: 'footer', label: 'Footer', description: 'Bottom navigation and info' },
-  { value: 'sidebar', label: 'Sidebar', description: 'Side panels for themes and layouts' },
-] as const
+// Derive unique categories from the slot registry
+const CATEGORIES = [...new Set(SLOT_DEFINITIONS.map((s) => s.category))].map((cat) => ({
+  value: cat,
+  label: cat.charAt(0).toUpperCase() + cat.slice(1),
+  description: `${cat.charAt(0).toUpperCase() + cat.slice(1)} blocks`,
+}))
 
 export function GlobalElementsSettings() {
   const navigate = useNavigate()

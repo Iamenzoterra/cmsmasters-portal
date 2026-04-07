@@ -75,7 +75,23 @@ export default async function ComposedPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      {renderGlobalBlock(globalElements.header as Record<string, unknown>)}
+      <header
+        id="site-header"
+        className="sticky top-0 z-50 transition-colors duration-300"
+      >
+        {renderGlobalBlock(globalElements.header as Record<string, unknown>)}
+      </header>
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `(function(){
+  var h=document.getElementById('site-header');
+  if(!h)return;
+  function u(){h.style.backgroundColor=window.scrollY>10?'hsl(var(--background))':''}
+  window.addEventListener('scroll',u,{passive:true});
+  u();
+})();`,
+        }}
+      />
       <main>
         {blocks.map((block, i) => (
           <BlockRenderer

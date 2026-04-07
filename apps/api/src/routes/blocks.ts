@@ -74,7 +74,9 @@ blocks.post(
       if (isDuplicate(err)) {
         return c.json({ error: `Block slug "${parsed.data.slug}" already exists` }, 409)
       }
-      return c.json({ error: 'Internal server error' }, 500)
+      console.error('createBlock error:', err)
+      const detail = err instanceof Error ? err.message : typeof err === 'object' && err !== null && 'message' in err ? (err as { message: string }).message : 'Unknown'
+      return c.json({ error: 'Internal server error', detail }, 500)
     }
   }
 )

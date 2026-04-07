@@ -68,6 +68,19 @@ check_file() {
       while IFS= read -r match; do
         local lineno="${match%%:*}"
         local content="${match#*:}"
+        # Skip lines near a ds-lint-ignore comment (brand logos, third-party SVGs, etc.)
+        # Checks the line itself and up to 5 lines above for the marker
+        local skip=false
+        for offset in 0 1 2 3 4 5; do
+          local check_lineno=$((lineno - offset))
+          if [[ $check_lineno -lt 1 ]]; then break; fi
+          local check_line
+          check_line=$(sed -n "${check_lineno}p" "$file" 2>/dev/null || true)
+          if echo "$check_line" | grep -q "ds-lint-ignore"; then
+            skip=true; break
+          fi
+        done
+        if $skip; then continue; fi
         # Trim whitespace
         content=$(echo "$content" | sed 's/^[[:space:]]*//')
         echo -e "  ${RED}L${lineno}${NC}: ${content}"
