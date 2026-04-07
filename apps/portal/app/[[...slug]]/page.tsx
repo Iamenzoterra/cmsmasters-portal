@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { getComposedPageBySlug, getPageBlocksWithData } from '@/lib/blocks'
 import { resolveGlobalBlocks } from '@/lib/global-elements'
 import { BlockRenderer } from '@/app/_components/block-renderer'
+import { StickyHeader } from '@/app/_components/sticky-header'
 
 export const revalidate = 3600
 
@@ -75,23 +76,9 @@ export default async function ComposedPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <header
-        id="site-header"
-        className="sticky top-0 z-50 transition-colors duration-300"
-      >
+      <StickyHeader>
         {renderGlobalBlock(globalElements.header as Record<string, unknown>)}
-      </header>
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `(function(){
-  var h=document.getElementById('site-header');
-  if(!h)return;
-  function u(){h.style.backgroundColor=window.scrollY>10?'hsl(var(--background))':''}
-  window.addEventListener('scroll',u,{passive:true});
-  u();
-})();`,
-        }}
-      />
+      </StickyHeader>
       <main>
         {blocks.map((block, i) => (
           <BlockRenderer
