@@ -47,6 +47,7 @@ export function TagInput({
   const [creating, setCreating] = useState(false)
   const [popoverId, setPopoverId] = useState<string | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [popoverPos, setPopoverPos] = useState<{ top: number; right: number } | null>(null)
 
   // Resolve selected items for chip display
   const selectedItems = selectedIds
@@ -109,6 +110,7 @@ export function TagInput({
         setIsOpen(false)
         setPopoverId(null)
         setConfirmDeleteId(null)
+        setPopoverPos(null)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -148,6 +150,7 @@ export function TagInput({
     onChange(selectedIds.filter((sid) => sid !== id))
     setPopoverId(null)
     setConfirmDeleteId(null)
+    setPopoverPos(null)
     inputRef.current?.focus()
   }
 
@@ -160,6 +163,7 @@ export function TagInput({
     }
     setPopoverId(null)
     setConfirmDeleteId(null)
+    setPopoverPos(null)
     inputRef.current?.focus()
   }
 
@@ -242,8 +246,25 @@ export function TagInput({
                 aria-label={`Remove ${item.name}`}
                 onClick={(e) => {
                   e.stopPropagation()
-                  setPopoverId(popoverId === item.id ? null : item.id)
-                  setConfirmDeleteId(null)
+                  if (popoverId === item.id) {
+                    setPopoverId(null)
+                    setConfirmDeleteId(null)
+                    setPopoverPos(null)
+                  } else {
+                    // Calculate position relative to the TagInput container
+                    const btn = e.currentTarget
+                    const container = containerRef.current
+                    if (container) {
+                      const btnRect = btn.getBoundingClientRect()
+                      const containerRect = container.getBoundingClientRect()
+                      setPopoverPos({
+                        top: btnRect.bottom - containerRect.top + 4,
+                        right: containerRect.right - btnRect.right,
+                      })
+                    }
+                    setPopoverId(item.id)
+                    setConfirmDeleteId(null)
+                  }
                 }}
                 className="inline-flex items-center justify-center"
                 style={{
@@ -275,98 +296,132 @@ export function TagInput({
                 <X size={10} />
               </button>
 
-              {/* Delete popover */}
-              {popoverId === item.id && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 'calc(100% + 4px)',
-                    right: '0',
-                    zIndex: 60,
-                    backgroundColor: 'hsl(var(--bg-surface))',
-                    border: '1px solid hsl(var(--border-default))',
-                    borderRadius: 'var(--rounded-lg)',
-                    boxShadow: 'var(--shadow-md)',
-                    padding: '4px',
-                    minWidth: '160px',
-                    maxWidth: '200px',
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Escape') {
-                      setPopoverId(null)
-                      setConfirmDeleteId(null)
-                    }
-                  }}
-                >
-                  {confirmDeleteId === item.id ? (
-                    // Confirmation step
-                    <div className="flex flex-col" style={{ gap: '4px', padding: '4px' }}>
-                      <span
-                        style={{
-                          fontSize: 'var(--text-xs-font-size)',
-                          color: 'hsl(var(--foreground))',
-                          fontWeight: 'var(--font-weight-medium)',
-                          lineHeight: '1.4',
-                        }}
-                      >
-                        Delete &ldquo;{item.name}&rdquo; from all themes?
-                      </span>
-                      <div className="flex" style={{ gap: '4px', marginTop: '4px' }}>
-                        <button
-                          type="button"
-                          onClick={() => setConfirmDeleteId(null)}
-                          style={{
-                            flex: 1,
-                            padding: '4px 8px',
-                            borderRadius: 'var(--rounded-md)',
-                            border: '1px solid hsl(var(--border-default))',
-                            background: 'transparent',
-                            fontSize: 'var(--text-xs-font-size)',
-                            color: 'hsl(var(--text-secondary))',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteEverywhere(item.id)}
-                          style={{
-                            flex: 1,
-                            padding: '4px 8px',
-                            borderRadius: 'var(--rounded-md)',
-                            border: 'none',
-                            background: 'hsl(var(--status-error-fg))',
-                            color: 'hsl(var(--primary-foreground))',
-                            fontSize: 'var(--text-xs-font-size)',
-                            fontWeight: 'var(--font-weight-medium)',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    // Initial two options
-                    <>
-                      <PopoverOption
-                        label="Remove from this theme"
-                        onClick={() => handleRemoveFromTheme(item.id)}
-                      />
-                      <PopoverOption
-                        label="Delete everywhere"
-                        destructive
-                        onClick={() => setConfirmDeleteId(item.id)}
-                      />
-                    </>
-                  )}
-                </div>
-              )}
             </div>
           ))}
         </div>
       )}
+
+      {/* Delete popover — rendered at container level to avoid overflow clipping */}
+      {popoverId && popoverPos && (() => {
+        const popoverItem = selectedItems.find((i) => i.id === popoverId)
+        if (!popoverItem) return null
+        return (
+          <div
+            style={{
+              position: 'absolute',
+              top: `${popoverPos.top}px`,
+              right: `${popoverPos.right}px`,
+              zIndex: 60,
+              backgroundColor: 'hsl(var(--bg-surface))',
+              border: '1px solid hsl(var(--border-default))',
+              borderRadius: 'var(--rounded-lg)',
+              boxShadow: 'var(--shadow-md)',
+              padding: '4px',
+              minWidth: '160px',
+              maxWidth: '200px',
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                setPopoverId(null)
+                setConfirmDeleteId(null)
+                setPopoverPos(null)
+              }
+            }}
+          >
+            {/* Close button */}
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={() => {
+                setPopoverId(null)
+                setConfirmDeleteId(null)
+                setPopoverPos(null)
+              }}
+              style={{
+                position: 'absolute',
+                top: '4px',
+                right: '4px',
+                width: '20px',
+                height: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 'var(--rounded-md)',
+                border: 'none',
+                background: 'transparent',
+                color: 'hsl(var(--text-muted))',
+                cursor: 'pointer',
+                transition: 'background-color 100ms ease',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'hsl(var(--bg-surface-alt))' }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
+            >
+              <X size={12} />
+            </button>
+            {confirmDeleteId === popoverId ? (
+              <div className="flex flex-col" style={{ gap: '4px', padding: '4px' }}>
+                <span
+                  style={{
+                    fontSize: 'var(--text-xs-font-size)',
+                    color: 'hsl(var(--foreground))',
+                    fontWeight: 'var(--font-weight-medium)',
+                    lineHeight: '1.4',
+                  }}
+                >
+                  Delete &ldquo;{popoverItem.name}&rdquo; from all themes?
+                </span>
+                <div className="flex" style={{ gap: '4px', marginTop: '4px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDeleteId(null)}
+                    style={{
+                      flex: 1,
+                      padding: '4px 8px',
+                      borderRadius: 'var(--rounded-md)',
+                      border: '1px solid hsl(var(--border-default))',
+                      background: 'transparent',
+                      fontSize: 'var(--text-xs-font-size)',
+                      color: 'hsl(var(--text-secondary))',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteEverywhere(popoverId)}
+                    style={{
+                      flex: 1,
+                      padding: '4px 8px',
+                      borderRadius: 'var(--rounded-md)',
+                      border: 'none',
+                      background: 'hsl(var(--status-error-fg))',
+                      color: 'hsl(var(--primary-foreground))',
+                      fontSize: 'var(--text-xs-font-size)',
+                      fontWeight: 'var(--font-weight-medium)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <PopoverOption
+                  label="Remove from this theme"
+                  onClick={() => handleRemoveFromTheme(popoverId)}
+                />
+                <PopoverOption
+                  label="Delete everywhere"
+                  destructive
+                  onClick={() => setConfirmDeleteId(popoverId)}
+                />
+              </>
+            )}
+          </div>
+        )
+      })()}
 
       {/* Input + Dropdown wrapper */}
       <div style={{ position: 'relative' }}>
