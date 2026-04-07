@@ -268,6 +268,7 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'apps/studio/src/components/delete-confirm-modal.tsx',
       'apps/studio/src/components/editor-footer.tsx',
       'apps/studio/src/components/editor-sidebar.tsx',
+      'apps/studio/src/components/tag-input.tsx',
       'apps/studio/src/components/error-boundary.tsx',
       'apps/studio/src/components/form-section.tsx',
       'apps/studio/src/components/pagination.tsx',

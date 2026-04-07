@@ -3,8 +3,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { themeSchema, type ThemeFormData } from '@cmsmasters/validators'
-import type { Theme, Template, Block, ThemeBlockFill, Category, Tag, Price } from '@cmsmasters/db'
-import { upsertTheme, logAction, themeRowToFormData, formDataToThemeInsert, getCategories, getThemeCategories, setThemeCategories, getTags, getThemeTags, setThemeTags, getPrices, getThemePrices, setThemePrices, getProfile } from '@cmsmasters/db'
+import type { Theme, Template, Block, ThemeBlockFill, Category, Tag, Price, UseCase } from '@cmsmasters/db'
+import { upsertTheme, logAction, themeRowToFormData, formDataToThemeInsert, getCategories, getThemeCategories, setThemeCategories, getTags, getThemeTags, setThemeTags, getPrices, getThemePrices, setThemePrices, getUseCases, getThemeUseCases, setThemeUseCases, searchUseCases, createUseCase, deleteUseCase, getProfile } from '@cmsmasters/db'
 import { AlertTriangle, ChevronLeft, ExternalLink, Eye, LayoutTemplate } from 'lucide-react'
 import { useLocalPortal } from '../lib/use-local-portal'
 import { Button } from '@cmsmasters/ui'
@@ -63,6 +63,9 @@ export function ThemeEditor() {
   const [allPrices, setAllPrices] = useState<Price[]>([])
   const [selectedRegularPriceId, setSelectedRegularPriceId] = useState<string | null>(null)
   const [selectedDiscountPriceId, setSelectedDiscountPriceId] = useState<string | null>(null)
+  const [allUseCases, setAllUseCases] = useState<UseCase[]>([])
+  const [selectedUseCaseIds, setSelectedUseCaseIds] = useState<string[]>([])
+
   const [authorName, setAuthorName] = useState<string | undefined>(undefined)
 
   const form = useForm<ThemeFormData>({
@@ -77,6 +80,7 @@ export function ThemeEditor() {
     getCategories(supabase).then(setAllCategories).catch(() => {})
     getTags(supabase).then(setAllTags).catch(() => {})
     getPrices(supabase).then(setAllPrices).catch(() => {})
+    getUseCases(supabase).then(setAllUseCases).catch(() => {})
   }, [])
 
   // Fetch existing theme — OR reset all state for new themes (route reuse)
@@ -95,6 +99,7 @@ export function ThemeEditor() {
       setSelectedTags([])
       setSelectedRegularPriceId(null)
       setSelectedDiscountPriceId(null)
+      setSelectedUseCaseIds([])
       setAuthorName(undefined)
       return
     }
@@ -118,6 +123,9 @@ export function ThemeEditor() {
         })
         getThemeTags(supabase, theme.id).then((tags) => {
           if (!cancelled) setSelectedTags(tags.map((t: any) => t.id))
+        })
+        getThemeUseCases(supabase, theme.id).then((ucs) => {
+          if (!cancelled) setSelectedUseCaseIds(ucs.map((uc: any) => uc.id))
         })
         getThemePrices(supabase, theme.id).then((prices) => {
           if (!cancelled) {
@@ -223,6 +231,7 @@ export function ThemeEditor() {
         setThemeCategories(supabase, saved.id, selectedCategories.map((s) => ({ category_id: s.id, is_primary: s.is_primary }))),
         setThemeTags(supabase, saved.id, selectedTags),
         setThemePrices(supabase, saved.id, [selectedRegularPriceId, selectedDiscountPriceId].filter((id): id is string => id !== null)),
+        setThemeUseCases(supabase, saved.id, selectedUseCaseIds),
       ])
 
       // M2: audit non-blocking with explicit marker
@@ -290,6 +299,7 @@ export function ThemeEditor() {
         setThemeCategories(supabase, saved.id, selectedCategories.map((s) => ({ category_id: s.id, is_primary: s.is_primary }))),
         setThemeTags(supabase, saved.id, selectedTags),
         setThemePrices(supabase, saved.id, [selectedRegularPriceId, selectedDiscountPriceId].filter((id): id is string => id !== null)),
+        setThemeUseCases(supabase, saved.id, selectedUseCaseIds),
       ])
 
       try {
@@ -375,6 +385,23 @@ export function ThemeEditor() {
   }
 
   // ── Page Layout handlers ──
+
+  // ── Use Cases callbacks ──
+  async function handleUseCaseSearch(query: string) {
+    return searchUseCases(supabase, query)
+  }
+
+  async function handleUseCaseCreate(name: string) {
+    const slug = nameToSlug(name)
+    const created = await createUseCase(supabase, { name, slug })
+    setAllUseCases((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)))
+    return created
+  }
+
+  async function handleUseCaseDelete(id: string) {
+    await deleteUseCase(supabase, id)
+    setAllUseCases((prev) => prev.filter((uc) => uc.id !== id))
+  }
 
   function handleTemplateSelect(template: Template) {
     setCurrentTemplateId(template.id)
@@ -756,6 +783,12 @@ export function ThemeEditor() {
             selectedDiscountPriceId={selectedDiscountPriceId}
             onRegularPriceChange={setSelectedRegularPriceId}
             onDiscountPriceChange={setSelectedDiscountPriceId}
+            allUseCases={allUseCases}
+            selectedUseCaseIds={selectedUseCaseIds}
+            onUseCasesChange={setSelectedUseCaseIds}
+            onUseCaseSearch={handleUseCaseSearch}
+            onUseCaseCreate={handleUseCaseCreate}
+            onUseCaseDelete={handleUseCaseDelete}
             authorName={authorName}
           />
         </div>

@@ -7,6 +7,8 @@ import { Star } from 'lucide-react'
 import { Button } from '@cmsmasters/ui'
 import { StatusSelect } from './status-select'
 import { TaxonomyPickerModal } from './taxonomy-picker-modal'
+import { TagInput } from './tag-input'
+import type { TagInputItem } from './tag-input'
 import { ThumbnailUpload } from './thumbnail-upload'
 import { useToast } from './toast'
 import { uploadFile } from '../lib/block-api'
@@ -28,6 +30,12 @@ interface EditorSidebarProps {
   selectedDiscountPriceId: string | null
   onRegularPriceChange: (id: string | null) => void
   onDiscountPriceChange: (id: string | null) => void
+  allUseCases: TagInputItem[]
+  selectedUseCaseIds: string[]
+  onUseCasesChange: (ids: string[]) => void
+  onUseCaseSearch: (query: string) => Promise<TagInputItem[]>
+  onUseCaseCreate: (name: string) => Promise<TagInputItem>
+  onUseCaseDelete: (id: string) => Promise<void>
   authorName?: string
 }
 
@@ -40,7 +48,7 @@ const labelStyle: React.CSSProperties = {
   letterSpacing: '0.5px',
 }
 
-export function EditorSidebar({ control, watch, setValue, existingTheme, allCategories, allTags, selectedCategories, selectedTags, onCategoriesChange, onTagsChange, allPrices, selectedRegularPriceId, selectedDiscountPriceId, onRegularPriceChange, onDiscountPriceChange, authorName }: EditorSidebarProps) {
+export function EditorSidebar({ control, watch, setValue, existingTheme, allCategories, allTags, selectedCategories, selectedTags, onCategoriesChange, onTagsChange, allPrices, selectedRegularPriceId, selectedDiscountPriceId, onRegularPriceChange, onDiscountPriceChange, allUseCases, selectedUseCaseIds, onUseCasesChange, onUseCaseSearch, onUseCaseCreate, onUseCaseDelete, authorName }: EditorSidebarProps) {
   const [catPickerOpen, setCatPickerOpen] = useState(false)
   const [tagPickerOpen, setTagPickerOpen] = useState(false)
   const [regularPricePickerOpen, setRegularPricePickerOpen] = useState(false)
@@ -188,6 +196,20 @@ export function EditorSidebar({ control, watch, setValue, existingTheme, allCate
           onClose={() => setTagPickerOpen(false)}
         />
       )}
+
+      {/* Perfect For */}
+      <div className="flex flex-col" style={{ gap: 'var(--spacing-xs)' }}>
+        <span style={labelStyle}>Perfect For</span>
+        <TagInput
+          items={allUseCases}
+          selectedIds={selectedUseCaseIds}
+          onChange={onUseCasesChange}
+          onSearch={onUseCaseSearch}
+          onCreate={onUseCaseCreate}
+          onDelete={onUseCaseDelete}
+          placeholder="Type to add..."
+        />
+      </div>
 
       {/* Price */}
       <div className="flex flex-col" style={{ gap: 'var(--spacing-sm)' }}>
