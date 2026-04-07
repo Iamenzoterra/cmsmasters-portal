@@ -122,6 +122,7 @@ export function PageEditor() {
   const [layoutCode, setLayoutCode] = useState('')
   const [layoutScope, setLayoutScope] = useState('theme')
   const [layoutSlots, setLayoutSlots] = useState<Record<string, string | string[]>>({})
+  const [slotConfig, setSlotConfig] = useState<Record<string, { gap?: string }>>({})
   const [slotBlocks, setSlotBlocks] = useState<Block[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -199,7 +200,8 @@ export function PageEditor() {
           setLayoutCode(code)
         }
         if (page.scope) setLayoutScope(page.scope)
-        if (page.layout_slots) setLayoutSlots(page.layout_slots as Record<string, string>)
+        if (page.layout_slots) setLayoutSlots(page.layout_slots as Record<string, string | string[]>)
+        if ((page as Record<string, unknown>).slot_config) setSlotConfig((page as Record<string, unknown>).slot_config as Record<string, { gap?: string }>)
         // Fetch page blocks for composed pages
         if (page.type === 'composed') {
           fetchPageBlocks(page.id)
@@ -323,6 +325,7 @@ export function PageEditor() {
           updatePayload.html = layoutHtml
           updatePayload.css = layoutCss
           updatePayload.layout_slots = layoutSlots
+          updatePayload.slot_config = slotConfig
         } else {
           updatePayload.seo = data.seo
         }
@@ -344,7 +347,7 @@ export function PageEditor() {
       } else {
         const createPayload = {
           ...data,
-          ...(isLayout ? { scope: layoutScope, html: layoutHtml, css: layoutCss, layout_slots: layoutSlots } : {}),
+          ...(isLayout ? { scope: layoutScope, html: layoutHtml, css: layoutCss, layout_slots: layoutSlots, slot_config: slotConfig } : {}),
         }
         const saved = await createPageApi(createPayload)
         if (!isLayout && blockEntries.length > 0) {
@@ -388,6 +391,7 @@ export function PageEditor() {
           updatePayload.html = layoutHtml
           updatePayload.css = layoutCss
           updatePayload.layout_slots = layoutSlots
+          updatePayload.slot_config = slotConfig
         } else {
           updatePayload.seo = data.seo
         }
@@ -410,7 +414,7 @@ export function PageEditor() {
         const createPayload = {
           ...data,
           status: 'published' as const,
-          ...(isLayout ? { scope: layoutScope, html: layoutHtml, css: layoutCss, layout_slots: layoutSlots } : {}),
+          ...(isLayout ? { scope: layoutScope, html: layoutHtml, css: layoutCss, layout_slots: layoutSlots, slot_config: slotConfig } : {}),
         }
         const saved = await createPageApi(createPayload)
         if (!isLayout && blockEntries.length > 0) {
@@ -462,7 +466,8 @@ export function PageEditor() {
         code += existingPage.html ?? ''
         setLayoutCode(code)
         setLayoutScope(existingPage.scope ?? 'theme')
-        setLayoutSlots(existingPage.layout_slots as Record<string, string> ?? {})
+        setLayoutSlots(existingPage.layout_slots as Record<string, string | string[]> ?? {})
+        if ((existingPage as Record<string, unknown>).slot_config) setSlotConfig((existingPage as Record<string, unknown>).slot_config as Record<string, { gap?: string }>)
       }
     } else {
       reset({
@@ -479,6 +484,7 @@ export function PageEditor() {
       setLayoutCode('')
       setLayoutScope('theme')
       setLayoutSlots({})
+      setSlotConfig({})
     }
   }
 
@@ -643,14 +649,9 @@ export function PageEditor() {
               <SlotPanel
                 code={layoutCode}
                 layoutSlots={layoutSlots}
-                onSlotChange={(slot, blockId) => {
-                  setLayoutSlots((prev) => {
-                    const next = { ...prev }
-                    if (blockId) next[slot] = blockId
-                    else delete next[slot]
-                    return next
-                  })
-                }}
+                slotConfig={slotConfig}
+                onSlotsChange={setLayoutSlots}
+                onConfigChange={setSlotConfig}
                 blocks={slotBlocks}
               />
             </>
@@ -826,75 +827,238 @@ export function PageEditor() {
 // SLOT_TO_CATEGORY imported from @cmsmasters/db
 // 'element' category is not a layout slot — handled inline where needed
 
-function SlotPanel({ code, layoutSlots, onSlotChange, blocks }: {
+function getSlotBlockIds(slots: Record<string, string | string[]>, slot: string): string[] {
+  const val = slots[slot]
+  if (!val) return []
+  return Array.isArray(val) ? val.filter(Boolean) : [val]
+}
+
+function SlotPanel({ code, layoutSlots, slotConfig, onSlotsChange, onConfigChange, blocks }: {
   code: string
   layoutSlots: Record<string, string | string[]>
-  onSlotChange: (slot: string, blockId: string | null) => void
+  slotConfig: Record<string, { gap?: string }>
+  onSlotsChange: (slots: Record<string, string | string[]>) => void
+  onConfigChange: (config: Record<string, { gap?: string }>) => void
   blocks: Block[]
 }) {
   const slots = useMemo(() => extractSlots(code), [code])
+  const [pickingSlot, setPickingSlot] = useState<string | null>(null)
+
   if (slots.length === 0) return null
+
+  function handleSlotMove(slot: string, index: number, direction: 'up' | 'down') {
+    const ids = getSlotBlockIds(layoutSlots, slot)
+    const newIndex = direction === 'up' ? index - 1 : index + 1
+    if (newIndex < 0 || newIndex >= ids.length) return
+    const updated = [...ids]
+    ;[updated[index], updated[newIndex]] = [updated[newIndex], updated[index]]
+    onSlotsChange({ ...layoutSlots, [slot]: updated })
+  }
+
+  function handleSlotRemove(slot: string, index: number) {
+    const ids = getSlotBlockIds(layoutSlots, slot)
+    const updated = ids.filter((_, i) => i !== index)
+    const next = { ...layoutSlots }
+    if (updated.length === 0) delete next[slot]
+    else next[slot] = updated
+    onSlotsChange(next)
+  }
+
+  function handleSlotAdd(slot: string, block: Block) {
+    const ids = getSlotBlockIds(layoutSlots, slot)
+    onSlotsChange({ ...layoutSlots, [slot]: [...ids, block.id] })
+    setPickingSlot(null)
+  }
 
   return (
     <FormSection title={`Slot Assignments (${slots.length})`} storageKey="page-slot-assignments">
-      <div className="flex flex-col" style={{ gap: 'var(--spacing-sm)' }}>
+      <div className="flex flex-col" style={{ gap: 'var(--spacing-md)' }}>
         {slots.map((slot) => {
           const isGlobal = GLOBAL_SLOTS.includes(slot)
           const isContent = slot === 'content'
           const isMeta = slot.startsWith('meta:')
           const category = SLOT_TO_CATEGORY[slot]
           const categoryBlocks = category ? blocks.filter((b) => b.block_type === category) : []
-          const rawVal = layoutSlots[slot]
-          const selectedId = Array.isArray(rawVal) ? (rawVal[0] ?? '') : (rawVal ?? '')
+          const blockIds = getSlotBlockIds(layoutSlots, slot)
+          const gapVal = parseInt(slotConfig[slot]?.gap ?? '24', 10)
 
-          return (
-            <div
-              key={slot}
-              className="flex items-center justify-between border"
-              style={{
-                padding: 'var(--spacing-sm) var(--spacing-md)',
-                borderColor: 'hsl(var(--border-default))',
-                borderRadius: 'var(--rounded-lg)',
-                backgroundColor: 'hsl(var(--bg-surface-alt))',
-              }}
-            >
-              <div className="flex items-center" style={{ gap: 'var(--spacing-sm)', minWidth: '120px' }}>
+          // Non-global slots: static label row
+          if (!isGlobal) {
+            return (
+              <div
+                key={slot}
+                className="flex items-center justify-between border"
+                style={{
+                  padding: 'var(--spacing-sm) var(--spacing-md)',
+                  borderColor: 'hsl(var(--border-default))',
+                  borderRadius: 'var(--rounded-lg)',
+                  backgroundColor: 'hsl(var(--bg-surface-alt))',
+                }}
+              >
                 <code style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-link))', backgroundColor: 'hsl(var(--bg-surface))', padding: '2px 6px', borderRadius: 'var(--rounded-sm)' }}>
                   {slot}
                 </code>
+                <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>
+                  {isContent ? 'Template blocks per theme' : isMeta ? 'Resolved from theme.meta' : 'Custom slot'}
+                </span>
               </div>
-              <div className="flex items-center" style={{ gap: 'var(--spacing-xs)', fontSize: 'var(--text-xs-font-size)' }}>
-                {isGlobal && categoryBlocks.length > 0 ? (
-                  <StyledSelect
-                    compact
-                    value={selectedId}
-                    onChange={(e) => onSlotChange(slot, e.target.value || null)}
-                    style={{ minWidth: '160px' }}
-                  >
-                    <option value="">(use default)</option>
-                    {categoryBlocks.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name}{b.is_default ? ' ⭐' : ''}
-                      </option>
-                    ))}
-                  </StyledSelect>
-                ) : isGlobal ? (
-                  <Link to="/global-elements" className="flex items-center no-underline" style={{ gap: '4px', color: 'hsl(var(--text-link))' }}>
+            )
+          }
+
+          // Global slots: multi-block list
+          return (
+            <div
+              key={slot}
+              className="flex flex-col border"
+              style={{
+                borderColor: 'hsl(var(--border-default))',
+                borderRadius: 'var(--rounded-lg)',
+                backgroundColor: 'hsl(var(--bg-surface-alt))',
+                overflow: 'hidden',
+              }}
+            >
+              {/* Slot header: name + gap */}
+              <div
+                className="flex items-center justify-between"
+                style={{
+                  padding: 'var(--spacing-sm) var(--spacing-md)',
+                  borderBottom: blockIds.length > 0 ? '1px solid hsl(var(--border-default))' : 'none',
+                }}
+              >
+                <code style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-link))', backgroundColor: 'hsl(var(--bg-surface))', padding: '2px 6px', borderRadius: 'var(--rounded-sm)' }}>
+                  {slot}
+                </code>
+                <div className="flex items-center" style={{ gap: 'var(--spacing-xs)' }}>
+                  <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>Gap:</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={200}
+                    value={gapVal}
+                    onChange={(e) => {
+                      const gap = `${e.target.value}px`
+                      onConfigChange({ ...slotConfig, [slot]: { ...slotConfig[slot], gap } })
+                    }}
+                    className="outline-none"
+                    style={{
+                      width: '48px',
+                      height: '28px',
+                      textAlign: 'center',
+                      padding: '0 4px',
+                      backgroundColor: 'hsl(var(--input))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: 'var(--rounded-md)',
+                      fontSize: 'var(--text-xs-font-size)',
+                      color: 'hsl(var(--foreground))',
+                    }}
+                  />
+                  <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>px</span>
+                </div>
+              </div>
+
+              {/* Block list */}
+              {blockIds.length > 0 && (
+                <div className="flex flex-col" style={{ gap: 0 }}>
+                  {blockIds.map((id, idx) => {
+                    const block = blocks.find((b) => b.id === id)
+                    return (
+                      <div
+                        key={id}
+                        className="flex items-center"
+                        style={{
+                          padding: 'var(--spacing-xs) var(--spacing-md)',
+                          gap: 'var(--spacing-sm)',
+                          borderBottom: idx < blockIds.length - 1 ? '1px solid hsl(var(--border-default))' : 'none',
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: 'var(--text-xs-font-size)',
+                            color: 'hsl(var(--text-muted))',
+                            width: '20px',
+                            textAlign: 'center',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {idx + 1}
+                        </span>
+                        <span
+                          className="flex-1 truncate"
+                          style={{
+                            fontSize: 'var(--text-sm-font-size)',
+                            fontWeight: 'var(--font-weight-medium)',
+                            color: 'hsl(var(--text-primary))',
+                          }}
+                        >
+                          {block?.name ?? id}
+                          {block?.is_default && (
+                            <span style={{ fontSize: '11px', color: 'hsl(var(--status-success-fg))', marginLeft: 'var(--spacing-xs)' }}>
+                              default
+                            </span>
+                          )}
+                        </span>
+                        <div className="flex items-center" style={{ gap: '4px' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleSlotMove(slot, idx, 'up')}
+                            disabled={idx === 0}
+                            className="flex items-center justify-center border-0 bg-transparent disabled:opacity-30"
+                            style={{ width: '28px', height: '28px', cursor: idx === 0 ? 'default' : 'pointer', color: 'hsl(var(--text-muted))' }}
+                          >
+                            <ArrowUp size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSlotMove(slot, idx, 'down')}
+                            disabled={idx === blockIds.length - 1}
+                            className="flex items-center justify-center border-0 bg-transparent disabled:opacity-30"
+                            style={{ width: '28px', height: '28px', cursor: idx === blockIds.length - 1 ? 'default' : 'pointer', color: 'hsl(var(--text-muted))' }}
+                          >
+                            <ArrowDown size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSlotRemove(slot, idx)}
+                            className="flex items-center justify-center border-0 bg-transparent"
+                            style={{ width: '28px', height: '28px', cursor: 'pointer', color: 'hsl(var(--status-error-fg))' }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* Add button or empty state */}
+              <div style={{ padding: 'var(--spacing-xs) var(--spacing-md) var(--spacing-sm)' }}>
+                {categoryBlocks.length > 0 ? (
+                  <Button variant="outline" size="sm" onClick={() => setPickingSlot(slot)}>
+                    <Plus size={14} />
+                    Add {category} block
+                  </Button>
+                ) : (
+                  <Link to="/global-elements" className="flex items-center no-underline" style={{ gap: '4px', fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-link))' }}>
                     Create {category} blocks first
                     <ExternalLink size={11} />
                   </Link>
-                ) : isContent ? (
-                  <span style={{ color: 'hsl(var(--text-muted))' }}>Template blocks per theme</span>
-                ) : isMeta ? (
-                  <span style={{ color: 'hsl(var(--text-muted))' }}>Resolved from theme.meta</span>
-                ) : (
-                  <span style={{ color: 'hsl(var(--text-muted))' }}>Custom slot</span>
                 )}
               </div>
             </div>
           )
         })}
       </div>
+
+      {/* Block picker modal for slot */}
+      {pickingSlot && (
+        <BlockPickerModal
+          filterCategory={SLOT_TO_CATEGORY[pickingSlot]}
+          excludeIds={getSlotBlockIds(layoutSlots, pickingSlot)}
+          onSelect={(block) => handleSlotAdd(pickingSlot, block)}
+          onClose={() => setPickingSlot(null)}
+        />
+      )}
     </FormSection>
   )
 }
