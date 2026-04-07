@@ -9,7 +9,7 @@ import {
   mergePositions,
   fetchBlocksById,
 } from '@/lib/blocks'
-import { getThemePrices, getThemeUseCases } from '@cmsmasters/db'
+import { getThemePrices, getThemeUseCases, getThemeCategories } from '@cmsmasters/db'
 import type { Block } from '@cmsmasters/db'
 import { resolveGlobalBlocks } from '@/lib/global-elements'
 import {
@@ -73,6 +73,17 @@ export default async function ThemePage({ params }: Props) {
     if (discountPrice) meta.discount_price = discountPrice.name
   } catch {
     // Fall through — use meta.price if set
+  }
+
+  // Enrich meta with primary categories from junction table
+  try {
+    const cats = await getThemeCategories(supabase, theme.id)
+    const primary = cats.filter((c: any) => c.is_primary)
+    if (primary.length > 0) {
+      meta._primary_categories = primary.map((c: any) => c.name)
+    }
+  } catch {
+    // Fall through — {{primary_categories}} resolves to empty
   }
 
   // Enrich meta with use cases from junction table

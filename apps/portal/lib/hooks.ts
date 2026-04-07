@@ -98,12 +98,25 @@ export function resolveBlockHooks(
     return value != null ? String(value) : '#'
   })
 
-  // {{perfect_for}} → HTML list of use cases (injected via meta._use_cases)
+  // {{primary_categories}} → badge pills for primary categories
+  result = result.replace(/\{\{primary_categories\}\}/g, () => {
+    const cats = meta._primary_categories as string[] | undefined
+    if (!cats || cats.length === 0) return ''
+    const badges = cats.map((name) =>
+      `<span class="block-sidebar-perfect-for__badge">${name}</span>`
+    ).join('\n')
+    return `<div class="block-sidebar-perfect-for__badges">\n${badges}\n</div>`
+  })
+
+  // {{perfect_for}} → styled list of use cases (injected via meta._use_cases)
   result = result.replace(/\{\{perfect_for\}\}/g, () => {
     const useCases = meta._use_cases as string[] | undefined
     if (!useCases || useCases.length === 0) return ''
-    const items = useCases.map((name) => `<li>${name}</li>`).join('\n')
-    return `<ul class="perfect-for-list">\n${items}\n</ul>`
+    const checkIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="24" height="24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>'
+    const items = useCases.map((name) =>
+      `<li class="block-sidebar-perfect-for__item"><span class="block-sidebar-perfect-for__icon">${checkIcon}</span><span class="block-sidebar-perfect-for__name">${name}</span></li>`
+    ).join('\n')
+    return `<ul class="block-sidebar-perfect-for__list">\n${items}\n</ul>`
   })
 
   return result
