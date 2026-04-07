@@ -22,7 +22,9 @@
     "cc:scan": "npx tsx apps/command-center/cli/scan.ts",
     "cc:report": "npx tsx apps/command-center/cli/report.ts",
     "quality": "bash quality-check.sh",
-    "arch-test": "npx vitest run --config src/__arch__/vitest.config.ts --reporter=verbose"
+    "arch-test": "npx vitest run --config src/__arch__/vitest.config.ts --reporter=verbose",
+    "content:pull": "node tools/content-sync.js pull",
+    "content:push": "node tools/content-sync.js push"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
