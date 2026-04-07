@@ -583,7 +583,7 @@ export function ThemeEditor() {
         <div className="flex flex-col" style={{ flex: '2 1 480px', minWidth: 0, gap: 'var(--spacing-lg)' }}>
 
           {/* Section 1: Basic Info */}
-          <FormSection title="Basic Info">
+          <FormSection title="Basic Info" storageKey="theme-basic-info">
             <Field label="Name" error={errors.meta?.name?.message}>
               <input {...register('meta.name')} className="w-full outline-none" style={inputStyle} placeholder="Theme name" />
             </Field>
@@ -611,7 +611,7 @@ export function ThemeEditor() {
           </FormSection>
 
           {/* Section 2: Links */}
-          <FormSection title="Links">
+          <FormSection title="Links" storageKey="theme-links">
             <Field label="Demo URL" error={errors.meta?.demo_url?.message}>
               <input {...register('meta.demo_url')} type="url" className="w-full outline-none" style={inputStyle} placeholder="https://demo.example.com" />
             </Field>
@@ -624,25 +624,7 @@ export function ThemeEditor() {
           </FormSection>
 
           {/* Page Layout */}
-          <div
-            className="border"
-            style={{
-              borderColor: 'hsl(var(--border-default))',
-              borderRadius: 'var(--rounded-xl)',
-              backgroundColor: 'hsl(var(--bg-surface))',
-            }}
-          >
-            <div
-              style={{
-                padding: 'var(--spacing-lg) var(--spacing-xl)',
-              }}
-            >
-              <span style={{ fontSize: 'var(--text-base-font-size)', fontWeight: 'var(--font-weight-semibold)', color: 'hsl(var(--text-primary))' }}>
-                Page Layout
-              </span>
-            </div>
-            <div style={{ padding: '0 var(--spacing-xl) var(--spacing-xl)' }}>
-              <div className="flex flex-col" style={{ gap: 'var(--spacing-md)' }}>
+          <FormSection title="Page Layout" storageKey="theme-page-layout">
 
                 {/* State 1: No template — empty state with Select button */}
                 <div style={{ display: (!currentTemplateId && !showTemplatePicker) ? 'flex' : 'none', flexDirection: 'column', alignItems: 'center', gap: 'var(--spacing-md)', padding: 'var(--spacing-xl) 0' }}>
@@ -688,23 +670,13 @@ export function ThemeEditor() {
                         {selectedTemplate?.name}
                       </span>
                     </div>
-                    <div className="flex items-center" style={{ gap: 'var(--spacing-md)' }}>
-                      <button
-                        type="button"
-                        onClick={handleChangeTemplate}
-                        className="border-0 bg-transparent"
-                        style={{ color: 'hsl(var(--text-link))', fontSize: 'var(--text-sm-font-size)', cursor: 'pointer', padding: '4px 8px' }}
-                      >
+                    <div className="flex items-center" style={{ gap: 'var(--spacing-xs)' }}>
+                      <Button variant="ghost" size="mini" onClick={handleChangeTemplate}>
                         Change
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleRemoveTemplate}
-                        className="border-0 bg-transparent"
-                        style={{ color: 'hsl(var(--status-error-fg))', fontSize: 'var(--text-sm-font-size)', cursor: 'pointer', padding: '4px 8px' }}
-                      >
+                      </Button>
+                      <Button variant="ghost" size="mini" onClick={handleRemoveTemplate}>
                         Remove
-                      </button>
+                      </Button>
                     </div>
                   </div>
                   {selectedTemplate && (
@@ -725,9 +697,7 @@ export function ThemeEditor() {
                     Loading template...
                   </p>
                 )}
-              </div>
-            </div>
-          </div>
+          </FormSection>
 
           {/* Block picker modal for fills */}
           {fillPickerOpen && (
@@ -747,7 +717,7 @@ export function ThemeEditor() {
           )}
 
           {/* SEO */}
-          <FormSection title="SEO">
+          <FormSection title="SEO" storageKey="theme-seo">
             <Field label="SEO Title" error={errors.seo?.title?.message} trailing={<CharCounter current={seoTitle.length} max={70} />}>
               <input {...register('seo.title')} className="w-full outline-none" style={inputStyle} placeholder="Page title for search engines" maxLength={70} />
             </Field>

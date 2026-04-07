@@ -4,6 +4,7 @@ import type { ThemeFormData } from '@cmsmasters/validators'
 import type { Theme } from '@cmsmasters/db'
 import { useController } from 'react-hook-form'
 import { Star } from 'lucide-react'
+import { Button } from '@cmsmasters/ui'
 import { StatusSelect } from './status-select'
 import { TaxonomyPickerModal } from './taxonomy-picker-modal'
 import { ThumbnailUpload } from './thumbnail-upload'
@@ -85,22 +86,9 @@ export function EditorSidebar({ control, watch, setValue, existingTheme, allCate
       <div className="flex flex-col" style={{ gap: 'var(--spacing-xs)' }}>
         <div className="flex items-center justify-between">
           <span style={labelStyle}>Categories</span>
-          <button
-            type="button"
-            onClick={() => setCatPickerOpen(true)}
-            style={{
-              height: '28px',
-              padding: '0 var(--spacing-sm)',
-              fontSize: 'var(--text-xs-font-size)',
-              color: 'hsl(var(--text-secondary))',
-              backgroundColor: 'transparent',
-              border: '1px solid hsl(var(--border-default))',
-              borderRadius: 'var(--rounded-md)',
-              cursor: 'pointer',
-            }}
-          >
+          <Button variant="outline" size="mini" onClick={() => setCatPickerOpen(true)}>
             Edit
-          </button>
+          </Button>
         </div>
         {selectedCategories.length === 0 ? (
           <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>None selected</span>
@@ -141,22 +129,9 @@ export function EditorSidebar({ control, watch, setValue, existingTheme, allCate
       <div className="flex flex-col" style={{ gap: 'var(--spacing-xs)' }}>
         <div className="flex items-center justify-between">
           <span style={labelStyle}>Tags</span>
-          <button
-            type="button"
-            onClick={() => setTagPickerOpen(true)}
-            style={{
-              height: '28px',
-              padding: '0 var(--spacing-sm)',
-              fontSize: 'var(--text-xs-font-size)',
-              color: 'hsl(var(--text-secondary))',
-              backgroundColor: 'transparent',
-              border: '1px solid hsl(var(--border-default))',
-              borderRadius: 'var(--rounded-md)',
-              cursor: 'pointer',
-            }}
-          >
+          <Button variant="outline" size="mini" onClick={() => setTagPickerOpen(true)}>
             Edit
-          </button>
+          </Button>
         </div>
         {selectedTags.length === 0 ? (
           <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>None selected</span>
@@ -237,40 +212,14 @@ export function EditorSidebar({ control, watch, setValue, existingTheme, allCate
               >
                 ${allPrices.find((p) => p.id === selectedRegularPriceId)?.name ?? '?'}
               </span>
-              <button
-                type="button"
-                onClick={() => setRegularPricePickerOpen(true)}
-                style={{
-                  fontSize: '11px',
-                  color: 'hsl(var(--text-muted))',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: 0,
-                  textDecoration: 'underline',
-                  textUnderlineOffset: '2px',
-                }}
-              >
+              <Button variant="ghost" size="mini" onClick={() => setRegularPricePickerOpen(true)}>
                 change
-              </button>
+              </Button>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => setRegularPricePickerOpen(true)}
-              style={{
-                height: '24px',
-                padding: '0 var(--spacing-sm)',
-                fontSize: '11px',
-                color: 'hsl(var(--text-secondary))',
-                backgroundColor: 'transparent',
-                border: '1px solid hsl(var(--border-default))',
-                borderRadius: 'var(--rounded-md)',
-                cursor: 'pointer',
-              }}
-            >
+            <Button variant="outline" size="mini" onClick={() => setRegularPricePickerOpen(true)}>
               Select
-            </button>
+            </Button>
           )}
         </div>
 
@@ -293,56 +242,17 @@ export function EditorSidebar({ control, watch, setValue, existingTheme, allCate
               >
                 ${allPrices.find((p) => p.id === selectedDiscountPriceId)?.name ?? '?'}
               </span>
-              <button
-                type="button"
-                onClick={() => setDiscountPricePickerOpen(true)}
-                style={{
-                  fontSize: '11px',
-                  color: 'hsl(var(--text-muted))',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: 0,
-                  textDecoration: 'underline',
-                  textUnderlineOffset: '2px',
-                }}
-              >
+              <Button variant="ghost" size="mini" onClick={() => setDiscountPricePickerOpen(true)}>
                 change
-              </button>
-              <button
-                type="button"
-                onClick={() => onDiscountPriceChange(null)}
-                style={{
-                  fontSize: '11px',
-                  color: 'hsl(var(--text-muted))',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: 0,
-                  lineHeight: 1,
-                }}
-                title="Remove discount"
-              >
+              </Button>
+              <Button variant="ghost" size="mini" onClick={() => onDiscountPriceChange(null)} title="Remove discount">
                 ×
-              </button>
+              </Button>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => setDiscountPricePickerOpen(true)}
-              style={{
-                height: '24px',
-                padding: '0 var(--spacing-sm)',
-                fontSize: '11px',
-                color: 'hsl(var(--text-muted))',
-                backgroundColor: 'transparent',
-                border: '1px dashed hsl(var(--border-default))',
-                borderRadius: 'var(--rounded-md)',
-                cursor: 'pointer',
-              }}
-            >
+            <Button variant="ghost" size="mini" onClick={() => setDiscountPricePickerOpen(true)}>
               + Add
-            </button>
+            </Button>
           )}
         </div>
       </div>

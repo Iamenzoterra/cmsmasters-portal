@@ -5,10 +5,30 @@ interface FormSectionProps {
   title: string
   children: ReactNode
   defaultOpen?: boolean
+  /** When set, collapsed/expanded state persists to localStorage under this key */
+  storageKey?: string
 }
 
-export function FormSection({ title, children, defaultOpen = true }: FormSectionProps) {
-  const [open, setOpen] = useState(defaultOpen)
+function readStored(key: string | undefined, fallback: boolean): boolean {
+  if (!key) return fallback
+  try {
+    const v = localStorage.getItem(`section:${key}`)
+    if (v === '0') return false
+    if (v === '1') return true
+  } catch { /* SSR / quota */ }
+  return fallback
+}
+
+export function FormSection({ title, children, defaultOpen = true, storageKey }: FormSectionProps) {
+  const [open, setOpen] = useState(() => readStored(storageKey, defaultOpen))
+
+  function toggle() {
+    const next = !open
+    setOpen(next)
+    if (storageKey) {
+      try { localStorage.setItem(`section:${storageKey}`, next ? '1' : '0') } catch { /* quota */ }
+    }
+  }
 
   return (
     <div
@@ -21,7 +41,7 @@ export function FormSection({ title, children, defaultOpen = true }: FormSection
     >
       <button
         type="button"
-        onClick={() => setOpen(!open)}
+        onClick={toggle}
         className="flex w-full cursor-pointer items-center justify-between border-0 bg-transparent"
         style={{
           padding: 'var(--spacing-lg) var(--spacing-xl)',

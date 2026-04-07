@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import type { Page } from '@cmsmasters/db'
 import { Button } from '@cmsmasters/ui'
 import { FileText, Plus, Search } from 'lucide-react'
+import { StyledSelect } from '../components/styled-select'
 import { fetchAllPages } from '../lib/page-api'
 import { Pagination } from '../components/pagination'
 import { timeAgo } from '../lib/format'
@@ -169,23 +170,11 @@ export function PagesList({
             />
           </div>
           {!filterType && (
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              style={{
-                height: '36px',
-                padding: '0 var(--spacing-sm)',
-                backgroundColor: 'hsl(var(--input))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: 'var(--rounded-lg)',
-                fontSize: 'var(--text-sm-font-size)',
-                color: 'hsl(var(--foreground))',
-              }}
-            >
+            <StyledSelect value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
               <option value="all">All Types</option>
               <option value="layout">Layout</option>
               <option value="composed">Composed</option>
-            </select>
+            </StyledSelect>
           )}
         </div>
       )}

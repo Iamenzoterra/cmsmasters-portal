@@ -1,4 +1,5 @@
 import type { Block } from '@cmsmasters/db'
+import { Button } from '@cmsmasters/ui'
 import { Plus, X } from 'lucide-react'
 
 interface PositionGridProps {
@@ -89,20 +90,9 @@ export function PositionGrid({
                   )}
                 </div>
                 {!isReadonly && (
-                  <button
-                    type="button"
-                    onClick={() => onRemoveBlock(pos)}
-                    className="flex shrink-0 items-center justify-center border-0 bg-transparent"
-                    style={{
-                      width: '28px',
-                      height: '28px',
-                      color: 'hsl(var(--text-muted))',
-                      cursor: 'pointer',
-                      borderRadius: 'var(--rounded-lg)',
-                    }}
-                  >
+                  <Button variant="ghost" size="mini" onClick={() => onRemoveBlock(pos)} style={{ width: '28px', padding: 0 }}>
                     <X size={14} />
-                  </button>
+                  </Button>
                 )}
               </div>
             ) : (
@@ -110,21 +100,10 @@ export function PositionGrid({
                 className="flex flex-1 items-center"
                 style={{ padding: 'var(--spacing-xs) var(--spacing-sm) var(--spacing-xs) 0' }}
               >
-                <button
-                  type="button"
-                  onClick={() => onAssignBlock(pos)}
-                  className="flex items-center gap-1 border-0 bg-transparent"
-                  style={{
-                    color: 'hsl(var(--text-link))',
-                    fontSize: 'var(--text-sm-font-size)',
-
-                    cursor: 'pointer',
-                    padding: '2px 0',
-                  }}
-                >
+                <Button variant="ghost" size="mini" onClick={() => onAssignBlock(pos)}>
                   <Plus size={14} />
                   Add block
-                </button>
+                </Button>
               </div>
             )}
           </div>

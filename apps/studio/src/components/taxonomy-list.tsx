@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Pencil, Trash2, Check, X } from 'lucide-react'
 import { Button } from '@cmsmasters/ui'
+import { StyledSelect } from './styled-select'
 import { DeleteConfirmModal } from './delete-confirm-modal'
 
 interface TaxonomyItem {
@@ -35,15 +36,6 @@ const inputStyle: React.CSSProperties = {
   color: 'hsl(var(--foreground))',
 }
 
-const selectStyle: React.CSSProperties = {
-  ...inputStyle,
-  width: 'auto',
-  paddingRight: '28px',
-  appearance: 'none',
-  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
-  backgroundRepeat: 'no-repeat',
-  backgroundPosition: 'right 8px center',
-}
 
 export function TaxonomyList({ items, loading, onAdd, onUpdate, onDelete, typeOptions }: TaxonomyListProps) {
   const [newName, setNewName] = useState('')
@@ -118,16 +110,11 @@ export function TaxonomyList({ items, loading, onAdd, onUpdate, onDelete, typeOp
           disabled={adding}
         />
         {typeOptions && (
-          <select
-            value={newType}
-            onChange={(e) => setNewType(e.target.value)}
-            className="outline-none"
-            style={selectStyle}
-          >
+          <StyledSelect compact value={newType} onChange={(e) => setNewType(e.target.value)}>
             {typeOptions.map((t) => (
               <option key={t} value={t}>{t}</option>
             ))}
-          </select>
+          </StyledSelect>
         )}
         <Button variant="primary" size="sm" onClick={handleAdd} disabled={!newName.trim() || adding}>
           Add
@@ -173,15 +160,11 @@ export function TaxonomyList({ items, loading, onAdd, onUpdate, onDelete, typeOp
                     style={{ ...inputStyle, flex: 1 }}
                   />
                   {typeOptions && (
-                    <select
-                      value={editType}
-                      onChange={(e) => setEditType(e.target.value)}
-                      style={{ ...inputStyle, width: 'auto' }}
-                    >
+                    <StyledSelect compact value={editType} onChange={(e) => setEditType(e.target.value)}>
                       {typeOptions.map((t) => (
                         <option key={t} value={t}>{t}</option>
                       ))}
-                    </select>
+                    </StyledSelect>
                   )}
                   <button
                     type="button"

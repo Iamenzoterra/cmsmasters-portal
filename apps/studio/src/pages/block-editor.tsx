@@ -12,6 +12,7 @@ import { getBlockCategories } from '@cmsmasters/db'
 import { supabase } from '../lib/supabase'
 import { nameToSlug } from '../lib/form-defaults'
 import { useToast } from '../components/toast'
+import { StyledSelect } from '../components/styled-select'
 import { FormSection } from '../components/form-section'
 import { DeleteConfirmModal } from '../components/delete-confirm-modal'
 import { BlockImportPanel } from '../components/block-import-panel'
@@ -570,14 +571,11 @@ ${code}${scriptTag}
             {isGlobalElementRoute && (
               <>
                 <Field label="Type">
-                  <select
-                    {...register('block_type')}
-                    style={{ ...inputStyle, cursor: 'pointer' }}
-                  >
+                  <StyledSelect {...register('block_type')}>
                     {GLOBAL_ELEMENT_TYPES.map((t) => (
                       <option key={t.value} value={t.value}>{t.label}</option>
                     ))}
-                  </select>
+                  </StyledSelect>
                 </Field>
                 <div className="flex flex-col" style={{ gap: 'var(--spacing-xs)' }}>
                   <label className="flex items-center" style={{ gap: 'var(--spacing-sm)', cursor: 'pointer' }}>
@@ -596,15 +594,12 @@ ${code}${scriptTag}
             )}
             {!isGlobalElementRoute && !isElementRoute && blockCategories.length > 0 && (
               <Field label="Category">
-                <select
-                  {...register('block_category_id')}
-                  style={{ ...inputStyle, cursor: 'pointer' }}
-                >
+                <StyledSelect {...register('block_category_id')}>
                   <option value="">(none)</option>
                   {blockCategories.map((c) => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
-                </select>
+                </StyledSelect>
               </Field>
             )}
           </FormSection>

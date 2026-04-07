@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { LayoutGrid, Boxes, LayoutTemplate, Image, FileText, Layout, Globe, Component, ChevronDown, HelpCircle, LogOut, Tag } from 'lucide-react'
+import { LayoutGrid, Boxes, LayoutTemplate, Image, FileText, Layout, Globe, Component, ChevronDown, HelpCircle, LogOut, Tag, Layers } from 'lucide-react'
 import { signOut } from '@cmsmasters/auth'
 import { supabase } from '../lib/supabase'
 
@@ -31,6 +31,7 @@ const navGroups: NavGroup[] = [
     items: [
       { to: '/layouts', label: 'Layouts', icon: Layout },
       { to: '/static-pages', label: 'Static Pages', icon: FileText },
+      { to: '/slots', label: 'Slots', icon: Layers },
       { to: '/global-elements', label: 'Global Elements', icon: Globe },
       { to: '/elements', label: 'Elements', icon: Component },
     ],
@@ -38,25 +39,45 @@ const navGroups: NavGroup[] = [
 ]
 
 const standaloneItems: NavItem[] = [
-  { to: '/media', label: 'Media', icon: Image },
+  // { to: '/media', label: 'Media', icon: Image },
 ]
 
+function readStored(key: string, fallback: boolean): boolean {
+  try {
+    const v = localStorage.getItem(`nav:${key}`)
+    if (v === '0') return false
+    if (v === '1') return true
+  } catch { /* quota */ }
+  return fallback
+}
+
 function NavGroupSection({ group, isActive }: { group: NavGroup; isActive: boolean }) {
-  const [open, setOpen] = useState(isActive)
+  const storageKey = group.label.toLowerCase()
+  const [open, setOpen] = useState(() => readStored(storageKey, isActive))
+
+  function toggle() {
+    const next = !open
+    setOpen(next)
+    try { localStorage.setItem(`nav:${storageKey}`, next ? '1' : '0') } catch { /* quota */ }
+  }
 
   return (
     <div className="flex flex-col" style={{ gap: '2px' }}>
       <button
         type="button"
-        onClick={() => setOpen(!open)}
+        onPointerDown={(e) => { e.preventDefault(); toggle() }}
         className="flex w-full items-center justify-between border-0 bg-transparent"
         style={{
-          padding: '4px var(--spacing-sm)',
+          height: '32px',
+          padding: '0 var(--spacing-sm)',
           cursor: 'pointer',
           borderRadius: 'var(--radius)',
+          userSelect: 'none',
+          WebkitTapHighlightColor: 'transparent',
         }}
       >
         <span
+          className="pointer-events-none"
           style={{
             fontSize: 'var(--text-xs-font-size)',
             fontWeight: 'var(--font-weight-semibold)',
@@ -71,6 +92,7 @@ function NavGroupSection({ group, isActive }: { group: NavGroup; isActive: boole
         </span>
         <ChevronDown
           size={14}
+          className="pointer-events-none"
           style={{
             color: 'hsl(var(--text-muted))',
             transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
@@ -78,29 +100,39 @@ function NavGroupSection({ group, isActive }: { group: NavGroup; isActive: boole
           }}
         />
       </button>
-      {open && group.items.map(({ to, label, icon: Icon, end }) => (
-        <NavLink
-          key={to}
-          to={to}
-          end={end}
-          className="flex items-center gap-2 no-underline"
-          style={({ isActive: linkActive }) => ({
-            height: '36px',
-            padding: '0 var(--spacing-sm)',
-            borderRadius: 'var(--radius)',
-            backgroundColor: linkActive ? 'hsl(var(--bg-surface-alt))' : 'transparent',
-            color: linkActive
-              ? 'hsl(var(--text-primary))'
-              : 'hsl(var(--text-secondary))',
-            fontWeight: linkActive ? 500 : 400,
-            fontSize: 'var(--text-sm-font-size)',
-            lineHeight: 'var(--text-sm-line-height)',
-          })}
-        >
-          <Icon size={16} />
-          {label}
-        </NavLink>
-      ))}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateRows: open ? '1fr' : '0fr',
+          transition: 'grid-template-rows 150ms ease',
+        }}
+      >
+        <div style={{ overflow: 'hidden' }}>
+          {group.items.map(({ to, label, icon: Icon, end }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              className="flex items-center gap-2 no-underline"
+              style={({ isActive: linkActive }) => ({
+                height: '36px',
+                padding: '0 var(--spacing-sm)',
+                borderRadius: 'var(--radius)',
+                backgroundColor: linkActive ? 'hsl(var(--bg-surface-alt))' : 'transparent',
+                color: linkActive
+                  ? 'hsl(var(--text-primary))'
+                  : 'hsl(var(--text-secondary))',
+                fontWeight: linkActive ? 500 : 400,
+                fontSize: 'var(--text-sm-font-size)',
+                lineHeight: 'var(--text-sm-line-height)',
+              })}
+            >
+              <Icon size={16} />
+              {label}
+            </NavLink>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import { Search, LayoutGrid, List, Plus } from 'lucide-react'
 import { Button } from '@cmsmasters/ui'
+import { StyledSelect } from './styled-select'
 
 interface ThemesToolbarProps {
   search: string
@@ -51,22 +52,16 @@ export function ThemesToolbar({
       </div>
 
       {/* Status filter */}
-      <select
+      <StyledSelect
         value={statusFilter}
         onChange={(e) => onStatusFilterChange(e.target.value)}
-        className="shrink-0 appearance-none outline-none"
-        style={{
-          ...inputStyle,
-          width: '160px',
-          paddingLeft: 'var(--spacing-md)',
-          paddingRight: 'var(--spacing-xs)',
-        }}
+        style={{ width: '160px' }}
       >
         <option value="all">All Statuses</option>
         <option value="draft">Draft</option>
         <option value="published">Published</option>
         <option value="archived">Archived</option>
-      </select>
+      </StyledSelect>
 
       {/* Spacer */}
       <div className="flex-1" />

@@ -4,12 +4,14 @@ import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { pageSchema, type CreatePagePayload } from '@cmsmasters/validators'
 import type { Page, Block } from '@cmsmasters/db'
+import { GLOBAL_SLOT_NAMES, SLOT_TO_CATEGORY } from '@cmsmasters/db'
 import { AlertTriangle, ChevronLeft, Plus, ArrowUp, ArrowDown, Trash2, Upload, Eye, Download, ExternalLink } from 'lucide-react'
 import { Button } from '@cmsmasters/ui'
 import { fetchPageById, createPageApi, updatePageApi, deletePageApi, fetchPageBlocks, updatePageBlocks } from '../lib/page-api'
 import { fetchAllBlocks } from '../lib/block-api'
 import { nameToSlug } from '../lib/form-defaults'
 import { useToast } from '../components/toast'
+import { StyledSelect } from '../components/styled-select'
 import { FormSection } from '../components/form-section'
 import { CharCounter } from '../components/char-counter'
 import { EditorFooter } from '../components/editor-footer'
@@ -56,7 +58,7 @@ const LAYOUT_SCOPES = [
   { value: 'theme', label: 'Theme Page' },
 ] as const
 
-const GLOBAL_SLOTS = ['header', 'footer', 'sidebar-left', 'sidebar-right']
+const GLOBAL_SLOTS = GLOBAL_SLOT_NAMES
 
 function extractSlots(html: string): string[] {
   const slots: string[] = []
@@ -540,7 +542,7 @@ export function PageEditor() {
         <div className="flex flex-col" style={{ gap: 'var(--spacing-lg)' }}>
 
           {/* Basic Info */}
-          <FormSection title="Basic Info">
+          <FormSection title="Basic Info" storageKey="page-basic-info">
             <Field label="Title" error={errors.title?.message}>
               <input {...register('title')} className="w-full outline-none" style={inputStyle} placeholder={isComposed ? 'Page title' : 'Layout name'} />
             </Field>
@@ -556,30 +558,26 @@ export function PageEditor() {
             {/* Scope — layout only */}
             {!isComposed && (
               <Field label="Scope">
-                <select
-                  value={layoutScope}
-                  onChange={(e) => setLayoutScope(e.target.value)}
-                  style={{ ...inputStyle, cursor: 'pointer' }}
-                >
+                <StyledSelect value={layoutScope} onChange={(e) => setLayoutScope(e.target.value)}>
                   {LAYOUT_SCOPES.map((s) => (
                     <option key={s.value} value={s.value}>{s.label}</option>
                   ))}
-                </select>
+                </StyledSelect>
               </Field>
             )}
             <Field label="Status">
-              <select {...register('status')} style={{ ...inputStyle, cursor: 'pointer' }}>
+              <StyledSelect {...register('status')}>
                 <option value="draft">Draft</option>
                 <option value="published">Published</option>
                 <option value="archived">Archived</option>
-              </select>
+              </StyledSelect>
             </Field>
           </FormSection>
 
           {/* Layout: HTML code + import/preview/export */}
           {!isComposed && (
             <>
-              <FormSection title="Layout HTML">
+              <FormSection title="Layout HTML" storageKey="page-layout-html">
                 <div className="flex items-center" style={{ gap: 'var(--spacing-sm)' }}>
                   <input
                     ref={fileInputRef}
@@ -660,7 +658,7 @@ export function PageEditor() {
 
           {/* Composed: Block List */}
           {isComposed && (
-            <FormSection title="Blocks">
+            <FormSection title="Blocks" storageKey="page-blocks">
               {blockEntries.length === 0 && (
                 <p style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-muted))', margin: 0 }}>
                   No blocks added yet. Add blocks to compose this page.
@@ -770,7 +768,7 @@ export function PageEditor() {
 
           {/* SEO (composed only) */}
           {isComposed && (
-            <FormSection title="SEO">
+            <FormSection title="SEO" storageKey="page-seo">
               <Field label="SEO Title" error={errors.seo?.title?.message} trailing={<CharCounter current={seoTitle.length} max={70} />}>
                 <input {...register('seo.title')} className="w-full outline-none" style={inputStyle} placeholder="Page title for search engines" maxLength={70} />
               </Field>
@@ -825,13 +823,8 @@ export function PageEditor() {
   )
 }
 
-const SLOT_TO_CATEGORY: Record<string, string> = {
-  header: 'header',
-  footer: 'footer',
-  'sidebar-left': 'sidebar',
-  'sidebar-right': 'sidebar',
-  element: 'element',
-}
+// SLOT_TO_CATEGORY imported from @cmsmasters/db
+// 'element' category is not a layout slot — handled inline where needed
 
 function SlotPanel({ code, layoutSlots, onSlotChange, blocks }: {
   code: string
@@ -843,7 +836,7 @@ function SlotPanel({ code, layoutSlots, onSlotChange, blocks }: {
   if (slots.length === 0) return null
 
   return (
-    <FormSection title={`Slot Assignments (${slots.length})`}>
+    <FormSection title={`Slot Assignments (${slots.length})`} storageKey="page-slot-assignments">
       <div className="flex flex-col" style={{ gap: 'var(--spacing-sm)' }}>
         {slots.map((slot) => {
           const isGlobal = GLOBAL_SLOTS.includes(slot)
@@ -871,20 +864,11 @@ function SlotPanel({ code, layoutSlots, onSlotChange, blocks }: {
               </div>
               <div className="flex items-center" style={{ gap: 'var(--spacing-xs)', fontSize: 'var(--text-xs-font-size)' }}>
                 {isGlobal && categoryBlocks.length > 0 ? (
-                  <select
+                  <StyledSelect
+                    compact
                     value={selectedId}
                     onChange={(e) => onSlotChange(slot, e.target.value || null)}
-                    style={{
-                      height: '28px',
-                      padding: '0 var(--spacing-xs)',
-                      fontSize: 'var(--text-xs-font-size)',
-                      border: '1px solid hsl(var(--border-default))',
-                      borderRadius: 'var(--rounded-md)',
-                      backgroundColor: 'hsl(var(--input))',
-                      color: 'hsl(var(--foreground))',
-                      cursor: 'pointer',
-                      minWidth: '160px',
-                    }}
+                    style={{ minWidth: '160px' }}
                   >
                     <option value="">(use default)</option>
                     {categoryBlocks.map((b) => (
@@ -892,7 +876,7 @@ function SlotPanel({ code, layoutSlots, onSlotChange, blocks }: {
                         {b.name}{b.is_default ? ' ⭐' : ''}
                       </option>
                     ))}
-                  </select>
+                  </StyledSelect>
                 ) : isGlobal ? (
                   <Link to="/global-elements" className="flex items-center no-underline" style={{ gap: '4px', color: 'hsl(var(--text-link))' }}>
                     Create {category} blocks first
