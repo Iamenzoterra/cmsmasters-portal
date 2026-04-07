@@ -64,6 +64,11 @@ export type {
   BlockCategory,
   BlockCategoryInsert,
   BlockCategoryUpdate,
+  UseCase,
+  UseCaseInsert,
+  UseCaseUpdate,
+  ThemeUseCase,
+  ThemeUseCaseInsert,
 } from './types'
 
 export { themeRowToFormData, formDataToThemeInsert } from './mappers'
@@ -148,3 +153,14 @@ export {
   updateBlockCategory,
   deleteBlockCategory,
 } from './queries/block-categories'
+
+export {
+  getUseCases,
+  getUseCaseById,
+  createUseCase,
+  updateUseCase,
+  deleteUseCase,
+  searchUseCases,
+  getThemeUseCases,
+  setThemeUseCases,
+} from './queries/use-cases'

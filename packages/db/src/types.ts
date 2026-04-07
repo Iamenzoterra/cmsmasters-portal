@@ -577,6 +577,47 @@ export type Database = {
         }
         Relationships: []
       }
+      use_cases: {
+        Row: {
+          id: string
+          name: string
+          slug: string
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug: string
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          slug?: string
+          created_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      theme_use_cases: {
+        Row: {
+          theme_id: string
+          use_case_id: string
+        }
+        Insert: {
+          theme_id: string
+          use_case_id: string
+        }
+        Update: {
+          theme_id?: string
+          use_case_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: {
@@ -649,3 +690,10 @@ export type ThemePriceInsert = Database['public']['Tables']['theme_prices']['Ins
 export type BlockCategory = Database['public']['Tables']['block_categories']['Row']
 export type BlockCategoryInsert = Database['public']['Tables']['block_categories']['Insert']
 export type BlockCategoryUpdate = Database['public']['Tables']['block_categories']['Update']
+
+export type UseCase = Database['public']['Tables']['use_cases']['Row']
+export type UseCaseInsert = Database['public']['Tables']['use_cases']['Insert']
+export type UseCaseUpdate = Database['public']['Tables']['use_cases']['Update']
+
+export type ThemeUseCase = Database['public']['Tables']['theme_use_cases']['Row']
+export type ThemeUseCaseInsert = Database['public']['Tables']['theme_use_cases']['Insert']
