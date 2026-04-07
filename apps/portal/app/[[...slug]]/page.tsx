@@ -55,11 +55,12 @@ export default async function ComposedPage({ params }: Props) {
     url: `https://portal.cmsmasters.studio/${canonicalPath}`,
   }
 
-  // Render global blocks
-  function renderGlobalBlock(block: Record<string, unknown> | null) {
-    if (!block) return null
-    const b = block as unknown as { html: string; css: string; slug: string; js?: string }
-    return <BlockRenderer html={b.html} css={b.css} slug={b.slug} js={b.js || undefined} />
+  // Render global blocks (supports multiple blocks per slot)
+  function renderSlotBlocks(blocks: Array<{ html: string; css: string; slug: string; js?: string }>) {
+    if (blocks.length === 0) return null
+    return blocks.map((b, i) => (
+      <BlockRenderer key={i} html={b.html} css={b.css} slug={b.slug} js={b.js || undefined} />
+    ))
   }
 
   // Extract block data from page_blocks join
@@ -77,7 +78,7 @@ export default async function ComposedPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <StickyHeader>
-        {renderGlobalBlock(globalElements.header as Record<string, unknown>)}
+        {renderSlotBlocks(globalElements.header)}
       </StickyHeader>
       <main>
         {blocks.map((block, i) => (
@@ -90,7 +91,7 @@ export default async function ComposedPage({ params }: Props) {
           />
         ))}
       </main>
-      {renderGlobalBlock(globalElements.footer as Record<string, unknown>)}
+      {renderSlotBlocks(globalElements.footer)}
     </>
   )
 }

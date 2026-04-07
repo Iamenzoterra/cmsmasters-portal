@@ -10,6 +10,7 @@ import {
   fetchBlocksById,
 } from '@/lib/blocks'
 import { getThemePrices } from '@cmsmasters/db'
+import type { Block } from '@cmsmasters/db'
 import { resolveGlobalBlocks } from '@/lib/global-elements'
 import {
   resolveSlots,
@@ -75,15 +76,16 @@ export default async function ThemePage({ params }: Props) {
   }
 
   // 1. Fetch layout page (scope = 'theme')
-  let layoutPage: { html: string; css: string; layout_slots?: Record<string, string> } | null = null
+  let layoutPage: { html: string; css: string; layout_slots?: Record<string, string | string[]>; slot_config?: Record<string, { gap?: string }> } | null = null
   try {
     layoutPage = await getLayoutByScope('theme')
   } catch {
     // No layout — render blocks directly
   }
 
-  // 2. Resolve global elements: layout_slots override > category default > null
-  const layoutSlots = (layoutPage as Record<string, unknown>)?.layout_slots as Record<string, string> ?? {}
+  // 2. Resolve global elements: layout_slots override > category default > []
+  const layoutSlots = (layoutPage as Record<string, unknown>)?.layout_slots as Record<string, string | string[]> ?? {}
+  const slotConfig = ((layoutPage as Record<string, unknown>)?.slot_config ?? {}) as Record<string, { gap?: string }>
   const globalElements = await resolveGlobalBlocks(layoutSlots)
 
   // 3. Fetch template + merge with block fills
@@ -100,7 +102,7 @@ export default async function ThemePage({ params }: Props) {
 
   // 4. Collect all block IDs and batch fetch
   const globalBlockIds = Object.values(globalElements)
-    .filter((b): b is NonNullable<typeof b> => b !== null)
+    .flat()
     .map((b) => b.id)
   const contentBlockIds = contentPositions.map((p) => p.block_id)
   const allBlockIds = [...new Set([...globalBlockIds, ...contentBlockIds])]
@@ -116,12 +118,16 @@ export default async function ThemePage({ params }: Props) {
     })
     .join('\n')
 
-  // 6. Render global element blocks
-  function renderGlobalBlock(block: Record<string, unknown> | null): string {
-    if (!block) return ''
-    const b = block as unknown as { html: string; css: string; slug: string; js?: string; hooks?: Record<string, unknown> }
-    const html = resolveBlockHooks(b.html, b.hooks ?? null, meta)
-    return renderBlock(html, b.css, b.slug, b.js || undefined)
+  // 6. Render slot blocks (supports multiple blocks per slot with gap)
+  function renderSlotBlocks(blocks: Block[], gap?: string): string {
+    if (blocks.length === 0) return ''
+    const rendered = blocks.map((block) => {
+      const html = resolveBlockHooks(block.html, block.hooks as Record<string, unknown>, meta)
+      return renderBlock(html, block.css, block.slug, block.js || undefined)
+    })
+    if (rendered.length === 1) return rendered[0]
+    const g = gap || '24px'
+    return `<div class="slot-stack" style="display:flex;flex-direction:column;gap:${g}">${rendered.join('\n')}</div>`
   }
 
   // 7. Assemble page
@@ -129,16 +135,16 @@ export default async function ThemePage({ params }: Props) {
   if (layoutPage?.html) {
     const cleanLayout = stripDebug(layoutPage.html)
     pageHTML = resolveSlots(cleanLayout, {
-      header: renderGlobalBlock(globalElements.header as Record<string, unknown>),
-      footer: renderGlobalBlock(globalElements.footer as Record<string, unknown>),
-      'sidebar-left': renderGlobalBlock(globalElements['sidebar-left'] as Record<string, unknown>),
-      'sidebar-right': renderGlobalBlock(globalElements['sidebar-right'] as Record<string, unknown>),
+      header: renderSlotBlocks(globalElements.header, slotConfig.header?.gap),
+      footer: renderSlotBlocks(globalElements.footer, slotConfig.footer?.gap),
+      'sidebar-left': renderSlotBlocks(globalElements['sidebar-left'], slotConfig['sidebar-left']?.gap),
+      'sidebar-right': renderSlotBlocks(globalElements['sidebar-right'], slotConfig['sidebar-right']?.gap),
       content: contentHTML,
     })
     pageHTML = resolveMetaHooks(pageHTML, meta)
   } else {
-    const header = renderGlobalBlock(globalElements.header as Record<string, unknown>)
-    const footer = renderGlobalBlock(globalElements.footer as Record<string, unknown>)
+    const header = renderSlotBlocks(globalElements.header)
+    const footer = renderSlotBlocks(globalElements.footer)
     pageHTML = `${header}\n<main>${contentHTML}</main>\n${footer}`
   }
 
