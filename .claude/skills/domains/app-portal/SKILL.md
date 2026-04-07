@@ -20,7 +20,7 @@ status: full
 - **Next.js 15 App Router with SSG + ISR.** Static at build time, revalidated on-demand.
 - **Block rendering: HTML → BlockRenderer RSC → `.block-{slug}` scoping.** Each block gets its own `<style>` + `<div class="block-{slug}">` + optional `<script type="module">`.
 - **Hook resolution is build-time string replacement.** `{{price}}` → `$XX` from `theme.meta.price`. `{{meta:field}}` → `theme.meta[field]`. `{{link:field}}` → URL from meta. `{{slot:name}}` → rendered slot HTML. All resolved in RSC, zero client JS.
-- **Global elements resolve by cascade:** layout_slots override > category default (is_default=true) > null. SLOT_TO_CATEGORY maps slot names to block categories.
+- **Global elements resolve by cascade:** layout_slots override > category defaults (is_default=true, ordered by sort_order) > []. `resolveGlobalBlocks` returns `Record<string, Block[]>` (multiple blocks per slot). SLOT_TO_CATEGORY maps slot names to block categories. `layout_slots` accepts `string | string[]` per slot (string normalized to `[string]`). `slot_config` stores per-slot gap.
 - **Revalidation: POST `/api/revalidate`** with `x-revalidate-token` header matching `REVALIDATE_SECRET` env var. Calls `revalidatePath(path, 'page')`.
 - **`[[...slug]]` catch-all** handles all composed pages. `/themes/[slug]` handles theme pages.
 - **`mergePositions`** combines template positions + per-theme block_fills. Fills override template at same position. Extra fill positions (not in template) get appended.

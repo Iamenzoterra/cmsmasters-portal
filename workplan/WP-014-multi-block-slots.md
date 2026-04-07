@@ -2,12 +2,12 @@
 
 > Allow sidebar (and other global-element slots) to hold multiple blocks with a configurable gap, not just one.
 
-**Status:** PLANNING
+**Status:** ✅ DONE
 **Priority:** P1 — Important
 **Prerequisites:** WP-012 ✅ (slot-registry), WP-008 ✅ (global-elements-v2)
 **Estimated effort:** 4–6 hours across 3 phases + close
 **Created:** 2026-04-07
-**Completed:** —
+**Completed:** 2026-04-07
 
 ---
 

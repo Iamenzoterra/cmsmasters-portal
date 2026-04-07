@@ -27,7 +27,8 @@ status: full
 ## Traps & Gotchas
 
 - **"block-api.ts is in studio-core, not studio-blocks"** — counterintuitive name. It contains shared auth utilities (authHeaders, parseError) used by ALL API wrappers. The block CRUD functions happen to live here too.
-- **block-picker-modal is shared** — used by theme-editor (block fills), page-editor (page blocks), and template-editor (default blocks). Not block-specific.
+- **block-picker-modal is shared** — used by theme-editor (block fills), page-editor (page blocks + slot blocks), and template-editor (default blocks). Accepts optional `filterCategory` prop to show only blocks of a specific `block_type`. Not block-specific.
+- **SlotPanel supports multi-block slots** — global slots show ordered block list with add/remove/reorder (ArrowUp/ArrowDown/Trash2) + per-slot gap input. `layout_slots` stores `string | string[]` per slot. `slot_config` stores `{ gap: "24px" }` per slot. Wired through all 4 save paths (save-update, save-create, publish-update, publish-create).
 - **All editors duplicate `inputStyle`/`labelStyle` inline objects** — no shared style constants. If you change the input style pattern, you must update every editor.
 - **"Elements tab shows wrong blocks"** — elements-list filters by `category === 'element'`. If a block's category is missing or wrong, it won't appear.
 - **`fetchAllBlocks` vs `getBlocks`** — `fetchAllBlocks` is in studio's `block-api.ts` (calls Hono API via fetch). `getBlocks` is in `@cmsmasters/db` (direct Supabase query). Studio uses the API wrapper, not direct DB.

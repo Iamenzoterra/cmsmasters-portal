@@ -2,7 +2,7 @@
 
 > Read this file FIRST. It gives you the full picture in 5 minutes.
 > Then read the specific layer spec for your current task.
-> Last updated: 4 April 2026
+> Last updated: 7 April 2026
 
 ---
 
@@ -64,7 +64,7 @@ The company operates 4 fragmented domains with no shared navigation, broken post
 ### Shared packages ✅
 | Package | Status | Contents |
 |---------|--------|----------|
-| `@cmsmasters/db` | ✅ | client.ts, types.ts (13 tables: Block with html+css+js, Template, Theme, Page, PageBlock, GlobalElement, Category, Tag, ThemeCategory, ThemeTag), mappers.ts, queries for all entities |
+| `@cmsmasters/db` | ✅ | client.ts, types.ts (13 tables: Block with html+css+js+sort_order, Template, Theme, Page with layout_slots(string\|string[])+slot_config, PageBlock, GlobalElement, Category, Tag, ThemeCategory, ThemeTag), mappers.ts, queries for all entities |
 | `@cmsmasters/auth` | ✅ | client.ts, hooks.ts (useSession/useUser/useRole), guards.tsx (RequireAuth), actions.ts (magic link + signout) |
 | `@cmsmasters/api-client` | ✅ | Hono RPC typed client |
 | `@cmsmasters/validators` | ✅ | theme, block (with js), template, page Zod schemas |
@@ -75,7 +75,7 @@ The company operates 4 fragmented domains with no shared navigation, broken post
 |-----|--------|---------|
 | Command Center | ✅ DONE | 6 pages, localhost:4000, own dark theme |
 | Studio | ✅ DONE | Login, themes, blocks (editor + Process panel with token scanner + R2 image upload + component detection), templates, pages, global elements settings, **theme meta (categories + tags CRUD with tabbed UI + picker modals)**. Block editor: HTML+CSS+JS fields, import with script preservation, export. Process panel: split preview (before/after), zoom, scroll, replay, animation support. Theme editor: category/tag picker modals with is_primary toggle, junction table save/load. |
-| Portal | ✅ DONE | **Next.js 15 App Router (SSG + ISR)** on Vercel. Theme pages (layout + global elements + template blocks + hook resolution). Composed pages (page_blocks + global elements). SEO: JSON-LD Product/WebPage, OG, canonical, sitemap.xml, robots.txt. On-demand revalidation via `/api/revalidate`. Dev port: 3100. |
+| Portal | ✅ DONE | **Next.js 15 App Router (SSG + ISR)** on Vercel. Theme pages (layout + global elements + template blocks + hook resolution). **Multi-block slots**: sidebar/header/footer slots support multiple blocks with configurable gap (WP-014). Composed pages (page_blocks + global elements). SEO: JSON-LD Product/WebPage, OG, canonical, sitemap.xml, robots.txt. On-demand revalidation via `/api/revalidate`. Dev port: 3100. |
 | Dashboard | ⬜ | Not created yet |
 | Admin | ⬜ | Not created yet |
 
