@@ -119,6 +119,13 @@ export function resolveBlockHooks(
     return `<ul class="block-sidebar-perfect-for__list">\n${items}\n</ul>`
   })
 
+  // {{tags}} → comma-separated tag names (injected via meta._tags)
+  result = result.replace(/\{\{tags\}\}/g, () => {
+    const tags = meta._tags as string[] | undefined
+    if (!tags || tags.length === 0) return ''
+    return tags.join(', ')
+  })
+
   return result
 }
 

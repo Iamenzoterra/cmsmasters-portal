@@ -9,7 +9,7 @@ import {
   mergePositions,
   fetchBlocksById,
 } from '@/lib/blocks'
-import { getThemePrices, getThemeUseCases, getThemeCategories } from '@cmsmasters/db'
+import { getThemePrices, getThemeUseCases, getThemeCategories, getThemeTags } from '@cmsmasters/db'
 import type { Block } from '@cmsmasters/db'
 import { resolveGlobalBlocks } from '@/lib/global-elements'
 import {
@@ -94,6 +94,16 @@ export default async function ThemePage({ params }: Props) {
     }
   } catch {
     // Fall through — {{perfect_for}} resolves to empty
+  }
+
+  // Enrich meta with tags from junction table
+  try {
+    const tags = await getThemeTags(supabase, theme.id)
+    if (tags.length > 0) {
+      meta._tags = tags.map((t: any) => t.name)
+    }
+  } catch {
+    // Fall through — {{tags}} resolves to empty
   }
 
   // 1. Fetch layout page (scope = 'theme')
