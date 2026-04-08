@@ -395,9 +395,6 @@ export function ThemeEditor() {
   // ── Page Layout handlers ──
 
   // ── Use Cases callbacks ──
-  async function handleUseCaseSearch(query: string) {
-    return searchUseCases(supabase, query)
-  }
 
   async function handleUseCaseCreate(name: string) {
     const slug = nameToSlug(name)
@@ -840,7 +837,7 @@ export function ThemeEditor() {
             allUseCases={allUseCases}
             selectedUseCaseIds={selectedUseCaseIds}
             onUseCasesChange={setSelectedUseCaseIds}
-            onUseCaseSearch={handleUseCaseSearch}
+            onUseCaseSearch={(query: string) => searchUseCases(supabase, query)}
             onUseCaseCreate={handleUseCaseCreate}
             onUseCaseDelete={handleUseCaseDelete}
             authorName={authorName}

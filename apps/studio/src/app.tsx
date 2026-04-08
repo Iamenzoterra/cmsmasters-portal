@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy } from 'react'
 import { Routes, Route, useNavigate } from 'react-router-dom'
 import { RequireAuth } from '@cmsmasters/auth'
 import { Agentation } from 'agentation'

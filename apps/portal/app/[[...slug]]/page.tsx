@@ -32,6 +32,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
+function renderSlotBlocks(blocks: Array<{ html: string; css: string; slug: string; js?: string }>) {
+  if (blocks.length === 0) return null
+  return blocks.map((b, i) => (
+    <BlockRenderer key={i} html={b.html} css={b.css} slug={b.slug} js={b.js || undefined} />
+  ))
+}
+
 export default async function ComposedPage({ params }: Props) {
   const { slug } = await params
   const pageSlug = slug?.[0] ?? 'homepage'
@@ -53,14 +60,6 @@ export default async function ComposedPage({ params }: Props) {
     name: title,
     description,
     url: `https://portal.cmsmasters.studio/${canonicalPath}`,
-  }
-
-  // Render global blocks (supports multiple blocks per slot)
-  function renderSlotBlocks(blocks: Array<{ html: string; css: string; slug: string; js?: string }>) {
-    if (blocks.length === 0) return null
-    return blocks.map((b, i) => (
-      <BlockRenderer key={i} html={b.html} css={b.css} slug={b.slug} js={b.js || undefined} />
-    ))
   }
 
   // Extract block data from page_blocks join

@@ -12,9 +12,11 @@
  * Requires SUPABASE_URL + SUPABASE_SERVICE_KEY env vars (or .env.local).
  */
 
+/* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('fs')
 const path = require('path')
 const { createClient } = require('@supabase/supabase-js')
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 // ── Config ──────────────────────────────────────────────
 const CONTENT_DIR = path.join(__dirname, '..', 'content', 'db')
@@ -143,7 +145,8 @@ async function push(supabase, tableFilter) {
 
 // ── Main ────────────────────────────────────────────────
 async function main() {
-  const [, , action, tableFilter] = process.argv
+  const action = process.argv[2]
+  const tableFilter = process.argv[3]
 
   if (!action || !['pull', 'push'].includes(action)) {
     console.log('Usage: node tools/content-sync.js <pull|push> [blocks|layouts|pages]')
@@ -151,14 +154,16 @@ async function main() {
   }
 
   const supabase = getClient()
-  console.log(`\n${action === 'pull' ? '⬇' : '⬆'}  content-sync ${action}${tableFilter ? ` (${tableFilter})` : ''}\n`)
+  const arrow = action === 'pull' ? '⬇' : '⬆'
+  const suffix = tableFilter ? ` (${tableFilter})` : ''
+  console.log(`\n${arrow}  content-sync ${action}${suffix}\n`)
 
-  if (action === 'pull') await pull(supabase, tableFilter)
-  else await push(supabase, tableFilter)
+  await (action === 'pull' ? pull(supabase, tableFilter) : push(supabase, tableFilter))
 
   console.log('\ndone.\n')
 }
 
+// eslint-disable-next-line unicorn/prefer-top-level-await
 main().catch((err) => {
   console.error(err)
   process.exit(1)
