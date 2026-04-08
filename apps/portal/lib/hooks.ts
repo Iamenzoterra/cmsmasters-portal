@@ -77,9 +77,9 @@ export function resolveBlockHooks(
 ): string {
   let result = html
 
-  // {{price}} → $XX from theme.meta.price (regular price)
+  // {{price}} → $XX — discount_price if available, otherwise regular price
   result = result.replace(/\{\{price\}\}/g, () => {
-    const price = meta.price
+    const price = meta.discount_price ?? meta.price
     return price != null ? `$${price}` : ''
   })
 
