@@ -4,8 +4,9 @@ import { supabase } from '../lib/supabase'
 
 const navItems = [
   { to: '/', label: 'My Themes', end: true },
-  { to: '/licenses', label: 'Licenses' },
-  { to: '/settings', label: 'Settings' },
+  { to: '/account', label: 'My Account' },
+  { to: '/support', label: 'Support' },
+  { to: '/downloads', label: 'Downloads' },
 ]
 
 export function Sidebar() {
@@ -13,9 +14,9 @@ export function Sidebar() {
     <aside
       className="flex shrink-0 flex-col overflow-y-auto border-r"
       style={{
-        width: '220px',
-        borderColor: 'hsl(var(--border-default))',
-        backgroundColor: 'hsl(var(--bg-surface))',
+        width: '240px',
+        borderColor: 'hsl(var(--sidebar-border))',
+        backgroundColor: 'hsl(var(--sidebar))',
       }}
     >
       <nav
@@ -35,10 +36,10 @@ export function Sidebar() {
               fontSize: 'var(--text-sm-font-size)',
               lineHeight: 'var(--text-sm-line-height)',
               color: isActive
-                ? 'hsl(var(--text-primary))'
-                : 'hsl(var(--text-secondary))',
+                ? 'hsl(var(--sidebar-accent-foreground))'
+                : 'hsl(var(--sidebar-foreground))',
               backgroundColor: isActive
-                ? 'hsl(var(--bg-surface-alt))'
+                ? 'hsl(var(--sidebar-accent))'
                 : 'transparent',
               textDecoration: 'none',
             })}
@@ -52,7 +53,7 @@ export function Sidebar() {
         className="border-t"
         style={{
           padding: 'var(--spacing-sm)',
-          borderColor: 'hsl(var(--border-default))',
+          borderColor: 'hsl(var(--sidebar-border))',
         }}
       >
         <button
@@ -62,7 +63,7 @@ export function Sidebar() {
             padding: 'var(--spacing-xs) var(--spacing-sm)',
             fontSize: 'var(--text-sm-font-size)',
             lineHeight: 'var(--text-sm-line-height)',
-            color: 'hsl(var(--text-secondary))',
+            color: 'hsl(var(--sidebar-foreground))',
             cursor: 'pointer',
           }}
         >

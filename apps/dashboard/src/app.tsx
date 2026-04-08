@@ -10,9 +10,9 @@ import { NotFound } from './pages/not-found'
 
 // Lazy routes from day 1 (lesson from Studio 841KB bundle)
 const MyThemes = lazy(() => import('./pages/my-themes').then(m => ({ default: m.MyThemes })))
-const ThemeDetail = lazy(() => import('./pages/theme-detail').then(m => ({ default: m.ThemeDetail })))
-const Licenses = lazy(() => import('./pages/licenses').then(m => ({ default: m.Licenses })))
-const Settings = lazy(() => import('./pages/settings').then(m => ({ default: m.Settings })))
+const MyAccount = lazy(() => import('./pages/my-account').then(m => ({ default: m.MyAccount })))
+const Support = lazy(() => import('./pages/support').then(m => ({ default: m.Support })))
+const Downloads = lazy(() => import('./pages/downloads').then(m => ({ default: m.Downloads })))
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
@@ -47,9 +47,9 @@ export function App() {
         }
       >
         <Route index element={<MyThemes />} />
-        <Route path="/themes/:slug" element={<ThemeDetail />} />
-        <Route path="/licenses" element={<Licenses />} />
-        <Route path="/settings" element={<Settings />} />
+        <Route path="/account" element={<MyAccount />} />
+        <Route path="/support" element={<Support />} />
+        <Route path="/downloads" element={<Downloads />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />
