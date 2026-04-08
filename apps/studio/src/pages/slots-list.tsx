@@ -23,6 +23,7 @@ const HOOK_SHORTCUTS = [
   { pattern: '{{link:field}}', resolves: 'theme.meta[field]', description: 'URL from meta field (e.g. {{link:demo_url}})' },
   { pattern: '{{primary_categories}}', resolves: 'theme_categories (is_primary=true) join categories', description: 'Badge pills for primary categories' },
   { pattern: '{{perfect_for}}', resolves: 'theme_use_cases join use_cases', description: 'HTML list of use cases ("Perfect for" sidebar)' },
+  { pattern: '{{tags}}', resolves: 'theme_tags join tags', description: 'Comma-separated tag names' },
 ] as const
 
 function CopyButton({ text }: { text: string }) {
