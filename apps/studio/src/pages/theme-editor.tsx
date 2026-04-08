@@ -755,71 +755,15 @@ export function ThemeEditor() {
           <FormSection title="Theme Details" storageKey="theme-details">
             <div className="flex flex-col" style={{ gap: 'var(--spacing-sm)' }}>
               {detailFields.map((field, index) => (
-                <div
+                <DetailRow
                   key={field.id}
-                  className="flex items-start"
-                  style={{
-                    gap: 'var(--spacing-sm)',
-                    padding: 'var(--spacing-sm)',
-                    backgroundColor: 'hsl(var(--bg-surface-alt))',
-                    borderRadius: 'var(--rounded-lg)',
-                  }}
-                >
-                  {/* Icon picker */}
-                  <button
-                    type="button"
-                    onClick={() => setDetailIconPickerIndex(index)}
-                    className="flex shrink-0 items-center justify-center border-0"
-                    style={{
-                      width: '36px',
-                      height: '36px',
-                      borderRadius: 'var(--rounded-lg)',
-                      backgroundColor: 'hsl(var(--input))',
-                      border: '1px solid hsl(var(--border))',
-                      cursor: 'pointer',
-                      overflow: 'hidden',
-                    }}
-                    title="Select icon"
-                  >
-                    {field.icon_url ? (
-                      <img src={field.icon_url} alt="" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
-                    ) : (
-                      <Plus size={14} style={{ color: 'hsl(var(--text-muted))' }} />
-                    )}
-                  </button>
-
-                  {/* Text fields */}
-                  <div className="flex flex-1 flex-col" style={{ gap: '4px' }}>
-                    <input
-                      {...register(`meta.theme_details.${index}.label`)}
-                      className="w-full outline-none"
-                      style={inputStyle}
-                      placeholder="Label"
-                    />
-                    <input
-                      {...register(`meta.theme_details.${index}.value`)}
-                      className="w-full outline-none"
-                      style={inputStyle}
-                      placeholder="Value"
-                    />
-                  </div>
-
-                  {/* Remove */}
-                  <button
-                    type="button"
-                    onClick={() => removeDetail(index)}
-                    className="flex shrink-0 items-center justify-center border-0 bg-transparent"
-                    style={{
-                      width: '36px',
-                      height: '36px',
-                      cursor: 'pointer',
-                      color: 'hsl(var(--text-muted))',
-                    }}
-                    title="Remove"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
+                  index={index}
+                  control={control}
+                  register={register}
+                  inputStyle={inputStyle}
+                  onPickIcon={() => setDetailIconPickerIndex(index)}
+                  onRemove={() => removeDetail(index)}
+                />
               ))}
 
               <Button
@@ -930,6 +874,81 @@ function Field({ label, error, trailing, children }: { label: string; error?: st
       </div>
       {children}
       {error && <span style={errorStyle}>{error}</span>}
+    </div>
+  )
+}
+
+function DetailRow({ index, control, register, inputStyle: iStyle, onPickIcon, onRemove }: {
+  index: number
+  control: import('react-hook-form').Control<ThemeFormData>
+  register: import('react-hook-form').UseFormRegister<ThemeFormData>
+  inputStyle: React.CSSProperties
+  onPickIcon: () => void
+  onRemove: () => void
+}) {
+  const iconUrl = useWatch({ control, name: `meta.theme_details.${index}.icon_url` as const })
+
+  return (
+    <div
+      className="flex items-start"
+      style={{
+        gap: 'var(--spacing-sm)',
+        padding: 'var(--spacing-sm)',
+        backgroundColor: 'hsl(var(--bg-surface-alt))',
+        borderRadius: 'var(--rounded-lg)',
+      }}
+    >
+      <button
+        type="button"
+        onClick={onPickIcon}
+        className="flex shrink-0 items-center justify-center border-0"
+        style={{
+          width: '36px',
+          height: '36px',
+          borderRadius: 'var(--rounded-lg)',
+          backgroundColor: 'hsl(var(--input))',
+          border: '1px solid hsl(var(--border))',
+          cursor: 'pointer',
+          overflow: 'hidden',
+        }}
+        title="Select icon"
+      >
+        {iconUrl ? (
+          <img src={iconUrl} alt="" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
+        ) : (
+          <Plus size={14} style={{ color: 'hsl(var(--text-muted))' }} />
+        )}
+      </button>
+
+      <div className="flex flex-1 flex-col" style={{ gap: '4px' }}>
+        <input
+          {...register(`meta.theme_details.${index}.label`)}
+          className="w-full outline-none"
+          style={iStyle}
+          placeholder="Label"
+        />
+        <input
+          {...register(`meta.theme_details.${index}.value`)}
+          className="w-full outline-none"
+          style={iStyle}
+          placeholder="Value"
+        />
+      </div>
+
+      <button
+        type="button"
+        onClick={onRemove}
+        className="flex shrink-0 items-center justify-center border-0 bg-transparent"
+        style={{
+          width: '36px',
+          height: '36px',
+          cursor: 'pointer',
+          color: 'hsl(var(--text-muted))',
+        }}
+        title="Remove"
+      >
+        <Trash2 size={14} />
+      </button>
     </div>
   )
 }
