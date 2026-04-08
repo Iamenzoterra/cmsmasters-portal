@@ -125,6 +125,50 @@ export async function uploadImageBatch(
   return json.results
 }
 
+// ── Icons ──
+
+export interface IconItem {
+  key: string
+  url: string
+  name: string
+  category: string
+}
+
+export interface IconCategory {
+  name: string
+  icons: IconItem[]
+}
+
+export async function fetchIcons(): Promise<IconCategory[]> {
+  const res = await fetch(`${apiUrl}/api/icons`, { headers: await authHeaders() })
+  if (!res.ok) throw new Error(await parseError(res, 'Failed to fetch icons'))
+  const json = await res.json() as { categories: IconCategory[] }
+  return json.categories
+}
+
+export async function uploadIcon(file: File, category: string): Promise<string> {
+  const token = await getAuthToken()
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('category', category)
+  const res = await fetch(`${apiUrl}/api/icons`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  })
+  if (!res.ok) throw new Error(await parseError(res, 'Icon upload failed'))
+  const json = await res.json() as { url: string }
+  return json.url
+}
+
+export async function deleteIcon(category: string, name: string): Promise<void> {
+  const res = await fetch(`${apiUrl}/api/icons/${category}/${name}`, {
+    method: 'DELETE',
+    headers: await authHeaders(),
+  })
+  if (!res.ok) throw new Error(await parseError(res, 'Failed to delete icon'))
+}
+
 export async function deleteBlockApi(id: string): Promise<void> {
   const res = await fetch(`${apiUrl}/api/blocks/${id}`, {
     method: 'DELETE',

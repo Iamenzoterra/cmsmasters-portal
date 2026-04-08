@@ -15,6 +15,7 @@ export interface ThemeMeta {
   sales?: number
   compatible_plugins?: string[]
   trust_badges?: string[]
+  icon_url?: string
   resources?: {
     public: string[]
     licensed: string[]

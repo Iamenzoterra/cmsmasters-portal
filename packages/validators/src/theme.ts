@@ -17,6 +17,7 @@ export const metaSchema = z.object({
   sales: z.number().int().min(0).optional(),
   compatible_plugins: z.array(z.string()).default([]),
   trust_badges: z.array(z.string()).default([]),
+  icon_url: z.string().optional().default(''),
   resources: z.object({
     public: z.array(z.string()).default([]),
     licensed: z.array(z.string()).default([]),

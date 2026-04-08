@@ -17,6 +17,7 @@ export function getDefaults(): ThemeFormData {
       themeforest_url: '',
       themeforest_id: '',
       thumbnail_url: '',
+      icon_url: '',
       preview_images: [],
       compatible_plugins: [],
       trust_badges: [],

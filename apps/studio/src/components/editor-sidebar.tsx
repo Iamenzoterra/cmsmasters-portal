@@ -10,6 +10,7 @@ import { TaxonomyPickerModal } from './taxonomy-picker-modal'
 import { TagInput } from './tag-input'
 import type { TagInputItem } from './tag-input'
 import { ThumbnailUpload } from './thumbnail-upload'
+import { IconPickerModal } from './icon-picker-modal'
 import { useToast } from './toast'
 import { uploadFile } from '../lib/block-api'
 import { timeAgo } from '../lib/format'
@@ -53,7 +54,9 @@ export function EditorSidebar({ control, watch, setValue, existingTheme, allCate
   const [tagPickerOpen, setTagPickerOpen] = useState(false)
   const [regularPricePickerOpen, setRegularPricePickerOpen] = useState(false)
   const [discountPricePickerOpen, setDiscountPricePickerOpen] = useState(false)
+  const [iconPickerOpen, setIconPickerOpen] = useState(false)
   const thumbnailUrl = watch('meta.thumbnail_url')
+  const iconUrl = watch('meta.icon_url')
   const { toast } = useToast()
 
   const { field: statusField } = useController({ control, name: 'status' })
@@ -82,6 +85,32 @@ export function EditorSidebar({ control, watch, setValue, existingTheme, allCate
           onRemove={() => setValue('meta.thumbnail_url', '', { shouldDirty: true })}
           onError={(msg) => toast({ type: 'error', message: msg })}
         />
+      </div>
+
+      <div style={{ height: '1px', backgroundColor: 'hsl(var(--border-default))' }} />
+
+      {/* Icon */}
+      <div className="flex flex-col" style={{ gap: 'var(--spacing-xs)' }}>
+        <span style={labelStyle}>Icon</span>
+        {iconUrl ? (
+          <div className="flex items-center" style={{ gap: 'var(--spacing-sm)' }}>
+            <img
+              src={iconUrl}
+              alt="Theme icon"
+              style={{ width: '32px', height: '32px', objectFit: 'contain' }}
+            />
+            <Button variant="ghost" size="mini" onClick={() => setIconPickerOpen(true)}>
+              Change
+            </Button>
+            <Button variant="ghost" size="mini" onClick={() => setValue('meta.icon_url', '', { shouldDirty: true })}>
+              Remove
+            </Button>
+          </div>
+        ) : (
+          <Button variant="outline" size="mini" onClick={() => setIconPickerOpen(true)}>
+            Select Icon
+          </Button>
+        )}
       </div>
 
       <div style={{ height: '1px', backgroundColor: 'hsl(var(--border-default))' }} />
@@ -313,6 +342,22 @@ export function EditorSidebar({ control, watch, setValue, existingTheme, allCate
 
       {/* Separator */}
       <div style={{ height: '1px', backgroundColor: 'hsl(var(--border-default))' }} />
+
+      {/* Icon picker modal */}
+      {iconPickerOpen && (
+        <IconPickerModal
+          currentUrl={iconUrl ?? ''}
+          onSelect={(url) => {
+            setValue('meta.icon_url', url, { shouldDirty: true })
+            setIconPickerOpen(false)
+          }}
+          onRemove={() => {
+            setValue('meta.icon_url', '', { shouldDirty: true })
+            setIconPickerOpen(false)
+          }}
+          onClose={() => setIconPickerOpen(false)}
+        />
+      )}
 
       {/* Meta */}
       {existingTheme && (

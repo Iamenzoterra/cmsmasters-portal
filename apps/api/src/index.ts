@@ -8,6 +8,7 @@ import { blocks } from './routes/blocks'
 import { templates } from './routes/templates'
 import { pages } from './routes/pages'
 import { globalElements } from './routes/global-elements'
+import { icons } from './routes/icons'
 
 const app = new Hono<{ Bindings: Env }>()
 
@@ -40,6 +41,7 @@ app.route('/api', blocks)
 app.route('/api', templates)
 app.route('/api', pages)
 app.route('/api', globalElements)
+app.route('/api', icons)
 
 app.notFound((c) => {
   return c.json({ error: 'Not found' }, 404)
