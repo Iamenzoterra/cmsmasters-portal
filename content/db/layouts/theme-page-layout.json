@@ -6,9 +6,9 @@
   "scope": "theme",
   "status": "published",
   "layout_slots": {
-    "sidebar-right": ["fe39e04d-af63-44ed-b16e-e23af05896e0", "5d639da0-48f0-44ad-b0b8-35cd9a55979d"]
+    "sidebar-right": ["fe39e04d-af63-44ed-b16e-e23af05896e0", "5d639da0-48f0-44ad-b0b8-35cd9a55979d", "acdda498-7cbb-480e-a51c-cadd7e59c32b"]
   },
-  "slot_config": {},
+  "slot_config": { "sidebar-right": { "gap": "24px" } },
   "seo": {
     "title": "",
     "description": ""
