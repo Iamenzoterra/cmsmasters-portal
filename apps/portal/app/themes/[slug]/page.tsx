@@ -148,7 +148,7 @@ export default async function ThemePage({ params }: Props) {
     })
     if (rendered.length === 1) return rendered[0]
     const g = gap || '24px'
-    return `<div class="slot-stack" style="display:flex;flex-direction:column;gap:${g}">${rendered.join('\n')}</div>`
+    return `<div class="slot-stack" style="display:flex;flex-direction:column;gap:${g};width:100%">${rendered.join('\n')}</div>`
   }
 
   // 7. Assemble page
