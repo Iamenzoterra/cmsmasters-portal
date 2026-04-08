@@ -53,4 +53,4 @@ None.
 
 ## Git
 
-- Commit: pending
+- Commit: `268ce76e` — `db: add staff_roles + activity_log tables, update get_user_role() [WP-017 phase 1]`
