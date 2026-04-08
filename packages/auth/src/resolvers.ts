@@ -43,10 +43,11 @@ export function resolveBaseAccess(hasAccount: boolean): Partial<Entitlements> {
 export function resolveLicenseAccess(licenses: License[]): Partial<Entitlements> {
   const now = new Date()
   return {
-    licensedThemes: licenses.map(l => l.theme_id),
+    licensedThemes: licenses.map(l => l.theme_id).filter((id): id is string => id !== null),
     activeSupport: licenses
       .filter(l => l.support_until && new Date(l.support_until) > now)
-      .map(l => l.theme_id),
+      .map(l => l.theme_id)
+      .filter((id): id is string => id !== null),
   }
 }
 

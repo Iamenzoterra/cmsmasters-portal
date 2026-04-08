@@ -9,6 +9,7 @@
     "deploy": "wrangler deploy"
   },
   "dependencies": {
+    "@cmsmasters/auth": "*",
     "@cmsmasters/db": "*",
     "@cmsmasters/validators": "*",
     "hono": "^4",

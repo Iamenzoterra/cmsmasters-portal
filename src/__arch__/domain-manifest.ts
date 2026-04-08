@@ -324,6 +324,9 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'apps/api/src/routes/templates.ts',
       'apps/api/src/routes/upload.ts',
       'apps/api/src/routes/icons.ts',
+      'apps/api/src/routes/licenses.ts',
+      'apps/api/src/routes/admin.ts',
+      'apps/api/src/routes/user.ts',
     ],
     owned_tables: [],
     owned_routes: [
@@ -335,9 +338,12 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'apps/api/src/routes/revalidate.ts',
       'apps/api/src/routes/templates.ts',
       'apps/api/src/routes/upload.ts',
+      'apps/api/src/routes/licenses.ts',
+      'apps/api/src/routes/admin.ts',
+      'apps/api/src/routes/user.ts',
     ],
     public_entrypoints: [],
-    allowed_imports_from: ['pkg-db', 'pkg-validators'],
+    allowed_imports_from: ['pkg-db', 'pkg-validators', 'pkg-auth'],
     known_gaps: [
       'important: secrets boundary — Envato key, Resend key, Claude API key, R2 creds, service_role ONLY here',
       'note: supabase client uses service_role key — bypasses RLS',

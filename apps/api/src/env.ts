@@ -17,6 +17,7 @@ export interface Env {
   SUPABASE_SERVICE_KEY: string
   PORTAL_REVALIDATE_URL: string   // e.g. https://portal.cmsmasters.net/api/revalidate
   PORTAL_REVALIDATE_SECRET: string
+  ENVATO_PERSONAL_TOKEN: string // Envato API key for purchase code verification
 
   // R2 bucket binding (from wrangler.toml [[r2_buckets]])
   ASSETS_BUCKET: R2BucketBinding
