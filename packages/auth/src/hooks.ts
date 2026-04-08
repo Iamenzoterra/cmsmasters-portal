@@ -69,22 +69,27 @@ export function useUser(client: SupabaseClient) {
     let cancelled = false
     setProfileLoading(true)
 
-    client
-      .from('profiles')
-      .select('*')
-      .eq('id', session.user.id)
-      .single()
-      .then(({ data, error }) => {
-        if (cancelled) return // M2: stale fetch guard
-        if (error) {
-          console.error('Failed to fetch profile:', error)
-          setProfile(null)
-        } else {
-          setProfile(data)
-          fetchedUserIdRef.current = session.user.id
+    // Fetch profile AND resolved role in parallel
+    Promise.all([
+      client.from('profiles').select('*').eq('id', session.user.id).single(),
+      client.rpc('get_user_role'),
+    ]).then(([profileResult, roleResult]) => {
+      if (cancelled) return // M2: stale fetch guard
+      if (profileResult.error) {
+        console.error('Failed to fetch profile:', profileResult.error)
+        setProfile(null)
+      } else {
+        const profile = profileResult.data
+        // Override role with resolved value from get_user_role()
+        // This checks staff_roles first, falls back to profiles.role
+        if (roleResult.data && !roleResult.error) {
+          profile.role = roleResult.data as Profile['role']
         }
-        setProfileLoading(false)
-      })
+        setProfile(profile)
+        fetchedUserIdRef.current = session.user.id
+      }
+      setProfileLoading(false)
+    })
 
     return () => {
       cancelled = true

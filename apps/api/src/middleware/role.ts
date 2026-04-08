@@ -5,7 +5,7 @@ import type { UserRole } from '@cmsmasters/db'
 
 /**
  * Authorization middleware factory. Must be used AFTER authMiddleware.
- * Source of truth for role = DB profiles table (M3).
+ * Source of truth for role = staff_roles → profiles.role fallback (ADR-020 V3).
  *
  * M5: checks userId exists first → 401 if missing (not 403).
  */
@@ -18,6 +18,27 @@ export function requireRole(...roles: UserRole[]) {
     }
 
     const supabase = createServiceClient(c.env)
+
+    // Check staff_roles first (ADR-020 V3)
+    const { data: staffRole } = await supabase
+      .from('staff_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .order('granted_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    const effectiveRole = (staffRole?.role as UserRole) ?? null
+
+    if (effectiveRole) {
+      if (!roles.includes(effectiveRole)) {
+        return c.json({ error: 'Insufficient permissions' }, 403)
+      }
+      await next()
+      return
+    }
+
+    // Fallback to profiles.role if no staff_role
     const { data: profile, error } = await supabase
       .from('profiles')
       .select('role')

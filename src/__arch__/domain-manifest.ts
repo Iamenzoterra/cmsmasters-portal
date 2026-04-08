@@ -116,6 +116,7 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'packages/auth/src/guards.tsx',
       'packages/auth/src/actions.ts',
       'packages/auth/src/types.ts',
+      'packages/auth/src/resolvers.ts',
       'packages/auth/src/env.d.ts',
     ],
     owned_tables: [],
