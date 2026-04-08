@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route, useNavigate } from 'react-router-dom'
 import { RequireAuth } from '@cmsmasters/auth'
 import { Agentation } from 'agentation'
@@ -6,21 +7,23 @@ import { AppLayout } from './layouts/app-layout'
 import { AuthLayout } from './layouts/auth-layout'
 import { LoginPage } from './pages/login'
 import { AuthCallback } from './pages/auth-callback'
-import { ThemesList } from './pages/themes-list'
-import { ThemeEditor } from './pages/theme-editor'
-import { MediaPage } from './pages/media'
-import { BlocksList } from './pages/blocks-list'
-import { BlockEditor } from './pages/block-editor'
-import { ThemeMeta } from './pages/theme-meta'
-import { TemplatesList } from './pages/templates-list'
-import { TemplateEditor } from './pages/template-editor'
-import { PagesList } from './pages/pages-list'
-import { PageEditor } from './pages/page-editor'
-import { GlobalElementsSettings } from './pages/global-elements-settings'
-import { ElementsList } from './pages/elements-list'
-import { SlotsList } from './pages/slots-list'
 import { NotFound } from './pages/not-found'
 import { ErrorBoundary } from './components/error-boundary'
+
+// Lazy-loaded page components (code-splitting)
+const ThemesList = lazy(() => import('./pages/themes-list').then(m => ({ default: m.ThemesList })))
+const ThemeEditor = lazy(() => import('./pages/theme-editor').then(m => ({ default: m.ThemeEditor })))
+const MediaPage = lazy(() => import('./pages/media').then(m => ({ default: m.MediaPage })))
+const BlocksList = lazy(() => import('./pages/blocks-list').then(m => ({ default: m.BlocksList })))
+const BlockEditor = lazy(() => import('./pages/block-editor').then(m => ({ default: m.BlockEditor })))
+const ThemeMeta = lazy(() => import('./pages/theme-meta').then(m => ({ default: m.ThemeMeta })))
+const TemplatesList = lazy(() => import('./pages/templates-list').then(m => ({ default: m.TemplatesList })))
+const TemplateEditor = lazy(() => import('./pages/template-editor').then(m => ({ default: m.TemplateEditor })))
+const PagesList = lazy(() => import('./pages/pages-list').then(m => ({ default: m.PagesList })))
+const PageEditor = lazy(() => import('./pages/page-editor').then(m => ({ default: m.PageEditor })))
+const GlobalElementsSettings = lazy(() => import('./pages/global-elements-settings').then(m => ({ default: m.GlobalElementsSettings })))
+const ElementsList = lazy(() => import('./pages/elements-list').then(m => ({ default: m.ElementsList })))
+const SlotsList = lazy(() => import('./pages/slots-list').then(m => ({ default: m.SlotsList })))
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()

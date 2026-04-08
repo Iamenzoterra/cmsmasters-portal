@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Sidebar } from '../components/sidebar'
 import { Topbar } from '../components/topbar'
@@ -16,7 +17,9 @@ export function AppLayout() {
             gap: 'var(--spacing-sm)',
           }}
         >
-          <Outlet />
+          <Suspense fallback={<div className="flex flex-1 items-center justify-center" style={{ color: 'hsl(var(--text-secondary))' }}>Loading...</div>}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>

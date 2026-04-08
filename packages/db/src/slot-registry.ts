@@ -14,7 +14,7 @@ export const SLOT_DEFINITIONS = [
 ] as const
 
 /** All valid slot names as a Zod-compatible tuple */
-export const GLOBAL_SLOT_NAMES = SLOT_DEFINITIONS.map((s) => s.name) as [string, ...string[]]
+export const GLOBAL_SLOT_NAMES = SLOT_DEFINITIONS.map((s) => s.name) as [GlobalSlot, ...GlobalSlot[]]
 
 /** Slot name → block category for default-block resolution */
 export const SLOT_TO_CATEGORY: Record<string, string> = Object.fromEntries(

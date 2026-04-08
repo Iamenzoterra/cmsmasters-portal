@@ -19,7 +19,6 @@
     "@cmsmasters/auth": "*",
     "@cmsmasters/db": "*",
     "@cmsmasters/validators": "*",
-    "@cmsmasters/api-client": "*",
     "@cmsmasters/ui": "*"
   },
   "devDependencies": {

@@ -10,7 +10,7 @@ revalidate.post(
   authMiddleware,
   requireRole('content_manager', 'admin'),
   async (c) => {
-    const body = await c.req.json<{ slug?: string; type?: string }>().catch(() => ({}))
+    const body: { slug?: string; type?: string } = await c.req.json<{ slug?: string; type?: string }>().catch(() => ({}))
 
     const portalUrl = c.env.PORTAL_REVALIDATE_URL
     const portalSecret = c.env.PORTAL_REVALIDATE_SECRET

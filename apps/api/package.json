@@ -11,8 +11,8 @@
   "dependencies": {
     "@cmsmasters/db": "*",
     "@cmsmasters/validators": "*",
-    "@supabase/supabase-js": "^2",
-    "hono": "^4"
+    "hono": "^4",
+    "zod": "^4"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4",
