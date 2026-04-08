@@ -147,6 +147,12 @@ export function MediaPage() {
               type="text"
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && effectiveUploadCategory) {
+                  e.preventDefault()
+                  fileInputRef.current?.click()
+                }
+              }}
               placeholder="new-category-name"
               className="outline-none"
               style={{
