@@ -67,6 +67,9 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'packages/db/src/queries/prices.ts',
       'packages/db/src/queries/block-categories.ts',
       'packages/db/src/queries/use-cases.ts',
+      'packages/db/src/queries/staff-roles.ts',
+      'packages/db/src/queries/activity.ts',
+      'packages/db/src/queries/licenses.ts',
       'packages/db/src/__tests__/mappers.test.ts',
       'packages/db/src/__tests__/phase2-smoke.test.ts',
     ],
@@ -80,6 +83,8 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'global_elements',
       'licenses',
       'audit_log',
+      'staff_roles',
+      'activity_log',
       'categories',
       'tags',
       'theme_categories',
@@ -96,7 +101,7 @@ export const DOMAINS: Record<string, DomainDefinition> = {
     known_gaps: [
       'note: types.ts is generated from Supabase — manual edits will be overwritten',
       'important: mappers.ts handles snake_case→camelCase but has no runtime validation',
-      'note: licenses table declared but no queries file yet — Dashboard will add it',
+      'note: licenses queries added in WP-017 phase 1',
     ],
   },
 

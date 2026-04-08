@@ -65,6 +65,12 @@ export interface SlotConfig {
   [slot: string]: { gap?: string }
 }
 
+// ── Activity metadata (stored in activity_log.metadata jsonb) ──
+
+export interface ActivityMetadata {
+  [key: string]: unknown
+}
+
 // ── SEO (stored in themes.seo jsonb) ──
 
 export interface ThemeSEO {
@@ -86,6 +92,8 @@ export type ThemeStatus = 'draft' | 'published' | 'archived'
 export type LicenseType = 'regular' | 'extended'
 
 export type PriceType = 'normal' | 'discount'
+
+export type StaffRoleName = 'admin' | 'content_manager' | 'support_operator'
 
 // ── Page types ──
 
@@ -458,6 +466,59 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_roles: {
+        Row: {
+          id: string
+          user_id: string
+          role: string
+          permissions: string[]
+          granted_by: string | null
+          granted_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          role: string
+          permissions?: string[]
+          granted_by?: string | null
+          granted_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          role?: string
+          permissions?: string[]
+          granted_by?: string | null
+          granted_at?: string
+        }
+        Relationships: []
+      }
+      activity_log: {
+        Row: {
+          id: string
+          user_id: string | null
+          action: string
+          theme_slug: string | null
+          metadata: ActivityMetadata
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          action: string
+          theme_slug?: string | null
+          metadata?: ActivityMetadata
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          action?: string
+          theme_slug?: string | null
+          metadata?: ActivityMetadata
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           id: string
@@ -707,3 +768,10 @@ export type UseCaseUpdate = Database['public']['Tables']['use_cases']['Update']
 
 export type ThemeUseCase = Database['public']['Tables']['theme_use_cases']['Row']
 export type ThemeUseCaseInsert = Database['public']['Tables']['theme_use_cases']['Insert']
+
+export type StaffRole = Database['public']['Tables']['staff_roles']['Row']
+export type StaffRoleInsert = Database['public']['Tables']['staff_roles']['Insert']
+export type StaffRoleUpdate = Database['public']['Tables']['staff_roles']['Update']
+
+export type ActivityEntry = Database['public']['Tables']['activity_log']['Row']
+export type ActivityEntryInsert = Database['public']['Tables']['activity_log']['Insert']

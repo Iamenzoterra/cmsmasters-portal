@@ -69,6 +69,13 @@ export type {
   UseCaseUpdate,
   ThemeUseCase,
   ThemeUseCaseInsert,
+  StaffRole,
+  StaffRoleInsert,
+  StaffRoleUpdate,
+  StaffRoleName,
+  ActivityEntry,
+  ActivityEntryInsert,
+  ActivityMetadata,
 } from './types'
 
 export { themeRowToFormData, formDataToThemeInsert } from './mappers'
@@ -164,3 +171,24 @@ export {
   getThemeUseCases,
   setThemeUseCases,
 } from './queries/use-cases'
+
+export {
+  getStaffRoles,
+  getAllStaffMembers,
+  grantStaffRole,
+  revokeStaffRole,
+  hasStaffRole,
+} from './queries/staff-roles'
+
+export {
+  logActivity,
+  getActivityLog,
+  getRecentActivations,
+} from './queries/activity'
+
+export {
+  getUserLicenses,
+  getAllLicenses,
+  createLicense,
+  getLicenseByPurchaseCode,
+} from './queries/licenses'
