@@ -306,6 +306,36 @@ export const DOMAINS: Record<string, DomainDefinition> = {
     ],
   },
 
+  'app-dashboard': {
+    name: 'Dashboard App',
+    slug: 'app-dashboard',
+    description: 'Customer-facing Vite SPA: my themes, licenses, settings. Any authenticated user.',
+    owned_files: [
+      'apps/dashboard/src/main.tsx',
+      'apps/dashboard/src/app.tsx',
+      'apps/dashboard/src/globals.css',
+      'apps/dashboard/src/lib/supabase.ts',
+      'apps/dashboard/src/layouts/app-layout.tsx',
+      'apps/dashboard/src/layouts/auth-layout.tsx',
+      'apps/dashboard/src/pages/login.tsx',
+      'apps/dashboard/src/pages/auth-callback.tsx',
+      'apps/dashboard/src/pages/not-found.tsx',
+      'apps/dashboard/src/pages/my-themes.tsx',
+      'apps/dashboard/src/pages/theme-detail.tsx',
+      'apps/dashboard/src/pages/licenses.tsx',
+      'apps/dashboard/src/pages/settings.tsx',
+      'apps/dashboard/src/components/sidebar.tsx',
+      'apps/dashboard/src/components/topbar.tsx',
+    ],
+    owned_tables: [],
+    owned_routes: [],
+    public_entrypoints: [],
+    allowed_imports_from: ['pkg-db', 'pkg-auth', 'pkg-ui'],
+    known_gaps: [
+      'note: scaffold only — stub pages, no data fetching yet (Phase 5)',
+    ],
+  },
+
   'app-api': {
     name: 'Hono API',
     slug: 'app-api',
