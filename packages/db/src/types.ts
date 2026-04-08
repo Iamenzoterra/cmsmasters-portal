@@ -1,3 +1,11 @@
+// ── Theme detail item (repeater row in theme editor) ──
+
+export interface ThemeDetail {
+  icon_url: string
+  label: string
+  value: string
+}
+
 // ── Theme meta (stored in themes.meta jsonb) ──
 
 export interface ThemeMeta {
@@ -16,6 +24,7 @@ export interface ThemeMeta {
   compatible_plugins?: string[]
   trust_badges?: string[]
   icon_url?: string
+  theme_details?: ThemeDetail[]
   resources?: {
     public: string[]
     licensed: string[]

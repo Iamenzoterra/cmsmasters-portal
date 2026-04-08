@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { useForm, useWatch } from 'react-hook-form'
+import { useForm, useWatch, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { themeSchema, type ThemeFormData } from '@cmsmasters/validators'
 import type { Theme, Template, Block, ThemeBlockFill, Category, Tag, Price, UseCase } from '@cmsmasters/db'
 import { upsertTheme, logAction, themeRowToFormData, formDataToThemeInsert, getCategories, getThemeCategories, setThemeCategories, getTags, getThemeTags, setThemeTags, getPrices, getThemePrices, setThemePrices, getUseCases, getThemeUseCases, setThemeUseCases, searchUseCases, createUseCase, deleteUseCase, getProfile } from '@cmsmasters/db'
-import { AlertTriangle, ChevronLeft, ExternalLink, Eye, LayoutTemplate } from 'lucide-react'
+import { AlertTriangle, ChevronLeft, ExternalLink, Eye, LayoutTemplate, Plus, Trash2 } from 'lucide-react'
 import { useLocalPortal } from '../lib/use-local-portal'
 import { Button } from '@cmsmasters/ui'
 import { fetchThemeBySlug, deleteTheme } from '../lib/queries'
@@ -20,6 +20,7 @@ import { TemplatePicker } from '../components/template-picker'
 import { PositionGrid } from '../components/position-grid'
 import { BlockPickerModal } from '../components/block-picker-modal'
 import { DeleteConfirmModal } from '../components/delete-confirm-modal'
+import { IconPickerModal } from '../components/icon-picker-modal'
 import { fetchTemplateById } from '../lib/template-api'
 import { fetchAllBlocks } from '../lib/block-api'
 
@@ -74,6 +75,13 @@ export function ThemeEditor() {
   })
 
   const { register, control, reset, formState: { errors, isDirty } } = form
+
+  const { fields: detailFields, append: appendDetail, remove: removeDetail } = useFieldArray({
+    control,
+    name: 'meta.theme_details',
+  })
+
+  const [detailIconPickerIndex, setDetailIconPickerIndex] = useState<number | null>(null)
 
   // Fetch all categories + tags on mount (for picker modals)
   useEffect(() => {
@@ -740,6 +748,108 @@ export function ThemeEditor() {
               itemName={existingTheme.meta.name}
               onConfirm={handleDeleteConfirmed}
               onCancel={() => setShowDeleteConfirm(false)}
+            />
+          )}
+
+          {/* Theme Details (repeater) */}
+          <FormSection title="Theme Details" storageKey="theme-details">
+            <div className="flex flex-col" style={{ gap: 'var(--spacing-sm)' }}>
+              {detailFields.map((field, index) => (
+                <div
+                  key={field.id}
+                  className="flex items-start"
+                  style={{
+                    gap: 'var(--spacing-sm)',
+                    padding: 'var(--spacing-sm)',
+                    backgroundColor: 'hsl(var(--bg-surface-alt))',
+                    borderRadius: 'var(--rounded-lg)',
+                  }}
+                >
+                  {/* Icon picker */}
+                  <button
+                    type="button"
+                    onClick={() => setDetailIconPickerIndex(index)}
+                    className="flex shrink-0 items-center justify-center border-0"
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: 'var(--rounded-lg)',
+                      backgroundColor: 'hsl(var(--input))',
+                      border: '1px solid hsl(var(--border))',
+                      cursor: 'pointer',
+                      overflow: 'hidden',
+                    }}
+                    title="Select icon"
+                  >
+                    {field.icon_url ? (
+                      <img src={field.icon_url} alt="" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
+                    ) : (
+                      <Plus size={14} style={{ color: 'hsl(var(--text-muted))' }} />
+                    )}
+                  </button>
+
+                  {/* Text fields */}
+                  <div className="flex flex-1 flex-col" style={{ gap: '4px' }}>
+                    <input
+                      {...register(`meta.theme_details.${index}.label`)}
+                      className="w-full outline-none"
+                      style={inputStyle}
+                      placeholder="Label"
+                    />
+                    <input
+                      {...register(`meta.theme_details.${index}.value`)}
+                      className="w-full outline-none"
+                      style={inputStyle}
+                      placeholder="Value"
+                    />
+                  </div>
+
+                  {/* Remove */}
+                  <button
+                    type="button"
+                    onClick={() => removeDetail(index)}
+                    className="flex shrink-0 items-center justify-center border-0 bg-transparent"
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      cursor: 'pointer',
+                      color: 'hsl(var(--text-muted))',
+                    }}
+                    title="Remove"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => appendDetail({ icon_url: '', label: '', value: '' })}
+              >
+                <Plus size={14} />
+                <span style={{ marginLeft: '4px' }}>Add Detail</span>
+              </Button>
+            </div>
+
+            <p style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))', margin: 'var(--spacing-xs) 0 0' }}>
+              Use <code style={{ fontSize: '11px' }}>{'{{theme_details}}'}</code> hook in sidebar blocks to render these.
+            </p>
+          </FormSection>
+
+          {/* Icon picker modal for theme details */}
+          {detailIconPickerIndex !== null && (
+            <IconPickerModal
+              currentUrl={form.getValues(`meta.theme_details.${detailIconPickerIndex}.icon_url`)}
+              onSelect={(url) => {
+                form.setValue(`meta.theme_details.${detailIconPickerIndex}.icon_url`, url, { shouldDirty: true })
+                setDetailIconPickerIndex(null)
+              }}
+              onRemove={() => {
+                form.setValue(`meta.theme_details.${detailIconPickerIndex}.icon_url`, '', { shouldDirty: true })
+                setDetailIconPickerIndex(null)
+              }}
+              onClose={() => setDetailIconPickerIndex(null)}
             />
           )}
 

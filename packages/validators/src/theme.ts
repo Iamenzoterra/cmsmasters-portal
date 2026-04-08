@@ -18,6 +18,11 @@ export const metaSchema = z.object({
   compatible_plugins: z.array(z.string()).default([]),
   trust_badges: z.array(z.string()).default([]),
   icon_url: z.string().optional().default(''),
+  theme_details: z.array(z.object({
+    icon_url: z.string().default(''),
+    label: z.string().default(''),
+    value: z.string().default(''),
+  })).default([]),
   resources: z.object({
     public: z.array(z.string()).default([]),
     licensed: z.array(z.string()).default([]),

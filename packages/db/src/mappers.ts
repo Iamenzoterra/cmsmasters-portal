@@ -18,6 +18,11 @@ export function themeRowToFormData(row: Theme): ThemeFormData {
       themeforest_id: row.meta.themeforest_id ?? '',
       thumbnail_url: row.meta.thumbnail_url ?? '',
       icon_url: row.meta.icon_url ?? '',
+      theme_details: (row.meta.theme_details ?? []).map((d) => ({
+        icon_url: d.icon_url ?? '',
+        label: d.label ?? '',
+        value: d.value ?? '',
+      })),
       preview_images: row.meta.preview_images ?? [],
       rating: row.meta.rating ?? undefined,
       sales: row.meta.sales ?? undefined,
@@ -62,6 +67,9 @@ export function formDataToThemeInsert(
       themeforest_id: emptyToNull(form.meta.themeforest_id),
       thumbnail_url: emptyToNull(form.meta.thumbnail_url),
       icon_url: emptyToNull(form.meta.icon_url),
+      theme_details: form.meta.theme_details.length > 0
+        ? form.meta.theme_details.filter((d) => d.label || d.value)
+        : undefined,
       preview_images: form.meta.preview_images.length > 0 ? form.meta.preview_images : undefined,
       rating: form.meta.rating,
       sales: form.meta.sales,

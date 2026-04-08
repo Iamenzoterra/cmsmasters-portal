@@ -119,11 +119,26 @@ export function resolveBlockHooks(
     return `<ul class="block-sidebar-perfect-for__list">\n${items}\n</ul>`
   })
 
-  // {{tags}} → comma-separated tag names (injected via meta._tags)
+  // {{tags}} → badge elements for theme tags (injected via meta._tags)
   result = result.replace(/\{\{tags\}\}/g, () => {
     const tags = meta._tags as string[] | undefined
     if (!tags || tags.length === 0) return ''
-    return tags.join(', ')
+    return tags.map((name) =>
+      `<a class="block-theme-tags__badge" href="#">${name}</a>`
+    ).join('\n')
+  })
+
+  // {{theme_details}} → list of icon + label + value items from meta.theme_details
+  result = result.replace(/\{\{theme_details\}\}/g, () => {
+    const details = meta.theme_details as Array<{ icon_url?: string; label?: string; value?: string }> | undefined
+    if (!details || details.length === 0) return ''
+    const items = details.map((d) => {
+      const icon = d.icon_url ? `<img class="theme-detail-item__icon" src="${d.icon_url}" alt="" width="24" height="24" />` : ''
+      const label = d.label ? `<span class="theme-detail-item__label">${d.label}</span>` : ''
+      const value = d.value ? `<span class="theme-detail-item__value">${d.value}</span>` : ''
+      return `<div class="theme-detail-item">${icon}${label}${value}</div>`
+    }).join('\n')
+    return `<div class="theme-details">\n${items}\n</div>`
   })
 
   return result
