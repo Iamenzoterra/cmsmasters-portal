@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
-import { Search, X, Upload, Loader2, Plus } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { Search, X, Loader2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { Button } from '@cmsmasters/ui'
-import { fetchIcons, uploadIcon, deleteIcon } from '../lib/block-api'
+import { fetchIcons } from '../lib/block-api'
 import type { IconItem, IconCategory } from '../lib/block-api'
 import { useToast } from './toast'
 
@@ -17,18 +18,11 @@ export function IconPickerModal({ currentUrl, onSelect, onRemove, onClose }: Ico
   const [loading, setLoading] = useState(true)
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
   const [search, setSearch] = useState('')
-  const [uploading, setUploading] = useState(false)
-  const [uploadCategory, setUploadCategory] = useState('')
-  const [newCategoryName, setNewCategoryName] = useState('')
-  const [showNewCategory, setShowNewCategory] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
 
   useEffect(() => {
     fetchIcons()
-      .then((cats) => {
-        setCategories(cats)
-      })
+      .then(setCategories)
       .catch(() => toast({ type: 'error', message: 'Failed to load icons' }))
       .finally(() => setLoading(false))
   }, []) // load once on mount
@@ -39,7 +33,6 @@ export function IconPickerModal({ currentUrl, onSelect, onRemove, onClose }: Ico
     return () => window.removeEventListener('keydown', handler)
   }, [onClose])
 
-  // Flat list of all icons, filtered
   const filteredIcons = useMemo(() => {
     const q = search.trim().toLowerCase()
     const base = activeCategory
@@ -48,57 +41,10 @@ export function IconPickerModal({ currentUrl, onSelect, onRemove, onClose }: Ico
 
     if (!q) return base
 
-    return base.filter((icon) =>
+    return base.filter((icon: IconItem) =>
       icon.name.toLowerCase().includes(q) || icon.category.toLowerCase().includes(q)
     )
   }, [categories, activeCategory, search])
-
-  const effectiveUploadCategory = showNewCategory
-    ? newCategoryName.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
-    : uploadCategory
-
-  async function handleUpload(file: File) {
-    if (!effectiveUploadCategory) {
-      toast({ type: 'error', message: 'Select or create a category first' })
-      return
-    }
-
-    setUploading(true)
-    try {
-      const url = await uploadIcon(file, effectiveUploadCategory)
-      toast({ type: 'success', message: 'Icon uploaded' })
-      // Refresh the list
-      const cats = await fetchIcons()
-      setCategories(cats)
-      // Auto-select the uploaded icon
-      onSelect(url)
-    } catch (err) {
-      toast({ type: 'error', message: err instanceof Error ? err.message : 'Upload failed' })
-    } finally {
-      setUploading(false)
-    }
-  }
-
-  async function handleDelete(icon: IconItem) {
-    try {
-      await deleteIcon(icon.category, icon.name)
-      toast({ type: 'success', message: `Deleted ${icon.name}` })
-      setCategories((prev) =>
-        prev
-          .map((cat) => cat.name === icon.category
-            ? { ...cat, icons: cat.icons.filter((i) => i.key !== icon.key) }
-            : cat
-          )
-          .filter((cat) => cat.icons.length > 0)
-      )
-      // If deleted icon was the current selection, clear it
-      if (currentUrl === icon.url) {
-        onRemove()
-      }
-    } catch (err) {
-      toast({ type: 'error', message: err instanceof Error ? err.message : 'Delete failed' })
-    }
-  }
 
   return (
     <div
@@ -147,7 +93,6 @@ export function IconPickerModal({ currentUrl, onSelect, onRemove, onClose }: Ico
 
         {/* Search + Category Tabs */}
         <div className="flex shrink-0 flex-col" style={{ padding: 'var(--spacing-md) var(--spacing-lg)', gap: 'var(--spacing-sm)' }}>
-          {/* Search */}
           <div className="relative w-full">
             <Search
               size={16}
@@ -174,7 +119,6 @@ export function IconPickerModal({ currentUrl, onSelect, onRemove, onClose }: Ico
             />
           </div>
 
-          {/* Category tabs */}
           {categories.length > 0 && (
             <div className="flex flex-wrap" style={{ gap: '4px' }}>
               <button
@@ -223,9 +167,20 @@ export function IconPickerModal({ currentUrl, onSelect, onRemove, onClose }: Ico
               <Loader2 size={24} className="animate-spin" style={{ color: 'hsl(var(--text-muted))' }} />
             </div>
           ) : filteredIcons.length === 0 ? (
-            <p style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-muted))', textAlign: 'center', padding: 'var(--spacing-xl)' }}>
-              {search.trim() ? 'No icons match your search.' : 'No icons uploaded yet. Use the upload section below.'}
-            </p>
+            <div className="flex flex-col items-center" style={{ padding: 'var(--spacing-xl)', gap: 'var(--spacing-sm)', textAlign: 'center' }}>
+              <p style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-muted))', margin: 0 }}>
+                {search.trim() ? 'No icons match your search.' : 'No icons uploaded yet.'}
+              </p>
+              {!search.trim() && (
+                <Link
+                  to="/media/icons"
+                  onClick={onClose}
+                  style={{ fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--ring))' }}
+                >
+                  Go to Media &rarr; Icons to upload
+                </Link>
+              )}
+            </div>
           ) : (
             <div
               className="grid"
@@ -239,7 +194,7 @@ export function IconPickerModal({ currentUrl, onSelect, onRemove, onClose }: Ico
                 return (
                   <div
                     key={icon.key}
-                    className="group relative flex flex-col items-center"
+                    className="flex flex-col items-center"
                     style={{
                       padding: 'var(--spacing-sm)',
                       borderRadius: 'var(--rounded-lg)',
@@ -258,18 +213,14 @@ export function IconPickerModal({ currentUrl, onSelect, onRemove, onClose }: Ico
                       if (!isSelected) e.currentTarget.style.backgroundColor = 'hsl(var(--bg-surface-alt))'
                     }}
                     onMouseLeave={(e) => {
-                      if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent'
+                      if (!isSelected) e.currentTarget.style.backgroundColor = isSelected ? 'hsl(var(--tag-active-bg))' : 'transparent'
                     }}
                     title={`${icon.category}/${icon.name}`}
                   >
                     <img
                       src={icon.url}
                       alt={icon.name}
-                      style={{
-                        width: '36px',
-                        height: '36px',
-                        objectFit: 'contain',
-                      }}
+                      style={{ width: '36px', height: '36px', objectFit: 'contain' }}
                     />
                     <span
                       style={{
@@ -284,144 +235,11 @@ export function IconPickerModal({ currentUrl, onSelect, onRemove, onClose }: Ico
                     >
                       {icon.name}
                     </span>
-                    {/* Delete button on hover */}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDelete(icon)
-                      }}
-                      className="absolute flex items-center justify-center border-0 opacity-0 group-hover:opacity-100"
-                      style={{
-                        top: '2px',
-                        right: '2px',
-                        width: '18px',
-                        height: '18px',
-                        borderRadius: '9999px',
-                        backgroundColor: 'hsl(var(--destructive))',
-                        color: 'hsl(var(--destructive-foreground))',
-                        cursor: 'pointer',
-                        transition: 'opacity 150ms',
-                      }}
-                    >
-                      <X size={10} />
-                    </button>
                   </div>
                 )
               })}
             </div>
           )}
-        </div>
-
-        {/* Upload Section */}
-        <div
-          className="flex shrink-0 flex-col"
-          style={{
-            padding: 'var(--spacing-md) var(--spacing-lg)',
-            borderTop: '1px solid hsl(var(--border-default))',
-            gap: 'var(--spacing-sm)',
-          }}
-        >
-          <span style={{
-            fontSize: 'var(--text-xs-font-size)',
-            fontWeight: 'var(--font-weight-semibold)',
-            color: 'hsl(var(--text-muted))',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-          }}>
-            Upload New Icon
-          </span>
-
-          <div className="flex items-center" style={{ gap: 'var(--spacing-sm)' }}>
-            {/* Category selector */}
-            {!showNewCategory ? (
-              <div className="flex items-center" style={{ gap: '4px', flex: 1 }}>
-                <select
-                  value={uploadCategory}
-                  onChange={(e) => setUploadCategory(e.target.value)}
-                  style={{
-                    height: '32px',
-                    flex: 1,
-                    backgroundColor: 'hsl(var(--input))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: 'var(--rounded-lg)',
-                    fontSize: 'var(--text-sm-font-size)',
-                    color: 'hsl(var(--foreground))',
-                    padding: '0 var(--spacing-sm)',
-                  }}
-                >
-                  <option value="">Select category...</option>
-                  {categories.map((cat) => (
-                    <option key={cat.name} value={cat.name}>{cat.name}</option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => setShowNewCategory(true)}
-                  className="flex shrink-0 items-center justify-center border-0 bg-transparent"
-                  style={{ cursor: 'pointer', color: 'hsl(var(--text-muted))', width: '32px', height: '32px' }}
-                  title="Create new category"
-                >
-                  <Plus size={16} />
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center" style={{ gap: '4px', flex: 1 }}>
-                <input
-                  type="text"
-                  value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
-                  placeholder="new-category-name"
-                  className="outline-none"
-                  style={{
-                    height: '32px',
-                    flex: 1,
-                    backgroundColor: 'hsl(var(--input))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: 'var(--rounded-lg)',
-                    fontSize: 'var(--text-sm-font-size)',
-                    color: 'hsl(var(--foreground))',
-                    padding: '0 var(--spacing-sm)',
-                  }}
-                  autoFocus
-                />
-                <button
-                  type="button"
-                  onClick={() => { setShowNewCategory(false); setNewCategoryName('') }}
-                  className="flex shrink-0 items-center justify-center border-0 bg-transparent"
-                  style={{ cursor: 'pointer', color: 'hsl(var(--text-muted))', width: '32px', height: '32px' }}
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            )}
-
-            {/* Upload button */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".svg,image/svg+xml"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0]
-                if (file) handleUpload(file)
-                e.target.value = ''
-              }}
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading || !effectiveUploadCategory}
-            >
-              {uploading ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <Upload size={14} />
-              )}
-              <span style={{ marginLeft: '4px' }}>Upload SVG</span>
-            </Button>
-          </div>
         </div>
 
         {/* Footer */}

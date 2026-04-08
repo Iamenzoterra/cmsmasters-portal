@@ -99,8 +99,8 @@ export function App() {
         <Route path="/elements/new" element={<BlockEditor />} />
         <Route path="/elements/:id" element={<BlockEditor />} />
 
-        {/* Standalone */}
-        <Route path="/media" element={<MediaPage />} />
+        {/* Media */}
+        <Route path="/media/icons" element={<MediaPage />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

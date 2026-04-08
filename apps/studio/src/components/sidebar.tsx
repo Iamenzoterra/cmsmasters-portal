@@ -36,11 +36,14 @@ const navGroups: NavGroup[] = [
       { to: '/elements', label: 'Elements', icon: Component },
     ],
   },
+  {
+    label: 'Media',
+    items: [
+      { to: '/media/icons', label: 'Icons', icon: Image },
+    ],
+  },
 ]
 
-const standaloneItems: NavItem[] = [
-  // { to: '/media', label: 'Media', icon: Image },
-]
 
 function readStored(key: string, fallback: boolean): boolean {
   try {
@@ -168,31 +171,6 @@ export function Sidebar() {
           <NavGroupSection key={group.label} group={group} isActive={isGroupActive(group)} />
         ))}
 
-        {/* Standalone items */}
-        <div className="flex flex-col" style={{ gap: '2px' }}>
-          {standaloneItems.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              className="flex items-center gap-2 no-underline"
-              style={({ isActive }) => ({
-                height: '36px',
-                padding: '0 var(--spacing-sm)',
-                borderRadius: 'var(--radius)',
-                backgroundColor: isActive ? 'hsl(var(--bg-surface-alt))' : 'transparent',
-                color: isActive
-                  ? 'hsl(var(--text-primary))'
-                  : 'hsl(var(--text-secondary))',
-                fontWeight: isActive ? 500 : 400,
-                fontSize: 'var(--text-sm-font-size)',
-                lineHeight: 'var(--text-sm-line-height)',
-              })}
-            >
-              <Icon size={16} />
-              {label}
-            </NavLink>
-          ))}
-        </div>
       </nav>
 
       <div className="flex flex-col" style={{ gap: 'var(--spacing-2xs)' }}>
