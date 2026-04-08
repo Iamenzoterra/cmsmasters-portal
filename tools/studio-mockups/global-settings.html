@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Global Settings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="tokens.css" />
+  <style>
+    /* ══════════════════════════════════════
+       BLOCK: global-settings
+       Scoped under .block-global-settings
+       ══════════════════════════════════════ */
+
+    body {
+      font-family: 'Manrope', system-ui, sans-serif;
+      margin: 0;
+    }
+
+    .block-global-settings {
+      background: hsl(var(--section-light-orange));
+      /* Figma 32px — closest --rounded-3xl (24px) */
+      border-radius: var(--rounded-3xl);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      /* Figma 70px — closest --spacing-5xl (64px) */
+      padding: var(--spacing-5xl) var(--spacing-3xl);
+      /* Figma 35px — closest --spacing-2xl (32px) */
+      gap: var(--spacing-2xl);
+      width: 615px;
+      box-sizing: border-box;
+      margin: 0 auto;
+    }
+
+    /* ── Badge ── */
+    .block-global-settings__badge {
+      display: inline-block;
+      border: 0.5px solid hsl(var(--brand-neutral-600));
+      border-radius: var(--rounded-full);
+      /* Figma 7px/15px — closest --spacing-xs (8) / --spacing-md (16) */
+      padding: var(--spacing-xs) var(--spacing-md);
+      color: hsl(var(--brand-neutral-600));
+      font-size: var(--text-sm-font-size);
+      line-height: var(--text-sm-line-height);
+      letter-spacing: var(--text-sm-letter-spacing);
+    }
+
+    /* ── Heading ── */
+    .block-global-settings__heading {
+      font-size: var(--h2-font-size);
+      line-height: var(--h2-line-height);
+      font-weight: var(--h2-font-weight);
+      letter-spacing: var(--h2-letter-spacing);
+      color: hsl(var(--brand-neutral-800));
+      margin: 0;
+      max-width: 475px;
+      text-transform: capitalize;
+    }
+
+    /* ── Description ── */
+    .block-global-settings__desc {
+      font-size: var(--text-sm-font-size);
+      line-height: var(--text-sm-line-height);
+      letter-spacing: var(--text-sm-letter-spacing);
+      font-weight: var(--font-weight-regular);
+      color: hsl(var(--brand-neutral-800));
+      margin: 0;
+      max-width: 475px;
+    }
+
+    /* ── Cards area ── */
+    .block-global-settings__cards {
+      position: relative;
+      width: 462px;
+      /* Card 2 (tallest): top 66 + ~292px content = 358px */
+      height: 358px;
+    }
+
+    /* ── Card (shared) ── */
+    .block-global-settings__card {
+      position: absolute;
+      background: hsl(var(--bg-surface));
+      border: 0.5px solid hsl(var(--brand-neutral-800));
+      border-radius: var(--rounded-2xl);
+      padding: var(--spacing-md);
+      width: 193px;
+      box-sizing: border-box;
+      cursor: default;
+    }
+    .block-global-settings__card--colors {
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+    .block-global-settings__card--fonts {
+      top: 66px;
+      left: 137px;
+      z-index: 2;
+      background: hsl(var(--section-gold));
+    }
+    .block-global-settings__card--elements {
+      top: 27px;
+      left: 269px;
+      z-index: 3;
+      background: hsl(var(--section-light-orange));
+    }
+
+    /* ── Card header ── */
+    .block-global-settings__card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--spacing-md);
+    }
+    .block-global-settings__card-title-group {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .block-global-settings__card-icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+    .block-global-settings__card-icon svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .block-global-settings__card-title {
+      font-size: var(--text-sm-font-size);
+      line-height: var(--text-sm-line-height);
+      font-weight: var(--font-weight-regular);
+      color: hsl(var(--brand-neutral-800));
+      white-space: nowrap;
+    }
+
+    /* ── Card divider ── */
+    .block-global-settings__card-divider {
+      height: 0.5px;
+      background: hsl(var(--text-primary) / 0.2);
+      margin-bottom: var(--spacing-md);
+      transform-origin: left center;
+    }
+
+    /* ── Color rows ── */
+    .block-global-settings__color-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-md);
+    }
+    .block-global-settings__color-row {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+    }
+    .block-global-settings__color-dot {
+      width: 24px;
+      height: 24px;
+      border-radius: var(--rounded-full);
+      flex-shrink: 0;
+    }
+    .block-global-settings__color-dot--primary   { background: hsl(var(--brand-deep-blue)); }
+    .block-global-settings__color-dot--secondary  { background: hsl(var(--brand-rose)); }
+    .block-global-settings__color-dot--text       { background: hsl(var(--brand-light-orange)); }
+    .block-global-settings__color-dot--accent     { background: hsl(var(--brand-green)); }
+
+    /* Row hover lift — only after build animation completes */
+    .build-part.built.build-row,
+    .build-part.built.build-font-row {
+      transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.2s ease;
+    }
+    .build-part.built.build-row:hover,
+    .build-part.built.build-font-row:hover {
+      transform: translateY(-2px);
+    }
+
+    .block-global-settings__color-label {
+      font-size: var(--text-sm-font-size);
+      line-height: var(--text-sm-line-height);
+      font-weight: var(--font-weight-regular);
+      color: hsl(var(--brand-neutral-800));
+      white-space: nowrap;
+    }
+    .block-global-settings__card-more {
+      font-size: var(--text-lg-font-size);
+      line-height: var(--text-lg-line-height);
+      font-weight: var(--font-weight-medium);
+      color: hsl(var(--brand-neutral-800));
+      text-align: left;
+    }
+
+    /* ══ Build-up animation ══ */
+
+    /* All card children start hidden */
+    .block-global-settings__card .build-part {
+      opacity: 0;
+    }
+
+    /* Card frame itself */
+    .block-global-settings__card.build-frame {
+      opacity: 0;
+      transform: scale(0.92);
+      transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .block-global-settings__card.build-frame.built {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* Header fade in */
+    .build-part.build-header {
+      transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .build-part.build-header.built { opacity: 1; }
+
+    /* Divider draws left→right */
+    .build-part.build-divider {
+      transform: scaleX(0);
+      transition: opacity 0.3s ease, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .build-part.build-divider.built {
+      opacity: 1;
+      transform: scaleX(1);
+    }
+
+    /* Color row: dot pops, label slides */
+    .build-part.build-row {
+      transform: translateX(-8px);
+      transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .build-part.build-row.built {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    /* Dot inside row: scale pop */
+    .build-part.build-row .block-global-settings__color-dot {
+      transform: scale(0);
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .build-part.build-row.built .block-global-settings__color-dot {
+      transform: scale(1);
+    }
+
+    /* More "..." */
+    .build-part.build-more {
+      transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .build-part.build-more.built { opacity: 1; }
+
+    /* ── Font sample list ── */
+    .block-global-settings__font-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-md);
+      color: hsl(var(--brand-neutral-800));
+      text-align: left;
+    }
+    .block-global-settings__font-sample--h1 {
+      font-size: var(--h2-font-size);
+      line-height: var(--h2-line-height);
+      font-weight: var(--font-weight-medium);
+      text-transform: capitalize;
+    }
+    .block-global-settings__font-sample--text {
+      font-size: var(--text-sm-font-size);
+      line-height: var(--text-sm-line-height);
+      font-weight: var(--font-weight-regular);
+    }
+    .block-global-settings__font-sample--accent {
+      font-size: var(--text-lg-font-size);
+      line-height: var(--text-lg-line-height);
+      font-weight: var(--font-weight-medium);
+    }
+    .block-global-settings__font-sample--meta {
+      font-size: var(--text-base-font-size);
+      line-height: 25px; /* Figma: 25px — no exact token match */
+      font-weight: 300;
+    }
+
+    /* ── Stack-deal entrance (card slides up from below) ── */
+    .block-global-settings__card.build-stack {
+      opacity: 0;
+      transform: translateY(40px) scale(0.95);
+      transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .block-global-settings__card.build-stack.built {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    /* ── Element list ── */
+    .block-global-settings__element-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-md);
+      text-align: left;
+    }
+    .block-global-settings__element-row {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      font-size: var(--text-sm-font-size);
+      line-height: var(--text-sm-line-height);
+      font-weight: var(--font-weight-regular);
+      color: hsl(var(--brand-neutral-800));
+      white-space: nowrap;
+    }
+    .block-global-settings__element-arrow {
+      width: 11px;
+      height: 11px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .block-global-settings__element-arrow svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Font row slide-in */
+    .build-part.build-font-row {
+      transform: translateY(10px);
+      transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .build-part.build-font-row.built {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ── Bottom text group ── */
+    .block-global-settings__bottom {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      /* Figma 15px — closest --spacing-md (16px) */
+      gap: var(--spacing-md);
+      /* Figma 35px — closest --spacing-2xl (32px) */
+      padding-bottom: var(--spacing-2xl);
+    }
+
+    .block-global-settings__bottom-title {
+      font-size: var(--text-lg-font-size);
+      line-height: var(--text-lg-line-height);
+      letter-spacing: var(--text-lg-letter-spacing);
+      font-weight: var(--font-weight-medium);
+      color: hsl(var(--brand-neutral-800));
+      margin: 0;
+      max-width: 475px;
+    }
+
+    .block-global-settings__bottom-sub {
+      font-size: var(--text-sm-font-size);
+      line-height: var(--text-sm-line-height);
+      letter-spacing: var(--text-sm-letter-spacing);
+      font-weight: var(--font-weight-medium);
+      color: hsl(var(--brand-neutral-600));
+      margin: 0;
+      max-width: 367px;
+    }
+
+    /* ── CTA Button ── */
+    .block-global-settings__cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--button-gap);
+      background: hsl(var(--brand-neutral-800));
+      color: hsl(var(--brand-white));
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: var(--font-weight-medium);
+      font-size: var(--text-lg-font-size);
+      line-height: var(--text-lg-line-height);
+      padding: var(--button-padding-y-xl) var(--button-padding-x-xl);
+      border-radius: var(--button-radius-pill);
+      transition: background-color 0.15s ease, transform 0.1s ease;
+    }
+    .block-global-settings__cta:hover {
+      background: hsl(var(--brand-neutral-700));
+    }
+    .block-global-settings__cta:active {
+      transform: scale(0.97);
+    }
+    .block-global-settings__cta:focus-visible {
+      outline: 2px solid hsl(var(--border-focus));
+      outline-offset: 2px;
+    }
+
+    .block-global-settings__price {
+      color: hsl(var(--section-gold));
+      font-size: var(--text-base-font-size);
+      line-height: var(--text-base-line-height);
+    }
+
+    /* ── Entrance animations ── */
+    .block-global-settings .gs-reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .block-global-settings .gs-reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Badge has a subtle scale-in */
+    .block-global-settings .gs-reveal-badge {
+      opacity: 0;
+      transform: scale(0.85);
+      transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .block-global-settings .gs-reveal-badge.visible {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* Button slides up with a bounce */
+    .block-global-settings .gs-reveal-cta {
+      opacity: 0;
+      transform: translateY(30px) scale(0.95);
+      transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .block-global-settings .gs-reveal-cta.visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .block-global-settings .gs-reveal,
+      .block-global-settings .gs-reveal-badge,
+      .block-global-settings .gs-reveal-cta {
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="block-global-settings" data-block>
+
+    <!-- Badge component -->
+    <span class="block-global-settings__badge gs-reveal-badge" style="transition-delay: 0.05s">
+      Global Settings
+    </span>
+
+    <!-- Heading -->
+    <h2 class="block-global-settings__heading gs-reveal" style="transition-delay: 0.12s">
+      Set Once,<br>Use Sitewide
+    </h2>
+
+    <!-- Description -->
+    <p class="block-global-settings__desc gs-reveal" style="transition-delay: 0.2s">
+      This theme comes with preconfigured global settings designed to perfectly complement the current design.
+    </p>
+
+    <!-- Cards area -->
+    <div class="block-global-settings__cards">
+
+      <!-- Card 1: Global Colors -->
+      <div class="block-global-settings__card block-global-settings__card--colors build-frame" data-card="colors">
+        <div class="block-global-settings__card-header build-part build-header">
+          <div class="block-global-settings__card-title-group">
+            <span class="block-global-settings__card-icon">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="8" cy="8" r="6.5"/>
+                <ellipse cx="8" cy="8" rx="3" ry="6.5"/>
+                <line x1="1.5" y1="8" x2="14.5" y2="8"/>
+              </svg>
+            </span>
+            <span class="block-global-settings__card-title">Global Colors</span>
+          </div>
+          <span class="block-global-settings__card-icon">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="8" cy="8" r="2"/>
+              <path d="M8 1.5v1.3M8 13.2v1.3M1.5 8h1.3M13.2 8h1.3M3.4 3.4l.9.9M11.7 11.7l.9.9M3.4 12.6l.9-.9M11.7 4.3l.9-.9"/>
+            </svg>
+          </span>
+        </div>
+        <div class="block-global-settings__card-divider build-part build-divider"></div>
+        <div class="block-global-settings__color-list">
+          <div class="block-global-settings__color-row build-part build-row">
+            <div class="block-global-settings__color-dot block-global-settings__color-dot--primary"></div>
+            <span class="block-global-settings__color-label">Primary</span>
+          </div>
+          <div class="block-global-settings__color-row build-part build-row">
+            <div class="block-global-settings__color-dot block-global-settings__color-dot--secondary"></div>
+            <span class="block-global-settings__color-label">Secondary</span>
+          </div>
+          <div class="block-global-settings__color-row build-part build-row">
+            <div class="block-global-settings__color-dot block-global-settings__color-dot--text"></div>
+            <span class="block-global-settings__color-label">Text</span>
+          </div>
+          <div class="block-global-settings__color-row build-part build-row">
+            <div class="block-global-settings__color-dot block-global-settings__color-dot--accent"></div>
+            <span class="block-global-settings__color-label">Accent</span>
+          </div>
+          <span class="block-global-settings__card-more build-part build-more">...</span>
+        </div>
+      </div>
+
+      <!-- Card 2: Global Fonts -->
+      <div class="block-global-settings__card block-global-settings__card--fonts build-stack" data-card="fonts">
+        <div class="block-global-settings__card-header build-part build-header">
+          <div class="block-global-settings__card-title-group">
+            <span class="block-global-settings__card-icon">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="8" cy="8" r="6.5"/>
+                <ellipse cx="8" cy="8" rx="3" ry="6.5"/>
+                <line x1="1.5" y1="8" x2="14.5" y2="8"/>
+              </svg>
+            </span>
+            <span class="block-global-settings__card-title">Global Fonts</span>
+          </div>
+          <span class="block-global-settings__card-icon">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="8" cy="8" r="2"/>
+              <path d="M8 1.5v1.3M8 13.2v1.3M1.5 8h1.3M13.2 8h1.3M3.4 3.4l.9.9M11.7 11.7l.9.9M3.4 12.6l.9-.9M11.7 4.3l.9-.9"/>
+            </svg>
+          </span>
+        </div>
+        <div class="block-global-settings__card-divider build-part build-divider"></div>
+        <div class="block-global-settings__font-list">
+          <span class="block-global-settings__font-sample--h1 build-part build-font-row">H1</span>
+          <span class="block-global-settings__font-sample--text build-part build-font-row">Text</span>
+          <span class="block-global-settings__font-sample--accent build-part build-font-row">Accent</span>
+          <span class="block-global-settings__font-sample--meta build-part build-font-row">Meta</span>
+          <span class="block-global-settings__card-more build-part build-more">...</span>
+        </div>
+      </div>
+
+      <!-- Card 3: Global Elements -->
+      <div class="block-global-settings__card block-global-settings__card--elements build-stack" data-card="elements">
+        <div class="block-global-settings__card-header build-part build-header">
+          <div class="block-global-settings__card-title-group">
+            <span class="block-global-settings__card-icon">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="8" cy="8" r="6.5"/>
+                <ellipse cx="8" cy="8" rx="3" ry="6.5"/>
+                <line x1="1.5" y1="8" x2="14.5" y2="8"/>
+              </svg>
+            </span>
+            <span class="block-global-settings__card-title">Global Elements</span>
+          </div>
+        </div>
+        <div class="block-global-settings__card-divider build-part build-divider"></div>
+        <div class="block-global-settings__element-list">
+          <div class="block-global-settings__element-row build-part build-font-row">
+            <span class="block-global-settings__element-arrow">
+              <svg viewBox="0 0 11 11" fill="currentColor"><polygon points="3,0 11,5.5 3,11"/></svg>
+            </span>
+            <span>Logo</span>
+          </div>
+          <div class="block-global-settings__element-row build-part build-font-row">
+            <span class="block-global-settings__element-arrow">
+              <svg viewBox="0 0 11 11" fill="currentColor"><polygon points="3,0 11,5.5 3,11"/></svg>
+            </span>
+            <span>Body Background</span>
+          </div>
+          <div class="block-global-settings__element-row build-part build-font-row">
+            <span class="block-global-settings__element-arrow">
+              <svg viewBox="0 0 11 11" fill="currentColor"><polygon points="3,0 11,5.5 3,11"/></svg>
+            </span>
+            <span>Button</span>
+          </div>
+          <div class="block-global-settings__element-row build-part build-font-row">
+            <span class="block-global-settings__element-arrow">
+              <svg viewBox="0 0 11 11" fill="currentColor"><polygon points="3,0 11,5.5 3,11"/></svg>
+            </span>
+            <span>Form Fields</span>
+          </div>
+          <div class="block-global-settings__element-row build-part build-font-row">
+            <span class="block-global-settings__element-arrow">
+              <svg viewBox="0 0 11 11" fill="currentColor"><polygon points="3,0 11,5.5 3,11"/></svg>
+            </span>
+            <span>Link</span>
+          </div>
+          <span class="block-global-settings__card-more build-part build-more">...</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom text -->
+    <div class="block-global-settings__bottom">
+      <p class="block-global-settings__bottom-title gs-reveal" style="transition-delay: 0.4s">
+        Adjust globals anytime, and watch your updates instantly transform your entire site!
+      </p>
+      <p class="block-global-settings__bottom-sub gs-reveal" style="transition-delay: 0.48s">
+        Global colors and fonts are built into every widget, making content creation seamless, stylish, and effortlessly consistent!
+      </p>
+    </div>
+
+    <!-- CTA -->
+    <button class="block-global-settings__cta gs-reveal-cta" type="button" style="transition-delay: 0.55s">
+      <span>Purchase Theme</span>
+      <span class="block-global-settings__price">{{price}}</span>
+    </button>
+
+  </section>
+
+  <script type="module">
+    const block = document.querySelector('.block-global-settings');
+
+    /* ── Standard reveals (badge, heading, desc, bottom, cta) ── */
+    const reveals = block.querySelectorAll('.gs-reveal, .gs-reveal-badge, .gs-reveal-cta');
+    const revealIO = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          revealIO.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.15 });
+    reveals.forEach(el => revealIO.observe(el));
+
+    /* ── Card build-up sequence ── */
+    function buildCard(card, baseDelay = 0) {
+      // Collect all build steps for this card
+      const isStack = card.classList.contains('build-stack');
+      const rows = card.querySelectorAll('.build-row, .build-font-row');
+      const steps = [
+        { el: card,                                cls: 'built', delay: baseDelay },
+        { el: card.querySelector('.build-header'), cls: 'built', delay: baseDelay + 250 },
+        { el: card.querySelector('.build-divider'),cls: 'built', delay: baseDelay + 450 },
+        ...Array.from(rows).map((el, i) => ({
+          el, cls: 'built', delay: baseDelay + 650 + i * 150
+        })),
+        { el: card.querySelector('.build-more'),   cls: 'built', delay: baseDelay + 650 + rows.length * 150 + 100 },
+      ];
+
+      steps.forEach(({ el, cls, delay }) => {
+        if (el) setTimeout(() => el.classList.add(cls), delay);
+      });
+
+      // Return the total duration so next card can chain
+      const last = steps[steps.length - 1];
+      return last ? last.delay + 200 : baseDelay;
+    }
+
+    /* Trigger card builds when cards area scrolls into view */
+    const cardsArea = block.querySelector('.block-global-settings__cards');
+    const cardIO = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          cardIO.unobserve(e.target);
+          const area = e.target;
+
+          // All cards overlap — each starts 200ms after previous frame appears
+          const stagger = 400;
+          const card1 = area.querySelector('[data-card="colors"]');
+          const card2 = area.querySelector('[data-card="fonts"]');
+          const card3 = area.querySelector('[data-card="elements"]');
+
+          if (card1) buildCard(card1, 0);
+          if (card2) buildCard(card2, stagger);
+          if (card3) buildCard(card3, stagger * 2);
+        }
+      });
+    }, { threshold: 0.2 });
+    cardIO.observe(cardsArea);
+  </script>
+</body>
+</html>
