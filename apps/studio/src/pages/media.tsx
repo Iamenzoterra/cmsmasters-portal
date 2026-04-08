@@ -3,6 +3,7 @@ import { Upload, Loader2, X, Search, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@cmsmasters/ui'
 import { fetchIcons, uploadIcon, deleteIcon } from '../lib/block-api'
 import type { IconItem, IconCategory } from '../lib/block-api'
+import { StyledSelect } from '../components/styled-select'
 import { useToast } from '../components/toast'
 
 const labelStyle: React.CSSProperties = {
@@ -120,25 +121,16 @@ export function MediaPage() {
 
         {!showNewCategory ? (
           <div className="flex items-center" style={{ gap: '4px', flex: 1, maxWidth: '300px' }}>
-            <select
+            <StyledSelect
               value={uploadCategory}
               onChange={(e) => setUploadCategory(e.target.value)}
-              style={{
-                height: '32px',
-                flex: 1,
-                backgroundColor: 'hsl(var(--input))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: 'var(--rounded-lg)',
-                fontSize: 'var(--text-sm-font-size)',
-                color: 'hsl(var(--foreground))',
-                padding: '0 var(--spacing-sm)',
-              }}
+              style={{ flex: 1 }}
             >
               <option value="">Category...</option>
               {categories.map((cat) => (
                 <option key={cat.name} value={cat.name}>{cat.name}</option>
               ))}
-            </select>
+            </StyledSelect>
             <button
               type="button"
               onClick={() => setShowNewCategory(true)}
