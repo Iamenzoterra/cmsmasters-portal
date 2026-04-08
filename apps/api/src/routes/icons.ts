@@ -1,6 +1,5 @@
 import { Hono } from 'hono'
 import type { AuthEnv } from '../middleware/auth'
-import type { Env } from '../env'
 import { authMiddleware } from '../middleware/auth'
 import { requireRole } from '../middleware/role'
 

@@ -28,13 +28,10 @@ export function IconPickerModal({ currentUrl, onSelect, onRemove, onClose }: Ico
     fetchIcons()
       .then((cats) => {
         setCategories(cats)
-        if (cats.length > 0 && !activeCategory) {
-          setActiveCategory(null) // "All" tab
-        }
       })
       .catch(() => toast({ type: 'error', message: 'Failed to load icons' }))
       .finally(() => setLoading(false))
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, []) // load once on mount
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -45,22 +42,15 @@ export function IconPickerModal({ currentUrl, onSelect, onRemove, onClose }: Ico
   // Flat list of all icons, filtered
   const filteredIcons = useMemo(() => {
     const q = search.trim().toLowerCase()
-    let icons: IconItem[] = []
+    const base = activeCategory
+      ? (categories.find((c) => c.name === activeCategory)?.icons ?? [])
+      : categories.flatMap((c) => c.icons)
 
-    if (activeCategory) {
-      const cat = categories.find((c) => c.name === activeCategory)
-      icons = cat?.icons ?? []
-    } else {
-      icons = categories.flatMap((c) => c.icons)
-    }
+    if (!q) return base
 
-    if (q) {
-      icons = icons.filter((icon) =>
-        icon.name.toLowerCase().includes(q) || icon.category.toLowerCase().includes(q)
-      )
-    }
-
-    return icons
+    return base.filter((icon) =>
+      icon.name.toLowerCase().includes(q) || icon.category.toLowerCase().includes(q)
+    )
   }, [categories, activeCategory, search])
 
   const effectiveUploadCategory = showNewCategory
