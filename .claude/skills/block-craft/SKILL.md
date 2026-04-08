@@ -437,3 +437,4 @@ Don't add `@media` queries. Use `max-width`, flexbox, grid, relative units.
 9. **Don't redefine `.reveal` or `.cms-btn`** — use shared classes from portal-blocks.css
 10. **Don't add `@media (prefers-reduced-motion)`** — it's in portal-blocks.css globally
 11. **Don't style global selectors** (`body`, `html`, `*`, `h1`, `p`, `a`, `ul`, `li`) — they leak to the entire page and break other blocks. Only `body { font-family; margin: 0 }` is allowed for standalone preview.
+12. **Don't add wrapper `<div>`s without a clear purpose** — block HTML root must be `<section class="block-{slug}">` directly, no extra `<div>` wrappers with inline styles (padding, margin, etc.). Extra wrappers break layout spacing in slot stacks and cause alignment bugs with sibling blocks.
