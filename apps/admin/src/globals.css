@@ -4,6 +4,22 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap');
 
+:root {
+  /* Avatar palette — deterministic colors for initials circles */
+  --avatar-teal-bg: 76 200 222;
+  --avatar-teal-fg: 76 200 222;
+  --avatar-blue-bg: 41 81 220;
+  --avatar-blue-fg: 41 81 220;
+  --avatar-pink-bg: 232 154 151;
+  --avatar-pink-fg: 232 154 151;
+  --avatar-navy-bg: 21 31 79;
+  --avatar-navy-fg: 21 31 79;
+  --avatar-amber-bg: 217 120 5;
+  --avatar-amber-fg: 217 120 5;
+  --avatar-indigo-bg: 39 43 83;
+  --avatar-indigo-fg: 39 43 83;
+}
+
 body {
   background-color: hsl(var(--bg-page));
   color: hsl(var(--text-primary));

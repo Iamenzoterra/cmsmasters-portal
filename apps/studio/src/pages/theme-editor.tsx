@@ -999,7 +999,7 @@ function DetailRow({ index, control, register, inputStyle: iStyle, fieldName, on
           {...register(`${fieldName}.${index}.value` as const)}
           className="w-full outline-none"
           style={iStyle}
-          placeholder="Value"
+          placeholder={fieldName === 'meta.help_and_support' ? 'Link' : 'Value'}
         />
       </div>
 

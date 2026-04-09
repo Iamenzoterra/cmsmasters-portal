@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { PageHeader } from '../components/page-header'
 import { AvatarInitials } from '../components/avatar-initials'
 import { StatusBadge, roleBadgeVariant, actionBadgeVariant } from '../components/status-badge'
 import { StatCard } from '../components/stat-card'
