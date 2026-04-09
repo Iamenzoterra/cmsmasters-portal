@@ -343,6 +343,8 @@ Convenience hooks with special formatting:
 | `{{discount_price}}` | `theme.meta.discount_price` | Discount price with $ prefix |
 | `{{link:field}}` | `theme.meta[field]` | URL from meta field (e.g. `{{link:demo_url}}`) |
 | `{{tags}}` | `theme_tags join tags` | Comma-separated tag names |
+| `{{theme_details}}` | `theme.meta.theme_details` | Icon + label + value list (Theme Details sidebar) |
+| `{{help_and_support}}` | `theme.meta.help_and_support` | Icon + label + value list (Help & Support sidebar) |
 
 ### Examples
 
