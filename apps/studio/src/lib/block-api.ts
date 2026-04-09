@@ -169,6 +169,49 @@ export async function deleteIcon(category: string, name: string): Promise<void> 
   if (!res.ok) throw new Error(await parseError(res, 'Failed to delete icon'))
 }
 
+// ── Presets ──
+
+export interface PresetSummary {
+  slug: string
+  name: string
+}
+
+export interface PresetData {
+  name: string
+  items: Array<{ icon_url: string; label: string; value: string }>
+}
+
+export async function fetchPresets(type: string): Promise<PresetSummary[]> {
+  const res = await fetch(`${apiUrl}/api/presets/${type}`, { headers: await authHeaders() })
+  if (!res.ok) throw new Error(await parseError(res, 'Failed to fetch presets'))
+  const json = await res.json() as { presets: PresetSummary[] }
+  return json.presets
+}
+
+export async function fetchPreset(type: string, slug: string): Promise<PresetData> {
+  const res = await fetch(`${apiUrl}/api/presets/${type}/${slug}`, { headers: await authHeaders() })
+  if (!res.ok) throw new Error(await parseError(res, 'Failed to fetch preset'))
+  return await res.json() as PresetData
+}
+
+export async function savePreset(type: string, name: string, items: PresetData['items']): Promise<PresetSummary> {
+  const res = await fetch(`${apiUrl}/api/presets/${type}`, {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: JSON.stringify({ name, items }),
+  })
+  if (!res.ok) throw new Error(await parseError(res, 'Failed to save preset'))
+  return await res.json() as PresetSummary
+}
+
+export async function deletePreset(type: string, slug: string): Promise<void> {
+  const res = await fetch(`${apiUrl}/api/presets/${type}/${slug}`, {
+    method: 'DELETE',
+    headers: await authHeaders(),
+  })
+  if (!res.ok) throw new Error(await parseError(res, 'Failed to delete preset'))
+}
+
 export async function deleteBlockApi(id: string): Promise<void> {
   const res = await fetch(`${apiUrl}/api/blocks/${id}`, {
     method: 'DELETE',

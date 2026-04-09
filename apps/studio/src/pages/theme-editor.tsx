@@ -21,6 +21,7 @@ import { PositionGrid } from '../components/position-grid'
 import { BlockPickerModal } from '../components/block-picker-modal'
 import { DeleteConfirmModal } from '../components/delete-confirm-modal'
 import { IconPickerModal } from '../components/icon-picker-modal'
+import { PresetBar } from '../components/preset-bar'
 import { fetchTemplateById } from '../lib/template-api'
 import { fetchAllBlocks } from '../lib/block-api'
 
@@ -757,6 +758,13 @@ export function ThemeEditor() {
 
           {/* Theme Details (repeater) */}
           <FormSection title="Theme Details" storageKey="theme-details">
+            <PresetBar
+              type="theme-details"
+              getItems={() => form.getValues('meta.theme_details')}
+              onLoad={(items) => {
+                form.setValue('meta.theme_details', items, { shouldDirty: true })
+              }}
+            />
             <div className="flex flex-col" style={{ gap: 'var(--spacing-sm)' }}>
               {detailFields.map((field, index) => (
                 <DetailRow
@@ -804,6 +812,13 @@ export function ThemeEditor() {
 
           {/* Help & Support (repeater) */}
           <FormSection title="Help & Support" storageKey="theme-help-support">
+            <PresetBar
+              type="help-and-support"
+              getItems={() => form.getValues('meta.help_and_support')}
+              onLoad={(items) => {
+                form.setValue('meta.help_and_support', items, { shouldDirty: true })
+              }}
+            />
             <div className="flex flex-col" style={{ gap: 'var(--spacing-sm)' }}>
               {supportFields.map((field, index) => (
                 <DetailRow

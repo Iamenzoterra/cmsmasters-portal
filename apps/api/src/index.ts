@@ -9,6 +9,7 @@ import { templates } from './routes/templates'
 import { pages } from './routes/pages'
 import { globalElements } from './routes/global-elements'
 import { icons } from './routes/icons'
+import { presets } from './routes/presets'
 import { licenses } from './routes/licenses'
 import { admin } from './routes/admin'
 import { user } from './routes/user'
@@ -45,6 +46,7 @@ app.route('/api', templates)
 app.route('/api', pages)
 app.route('/api', globalElements)
 app.route('/api', icons)
+app.route('/api', presets)
 app.route('/api', licenses)
 app.route('/api', admin)
 app.route('/api', user)
