@@ -141,6 +141,19 @@ export function resolveBlockHooks(
     return `<div class="theme-details">\n${items}\n</div>`
   })
 
+  // {{help_and_support}} → list of icon + label + value items from meta.help_and_support
+  result = result.replace(/\{\{help_and_support\}\}/g, () => {
+    const items = meta.help_and_support as Array<{ icon_url?: string; label?: string; value?: string }> | undefined
+    if (!items || items.length === 0) return ''
+    const rendered = items.map((d) => {
+      const icon = d.icon_url ? `<img class="help-support-item__icon" src="${d.icon_url}" alt="" width="24" height="24" />` : ''
+      const label = d.label ? `<span class="help-support-item__label">${d.label}</span>` : ''
+      const value = d.value ? `<span class="help-support-item__value">${d.value}</span>` : ''
+      return `<div class="help-support-item">${icon}${label}${value}</div>`
+    }).join('\n')
+    return `<div class="help-and-support">\n${rendered}\n</div>`
+  })
+
   return result
 }
 

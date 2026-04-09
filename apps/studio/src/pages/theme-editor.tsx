@@ -83,6 +83,13 @@ export function ThemeEditor() {
 
   const [detailIconPickerIndex, setDetailIconPickerIndex] = useState<number | null>(null)
 
+  const { fields: supportFields, append: appendSupport, remove: removeSupport } = useFieldArray({
+    control,
+    name: 'meta.help_and_support',
+  })
+
+  const [supportIconPickerIndex, setSupportIconPickerIndex] = useState<number | null>(null)
+
   // Fetch all categories + tags on mount (for picker modals)
   useEffect(() => {
     getCategories(supabase).then(setAllCategories).catch(() => {})
@@ -758,6 +765,7 @@ export function ThemeEditor() {
                   control={control}
                   register={register}
                   inputStyle={inputStyle}
+                  fieldName="meta.theme_details"
                   onPickIcon={() => setDetailIconPickerIndex(index)}
                   onRemove={() => removeDetail(index)}
                 />
@@ -791,6 +799,53 @@ export function ThemeEditor() {
                 setDetailIconPickerIndex(null)
               }}
               onClose={() => setDetailIconPickerIndex(null)}
+            />
+          )}
+
+          {/* Help & Support (repeater) */}
+          <FormSection title="Help & Support" storageKey="theme-help-support">
+            <div className="flex flex-col" style={{ gap: 'var(--spacing-sm)' }}>
+              {supportFields.map((field, index) => (
+                <DetailRow
+                  key={field.id}
+                  index={index}
+                  control={control}
+                  register={register}
+                  inputStyle={inputStyle}
+                  fieldName="meta.help_and_support"
+                  onPickIcon={() => setSupportIconPickerIndex(index)}
+                  onRemove={() => removeSupport(index)}
+                />
+              ))}
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => appendSupport({ icon_url: '', label: '', value: '' })}
+              >
+                <Plus size={14} />
+                <span style={{ marginLeft: '4px' }}>Add Item</span>
+              </Button>
+            </div>
+
+            <p style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))', margin: 'var(--spacing-xs) 0 0' }}>
+              Use <code style={{ fontSize: '11px' }}>{'{{help_and_support}}'}</code> hook in sidebar blocks to render these.
+            </p>
+          </FormSection>
+
+          {/* Icon picker modal for help & support */}
+          {supportIconPickerIndex !== null && (
+            <IconPickerModal
+              currentUrl={form.getValues(`meta.help_and_support.${supportIconPickerIndex}.icon_url`)}
+              onSelect={(url) => {
+                form.setValue(`meta.help_and_support.${supportIconPickerIndex}.icon_url`, url, { shouldDirty: true })
+                setSupportIconPickerIndex(null)
+              }}
+              onRemove={() => {
+                form.setValue(`meta.help_and_support.${supportIconPickerIndex}.icon_url`, '', { shouldDirty: true })
+                setSupportIconPickerIndex(null)
+              }}
+              onClose={() => setSupportIconPickerIndex(null)}
             />
           )}
 
@@ -875,15 +930,16 @@ function Field({ label, error, trailing, children }: { label: string; error?: st
   )
 }
 
-function DetailRow({ index, control, register, inputStyle: iStyle, onPickIcon, onRemove }: {
+function DetailRow({ index, control, register, inputStyle: iStyle, fieldName, onPickIcon, onRemove }: {
   index: number
   control: import('react-hook-form').Control<ThemeFormData>
   register: import('react-hook-form').UseFormRegister<ThemeFormData>
   inputStyle: React.CSSProperties
+  fieldName: 'meta.theme_details' | 'meta.help_and_support'
   onPickIcon: () => void
   onRemove: () => void
 }) {
-  const iconUrl = useWatch({ control, name: `meta.theme_details.${index}.icon_url` as const })
+  const iconUrl = useWatch({ control, name: `${fieldName}.${index}.icon_url` as const })
 
   return (
     <div
@@ -919,13 +975,13 @@ function DetailRow({ index, control, register, inputStyle: iStyle, onPickIcon, o
 
       <div className="flex flex-1 flex-col" style={{ gap: '4px' }}>
         <input
-          {...register(`meta.theme_details.${index}.label`)}
+          {...register(`${fieldName}.${index}.label` as const)}
           className="w-full outline-none"
           style={iStyle}
           placeholder="Label"
         />
         <input
-          {...register(`meta.theme_details.${index}.value`)}
+          {...register(`${fieldName}.${index}.value` as const)}
           className="w-full outline-none"
           style={iStyle}
           placeholder="Value"

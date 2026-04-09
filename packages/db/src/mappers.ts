@@ -23,6 +23,11 @@ export function themeRowToFormData(row: Theme): ThemeFormData {
         label: d.label ?? '',
         value: d.value ?? '',
       })),
+      help_and_support: (row.meta.help_and_support ?? []).map((d) => ({
+        icon_url: d.icon_url ?? '',
+        label: d.label ?? '',
+        value: d.value ?? '',
+      })),
       preview_images: row.meta.preview_images ?? [],
       rating: row.meta.rating ?? undefined,
       sales: row.meta.sales ?? undefined,
@@ -69,6 +74,9 @@ export function formDataToThemeInsert(
       icon_url: emptyToNull(form.meta.icon_url),
       theme_details: form.meta.theme_details.length > 0
         ? form.meta.theme_details.filter((d) => d.label || d.value)
+        : undefined,
+      help_and_support: form.meta.help_and_support.length > 0
+        ? form.meta.help_and_support.filter((d) => d.label || d.value)
         : undefined,
       preview_images: form.meta.preview_images.length > 0 ? form.meta.preview_images : undefined,
       rating: form.meta.rating,

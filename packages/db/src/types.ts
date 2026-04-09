@@ -25,6 +25,7 @@ export interface ThemeMeta {
   trust_badges?: string[]
   icon_url?: string
   theme_details?: ThemeDetail[]
+  help_and_support?: ThemeDetail[]
   resources?: {
     public: string[]
     licensed: string[]
