@@ -5,8 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { themeSchema, type ThemeFormData } from '@cmsmasters/validators'
 import type { Theme, Template, Block, ThemeBlockFill, Category, Tag, Price, UseCase } from '@cmsmasters/db'
 import { upsertTheme, logAction, themeRowToFormData, formDataToThemeInsert, getCategories, getThemeCategories, setThemeCategories, getTags, getThemeTags, setThemeTags, getPrices, getThemePrices, setThemePrices, getUseCases, getThemeUseCases, setThemeUseCases, searchUseCases, createUseCase, deleteUseCase, getProfile } from '@cmsmasters/db'
-import { AlertTriangle, ChevronLeft, ExternalLink, Eye, LayoutTemplate, Plus, Trash2 } from 'lucide-react'
-import { useLocalPortal } from '../lib/use-local-portal'
+import { AlertTriangle, ChevronLeft, ExternalLink, LayoutTemplate, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@cmsmasters/ui'
 import { fetchThemeBySlug, deleteTheme } from '../lib/queries'
 import { supabase } from '../lib/supabase'
@@ -54,7 +53,6 @@ export function ThemeEditor() {
   const navigate = useNavigate()
   const isNew = !slug
 
-  const localPortal = useLocalPortal()
   const [existingTheme, setExistingTheme] = useState<Theme | null>(null)
   const [loading, setLoading] = useState(!isNew)
   const [fetchError, setFetchError] = useState<string | null>(null)
@@ -577,22 +575,6 @@ export function ThemeEditor() {
         </div>
         {formSlug && (
           <div className="flex items-center" style={{ gap: 'var(--spacing-md)' }}>
-            {localPortal.isAvailable && (
-              <a
-                href={`${localPortal.baseUrl}/themes/${formSlug}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center no-underline"
-                style={{
-                  fontSize: 'var(--text-xs-font-size)',
-                  color: 'hsl(var(--status-success-fg))',
-                  gap: '4px',
-                }}
-              >
-                <Eye size={12} />
-                Local Preview
-              </a>
-            )}
             {existingTheme?.status === 'published' ? (
               <a
                 href={`https://portal.cmsmasters.studio/themes/${formSlug}`}
