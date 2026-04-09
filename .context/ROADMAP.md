@@ -182,47 +182,48 @@ New block = new row in blocks table, zero template changes.
 
 ---
 
-## Layer 3A: Dashboard (2–3 days, parallel with 3B)
+## Layer 3A: Dashboard ✅ DONE (WP-017)
 
-**App:** `apps/dashboard/` — Vite + React Router SPA
-**Auth:** any authenticated user
-**Purpose:** Customer sees profile and licensed themes.
+**App:** `apps/dashboard/` — Vite + React Router v7 + Tailwind v4 SPA on port 5174
+**Auth:** any authenticated user (no role restriction)
+**Figma:** nodes 3151-33 (My Themes), 3163-45 (My Account)
 
 ### Pages
-- `/` — My Themes grid (licenses joined with themes)
-- `/settings` — profile edit (name, avatar)
-- `/licenses` — license list (read-only for now)
+- `/` — My Themes: license cards with thumbnails, badges (Regular/Elements), support status, bundled plugins panel
+- `/account` — My Account: profile + 4 stat cards (Licenses, Themes, Support, Subscription) + capabilities table + access details
+- `/support` — Mock stub (mailto link, deferred to Support System sprint)
+- `/downloads` — Mock stub (ThemeForest link, deferred to R2 ZIP upload)
 
-### MVP scope
-- Login (magic link)
-- My Themes: ThemeCard grid for licensed themes (thumbnail, name, license type, support_until, link to Portal page)
-- Profile: edit name
-- Licenses: read-only list
+### Components
+- `theme-card.tsx` — license card with badge + support status + actions
+- `stat-card.tsx` — reusable stat display
+- `capabilities-table.tsx` — 6-row entitlements table
 
-### NOT in MVP
-- Envato API verification, download signed URLs, purchase code input, activation flow, email notifications
+### Build
+- 477KB main + 4 lazy chunks (my-themes, my-account, support, downloads)
 
 ---
 
-## Layer 3B: Admin (2–3 days, parallel with 3A)
+## Layer 3B: Admin ✅ DONE (WP-017)
 
-**App:** `apps/admin/` — Vite + React Router SPA
-**Auth:** admin role only
-**Purpose:** Admin manages users, themes, views audit log.
+**App:** `apps/admin/` — Vite + React Router v7 + Tailwind v4 SPA on port 5175
+**Auth:** admin staff_role only (`allowedRoles: ['admin']`)
+**Figma:** node 3134-33 (Overview)
 
 ### Pages
-- `/` — overview: 3 KPI cards (users, themes, recent actions) + activity feed
-- `/users` — users table (search, filter by role, paginate)
-- `/users/:id` — user detail + role change dropdown + licenses
-- `/themes` — all themes table (draft + published, link to Studio)
-- `/audit` — audit log table (actor, action, target, timestamp, filters)
+- `/` — Overview: 5 KPI StatCards (Users, Licenses, Themes, Staff, Activations) + activation feed with DateRangeToggle (Today/7d/30d)
+- `/staff` — Staff & Roles: staff list + grant form (email search → resolve ID → POST) + inline revoke
+- `/users` — User List: debounced search + pagination + inspect links
+- `/users/:id` — User Inspector: account card + 4 StatCards + licenses + activity + admin actions
+- `/audit` — Audit Log: action filter + pagination + expandable JSON details
+- `/health` — System Health: status banner + 2×2 grid (Database, R2, Envato, Application)
 
-### MVP scope
-- KPI cards with real data from Supabase
-- Users table with search + filter + drill-down
-- Change user role → Supabase update + audit_log entry
-- Themes table with status badges
-- Audit log viewer with filters
+### Shared Components (7)
+- `lib/api.ts` — fetchAdmin, fetchAdminWithCount, mutateAdmin + response types
+- `page-header.tsx`, `avatar-initials.tsx`, `status-badge.tsx`, `stat-card.tsx`, `date-range-toggle.tsx`, `activation-event.tsx`
+
+### Build
+- 478KB main + 6 lazy chunks
 
 ---
 
@@ -230,11 +231,9 @@ New block = new row in blocks table, zero template changes.
 
 ```
 Layer 0: ██████  DONE
-Layer 1:       ███████░  DONE except error boundaries + media upload + end-to-end test
-Layer 2:              ██████  (2-3 days) ← NEXT
-Layer 3:              ████████  (3-4 days, parallel)
-                                ________
-Remaining:                      ~5-8 days
+Layer 1: ██████  DONE (except error boundaries + media upload)
+Layer 2: ██████  DONE (except content seeding)
+Layer 3: ██████  DONE (WP-017, completed 2026-04-09)
 ```
 
 ---
@@ -244,8 +243,11 @@ Remaining:                      ~5-8 days
 | Feature | When |
 |---------|------|
 | Support App + AI chat | Separate sprint |
-| Envato API verification | Dashboard V2 |
-| Activation flow (WP → Portal) | Dashboard V2 |
+| Activation flow (ADR-006, WP → Portal) | Separate WP (requires theme PHP changes) |
+| Dashboard /activate (purchase code input) | Separate WP |
+| Theme downloads (ZIP from R2) | When ZIPs uploaded to R2 |
+| Dashboard /support (real tickets) | Support System sprint |
+| DateRangeToggle actual filtering | When activity data accumulates |
 | Download signed URLs | Dashboard V2 |
 | Email notifications (Resend) | Dashboard V2 |
 | Studio live preview (iframe) | Studio V2 |

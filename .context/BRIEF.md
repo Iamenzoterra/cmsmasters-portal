@@ -2,7 +2,7 @@
 
 > Read this file FIRST. It gives you the full picture in 5 minutes.
 > Then read the specific layer spec for your current task.
-> Last updated: 7 April 2026
+> Last updated: 9 April 2026
 
 ---
 
@@ -49,23 +49,23 @@ The company operates 4 fragmented domains with no shared navigation, broken post
 
 ---
 
-## What's built (verified 2 April 2026)
+## What's built (verified 9 April 2026)
 
 ### Infrastructure ✅
 | Component | Status | Details |
 |-----------|--------|---------|
 | Nx monorepo | ✅ | nx.json, workspaces, eslint, knip |
-| Supabase DB | ✅ | **13 tables** (profiles, themes, licenses, audit_log, **blocks**, **templates**, **pages**, **page_blocks**, **global_elements**, **categories**, **tags**, **theme_categories**, **theme_tags**). blocks: html+css+js with hooks/metadata. templates: ordered position grids. pages: layout/composed. global_elements: scope-bound header/footer/sidebars. categories/tags: theme taxonomies with many-to-many junctions (theme_categories has is_primary flag). RLS on all tables |
+| Supabase DB | ✅ | **15 tables** (profiles, themes, licenses, audit_log, blocks, templates, pages, page_blocks, global_elements, categories, tags, theme_categories, theme_tags, **staff_roles**, **activity_log**). staff_roles: flexible role assignment with permissions jsonb (replaces static profiles.role for staff). activity_log: business analytics (license_verified, theme_viewed, etc.). RLS on all tables. `get_user_role()` SECURITY DEFINER checks staff_roles → profiles.role fallback |
 | Supabase Auth | ✅ | PKCE configured, magic link, on_auth_user_created trigger |
-| Hono API | ✅ | `apps/api/` — 18+ routes: health, revalidate, upload + upload/batch (R2), blocks CRUD, templates CRUD, pages CRUD, global-elements CRUD. Auth + role guards. R2 bucket `cmsmasters-assets` configured |
+| Hono API | ✅ | `apps/api/` — 32+ routes: health, revalidate, upload + upload/batch (R2), blocks CRUD, templates CRUD, pages CRUD, global-elements CRUD, **licenses** (verify + list), **admin** (stats, users, staff, activity, audit, health), **user** (entitlements, profile). Auth + role guards. R2 bucket `cmsmasters-assets` configured. Envato API integration (mock/live mode) |
 | Design tokens | ✅ | `packages/ui/src/theme/tokens.css` (222 lines, Figma MCP sync) |
 | Design system | ✅ | Flexible, updates through tokens + classes. Three-Layer structure ready |
 
 ### Shared packages ✅
 | Package | Status | Contents |
 |---------|--------|----------|
-| `@cmsmasters/db` | ✅ | client.ts, types.ts (13 tables: Block with html+css+js+sort_order, Template, Theme, Page with layout_slots(string\|string[])+slot_config, PageBlock, GlobalElement, Category, Tag, ThemeCategory, ThemeTag), mappers.ts, queries for all entities |
-| `@cmsmasters/auth` | ✅ | client.ts, hooks.ts (useSession/useUser/useRole), guards.tsx (RequireAuth), actions.ts (magic link + signout) |
+| `@cmsmasters/db` | ✅ | client.ts, types.ts (15 tables incl. StaffRole, ActivityEntry), mappers.ts, queries for all entities incl. **staff-roles.ts** (grant/revoke/list), **activity.ts** (log/query), **licenses.ts** (CRUD + purchase code lookup). profiles.elements_subscriber column added. licenses.theme_id nullable |
+| `@cmsmasters/auth` | ✅ | client.ts, hooks.ts (useSession/useUser/useRole), guards.tsx (RequireAuth), actions.ts (magic link + signout), **resolvers.ts** (resolveBaseAccess, resolveLicenseAccess, resolveStaffAccess, resolveElementsAccess, computeEntitlements). Subpath export: `@cmsmasters/auth/resolvers` for Workers-safe import. useUser() fetches role via `get_user_role()` RPC |
 | `@cmsmasters/api-client` | ✅ | Hono RPC typed client |
 | `@cmsmasters/validators` | ✅ | theme, block (with js), template, page Zod schemas |
 | `@cmsmasters/ui` | 🟡 | tokens.css + button primitive + Three-Layer dirs + `portal-blocks.css` (.cms-btn system) + `animate-utils.js` (5 behavioral animation utilities) |
@@ -76,8 +76,8 @@ The company operates 4 fragmented domains with no shared navigation, broken post
 | Command Center | ✅ DONE | 6 pages, localhost:4000, own dark theme |
 | Studio | ✅ DONE | Login, themes, blocks (editor + Process panel with token scanner + R2 image upload + component detection), templates, pages, global elements settings, **theme meta (categories + tags CRUD with tabbed UI + picker modals)**. Block editor: HTML+CSS+JS fields, import with script preservation, export. Process panel: split preview (before/after), zoom, scroll, replay, animation support. Theme editor: category/tag picker modals with is_primary toggle, junction table save/load. |
 | Portal | ✅ DONE | **Next.js 15 App Router (SSG + ISR)** on Vercel. Theme pages (layout + global elements + template blocks + hook resolution). **Multi-block slots**: sidebar/header/footer slots support multiple blocks with configurable gap (WP-014). Composed pages (page_blocks + global elements). SEO: JSON-LD Product/WebPage, OG, canonical, sitemap.xml, robots.txt. On-demand revalidation via `/api/revalidate`. Dev port: 3100. |
-| Dashboard | ⬜ | Not created yet |
-| Admin | ⬜ | Not created yet |
+| Dashboard | ✅ DONE | Vite SPA on :5174. My Themes (license cards, support status, bundled plugins), My Account (profile, 4 stat cards, capabilities table, access details), Support (mock), Downloads (mock). Auth: any authenticated user. Lazy routes. |
+| Admin | ✅ DONE | Vite SPA on :5175. Overview (5 KPIs, activation feed, date range toggle), Staff & Roles (grant/revoke), User Inspector (search + full detail), Audit Log (filterable), System Health (DB/R2/Envato status). Auth: admin only via staff_roles. |
 
 ### Also done
 - 24 ADR files (V2/V3/V4) in workplan/adr/ — incl. ADR-007 V4 (Next.js Portal), ADR-023 (Block Animations), ADR-024 (Block Components)
@@ -88,13 +88,14 @@ The company operates 4 fragmented domains with no shared navigation, broken post
 - .context/ folder with agent context
 - CLAUDE.md agent instructions
 - 5 skills: block-craft, portal-workflow, lint-ds, sync-tokens, figma-component-vars
+- WP-017 Layer 3: 3 DB migrations (012-014), 14 API endpoints, 2 new SPAs (Dashboard + Admin), entitlement resolvers
 
 ### Living Documentation ✅
 | Component | Status | Details |
 |-----------|--------|---------|
 | Domain Manifest | ✅ | `src/__arch__/domain-manifest.ts` — 11 domains, typed DomainDefinition interface |
 | Domain Skills | ✅ | `.claude/skills/domains/` — 11 SKILL.md files (invariants, traps, blast radius) |
-| Arch Tests | ✅ | `src/__arch__/domain-manifest.test.ts` — 286 tests: path existence, dual ownership, table access, skill parity |
+| Arch Tests | ✅ | `src/__arch__/domain-manifest.test.ts` — 384 tests: path existence, dual ownership, table access, skill parity |
 | `npm run arch-test` | ✅ | Runs all enforcement tests in ~400ms |
 
 > Source: [WP-009 Living Documentation](../workplan/WP-009-living-documentation.md) | Logs: `logs/wp-009/`
@@ -113,17 +114,23 @@ Layer 1: Studio + DB + API        ✅ DONE (WP-005A+B+C+D Phase 1)
 Block Import Pipeline             ✅ DONE (WP-006: token scanner, R2 upload, Process panel, portal-blocks.css, animate-utils.js)
 Layer 2: Portal (Next.js 15)      ✅ DONE (WP-007: layout editor, theme pages, composed pages, SEO, sitemap. Migrated Astro→Next.js 4 Apr 2026)
 Global Elements V2                ✅ DONE (WP-008: block categories, defaults, layout slot overrides, new portal resolution)
-Layer 3: Dashboard + Admin        ⬜ future
+Layer 3: Dashboard + Admin        ✅ DONE (WP-017: 9 phases, DB migration + auth refactor + 14 API endpoints + 2 SPAs)
 ```
 
-### What's next: Layer 3 (Dashboard + Admin)
-- `apps/dashboard/` — profile, my themes, license list
-- `apps/admin/` — users table, role management, themes overview, audit log
+### What's next
 - Content seeding: real blocks from Figma via `/block-craft`, real themes in Studio
+- Homepage wireframe → implementation
+- Theme catalog `/themes` with search
+- Support App (AI chat, ticket system)
 
-### What's left for Layer 3
-- `apps/dashboard/` — profile, my themes, license list
-- `apps/admin/` — users table, role management, themes overview, audit log
+### Deferred from WP-017
+| Feature | When |
+|---------|------|
+| Dashboard /support (real tickets) | Support System sprint |
+| Dashboard /activate (purchase code) | Separate WP (requires theme PHP changes) |
+| Theme downloads (ZIP from R2) | When ZIPs uploaded to R2 |
+| Activation flow (ADR-006) | Separate WP |
+| DateRangeToggle actual filtering | When activity data accumulates |
 
 ---
 
@@ -189,3 +196,4 @@ Dmitry communicates concisely in Ukrainian. Corrections are brief — reorient i
 - WP-007 Phase 1–5: `logs/wp-007/` — Portal layout system (layout editor, Astro SSG, theme pages, composed pages, SEO, sitemap, CF Pages deploy)
 - WP-008 Phase 1–5: `logs/wp-008/` — Global Elements V2 (block categories, defaults, layout slot overrides, portal cascade resolution)
 - Portal Next.js Migration: `logs/portal-nextjs-migration/` — Astro → Next.js 15, ISR, Vercel deploy, revalidation endpoint, portal link in Studio
+- WP-017 Phase 0–8: `logs/wp-017/` — Layer 3 Dashboard + Admin (staff_roles, activity_log, auth resolvers, 14 API endpoints, Dashboard SPA, Admin SPA)
