@@ -1,0 +1,28 @@
+{
+  "name": "@cmsmasters/admin",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "targets": {
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx vite --port 5175",
+        "cwd": "apps/admin"
+      },
+      "continuous": true
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx vite build",
+        "cwd": "apps/admin"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx tsc --noEmit",
+        "cwd": "apps/admin"
+      }
+    }
+  }
+}
