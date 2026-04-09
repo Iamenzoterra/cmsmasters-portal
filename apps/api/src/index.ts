@@ -21,13 +21,20 @@ app.use(
   '*',
   cors({
     origin: [
-      'http://localhost:5173', // Studio (Vite default)
-      'http://localhost:5174', // Dashboard
-      'http://localhost:5175', // Admin
-      'http://localhost:5176', // Support
-      'http://localhost:4000', // Command Center
-      'http://localhost:3000', // Portal (Next.js)
-      'http://localhost:4321', // Astro (build/preview)
+      // Production
+      'https://portal.cmsmasters.studio',
+      'https://dashboard.cmsmasters.studio',
+      'https://admin.cmsmasters.studio',
+      'https://studio.cmsmasters.studio',
+      // Development
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'http://localhost:5175',
+      'http://localhost:5176',
+      'http://localhost:4000',
+      'http://localhost:3000',
+      'http://localhost:3100',
+      'http://localhost:4321',
     ],
     allowHeaders: ['Content-Type', 'Authorization'],
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
