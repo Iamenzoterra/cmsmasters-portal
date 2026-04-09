@@ -66,7 +66,7 @@ admin.get('/admin/users', async (c) => {
   }
 
   const { data, error, count } = await query
-  if (error) return c.json({ error: 'Failed to fetch users' }, 500)
+  if (error) return c.json({ error: 'Failed to fetch users', detail: error.message, code: error.code, hint: error.hint }, 500)
   return c.json({ data, count })
 })
 
