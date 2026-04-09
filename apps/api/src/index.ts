@@ -22,7 +22,7 @@ app.use(
   cors({
     origin: [
       // Production
-      'https://portal.cmsmasters.studio',
+      'https://cmsmasters.studio',
       'https://dashboard.cmsmasters.studio',
       'https://admin.cmsmasters.studio',
       'https://studio.cmsmasters.studio',
