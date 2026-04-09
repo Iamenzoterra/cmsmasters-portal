@@ -24,6 +24,8 @@ const HOOK_SHORTCUTS = [
   { pattern: '{{primary_categories}}', resolves: 'theme_categories (is_primary=true) join categories', description: 'Badge pills for primary categories' },
   { pattern: '{{perfect_for}}', resolves: 'theme_use_cases join use_cases', description: 'HTML list of use cases ("Perfect for" sidebar)' },
   { pattern: '{{tags}}', resolves: 'theme_tags join tags', description: 'Comma-separated tag names' },
+  { pattern: '{{theme_details}}', resolves: 'theme.meta.theme_details', description: 'Icon + label + value list (Theme Details sidebar)' },
+  { pattern: '{{help_and_support}}', resolves: 'theme.meta.help_and_support', description: 'Icon + label + value list (Help & Support sidebar)' },
 ] as const
 
 function CopyButton({ text }: { text: string }) {
@@ -62,8 +64,8 @@ function CodeChip({ children }: { children: string }) {
           backgroundColor: 'hsl(var(--bg-surface))',
           padding: '2px 8px',
           borderRadius: 'var(--rounded-sm)',
-          fontFamily: 'var(--font-family-monospace)',
         }}
+        className="font-mono"
       >
         {children}
       </code>
@@ -291,7 +293,7 @@ export function SlotsList() {
                     <CodeChip>{s.pattern}</CodeChip>
                   </td>
                   <td style={tdStyle}>
-                    <code style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-secondary))', fontFamily: 'var(--font-family-monospace)' }}>
+                    <code className="font-mono" style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-secondary))' }}>
                       {s.resolves}
                     </code>
                   </td>
@@ -333,9 +335,9 @@ export function SlotsList() {
         <div className="flex flex-col" style={{ gap: 'var(--spacing-xs)' }}>
           <div className="flex items-start" style={{ gap: 'var(--spacing-sm)' }}>
             <code
+              className="font-mono"
               style={{
                 fontSize: 'var(--text-xs-font-size)',
-                fontFamily: 'var(--font-family-monospace)',
                 color: 'hsl(var(--text-link))',
                 backgroundColor: 'hsl(var(--bg-surface))',
                 padding: '2px 8px',
@@ -351,9 +353,9 @@ export function SlotsList() {
           </div>
           <div className="flex items-start" style={{ gap: 'var(--spacing-sm)' }}>
             <code
+              className="font-mono"
               style={{
                 fontSize: 'var(--text-xs-font-size)',
-                fontFamily: 'var(--font-family-monospace)',
                 color: 'hsl(var(--text-link))',
                 backgroundColor: 'hsl(var(--bg-surface))',
                 padding: '2px 8px',
@@ -372,7 +374,7 @@ export function SlotsList() {
 
       {/* Source note */}
       <p style={{ marginTop: 'var(--spacing-md)', fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>
-        Source of truth: <code style={{ fontFamily: 'var(--font-family-monospace)' }}>packages/db/src/slot-registry.ts</code>
+        Source of truth: <code className="font-mono">packages/db/src/slot-registry.ts</code>
       </p>
     </>
   )
