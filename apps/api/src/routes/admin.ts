@@ -54,7 +54,7 @@ admin.get('/admin/users', async (c) => {
 
   let query = supabase
     .from('profiles')
-    .select('*, staff_roles(role, permissions, granted_at)', { count: 'exact' })
+    .select('*, staff_roles!staff_roles_user_id_fkey(role, permissions, granted_at)', { count: 'exact' })
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1)
 
