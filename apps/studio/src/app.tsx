@@ -24,6 +24,7 @@ const PageEditor = lazy(() => import('./pages/page-editor').then(m => ({ default
 const GlobalElementsSettings = lazy(() => import('./pages/global-elements-settings').then(m => ({ default: m.GlobalElementsSettings })))
 const ElementsList = lazy(() => import('./pages/elements-list').then(m => ({ default: m.ElementsList })))
 const SlotsList = lazy(() => import('./pages/slots-list').then(m => ({ default: m.SlotsList })))
+const LayoutPreview = lazy(() => import('./pages/layout-preview').then(m => ({ default: m.LayoutPreview })))
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
@@ -63,6 +64,17 @@ export function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
       </Route>
+      {/* Bare full-screen preview — no AppLayout chrome, opens in new window */}
+      <Route
+        path="/layouts/:id/preview"
+        element={
+          <ProtectedRoute>
+            <ErrorBoundary>
+              <LayoutPreview />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        }
+      />
       <Route
         element={
           <ProtectedRoute>

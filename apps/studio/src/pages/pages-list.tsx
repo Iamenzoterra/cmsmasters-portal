@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Page } from '@cmsmasters/db'
 import { Button } from '@cmsmasters/ui'
-import { FileText, Plus, Search } from 'lucide-react'
+import { FileText, Plus, Search, Eye } from 'lucide-react'
 import { StyledSelect } from '../components/styled-select'
 import { fetchAllPages } from '../lib/page-api'
 import { Pagination } from '../components/pagination'
@@ -271,7 +271,7 @@ export function PagesList({
                   borderBottom: '1px solid hsl(var(--border-default))',
                 }}
               >
-                {['Title', 'Slug', ...(filterType ? [] : ['Type']), 'Status', 'Updated'].map((h) => (
+                {['Title', 'Slug', ...(filterType ? [] : ['Type']), 'Status', 'Updated', ...(filterType === 'layout' ? ['Preview'] : [])].map((h) => (
                   <th
                     key={h}
                     style={{
@@ -359,6 +359,39 @@ export function PagesList({
                     >
                       {timeAgo(p.updated_at)}
                     </td>
+                    {filterType === 'layout' && (
+                      <td
+                        style={{
+                          padding: 'var(--spacing-sm) var(--spacing-md)',
+                          width: '1%',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            window.open(`/layouts/${p.id}/preview`, '_blank', 'noopener,noreferrer')
+                          }}
+                          className="inline-flex items-center border"
+                          style={{
+                            gap: '4px',
+                            height: '28px',
+                            padding: '0 var(--spacing-sm)',
+                            borderRadius: 'var(--rounded-md)',
+                            borderColor: 'hsl(var(--border-default))',
+                            backgroundColor: 'hsl(var(--bg-surface))',
+                            color: 'hsl(var(--text-link))',
+                            fontSize: 'var(--text-xs-font-size)',
+                            fontWeight: 'var(--font-weight-medium)',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <Eye size={12} />
+                          Preview
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 )
               })}

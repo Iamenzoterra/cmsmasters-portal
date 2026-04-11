@@ -17,8 +17,6 @@ import { CharCounter } from '../components/char-counter'
 import { EditorFooter } from '../components/editor-footer'
 import { BlockPickerModal } from '../components/block-picker-modal'
 import { DeleteConfirmModal } from '../components/delete-confirm-modal'
-import tokensCSS from '../../../../packages/ui/src/theme/tokens.css?raw'
-import portalBlocksCSS from '../../../../packages/ui/src/portal/portal-blocks.css?raw'
 
 const inputStyle: React.CSSProperties = {
   height: '36px',
@@ -612,12 +610,17 @@ export function PageEditor() {
                     <Upload size={14} />
                     Import HTML
                   </Button>
-                  <Button variant="outline" size="sm" disabled={!layoutCode.trim()} onClick={() => {
-                    const name = form.getValues('title') || 'Layout Preview'
-                    const html = `<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8" />\n<meta name="viewport" content="width=device-width, initial-scale=1.0" />\n<title>${name}</title>\n<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />\n<style>*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; } body { font-family:'Manrope',system-ui,sans-serif; background:hsl(20 23% 97%); }\n${tokensCSS}\n${portalBlocksCSS}</style>\n</head>\n<body style="display:flex;justify-content:center;padding-top:200px">\n${layoutCode}\n</body>\n</html>`
-                    const win = window.open('', '_blank')
-                    if (win) { win.document.write(html); win.document.close() }
-                  }}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={!existingPage}
+                    title={existingPage ? 'Open schematic preview in new window' : 'Save layout first to preview'}
+                    onClick={() => {
+                      if (existingPage) {
+                        window.open(`/layouts/${existingPage.id}/preview`, '_blank', 'noopener,noreferrer')
+                      }
+                    }}
+                  >
                     <Eye size={14} />
                     Preview
                   </Button>
