@@ -1,0 +1,36 @@
+version: 1
+name: Full Width
+scope: _preset-full-width
+description: Header, full-width content, footer. For homepage, landing pages. Blocks control their own max-width.
+
+grid:
+  desktop:
+    min-width: "1440px"
+    columns:
+      content: "1fr"
+    column-gap: "0"
+  tablet:
+    min-width: "768px"
+    columns:
+      content: "1fr"
+    column-gap: "0"
+  mobile:
+    min-width: "0px"
+    columns:
+      content: "1fr"
+    column-gap: "0"
+
+slots:
+  header:
+    position: top
+    sticky: true
+    z-index: 100
+    padding: "0"
+  content:
+    padding: "--spacing-xl"
+    gap: "--spacing-2xl"
+    min-height: "600px"
+  footer:
+    position: bottom
+    margin-top: "--spacing-2xl"
+    min-height: "120px"

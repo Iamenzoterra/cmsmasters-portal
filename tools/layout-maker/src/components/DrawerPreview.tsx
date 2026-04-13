@@ -1,17 +1,12 @@
 import { useState } from 'react'
 import type { LayoutConfig, TokenMap, BreakpointGrid } from '../lib/types'
+import { resolveToken } from '../lib/tokens'
 
 interface Props {
   config: LayoutConfig
   tokens: TokenMap
   grid: BreakpointGrid
   drawerSlots: string[]
-}
-
-function resolveToken(token: string, tokens: TokenMap): string {
-  if (token === '0') return '0px'
-  const px = tokens.spacing[token]
-  return px != null ? `${px}px` : token
 }
 
 export function DrawerPreview({ config, tokens, grid, drawerSlots }: Props) {

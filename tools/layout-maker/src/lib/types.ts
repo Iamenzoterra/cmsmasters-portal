@@ -42,3 +42,20 @@ export interface LayoutSummary {
   scope: string
   description?: string
 }
+
+export interface ExportPayload {
+  slug: string
+  title: string
+  type: 'layout'
+  scope: string
+  html: string
+  css: string
+  layout_slots: Record<string, unknown>
+  slot_config: Record<string, { gap?: string }>
+  status: 'draft'
+}
+
+export interface ExportResult {
+  payload: ExportPayload
+  files: { html: string; css: string }
+}

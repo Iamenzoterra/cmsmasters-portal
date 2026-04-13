@@ -1,0 +1,203 @@
+import type { LayoutConfig, TokenMap } from '../lib/types'
+import { resolveToken, resolveTokenPx } from '../lib/tokens'
+import { CopyButton } from './CopyButton'
+
+interface Props {
+  selectedSlot: string | null
+  config: LayoutConfig | null
+  activeBreakpoint: string
+  tokens: TokenMap | null
+  onShowToast: (message: string) => void
+}
+
+interface PropertyRow {
+  label: string
+  property: string
+  value: string
+  token?: string
+  resolvedPx?: string
+}
+
+export function Inspector({ selectedSlot, config, activeBreakpoint, tokens, onShowToast }: Props) {
+  if (!config || !tokens) {
+    return (
+      <div className="lm-inspector">
+        <div className="lm-inspector__header">Inspector</div>
+        <div className="lm-inspector__body">
+          <div className="lm-inspector__empty">
+            Select a layout to get started.
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!selectedSlot) {
+    return (
+      <div className="lm-inspector">
+        <div className="lm-inspector__header">Inspector</div>
+        <div className="lm-inspector__body">
+          <div className="lm-inspector__empty">
+            Click a slot in the canvas to inspect its properties.
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const slotConfig = config.slots[selectedSlot] ?? {}
+  const grid = config.grid[activeBreakpoint]
+  const bpWidth = grid?.['min-width'] ?? '0'
+  const columnWidth = grid?.columns?.[selectedSlot]
+  const isFullWidth = slotConfig.position === 'top' || slotConfig.position === 'bottom'
+
+  // Build property rows
+  const rows: PropertyRow[] = []
+
+  // Width
+  if (isFullWidth) {
+    rows.push({ label: 'Width', property: 'width', value: 'full width' })
+  } else if (columnWidth) {
+    rows.push({ label: 'Width', property: 'width', value: columnWidth })
+  } else {
+    rows.push({ label: 'Width', property: 'width', value: 'n/a' })
+  }
+
+  // Spacing properties
+  const spacingProps: Array<{ label: string; key: string }> = [
+    { label: 'Padding', key: 'padding' },
+    { label: 'Gap', key: 'gap' },
+    { label: 'Min-height', key: 'min-height' },
+    { label: 'Margin-top', key: 'margin-top' },
+  ]
+
+  for (const { label, key } of spacingProps) {
+    const val = slotConfig[key as keyof typeof slotConfig] as string | undefined
+    if (!val) continue
+    const resolved = resolveToken(val, tokens)
+    const isToken = resolved !== val
+    rows.push({
+      label,
+      property: key,
+      value: val,
+      token: isToken ? val : undefined,
+      resolvedPx: isToken ? resolved : undefined,
+    })
+  }
+
+  // Align
+  if (slotConfig.align) {
+    rows.push({ label: 'Align', property: 'align', value: slotConfig.align })
+  }
+
+  // Usable width
+  let usableWidth: string | null = null
+  if (!isFullWidth && columnWidth) {
+    const colPx = parseInt(columnWidth, 10)
+    const paddingToken = slotConfig.padding
+    if (!isNaN(colPx) && columnWidth.endsWith('px') && paddingToken) {
+      const paddingPx = resolveTokenPx(paddingToken, tokens)
+      if (paddingPx != null) {
+        usableWidth = `${colPx - paddingPx * 2}px`
+      }
+    } else if (columnWidth === '1fr' || columnWidth.includes('fr')) {
+      usableWidth = 'dynamic'
+    }
+  }
+
+  // Test blocks
+  const testBlocks = config['test-blocks']?.[selectedSlot]
+  const blockCount = testBlocks?.length ?? 0
+
+  // Format helpers
+  function formatLine(prop: string, token: string | undefined, resolved: string): string {
+    const prefix = `[${activeBreakpoint} ${bpWidth}] ${selectedSlot}.${prop}`
+    if (token) return `${prefix}: ${token} (${resolved})`
+    return `${prefix}: ${resolved}`
+  }
+
+  function formatSummary(): string {
+    const parts = rows
+      .filter((r) => r.property !== 'width' || r.value !== 'n/a')
+      .map((r) => {
+        if (r.token && r.resolvedPx) return `${r.property} ${r.token} (${r.resolvedPx})`
+        return `${r.property} ${r.value}`
+      })
+    return `[${activeBreakpoint} ${bpWidth}] ${selectedSlot}: ${parts.join(', ')}`
+  }
+
+  const handleCopied = () => onShowToast('Copied!')
+
+  return (
+    <div className="lm-inspector">
+      <div className="lm-inspector__header">Inspector</div>
+      <div className="lm-inspector__body">
+        {/* Slot name + Copy all */}
+        <div className="lm-inspector__section">
+          <div className="lm-inspector__slot-name">
+            {selectedSlot}
+            <CopyButton text={formatSummary()} onCopied={handleCopied} />
+          </div>
+        </div>
+
+        {/* Property rows */}
+        {rows.map((row) => (
+          <div key={row.property} className="lm-inspector__section">
+            <div className="lm-inspector__row">
+              <span className="lm-inspector__label">{row.label}</span>
+              <span className="lm-inspector__value">
+                {row.token ?? row.value}
+                <CopyButton
+                  text={formatLine(row.property, row.token, row.resolvedPx ?? row.value)}
+                  onCopied={handleCopied}
+                />
+              </span>
+            </div>
+            {row.resolvedPx && (
+              <div className="lm-inspector__value-sub">({row.resolvedPx})</div>
+            )}
+          </div>
+        ))}
+
+        {/* Usable width */}
+        {usableWidth && (
+          <div className="lm-inspector__section lm-inspector__derived">
+            <div className="lm-inspector__row">
+              <span className="lm-inspector__label">Usable width</span>
+              <span className="lm-inspector__value">
+                {usableWidth}
+                {usableWidth !== 'dynamic' && (
+                  <CopyButton
+                    text={formatLine('usable-width', undefined, usableWidth)}
+                    onCopied={handleCopied}
+                  />
+                )}
+              </span>
+            </div>
+            {usableWidth !== 'dynamic' && (
+              <div className="lm-inspector__value-sub">(width − padding × 2)</div>
+            )}
+          </div>
+        )}
+
+        {/* Breakpoint info */}
+        <div className="lm-inspector__section lm-inspector__info">
+          <div className="lm-inspector__row">
+            <span className="lm-inspector__label">Breakpoint</span>
+            <span className="lm-inspector__value">{activeBreakpoint} ({bpWidth})</span>
+          </div>
+        </div>
+
+        {/* Test blocks */}
+        {blockCount > 0 && (
+          <div className="lm-inspector__section lm-inspector__info">
+            <div className="lm-inspector__row">
+              <span className="lm-inspector__label">Test blocks</span>
+              <span className="lm-inspector__value">{blockCount} loaded</span>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

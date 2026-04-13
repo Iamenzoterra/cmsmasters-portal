@@ -1,9 +1,27 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type { LayoutConfig, LayoutSummary, TokenMap } from './lib/types'
 import { api } from './lib/api-client'
 import { LayoutSidebar } from './components/LayoutSidebar'
 import { BreakpointBar } from './components/BreakpointBar'
 import { Canvas } from './components/Canvas'
+import { Inspector } from './components/Inspector'
+import { ExportDialog } from './components/ExportDialog'
+import { Toast } from './components/Toast'
+
+function getChangedSlots(prev: LayoutConfig, next: LayoutConfig): string[] {
+  const changed: string[] = []
+  for (const slot of Object.keys(next.slots)) {
+    if (JSON.stringify(prev.slots[slot]) !== JSON.stringify(next.slots[slot])) {
+      changed.push(slot)
+    }
+  }
+  for (const bp of Object.keys(next.grid)) {
+    if (JSON.stringify(prev.grid[bp]?.columns) !== JSON.stringify(next.grid[bp]?.columns)) {
+      changed.push(...Object.keys(next.grid[bp].columns))
+    }
+  }
+  return [...new Set(changed)]
+}
 
 export function App() {
   const [layouts, setLayouts] = useState<LayoutSummary[]>([])
@@ -11,6 +29,14 @@ export function App() {
   const [activeConfig, setActiveConfig] = useState<LayoutConfig | null>(null)
   const [tokens, setTokens] = useState<TokenMap | null>(null)
   const [activeBreakpoint, setActiveBreakpoint] = useState<string>('')
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
+  const [changedSlots, setChangedSlots] = useState<string[]>([])
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const [toastKey, setToastKey] = useState(0)
+  const [showExportDialog, setShowExportDialog] = useState(false)
+
+  const prevConfigRef = useRef<LayoutConfig | null>(null)
+  const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const refreshLayouts = useCallback(async () => {
     try {
@@ -19,6 +45,15 @@ export function App() {
     } catch {
       // Runtime may not be ready yet
     }
+  }, [])
+
+  const showToast = useCallback((message: string) => {
+    setToastMessage(message)
+    setToastKey((k) => k + 1)
+  }, [])
+
+  const dismissToast = useCallback(() => {
+    setToastMessage(null)
   }, [])
 
   // Fetch layouts + tokens on mount
@@ -31,11 +66,16 @@ export function App() {
   useEffect(() => {
     if (!activeScope) {
       setActiveConfig(null)
+      setSelectedSlot(null)
+      prevConfigRef.current = null
       return
     }
 
+    setSelectedSlot(null)
+
     api.getLayout(activeScope).then((config) => {
       setActiveConfig(config)
+      prevConfigRef.current = config
       // Default to first breakpoint
       const bpKeys = Object.keys(config.grid)
       if (bpKeys.length > 0) setActiveBreakpoint(bpKeys[0])
@@ -52,58 +92,94 @@ export function App() {
       }
       if (event.type === 'layout-deleted' && event.scope === activeScope) {
         setActiveScope(null)
+        showToast('Layout deleted.')
       }
       if (event.type === 'layout-changed' && event.scope === activeScope) {
-        api.getLayout(event.scope).then(setActiveConfig).catch(() => {})
+        api.getLayout(event.scope).then((newConfig) => {
+          // Diff for flash
+          if (prevConfigRef.current) {
+            const changed = getChangedSlots(prevConfigRef.current, newConfig)
+            if (changed.length > 0) {
+              setChangedSlots(changed)
+              // Clear previous timer if rapid-fire updates
+              if (flashTimerRef.current) clearTimeout(flashTimerRef.current)
+              flashTimerRef.current = setTimeout(() => setChangedSlots([]), 500)
+            }
+          }
+          prevConfigRef.current = newConfig
+          setActiveConfig(newConfig)
+          showToast('Layout updated externally.')
+        }).catch(() => {})
       }
     })
     return unsubscribe
-  }, [activeScope, refreshLayouts])
+  }, [activeScope, refreshLayouts, showToast])
 
   return (
-    <div className="lm-shell">
-      {/* Left sidebar */}
-      <LayoutSidebar
-        layouts={layouts}
-        activeScope={activeScope}
-        onSelect={setActiveScope}
-        onRefresh={refreshLayouts}
-      />
+    <>
+      <div className="lm-shell">
+        {/* Left sidebar */}
+        <LayoutSidebar
+          layouts={layouts}
+          activeScope={activeScope}
+          onSelect={setActiveScope}
+          onRefresh={refreshLayouts}
+          onExport={() => setShowExportDialog(true)}
+        />
 
-      {/* Center canvas */}
-      <div className="lm-canvas-area">
-        {activeConfig && tokens ? (
-          <>
-            <BreakpointBar
-              config={activeConfig}
-              tokens={tokens}
-              activeBreakpoint={activeBreakpoint}
-              onBreakpointChange={setActiveBreakpoint}
-            />
-            <Canvas
-              config={activeConfig}
-              tokens={tokens}
-              activeBreakpoint={activeBreakpoint}
-            />
-          </>
-        ) : (
-          <div className="lm-empty">
-            {layouts.length === 0
-              ? 'No layouts yet. Create one to get started.'
-              : 'Select a layout from the sidebar.'}
-          </div>
-        )}
-      </div>
-
-      {/* Right inspector (stub for Phase 3) */}
-      <div className="lm-inspector">
-        <div className="lm-inspector__header">Inspector</div>
-        <div className="lm-inspector__body">
-          <div className="lm-inspector__empty">
-            Click a slot in the canvas to inspect it.
-          </div>
+        {/* Center canvas */}
+        <div className="lm-canvas-area">
+          {activeConfig && tokens ? (
+            <>
+              <BreakpointBar
+                config={activeConfig}
+                tokens={tokens}
+                activeBreakpoint={activeBreakpoint}
+                onBreakpointChange={setActiveBreakpoint}
+              />
+              <Canvas
+                config={activeConfig}
+                tokens={tokens}
+                activeBreakpoint={activeBreakpoint}
+                selectedSlot={selectedSlot}
+                onSlotSelect={setSelectedSlot}
+                changedSlots={changedSlots}
+              />
+            </>
+          ) : (
+            <div className="lm-empty">
+              {layouts.length === 0
+                ? 'No layouts yet. Create one to get started.'
+                : 'Select a layout from the sidebar.'}
+            </div>
+          )}
         </div>
+
+        {/* Right inspector */}
+        <Inspector
+          selectedSlot={selectedSlot}
+          config={activeConfig}
+          activeBreakpoint={activeBreakpoint}
+          tokens={tokens}
+          onShowToast={showToast}
+        />
       </div>
-    </div>
+
+      {/* Export dialog */}
+      {showExportDialog && activeScope && (
+        <ExportDialog
+          scope={activeScope}
+          onClose={() => setShowExportDialog(false)}
+          onShowToast={showToast}
+        />
+      )}
+
+      {/* Toast — outside grid to avoid overflow:hidden clipping */}
+      <Toast
+        key={toastKey}
+        message={toastMessage}
+        onDismiss={dismissToast}
+      />
+    </>
   )
 }

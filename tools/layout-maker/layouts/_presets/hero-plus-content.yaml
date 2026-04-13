@@ -1,0 +1,42 @@
+version: 1
+name: Hero Plus Content
+scope: _preset-hero-plus-content
+description: Header, full-width hero (no padding), centered content, footer. For marketing pages.
+
+grid:
+  desktop:
+    min-width: "1440px"
+    columns:
+      content: "1fr"
+    column-gap: "0"
+    max-width: "960px"
+    center: true
+  tablet:
+    min-width: "768px"
+    columns:
+      content: "1fr"
+    column-gap: "0"
+  mobile:
+    min-width: "0px"
+    columns:
+      content: "1fr"
+    column-gap: "0"
+
+slots:
+  header:
+    position: top
+    sticky: true
+    z-index: 100
+    padding: "0"
+  hero:
+    position: top
+    padding: "0"
+    min-height: "400px"
+  content:
+    padding: "--spacing-3xl"
+    gap: "--spacing-2xl"
+    min-height: "600px"
+  footer:
+    position: bottom
+    margin-top: "--spacing-2xl"
+    min-height: "120px"

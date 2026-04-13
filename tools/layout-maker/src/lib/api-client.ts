@@ -1,4 +1,4 @@
-import type { LayoutConfig, LayoutSummary, TokenMap } from './types'
+import type { LayoutConfig, LayoutSummary, TokenMap, ExportResult } from './types'
 
 const BASE = 'http://localhost:7701'
 
@@ -53,6 +53,21 @@ export const api = {
 
   listPresets: (): Promise<LayoutSummary[]> =>
     fetch(`${BASE}/presets`).then((r) => json(r)),
+
+  exportLayout: async (scope: string): Promise<ExportResult> => {
+    const res = await fetch(`${BASE}/layouts/${scope}/export`, {
+      method: 'POST',
+    })
+    const body = await res.json()
+    if (!res.ok) {
+      const err = new Error(body.error ?? `HTTP ${res.status}`) as Error & {
+        details?: string[]
+      }
+      if (body.details) err.details = body.details
+      throw err
+    }
+    return body
+  },
 
   getTokens: (): Promise<TokenMap> =>
     fetch(`${BASE}/tokens`).then((r) => json(r)),

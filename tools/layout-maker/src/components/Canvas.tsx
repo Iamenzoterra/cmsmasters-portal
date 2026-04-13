@@ -1,17 +1,16 @@
 import { useRef, useEffect, useState } from 'react'
 import type { LayoutConfig, TokenMap } from '../lib/types'
+import { resolveToken } from '../lib/tokens'
 import { DrawerPreview } from './DrawerPreview'
+import { SlotOverlay } from './SlotOverlay'
 
 interface Props {
   config: LayoutConfig
   tokens: TokenMap
   activeBreakpoint: string
-}
-
-function resolveToken(token: string, tokens: TokenMap): string {
-  if (token === '0') return '0px'
-  const px = tokens.spacing[token]
-  return px != null ? `${px}px` : token
+  selectedSlot: string | null
+  onSlotSelect: (name: string) => void
+  changedSlots: string[]
 }
 
 function getSlotType(name: string): string {
@@ -23,10 +22,16 @@ function getSlotType(name: string): string {
   return name
 }
 
-export function Canvas({ config, tokens, activeBreakpoint }: Props) {
+export function Canvas({ config, tokens, activeBreakpoint, selectedSlot, onSlotSelect, changedSlots }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const viewportRef = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(1)
+  const [hoverInfo, setHoverInfo] = useState<{
+    name: string
+    element: HTMLElement
+    slotConfig: { padding?: string; gap?: string; [key: string]: unknown }
+    columnWidth: string
+  } | null>(null)
 
   const grid = config.grid[activeBreakpoint]
   if (!grid) return <div className="lm-empty">No grid config for "{activeBreakpoint}"</div>
@@ -38,7 +43,6 @@ export function Canvas({ config, tokens, activeBreakpoint }: Props) {
   // Separate slots by position
   const topSlots = Object.entries(config.slots).filter(([, s]) => s.position === 'top')
   const bottomSlots = Object.entries(config.slots).filter(([, s]) => s.position === 'bottom')
-  const gridColumnNames = Object.keys(grid.columns)
 
   // In drawer mode, exclude sidebar columns from the grid
   const visibleColumns = isDrawerMode
@@ -86,6 +90,11 @@ export function Canvas({ config, tokens, activeBreakpoint }: Props) {
             tokens={tokens}
             width="100%"
             slotConfig={slotConfig}
+            isSelected={name === selectedSlot}
+            isFlashing={changedSlots.includes(name)}
+            onClick={() => onSlotSelect(name)}
+            onMouseEnter={(el) => setHoverInfo({ name, element: el, slotConfig, columnWidth: '100%' })}
+            onMouseLeave={() => setHoverInfo(null)}
           />
         ))}
 
@@ -109,6 +118,11 @@ export function Canvas({ config, tokens, activeBreakpoint }: Props) {
                 tokens={tokens}
                 width={width}
                 slotConfig={slotConfig}
+                isSelected={name === selectedSlot}
+                isFlashing={changedSlots.includes(name)}
+                onClick={() => onSlotSelect(name)}
+                onMouseEnter={(el) => setHoverInfo({ name, element: el, slotConfig, columnWidth: width })}
+                onMouseLeave={() => setHoverInfo(null)}
               />
             )
           })}
@@ -123,6 +137,11 @@ export function Canvas({ config, tokens, activeBreakpoint }: Props) {
             tokens={tokens}
             width="100%"
             slotConfig={slotConfig}
+            isSelected={name === selectedSlot}
+            isFlashing={changedSlots.includes(name)}
+            onClick={() => onSlotSelect(name)}
+            onMouseEnter={(el) => setHoverInfo({ name, element: el, slotConfig, columnWidth: '100%' })}
+            onMouseLeave={() => setHoverInfo(null)}
           />
         ))}
 
@@ -133,6 +152,19 @@ export function Canvas({ config, tokens, activeBreakpoint }: Props) {
             tokens={tokens}
             grid={grid}
             drawerSlots={drawerSlots}
+          />
+        )}
+
+        {/* Hover overlay */}
+        {hoverInfo && viewportRef.current && (
+          <SlotOverlay
+            slotName={hoverInfo.name}
+            slotConfig={hoverInfo.slotConfig}
+            columnWidth={hoverInfo.columnWidth}
+            columnGap={columnGap}
+            tokens={tokens}
+            slotElement={hoverInfo.element}
+            viewportElement={viewportRef.current}
           />
         )}
       </div>
@@ -148,9 +180,15 @@ interface SlotZoneProps {
   tokens: TokenMap
   width: string
   slotConfig: { padding?: string; gap?: string; 'min-height'?: string; 'margin-top'?: string; position?: string }
+  isSelected: boolean
+  isFlashing: boolean
+  onClick: () => void
+  onMouseEnter: (el: HTMLElement) => void
+  onMouseLeave: () => void
 }
 
-function SlotZone({ name, config, tokens, width, slotConfig }: SlotZoneProps) {
+function SlotZone({ name, config, tokens, width, slotConfig, isSelected, isFlashing, onClick, onMouseEnter, onMouseLeave }: SlotZoneProps) {
+  const ref = useRef<HTMLDivElement>(null)
   const minHeight = slotConfig['min-height'] ?? '80px'
   const padding = slotConfig.padding ? resolveToken(slotConfig.padding, tokens) : undefined
   const marginTop = slotConfig['margin-top'] ? resolveToken(slotConfig['margin-top'], tokens) : undefined
@@ -158,15 +196,25 @@ function SlotZone({ name, config, tokens, width, slotConfig }: SlotZoneProps) {
   const testBlocks = config['test-blocks']?.[name]
   const blockCount = testBlocks?.length ?? 0
 
+  const className = [
+    'lm-slot-zone',
+    isSelected && 'lm-slot-zone--selected',
+    isFlashing && 'lm-flash',
+  ].filter(Boolean).join(' ')
+
   return (
     <div
-      className="lm-slot-zone"
+      ref={ref}
+      className={className}
       data-slot-type={getSlotType(name)}
       style={{
         minHeight,
         padding,
         marginTop,
       }}
+      onClick={onClick}
+      onMouseEnter={() => ref.current && onMouseEnter(ref.current)}
+      onMouseLeave={onMouseLeave}
     >
       <span className="lm-slot-zone__name">{name}</span>
       <span className="lm-slot-zone__width">{width}</span>

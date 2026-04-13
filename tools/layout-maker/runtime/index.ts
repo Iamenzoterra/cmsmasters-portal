@@ -5,6 +5,7 @@ import { resolve } from 'node:path'
 import { layouts } from './routes/layouts.js'
 import { tokens } from './routes/tokens.js'
 import { events, broadcastEvent } from './routes/events.js'
+import { exportRoute } from './routes/export.js'
 import { startWatcher } from './watcher.js'
 
 const app = new Hono()
@@ -23,6 +24,7 @@ app.use(
 app.route('/', layouts)
 app.route('/', tokens)
 app.route('/', events)
+app.route('/', exportRoute)
 
 // Start file watcher
 const layoutsDir = resolve(import.meta.dirname, '../layouts')

@@ -1,0 +1,57 @@
+version: 1
+name: Three Column
+scope: _preset-three-column
+description: Header, three-column grid (sidebar-left | content | sidebar-right), footer. For product and theme pages.
+
+grid:
+  desktop:
+    min-width: "1440px"
+    columns:
+      sidebar-left: "280px"
+      content: "672px"
+      sidebar-right: "280px"
+    column-gap: "--spacing-xl"
+    max-width: "1280px"
+    center: true
+  tablet:
+    min-width: "768px"
+    columns:
+      content: "1fr"
+    column-gap: "0"
+    sidebars: drawer
+    drawer-width: "280px"
+    drawer-trigger: hamburger
+    drawer-position: both
+  mobile:
+    min-width: "0px"
+    columns:
+      content: "1fr"
+    column-gap: "0"
+    sidebars: drawer
+    drawer-width: "260px"
+    drawer-trigger: hamburger
+    drawer-position: both
+
+slots:
+  header:
+    position: top
+    sticky: true
+    z-index: 100
+    padding: "0"
+  sidebar-left:
+    padding: "--spacing-lg"
+    gap: "--spacing-md"
+    align: flex-start
+    min-height: "400px"
+  content:
+    padding: "--spacing-3xl"
+    gap: "--spacing-xl"
+    min-height: "600px"
+  sidebar-right:
+    padding: "--spacing-lg"
+    gap: "--spacing-md"
+    min-height: "400px"
+  footer:
+    position: bottom
+    margin-top: "--spacing-2xl"
+    min-height: "120px"

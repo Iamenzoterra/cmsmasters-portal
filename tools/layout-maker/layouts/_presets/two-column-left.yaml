@@ -1,0 +1,51 @@
+version: 1
+name: Two Column Left
+scope: _preset-two-column-left
+description: Header, sidebar-left | content, footer. For category pages, filtered lists.
+
+grid:
+  desktop:
+    min-width: "1440px"
+    columns:
+      sidebar-left: "280px"
+      content: "1fr"
+    column-gap: "--spacing-2xl"
+    max-width: "1100px"
+    center: true
+  tablet:
+    min-width: "768px"
+    columns:
+      content: "1fr"
+    column-gap: "0"
+    sidebars: drawer
+    drawer-width: "280px"
+    drawer-trigger: tab
+    drawer-position: left
+  mobile:
+    min-width: "0px"
+    columns:
+      content: "1fr"
+    column-gap: "0"
+    sidebars: drawer
+    drawer-width: "260px"
+    drawer-trigger: hamburger
+    drawer-position: left
+
+slots:
+  header:
+    position: top
+    sticky: true
+    z-index: 100
+    padding: "0"
+  sidebar-left:
+    padding: "--spacing-lg"
+    gap: "--spacing-md"
+    min-height: "400px"
+  content:
+    padding: "--spacing-2xl"
+    gap: "--spacing-xl"
+    min-height: "600px"
+  footer:
+    position: bottom
+    margin-top: "--spacing-2xl"
+    min-height: "120px"

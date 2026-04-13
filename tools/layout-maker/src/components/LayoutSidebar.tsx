@@ -6,9 +6,10 @@ interface Props {
   activeScope: string | null
   onSelect: (scope: string) => void
   onRefresh: () => void
+  onExport: () => void
 }
 
-export function LayoutSidebar({ layouts, activeScope, onSelect, onRefresh }: Props) {
+export function LayoutSidebar({ layouts, activeScope, onSelect, onRefresh, onExport }: Props) {
   async function handleNew() {
     const name = window.prompt('Layout name:')
     if (!name) return
@@ -78,6 +79,7 @@ export function LayoutSidebar({ layouts, activeScope, onSelect, onRefresh }: Pro
       <div className="lm-sidebar__actions">
         <button className="lm-btn lm-btn--primary" onClick={handleNew}>New</button>
         <button className="lm-btn" onClick={handleClone} disabled={!activeScope}>Clone</button>
+        <button className="lm-btn" onClick={onExport} disabled={!activeScope}>Export</button>
         <button className="lm-btn lm-btn--danger" onClick={handleDelete} disabled={!activeScope}>Delete</button>
       </div>
     </div>
