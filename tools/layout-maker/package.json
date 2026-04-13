@@ -1,0 +1,30 @@
+{
+  "name": "layout-maker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"vite\" \"tsx watch runtime/index.ts\"",
+    "dev:ui": "vite",
+    "dev:runtime": "tsx watch runtime/index.ts",
+    "start": "tsx runtime/index.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1",
+    "chokidar": "^4",
+    "hono": "^4",
+    "js-yaml": "^4",
+    "react": "^19",
+    "react-dom": "^19",
+    "zod": "^3"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^4",
+    "concurrently": "^9",
+    "tsx": "^4",
+    "typescript": "^5",
+    "vite": "^6"
+  }
+}

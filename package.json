@@ -24,7 +24,8 @@
     "quality": "bash quality-check.sh",
     "arch-test": "npx vitest run --config src/__arch__/vitest.config.ts --reporter=verbose",
     "content:pull": "node tools/content-sync.js pull",
-    "content:push": "node tools/content-sync.js push"
+    "content:push": "node tools/content-sync.js push",
+    "layout-maker": "cd tools/layout-maker && npm run dev"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

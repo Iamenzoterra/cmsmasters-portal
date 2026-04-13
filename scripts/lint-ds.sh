@@ -50,6 +50,11 @@ check_file() {
     return
   fi
 
+  # Skip tools/ (standalone dev tools with own themes)
+  if [[ "$file" =~ tools/ ]]; then
+    return
+  fi
+
   CHECKED=$((CHECKED + 1))
   local file_violations=0
 
