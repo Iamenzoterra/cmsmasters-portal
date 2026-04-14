@@ -242,6 +242,28 @@ export function App() {
     }
   }, [activeConfig, activeScope, showToast])
 
+  const handleUpdateSlotConfig = useCallback(async (slotName: string, key: string, value: string | undefined) => {
+    if (!activeConfig || !activeScope) return
+
+    const updated = structuredClone(activeConfig)
+    if (!updated.slots[slotName]) updated.slots[slotName] = {}
+
+    if (value === undefined) {
+      delete (updated.slots[slotName] as Record<string, unknown>)[key]
+    } else {
+      ;(updated.slots[slotName] as Record<string, unknown>)[key] = value
+    }
+
+    try {
+      const saved = await api.updateLayout(activeScope, updated)
+      setActiveConfig(saved)
+      prevConfigRef.current = saved
+      showToast(`${slotName}.${key} updated`)
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Failed to update layout')
+    }
+  }, [activeConfig, activeScope, showToast])
+
   return (
     <>
       <div className="lm-shell">
@@ -294,6 +316,7 @@ export function App() {
           onShowToast={showToast}
           blockWarnings={blockWarnings}
           onToggleSlot={handleToggleSlot}
+          onUpdateSlotConfig={handleUpdateSlotConfig}
         />
       </div>
 

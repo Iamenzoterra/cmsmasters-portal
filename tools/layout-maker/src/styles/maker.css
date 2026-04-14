@@ -988,6 +988,43 @@ body {
   padding: var(--lm-sp-3) var(--lm-sp-8);
 }
 
+/* ── Alignment button group ─────────────────────────────────── */
+.lm-align-group {
+  display: flex;
+  gap: 1px;
+  margin-top: var(--lm-sp-2);
+  background: var(--lm-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.lm-align-btn {
+  flex: 1;
+  padding: var(--lm-sp-2) 0;
+  background: var(--lm-bg-input);
+  border: none;
+  font-family: var(--lm-font-mono);
+  font-size: 11px;
+  color: var(--lm-text-secondary);
+  cursor: pointer;
+  transition: background var(--lm-transition-fast), color var(--lm-transition-fast);
+}
+
+.lm-align-btn:hover {
+  background: var(--lm-bg-panel);
+  color: var(--lm-text-primary);
+}
+
+.lm-align-btn--active {
+  background: var(--lm-bg-button);
+  color: var(--lm-text-inverse);
+}
+
+.lm-align-btn--active:hover {
+  background: var(--lm-bg-button-hover);
+  color: var(--lm-text-inverse);
+}
+
 /* ── Slot Reference (collapsible panel in Inspector) ─────────── */
 .lm-slot-ref {
   margin-top: var(--lm-sp-8);

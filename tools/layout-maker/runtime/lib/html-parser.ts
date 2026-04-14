@@ -398,7 +398,7 @@ export function parseHTMLToConfig(
 
     // Align (from align-items)
     const alignVal = extractProp(css, slotSel, 'align-items')
-    if (alignVal === 'flex-start' || alignVal === 'center' || alignVal === 'stretch') {
+    if (alignVal === 'flex-start' || alignVal === 'center' || alignVal === 'flex-end' || alignVal === 'stretch') {
       slot.align = alignVal
     }
 

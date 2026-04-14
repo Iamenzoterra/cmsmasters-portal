@@ -14,6 +14,7 @@ interface Props {
   onShowToast: (message: string) => void
   blockWarnings: ScopingWarning[]
   onToggleSlot: (slotName: string, enabled: boolean) => void
+  onUpdateSlotConfig: (slotName: string, key: string, value: string | undefined) => void
 }
 
 interface PropertyRow {
@@ -25,7 +26,13 @@ interface PropertyRow {
 }
 
 // eslint-disable-next-line sonarjs/cognitive-complexity
-export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tokens, onShowToast, blockWarnings, onToggleSlot }: Props) {
+const ALIGN_OPTIONS = [
+  { value: 'flex-start', label: 'Left', icon: '\u2590' },
+  { value: 'center', label: 'Center', icon: '\u2503' },
+  { value: 'flex-end', label: 'Right', icon: '\u258C' },
+] as const
+
+export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tokens, onShowToast, blockWarnings, onToggleSlot, onUpdateSlotConfig }: Props) {
   if (!config || !tokens) {
     return (
       <div className="lm-inspector">
@@ -97,8 +104,9 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
     })
   }
 
-  // Align
-  if (slotConfig.align) {
+  // Align — rendered as interactive control for sidebars, read-only row for others
+  const isSidebar = selectedSlot.includes('sidebar')
+  if (!isSidebar && slotConfig.align) {
     rows.push({ label: 'Align', property: 'align', value: slotConfig.align })
   }
 
@@ -171,6 +179,27 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
             )}
           </div>
         ))}
+
+        {/* Content alignment — sidebar slots only */}
+        {isSidebar && (
+          <div className="lm-inspector__section">
+            <div className="lm-inspector__row">
+              <span className="lm-inspector__label">Content align</span>
+            </div>
+            <div className="lm-align-group">
+              {ALIGN_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  className={`lm-align-btn${(slotConfig.align ?? 'flex-start') === opt.value ? ' lm-align-btn--active' : ''}`}
+                  title={opt.label}
+                  onClick={() => onUpdateSlotConfig(selectedSlot, 'align', opt.value)}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Usable width */}
         {usableWidth && (

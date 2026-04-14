@@ -62,7 +62,7 @@ export interface SlotConfig {
   'z-index'?: number
   padding?: string
   gap?: string
-  align?: 'flex-start' | 'center' | 'stretch'
+  align?: 'flex-start' | 'center' | 'flex-end' | 'stretch'
   'min-height'?: string
   'margin-top'?: string
 }

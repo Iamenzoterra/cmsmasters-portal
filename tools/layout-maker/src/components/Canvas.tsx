@@ -285,6 +285,7 @@ function SlotZone({ name, config, tokens, width, slotConfig, isSelected, isFlash
   const padding = slotConfig.padding ? resolveToken(slotConfig.padding, tokens) : undefined
   const marginTop = slotConfig['margin-top'] ? resolveToken(slotConfig['margin-top'], tokens) : undefined
   const gap = slotConfig.gap ? resolveToken(slotConfig.gap, tokens) : undefined
+  const alignItems = slotConfig.align ?? undefined
 
   const testBlockSlugs = config['test-blocks']?.[name] ?? []
   const blockCount = testBlockSlugs.length
@@ -322,7 +323,7 @@ function SlotZone({ name, config, tokens, width, slotConfig, isSelected, isFlash
 
       {/* Block content — rendered in iframes for full CSS isolation */}
       {hasLoadedBlocks && (
-        <div className="lm-slot-zone__block-stack" style={{ gap: gap || undefined }}>
+        <div className="lm-slot-zone__block-stack" style={{ gap: gap || undefined, alignItems }}>
           {testBlockSlugs.map((slug) => {
             const block = blocks.get(slug)
             if (!block) {

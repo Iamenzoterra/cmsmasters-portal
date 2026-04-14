@@ -42,7 +42,7 @@ const slotSchema = z
     'z-index': z.number().optional(),
     padding: spacingToken.optional(),
     gap: spacingToken.optional(),
-    align: z.enum(['flex-start', 'center', 'stretch']).optional(),
+    align: z.enum(['flex-start', 'center', 'flex-end', 'stretch']).optional(),
     'min-height': z.string().regex(/^\d+px$/).optional(),
     'margin-top': spacingToken.optional(),
   })
