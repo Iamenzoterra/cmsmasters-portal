@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState } from 'react'
 import { SLOT_DEFINITIONS } from '@cmsmasters/db/slots'
 import type { LayoutConfig, TokenMap, BlockData, SlotConfig, CanvasBreakpointId } from '../lib/types'
-import { CANVAS_BREAKPOINTS } from '../lib/types'
+import { CANVAS_BREAKPOINTS, resolveSlotConfig } from '../lib/types'
 import { resolveToken } from '../lib/tokens'
 import { DrawerPreview } from './DrawerPreview'
 import { SlotOverlay } from './SlotOverlay'
@@ -111,6 +111,7 @@ function getSlotType(name: string): string {
 }
 
 export function Canvas({ config, tokens, activeBreakpoint, gridKey, selectedSlot, onSlotSelect, changedSlots, blocks }: Props) {
+  const resolveSlot = (name: string): SlotConfig => resolveSlotConfig(name, gridKey, config)
   const scrollRef = useRef<HTMLDivElement>(null)
   const viewportRef = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(1)
@@ -128,9 +129,13 @@ export function Canvas({ config, tokens, activeBreakpoint, gridKey, selectedSlot
   const breakpointWidth = CANVAS_BREAKPOINTS.find((b) => b.id === activeBreakpoint)!.width
   const columnGap = grid['column-gap'] ? resolveToken(grid['column-gap'], tokens) : '0px'
 
-  // Separate slots by position
-  const topSlots = Object.entries(config.slots).filter(([, s]) => s.position === 'top')
-  const bottomSlots = Object.entries(config.slots).filter(([, s]) => s.position === 'bottom')
+  // Separate slots by position (role lives on base slot — not per-bp)
+  const topSlots = Object.entries(config.slots)
+    .filter(([, s]) => s.position === 'top')
+    .map(([name]) => [name, resolveSlot(name)] as const)
+  const bottomSlots = Object.entries(config.slots)
+    .filter(([, s]) => s.position === 'bottom')
+    .map(([name]) => [name, resolveSlot(name)] as const)
 
   // In drawer mode, exclude sidebar columns from the grid
   const visibleColumns = isDrawerMode
@@ -141,7 +146,7 @@ export function Canvas({ config, tokens, activeBreakpoint, gridKey, selectedSlot
   // at least its inner max-width from neighboring fluid tracks.
   const gridTemplateColumns = visibleColumns.map(([name, w]) => {
     if (w === '1fr') {
-      const innerMax = config.slots[name]?.['max-width']
+      const innerMax = resolveSlot(name)['max-width']
       if (innerMax) return `minmax(${innerMax}, 1fr)`
     }
     return w
@@ -206,7 +211,7 @@ export function Canvas({ config, tokens, activeBreakpoint, gridKey, selectedSlot
           }}
         >
           {visibleColumns.map(([name, width]) => {
-            const slotConfig = config.slots[name] ?? {}
+            const slotConfig = resolveSlot(name)
             return (
               <SlotZone
                 key={name}

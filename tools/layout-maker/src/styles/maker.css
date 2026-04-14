@@ -1150,6 +1150,69 @@ body {
   font-size: 10px;
 }
 
+/* ── Per-breakpoint inheritance indicators (WP-style) ─────────── */
+/* Per-bp hue tokens — each breakpoint gets a distinct color */
+.lm-inspector[data-active-bp='desktop'] { --lm-bp-hue: 210; } /* blue */
+.lm-inspector[data-active-bp='tablet']  { --lm-bp-hue: 280; } /* purple */
+.lm-inspector[data-active-bp='mobile']  { --lm-bp-hue: 25;  } /* orange */
+
+.lm-bp-dot,
+.lm-inherit-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.lm-bp-dot[data-bp='desktop'] { background: hsl(210, 70%, 55%); }
+.lm-bp-dot[data-bp='tablet']  { background: hsl(280, 60%, 60%); }
+.lm-bp-dot[data-bp='mobile']  { background: hsl(25, 85%, 55%); }
+.lm-inherit-dot {
+  background: transparent;
+  border: 1px dashed var(--lm-text-muted);
+  opacity: 0.7;
+}
+
+.lm-bp-badge {
+  display: inline-block;
+  margin-left: var(--lm-sp-2);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-family: var(--lm-font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: hsl(var(--lm-bp-hue, 210), 70%, 85%);
+  background: hsl(var(--lm-bp-hue, 210), 50%, 25%);
+}
+
+.lm-reset-btn {
+  margin-left: 6px;
+  padding: 0 5px;
+  height: 18px;
+  line-height: 16px;
+  background: transparent;
+  border: 1px solid var(--lm-border);
+  border-radius: 3px;
+  color: var(--lm-text-muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+.lm-reset-btn:hover {
+  color: var(--lm-text-primary);
+  border-color: var(--lm-text-accent);
+}
+
+/* Row state — overridden field at this bp */
+.lm-inspector__pad-row--override .lm-spacing-select {
+  border-color: hsl(var(--lm-bp-hue, 210), 60%, 50%);
+  background: hsla(var(--lm-bp-hue, 210), 50%, 15%, 0.4);
+}
+.lm-inspector__pad-row--inherited .lm-spacing-select {
+  opacity: 0.6;
+}
+
 /* ── Width control (fluid/fixed toggle + px input) ─────────── */
 .lm-width-control {
   display: flex;

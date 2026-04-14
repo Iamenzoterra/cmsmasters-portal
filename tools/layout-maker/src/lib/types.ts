@@ -54,6 +54,8 @@ export interface BreakpointGrid {
   'drawer-width'?: string
   'drawer-trigger'?: 'hamburger' | 'tab'
   'drawer-position'?: 'left' | 'right' | 'both'
+  /** Per-breakpoint partial slot overrides (WP-style inheritance) */
+  slots?: Record<string, Partial<SlotConfig>>
 }
 
 export interface SlotConfig {
@@ -80,6 +82,53 @@ export interface LayoutConfig {
   grid: Record<string, BreakpointGrid>
   slots: Record<string, SlotConfig>
   'test-blocks'?: Record<string, string[]>
+}
+
+/** Fields that participate in per-breakpoint inheritance (visual params).
+ *  `position`, `sticky`, `z-index` are role-level and stay global. */
+export const PER_BP_SLOT_FIELDS = [
+  'padding',
+  'padding-x',
+  'padding-top',
+  'padding-bottom',
+  'gap',
+  'align',
+  'max-width',
+  'min-height',
+  'margin-top',
+] as const satisfies ReadonlyArray<keyof SlotConfig>
+
+export type PerBpSlotField = (typeof PER_BP_SLOT_FIELDS)[number]
+
+/** Base (desktop) gridKey — if `desktop` exists as a grid key, use it;
+ *  otherwise fall back to the canonical resolver so layouts without a
+ *  `desktop` key still resolve consistently. */
+export function getBaseGridKey(grid: Record<string, BreakpointGrid>): string {
+  if (grid['desktop']) return 'desktop'
+  return resolveGridKey('desktop', grid)
+}
+
+/** Resolve the effective slot config for a given breakpoint by merging
+ *  the base slot (`config.slots[name]`) with its per-bp override
+ *  (`config.grid[bp].slots[name]`). Override wins per-key. */
+export function resolveSlotConfig(
+  name: string,
+  gridKey: string,
+  config: LayoutConfig,
+): SlotConfig {
+  const base = config.slots[name] ?? {}
+  const override = config.grid[gridKey]?.slots?.[name] ?? {}
+  return { ...base, ...override }
+}
+
+/** Is a given field overridden at this breakpoint? */
+export function isFieldOverridden(
+  name: string,
+  gridKey: string,
+  config: LayoutConfig,
+  field: PerBpSlotField,
+): boolean {
+  return config.grid[gridKey]?.slots?.[name]?.[field] !== undefined
 }
 
 export interface TokenCategory {

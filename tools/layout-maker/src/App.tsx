@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import type { LayoutConfig, LayoutSummary, TokenMap, BlockData, ScopingWarning, CanvasBreakpointId } from './lib/types'
-import { resolveGridKey } from './lib/types'
+import { resolveGridKey, getBaseGridKey } from './lib/types'
 import { api } from './lib/api-client'
 import { LayoutSidebar } from './components/LayoutSidebar'
 import { BreakpointBar } from './components/BreakpointBar'
@@ -19,6 +19,15 @@ function getChangedSlots(prev: LayoutConfig, next: LayoutConfig): string[] {
   for (const bp of Object.keys(next.grid)) {
     if (JSON.stringify(prev.grid[bp]?.columns) !== JSON.stringify(next.grid[bp]?.columns)) {
       changed.push(...Object.keys(next.grid[bp].columns))
+    }
+    // Per-bp slot overrides — flash slots whose override changed
+    const prevBpSlots = prev.grid[bp]?.slots ?? {}
+    const nextBpSlots = next.grid[bp]?.slots ?? {}
+    const slotNames = new Set([...Object.keys(prevBpSlots), ...Object.keys(nextBpSlots)])
+    for (const name of slotNames) {
+      if (JSON.stringify(prevBpSlots[name]) !== JSON.stringify(nextBpSlots[name])) {
+        changed.push(name)
+      }
     }
   }
   return [...new Set(changed)]
@@ -242,23 +251,46 @@ export function App() {
     }
   }, [activeConfig, activeScope, showToast])
 
-  const handleUpdateSlotConfig = useCallback(async (slotName: string, key: string, value: string | undefined) => {
+  const handleUpdateSlotConfig = useCallback(async (
+    slotName: string,
+    key: string,
+    value: string | undefined,
+    targetGridKey?: string,
+  ) => {
     if (!activeConfig || !activeScope) return
 
     const updated = structuredClone(activeConfig)
-    if (!updated.slots[slotName]) updated.slots[slotName] = {}
+    const baseKey = getBaseGridKey(updated.grid)
+    const writeToBase = !targetGridKey || targetGridKey === baseKey
 
-    if (value === undefined) {
-      delete (updated.slots[slotName] as Record<string, unknown>)[key]
+    if (writeToBase) {
+      if (!updated.slots[slotName]) updated.slots[slotName] = {}
+      if (value === undefined) {
+        delete (updated.slots[slotName] as Record<string, unknown>)[key]
+      } else {
+        ;(updated.slots[slotName] as Record<string, unknown>)[key] = value
+      }
     } else {
-      ;(updated.slots[slotName] as Record<string, unknown>)[key] = value
+      const grid = updated.grid[targetGridKey]
+      if (!grid) return
+      if (!grid.slots) grid.slots = {}
+      if (!grid.slots[slotName]) grid.slots[slotName] = {}
+      if (value === undefined) {
+        delete (grid.slots[slotName] as Record<string, unknown>)[key]
+        // Prune empty override objects
+        if (Object.keys(grid.slots[slotName]!).length === 0) delete grid.slots[slotName]
+        if (Object.keys(grid.slots).length === 0) delete grid.slots
+      } else {
+        ;(grid.slots[slotName] as Record<string, unknown>)[key] = value
+      }
     }
 
     try {
       const saved = await api.updateLayout(activeScope, updated)
       setActiveConfig(saved)
       prevConfigRef.current = saved
-      showToast(`${slotName}.${key} updated`)
+      const scope = writeToBase ? 'base' : targetGridKey
+      showToast(`${slotName}.${key} updated (${scope})`)
     } catch (e) {
       showToast(e instanceof Error ? e.message : 'Failed to update layout')
     }

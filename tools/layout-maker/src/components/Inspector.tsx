@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import type { LayoutConfig, TokenMap, ScopingWarning } from '../lib/types'
+import type { LayoutConfig, TokenMap, ScopingWarning, PerBpSlotField } from '../lib/types'
+import { resolveSlotConfig, getBaseGridKey, isFieldOverridden } from '../lib/types'
 import { resolveToken, resolveTokenPx } from '../lib/tokens'
 import { CopyButton } from './CopyButton'
 import { SlotToggles } from './SlotToggles'
@@ -15,7 +16,7 @@ interface Props {
   onShowToast: (message: string) => void
   blockWarnings: ScopingWarning[]
   onToggleSlot: (slotName: string, enabled: boolean) => void
-  onUpdateSlotConfig: (slotName: string, key: string, value: string | undefined) => void
+  onUpdateSlotConfig: (slotName: string, key: string, value: string | undefined, targetGridKey?: string) => void
   onUpdateColumnWidth: (slotName: string, breakpointKey: string, width: string) => void
 }
 
@@ -37,7 +38,7 @@ const ALIGN_OPTIONS = [
 export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tokens, onShowToast, blockWarnings, onToggleSlot, onUpdateSlotConfig, onUpdateColumnWidth }: Props) {
   if (!config || !tokens) {
     return (
-      <div className="lm-inspector">
+      <div className="lm-inspector" data-active-bp={activeBreakpoint}>
         <div className="lm-inspector__header">Inspector</div>
         <div className="lm-inspector__body">
           <div className="lm-inspector__empty">
@@ -50,7 +51,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
 
   if (!selectedSlot) {
     return (
-      <div className="lm-inspector">
+      <div className="lm-inspector" data-active-bp={activeBreakpoint}>
         <div className="lm-inspector__header">Inspector</div>
         <SlotToggles config={config} activeBreakpoint={gridKey} onToggleSlot={onToggleSlot} />
         <div className="lm-inspector__body">
@@ -66,11 +67,30 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
     )
   }
 
-  const slotConfig = config.slots[selectedSlot] ?? {}
+  const baseGridKey = getBaseGridKey(config.grid)
+  const isBaseBp = gridKey === baseGridKey
+  // Effective config (base + per-bp override) for display
+  const slotConfig = resolveSlotConfig(selectedSlot, gridKey, config)
+  // Base slot only (for role fields + inherited indicator)
+  const baseSlot = config.slots[selectedSlot] ?? {}
   const grid = config.grid[gridKey]
   const bpWidth = grid?.['min-width'] ?? '0'
   const columnWidth = grid?.columns?.[selectedSlot]
-  const isFullWidth = slotConfig.position === 'top' || slotConfig.position === 'bottom'
+  const isFullWidth = baseSlot.position === 'top' || baseSlot.position === 'bottom'
+
+  // Helper: is a per-bp field currently overridden at this breakpoint?
+  const isOverridden = (field: PerBpSlotField) =>
+    !isBaseBp && isFieldOverridden(selectedSlot, gridKey, config, field)
+  // Helper: is value inherited from base (viewing non-base bp, no override)?
+  const isInherited = (field: PerBpSlotField) =>
+    !isBaseBp && !isFieldOverridden(selectedSlot, gridKey, config, field) && baseSlot[field] !== undefined
+
+  // Write target: base when viewing desktop, per-bp otherwise
+  const writeField = (key: string, value: string | undefined) =>
+    onUpdateSlotConfig(selectedSlot, key, value, gridKey)
+  // Reset: explicitly clear per-bp override (always targets current gridKey)
+  const resetField = (key: string) =>
+    onUpdateSlotConfig(selectedSlot, key, undefined, gridKey)
 
   // Content width editing state
   const isContent = selectedSlot === 'content'
@@ -166,7 +186,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
   const handleCopied = () => onShowToast('Copied!')
 
   return (
-    <div className="lm-inspector">
+    <div className="lm-inspector" data-active-bp={activeBreakpoint}>
       <div className="lm-inspector__header">Inspector</div>
       <SlotToggles config={config} activeBreakpoint={gridKey} onToggleSlot={onToggleSlot} />
       <div className="lm-inspector__body">
@@ -187,20 +207,33 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
           {/* Outer padding — split into X / top / bottom */}
           {(['padding-x', 'padding-top', 'padding-bottom'] as const).map((key) => {
             const label = key === 'padding-x' ? 'Padding ←→' : key === 'padding-top' ? 'Padding ↑' : 'Padding ↓'
-            // Fall back to legacy shorthand if split field is absent
-            const val = slotConfig[key] ?? slotConfig.padding
+            // Effective value (resolved) — shows what's actually applied at this bp
+            const effective = slotConfig[key] ?? slotConfig.padding
+            const overridden = isOverridden(key)
+            const inherited = isInherited(key) || (isInherited('padding') && !slotConfig[key])
+            // Select value: override wins; else show "" (displayed as inherited)
+            const rawOverride = config.grid[gridKey]?.slots?.[selectedSlot]?.[key]
+            const selectValue = isBaseBp ? (baseSlot[key] ?? '') : (rawOverride ?? '')
             return (
-              <div key={key} className="lm-inspector__pad-row">
-                <span className="lm-inspector__label">{label}</span>
+              <div key={key} className={`lm-inspector__pad-row${overridden ? ' lm-inspector__pad-row--override' : ''}${inherited ? ' lm-inspector__pad-row--inherited' : ''}`}>
+                <span className="lm-inspector__label">
+                  {label}
+                  {overridden && <span className="lm-bp-dot" data-bp={activeBreakpoint} title={`Overridden at ${activeBreakpoint}`} />}
+                  {inherited && <span className="lm-inherit-dot" title={`Inherited from ${baseGridKey}`} />}
+                </span>
                 <select
                   className="lm-spacing-select lm-spacing-select--inline"
-                  value={slotConfig[key] ?? ''}
+                  value={selectValue}
                   onChange={(e) => {
                     const v = e.target.value
-                    onUpdateSlotConfig(selectedSlot, key, v === '' ? undefined : v)
+                    writeField(key, v === '' ? undefined : v)
                   }}
                 >
-                  <option value="">{slotConfig.padding && slotConfig[key] === undefined ? `inherit (${slotConfig.padding})` : 'none'}</option>
+                  <option value="">
+                    {isBaseBp
+                      ? (baseSlot.padding && baseSlot[key] === undefined ? `inherit (${baseSlot.padding})` : 'none')
+                      : (baseSlot[key] ?? baseSlot.padding ? `inherit (${baseSlot[key] ?? baseSlot.padding})` : 'none')}
+                  </option>
                   <option value="0">0</option>
                   {Object.keys(tokens.all)
                     .filter((t) => t.startsWith('--spacing-'))
@@ -210,10 +243,13 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
                       </option>
                     ))}
                 </select>
-                {val && val !== '0' && slotConfig[key] !== undefined && (
+                {effective && effective !== '0' && (
                   <span className="lm-inspector__value-sub-inline">
-                    {resolveToken(val, tokens)}
+                    {resolveToken(effective, tokens)}
                   </span>
+                )}
+                {overridden && (
+                  <button className="lm-reset-btn" onClick={() => resetField(key)} title="Reset to inherited">↺</button>
                 )}
               </div>
             )
@@ -308,19 +344,29 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
         <div className="lm-inspector__section lm-inspector__section--inner">
           <div className="lm-inspector__section-title">
             <span className="lm-inspector__section-glyph">▤</span> Slot Parameters
+            {!isBaseBp && <span className="lm-bp-badge" data-bp={activeBreakpoint}>{activeBreakpoint}</span>}
           </div>
 
           {/* Inner max-width */}
           <div className="lm-inspector__row">
-            <span className="lm-inspector__label">Inner max-width</span>
-            <span className="lm-inspector__value">{innerMaxWidth ?? 'none'}</span>
+            <span className="lm-inspector__label">
+              Inner max-width
+              {isOverridden('max-width') && <span className="lm-bp-dot" data-bp={activeBreakpoint} title={`Overridden at ${activeBreakpoint}`} />}
+              {isInherited('max-width') && <span className="lm-inherit-dot" title={`Inherited from ${baseGridKey}`} />}
+            </span>
+            <span className="lm-inspector__value">
+              {innerMaxWidth ?? 'none'}
+              {isOverridden('max-width') && (
+                <button className="lm-reset-btn" onClick={() => { resetField('max-width'); setMaxWidthDraft('') }} title="Reset to inherited">↺</button>
+              )}
+            </span>
           </div>
           <div className="lm-width-control">
             <div className="lm-align-group">
               <button
                 className={`lm-align-btn${!hasInnerMaxWidth ? ' lm-align-btn--active' : ''}`}
                 onClick={() => {
-                  onUpdateSlotConfig(selectedSlot, 'max-width', undefined)
+                  writeField('max-width', undefined)
                   setMaxWidthDraft('')
                 }}
               >
@@ -330,7 +376,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
                 className={`lm-align-btn${hasInnerMaxWidth ? ' lm-align-btn--active' : ''}`}
                 onClick={() => {
                   const px = maxWidthDraft || '360'
-                  onUpdateSlotConfig(selectedSlot, 'max-width', `${px}px`)
+                  writeField('max-width', `${px}px`)
                   setMaxWidthDraft(px)
                 }}
               >
@@ -350,14 +396,14 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
                   onBlur={() => {
                     const n = parseInt(maxWidthDraft, 10)
                     if (!isNaN(n) && n >= 100) {
-                      onUpdateSlotConfig(selectedSlot, 'max-width', `${n}px`)
+                      writeField('max-width', `${n}px`)
                     }
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       const n = parseInt(maxWidthDraft, 10)
                       if (!isNaN(n) && n >= 100) {
-                        onUpdateSlotConfig(selectedSlot, 'max-width', `${n}px`)
+                        writeField('max-width', `${n}px`)
                       }
                     }
                   }}
@@ -369,7 +415,14 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
 
           {/* Content align */}
           <div className="lm-inspector__row" style={{ marginTop: '8px' }}>
-            <span className="lm-inspector__label">Content align</span>
+            <span className="lm-inspector__label">
+              Content align
+              {isOverridden('align') && <span className="lm-bp-dot" data-bp={activeBreakpoint} title={`Overridden at ${activeBreakpoint}`} />}
+              {isInherited('align') && <span className="lm-inherit-dot" title={`Inherited from ${baseGridKey}`} />}
+            </span>
+            {isOverridden('align') && (
+              <button className="lm-reset-btn" onClick={() => resetField('align')} title="Reset to inherited">↺</button>
+            )}
           </div>
           <div className="lm-align-group">
             {ALIGN_OPTIONS.map((opt) => (
@@ -377,7 +430,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
                 key={opt.value}
                 className={`lm-align-btn${(slotConfig.align ?? 'flex-start') === opt.value ? ' lm-align-btn--active' : ''}`}
                 title={opt.label}
-                onClick={() => onUpdateSlotConfig(selectedSlot, 'align', opt.value)}
+                onClick={() => writeField('align', opt.value)}
               >
                 {opt.label}
               </button>

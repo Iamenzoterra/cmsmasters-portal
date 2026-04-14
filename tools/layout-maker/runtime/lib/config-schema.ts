@@ -21,6 +21,23 @@ const structuralDimension = z
 
 // --- Breakpoint ---
 
+const slotSchemaPartial = z
+  .object({
+    position: z.enum(['top', 'bottom']).optional(),
+    sticky: z.boolean().optional(),
+    'z-index': z.number().optional(),
+    padding: spacingToken.optional(),
+    'padding-x': spacingToken.optional(),
+    'padding-top': spacingToken.optional(),
+    'padding-bottom': spacingToken.optional(),
+    gap: spacingToken.optional(),
+    align: z.enum(['flex-start', 'center', 'flex-end', 'stretch']).optional(),
+    'max-width': z.string().regex(/^\d+px$/).optional(),
+    'min-height': z.string().regex(/^\d+px$/).optional(),
+    'margin-top': spacingToken.optional(),
+  })
+  .strict()
+
 const breakpointSchema = z.object({
   'min-width': z.string().regex(/^\d+px$/, 'Must be a px value like "1440px"'),
   columns: z.record(z.string(), structuralDimension),
@@ -31,6 +48,8 @@ const breakpointSchema = z.object({
   'drawer-width': z.string().regex(/^\d+px$/).optional(),
   'drawer-trigger': z.enum(['hamburger', 'tab']).optional(),
   'drawer-position': z.enum(['left', 'right', 'both']).optional(),
+  /** Per-breakpoint partial slot overrides (WP-style inheritance). */
+  slots: z.record(z.string(), slotSchemaPartial).optional(),
 })
 
 // --- Slot ---
