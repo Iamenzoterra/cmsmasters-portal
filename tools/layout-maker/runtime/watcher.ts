@@ -1,4 +1,4 @@
-import chokidar from 'chokidar'
+import chokidar, { type FSWatcher } from 'chokidar'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import yaml from 'js-yaml'
@@ -15,7 +15,7 @@ type WatcherCallback = (event: WatcherEvent) => void
 export function startWatcher(
   layoutsDir: string,
   callback: WatcherCallback,
-): chokidar.FSWatcher {
+): FSWatcher {
   // Watch directory (not glob) for cross-platform compatibility
   const watcher = chokidar.watch(layoutsDir, {
     ignoreInitial: true,
@@ -26,21 +26,21 @@ export function startWatcher(
     depth: 0,
   })
 
-  watcher.on('change', (path) => {
-    if (!path.endsWith('.yaml')) return
-    const scope = extractScope(path)
+  watcher.on('change', (filePath) => {
+    if (!filePath.endsWith('.yaml')) return
+    const scope = extractScope(filePath)
     if (scope) callback({ type: 'layout-changed', scope, source: 'external' })
   })
 
-  watcher.on('add', (path) => {
-    if (!path.endsWith('.yaml')) return
-    const scope = extractScope(path)
+  watcher.on('add', (filePath) => {
+    if (!filePath.endsWith('.yaml')) return
+    const scope = extractScope(filePath)
     if (scope) callback({ type: 'layout-added', scope, source: 'external' })
   })
 
-  watcher.on('unlink', (path) => {
-    if (!path.endsWith('.yaml')) return
-    const name = path.basename(path, '.yaml')
+  watcher.on('unlink', (filePath) => {
+    if (!filePath.endsWith('.yaml')) return
+    const name = path.basename(filePath, '.yaml')
     callback({ type: 'layout-deleted', scope: name, source: 'external' })
   })
 

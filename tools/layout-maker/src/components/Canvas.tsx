@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react'
-import type { LayoutConfig, TokenMap, BlockData } from '../lib/types'
+import type { LayoutConfig, TokenMap, BlockData, SlotConfig } from '../lib/types'
 import { resolveToken } from '../lib/tokens'
 import { DrawerPreview } from './DrawerPreview'
 import { SlotOverlay } from './SlotOverlay'
@@ -108,7 +108,7 @@ export function Canvas({ config, tokens, activeBreakpoint, selectedSlot, onSlotS
   const [hoverInfo, setHoverInfo] = useState<{
     name: string
     element: HTMLElement
-    slotConfig: { padding?: string; gap?: string; [key: string]: unknown }
+    slotConfig: SlotConfig
     columnWidth: string
   } | null>(null)
 
@@ -261,7 +261,7 @@ interface SlotZoneProps {
   config: LayoutConfig
   tokens: TokenMap
   width: string
-  slotConfig: { padding?: string; gap?: string; 'min-height'?: string; 'margin-top'?: string; position?: string }
+  slotConfig: SlotConfig
   isSelected: boolean
   isFlashing: boolean
   onClick: () => void

@@ -188,6 +188,7 @@ body {
   box-shadow: 0 0 0 1px var(--lm-border), 0 4px 24px rgba(0,0,0,0.4);
   transform-origin: top center;
   flex-shrink: 0;
+  align-self: flex-start;
   position: relative;
 }
 
@@ -238,11 +239,6 @@ body {
 /* ── Layout Grid ─────────────────────────────────────────────── */
 .lm-layout-grid {
   display: grid;
-  overflow: hidden;
-}
-
-.lm-canvas-viewport {
-  overflow: hidden;
 }
 
 /* ── Slot Zones ──────────────────────────────────────────────── */

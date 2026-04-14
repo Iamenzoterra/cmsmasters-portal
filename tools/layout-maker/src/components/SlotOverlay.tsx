@@ -1,11 +1,5 @@
-import type { TokenMap } from '../lib/types'
+import type { TokenMap, SlotConfig } from '../lib/types'
 import { resolveToken } from '../lib/tokens'
-
-interface SlotConfig {
-  padding?: string
-  gap?: string
-  [key: string]: unknown
-}
 
 interface Props {
   slotName: string
