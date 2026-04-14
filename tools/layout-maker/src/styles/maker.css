@@ -1025,6 +1025,51 @@ body {
   color: var(--lm-text-inverse);
 }
 
+/* ── Width control (fluid/fixed toggle + px input) ─────────── */
+.lm-width-control {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lm-sp-3);
+  margin-top: var(--lm-sp-2);
+}
+
+.lm-width-input {
+  display: flex;
+  align-items: center;
+  gap: var(--lm-sp-2);
+}
+
+.lm-width-input__field {
+  flex: 1;
+  height: 26px;
+  padding: 0 var(--lm-sp-3);
+  background: var(--lm-bg-input);
+  border: 1px solid var(--lm-border);
+  border-radius: 4px;
+  font-family: var(--lm-font-mono);
+  font-size: 12px;
+  color: var(--lm-text-primary);
+  -moz-appearance: textfield;
+}
+
+.lm-width-input__field::-webkit-inner-spin-button,
+.lm-width-input__field::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.lm-width-input__field:focus {
+  outline: 1px solid var(--lm-border-focus);
+  border-color: var(--lm-border-focus);
+}
+
+.lm-width-input__unit {
+  font-family: var(--lm-font-mono);
+  font-size: 11px;
+  color: var(--lm-text-muted);
+  flex-shrink: 0;
+}
+
 /* ── Slot Reference (collapsible panel in Inspector) ─────────── */
 .lm-slot-ref {
   margin-top: var(--lm-sp-8);

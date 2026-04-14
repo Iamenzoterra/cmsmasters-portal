@@ -264,6 +264,24 @@ export function App() {
     }
   }, [activeConfig, activeScope, showToast])
 
+  const handleUpdateColumnWidth = useCallback(async (slotName: string, breakpointKey: string, width: string) => {
+    if (!activeConfig || !activeScope) return
+
+    const updated = structuredClone(activeConfig)
+    if (updated.grid[breakpointKey]?.columns) {
+      updated.grid[breakpointKey].columns[slotName] = width
+    }
+
+    try {
+      const saved = await api.updateLayout(activeScope, updated)
+      setActiveConfig(saved)
+      prevConfigRef.current = saved
+      showToast(`${slotName} width: ${width}`)
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Failed to update layout')
+    }
+  }, [activeConfig, activeScope, showToast])
+
   return (
     <>
       <div className="lm-shell">
@@ -317,6 +335,7 @@ export function App() {
           blockWarnings={blockWarnings}
           onToggleSlot={handleToggleSlot}
           onUpdateSlotConfig={handleUpdateSlotConfig}
+          onUpdateColumnWidth={handleUpdateColumnWidth}
         />
       </div>
 

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { LayoutConfig, TokenMap, ScopingWarning } from '../lib/types'
 import { resolveToken, resolveTokenPx } from '../lib/tokens'
 import { CopyButton } from './CopyButton'
@@ -15,6 +16,7 @@ interface Props {
   blockWarnings: ScopingWarning[]
   onToggleSlot: (slotName: string, enabled: boolean) => void
   onUpdateSlotConfig: (slotName: string, key: string, value: string | undefined) => void
+  onUpdateColumnWidth: (slotName: string, breakpointKey: string, width: string) => void
 }
 
 interface PropertyRow {
@@ -32,7 +34,7 @@ const ALIGN_OPTIONS = [
   { value: 'flex-end', label: 'Right', icon: '\u258C' },
 ] as const
 
-export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tokens, onShowToast, blockWarnings, onToggleSlot, onUpdateSlotConfig }: Props) {
+export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tokens, onShowToast, blockWarnings, onToggleSlot, onUpdateSlotConfig, onUpdateColumnWidth }: Props) {
   if (!config || !tokens) {
     return (
       <div className="lm-inspector">
@@ -70,16 +72,32 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
   const columnWidth = grid?.columns?.[selectedSlot]
   const isFullWidth = slotConfig.position === 'top' || slotConfig.position === 'bottom'
 
+  // Content width editing state
+  const isContent = selectedSlot === 'content'
+  const isFixedWidth = columnWidth ? columnWidth.endsWith('px') : false
+  const currentPx = isFixedWidth ? parseInt(columnWidth!, 10).toString() : ''
+  const [widthDraft, setWidthDraft] = useState(currentPx)
+
+  // Sync draft when column width changes externally (SSE, slot switch)
+  const [prevColumnWidth, setPrevColumnWidth] = useState(columnWidth)
+  if (columnWidth !== prevColumnWidth) {
+    setPrevColumnWidth(columnWidth)
+    const newPx = columnWidth?.endsWith('px') ? parseInt(columnWidth, 10).toString() : ''
+    setWidthDraft(newPx)
+  }
+
   // Build property rows
   const rows: PropertyRow[] = []
 
-  // Width
-  if (isFullWidth) {
-    rows.push({ label: 'Width', property: 'width', value: 'full width' })
-  } else if (columnWidth) {
-    rows.push({ label: 'Width', property: 'width', value: columnWidth })
-  } else {
-    rows.push({ label: 'Width', property: 'width', value: 'n/a' })
+  // Width — rendered as interactive control for content, read-only for others
+  if (!isContent) {
+    if (isFullWidth) {
+      rows.push({ label: 'Width', property: 'width', value: 'full width' })
+    } else if (columnWidth) {
+      rows.push({ label: 'Width', property: 'width', value: columnWidth })
+    } else {
+      rows.push({ label: 'Width', property: 'width', value: 'n/a' })
+    }
   }
 
   // Spacing properties
@@ -160,6 +178,67 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
             <CopyButton text={formatSummary()} onCopied={handleCopied} />
           </div>
         </div>
+
+        {/* Content width — toggle between fluid (1fr) and fixed px */}
+        {isContent && columnWidth && (
+          <div className="lm-inspector__section">
+            <div className="lm-inspector__row">
+              <span className="lm-inspector__label">Width</span>
+              <span className="lm-inspector__value">{columnWidth}</span>
+            </div>
+            <div className="lm-width-control">
+              <div className="lm-align-group">
+                <button
+                  className={`lm-align-btn${!isFixedWidth ? ' lm-align-btn--active' : ''}`}
+                  onClick={() => {
+                    onUpdateColumnWidth('content', gridKey, '1fr')
+                    setWidthDraft('')
+                  }}
+                >
+                  Fluid
+                </button>
+                <button
+                  className={`lm-align-btn${isFixedWidth ? ' lm-align-btn--active' : ''}`}
+                  onClick={() => {
+                    const px = widthDraft || '720'
+                    onUpdateColumnWidth('content', gridKey, `${px}px`)
+                    setWidthDraft(px)
+                  }}
+                >
+                  Fixed
+                </button>
+              </div>
+              {isFixedWidth && (
+                <div className="lm-width-input">
+                  <input
+                    className="lm-width-input__field"
+                    type="number"
+                    min={200}
+                    max={2000}
+                    step={10}
+                    value={widthDraft}
+                    onChange={(e) => setWidthDraft(e.target.value)}
+                    onBlur={() => {
+                      const n = parseInt(widthDraft, 10)
+                      if (!isNaN(n) && n >= 200) {
+                        onUpdateColumnWidth('content', gridKey, `${n}px`)
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const n = parseInt(widthDraft, 10)
+                        if (!isNaN(n) && n >= 200) {
+                          onUpdateColumnWidth('content', gridKey, `${n}px`)
+                        }
+                      }
+                    }}
+                  />
+                  <span className="lm-width-input__unit">px</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Property rows */}
         {rows.map((row) => (
