@@ -269,11 +269,11 @@ body {
 
 .lm-slot-zone:hover { filter: brightness(1.05); }
 
-.lm-slot-zone[data-slot-type="header"]        { background: hsla(210, 70%, 50%, 0.10); border-color: hsla(210, 70%, 50%, 0.40); }
-.lm-slot-zone[data-slot-type="footer"]         { background: hsla(210, 40%, 45%, 0.10); border-color: hsla(210, 40%, 45%, 0.40); }
-.lm-slot-zone[data-slot-type="content"]        { background: hsla(142, 55%, 45%, 0.12); border-color: hsla(142, 55%, 45%, 0.40); }
-.lm-slot-zone[data-slot-type="sidebar-left"]   { background: hsla(32, 80%, 55%, 0.12); border-color: hsla(32, 80%, 55%, 0.40); }
-.lm-slot-zone[data-slot-type="sidebar-right"]  { background: hsla(270, 55%, 55%, 0.12); border-color: hsla(270, 55%, 55%, 0.40); }
+.lm-slot-zone[data-slot-type="header"]        { --slot-h: 210; --slot-s: 70%; --slot-l: 50%; background: hsla(210, 70%, 50%, 0.10); border-color: hsla(210, 70%, 50%, 0.40); }
+.lm-slot-zone[data-slot-type="footer"]         { --slot-h: 210; --slot-s: 40%; --slot-l: 45%; background: hsla(210, 40%, 45%, 0.10); border-color: hsla(210, 40%, 45%, 0.40); }
+.lm-slot-zone[data-slot-type="content"]        { --slot-h: 142; --slot-s: 55%; --slot-l: 45%; background: hsla(142, 55%, 45%, 0.12); border-color: hsla(142, 55%, 45%, 0.40); }
+.lm-slot-zone[data-slot-type="sidebar-left"]   { --slot-h: 32;  --slot-s: 80%; --slot-l: 55%; background: hsla(32, 80%, 55%, 0.12); border-color: hsla(32, 80%, 55%, 0.40); }
+.lm-slot-zone[data-slot-type="sidebar-right"]  { --slot-h: 270; --slot-s: 55%; --slot-l: 55%; background: hsla(270, 55%, 55%, 0.12); border-color: hsla(270, 55%, 55%, 0.40); }
 
 /* Fallback for unknown slot types */
 .lm-slot-zone { background: hsla(200, 30%, 50%, 0.08); border-color: hsla(200, 30%, 50%, 0.30); }
@@ -320,7 +320,6 @@ body {
 /* When blocks are loaded: remove colored bg */
 .lm-slot-zone--has-blocks {
   background: transparent !important;
-  align-items: stretch;
   justify-content: flex-start;
   overflow: hidden;
 }
@@ -329,6 +328,23 @@ body {
 .lm-block-shell {
   position: relative;
   width: 100%;
+}
+
+/* Inner container — fills main axis (vertical), positioned by outer align-items on cross axis */
+.lm-slot-zone__inner {
+  width: 100%;
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  background: hsla(var(--slot-h, 200), var(--slot-s, 30%), var(--slot-l, 50%), 0.10);
+  outline: 1px dashed hsla(var(--slot-h, 200), var(--slot-s, 30%), var(--slot-l, 50%), 0.35);
+  outline-offset: -1px;
+}
+
+/* When slot has no max-width, inner fills outer — no need for visible boundary */
+.lm-slot-zone__inner:not([data-constrained]) {
+  background: transparent;
+  outline: none;
 }
 
 /* Block stack inside slot */
@@ -650,6 +666,67 @@ body {
 }
 
 .lm-inspector__section:last-child { border-bottom: none; }
+
+.lm-inspector__section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--lm-text-secondary);
+  margin-bottom: var(--lm-sp-3);
+  display: flex;
+  align-items: center;
+  gap: var(--lm-sp-2);
+}
+
+.lm-inspector__section-glyph {
+  font-size: 13px;
+  line-height: 1;
+  color: var(--lm-text-muted);
+}
+
+/* Outer (Slot Area) — left border in slot accent color */
+.lm-inspector__section--outer {
+  border-left: 2px solid hsla(var(--slot-h, 200), var(--slot-s, 30%), var(--slot-l, 50%), 0.6);
+  padding-left: var(--lm-sp-6);
+  margin-left: calc(var(--lm-sp-6) * -1);
+}
+
+.lm-inspector__section--outer[data-slot-type="header"]        { --slot-h: 210; --slot-s: 70%; --slot-l: 50%; }
+.lm-inspector__section--outer[data-slot-type="footer"]         { --slot-h: 210; --slot-s: 40%; --slot-l: 45%; }
+.lm-inspector__section--outer[data-slot-type="content"]        { --slot-h: 142; --slot-s: 55%; --slot-l: 45%; }
+.lm-inspector__section--outer[data-slot-type="sidebar-left"]   { --slot-h: 32;  --slot-s: 80%; --slot-l: 55%; }
+.lm-inspector__section--outer[data-slot-type="sidebar-right"]  { --slot-h: 270; --slot-s: 55%; --slot-l: 55%; }
+
+.lm-inspector__section--outer .lm-inspector__section-glyph {
+  color: hsla(var(--slot-h, 200), var(--slot-s, 30%), var(--slot-l, 50%), 0.9);
+}
+
+/* Inner (Slot Parameters) — cyan accent + subtle wash */
+.lm-inspector__section--inner {
+  border-left: 2px solid var(--lm-text-accent);
+  padding-left: var(--lm-sp-6);
+  margin-left: calc(var(--lm-sp-6) * -1);
+  background: rgba(79, 193, 255, 0.03);
+}
+
+.lm-inspector__section--inner .lm-inspector__section-glyph {
+  color: var(--lm-text-accent);
+}
+
+/* Locked state for header/footer Slot Area */
+.lm-inspector__locked {
+  display: flex;
+  align-items: center;
+  gap: var(--lm-sp-3);
+  padding: var(--lm-sp-2) 0;
+}
+
+.lm-inspector__locked-note {
+  font-size: 11px;
+  color: var(--lm-text-muted);
+  font-style: italic;
+}
 
 .lm-inspector__row {
   display: flex;
@@ -1023,6 +1100,54 @@ body {
 .lm-align-btn--active:hover {
   background: var(--lm-bg-button-hover);
   color: var(--lm-text-inverse);
+}
+
+/* ── Spacing control (token select) ─────────────────────────── */
+.lm-spacing-control {
+  margin-top: var(--lm-sp-2);
+  margin-bottom: var(--lm-sp-3);
+}
+
+.lm-spacing-select {
+  width: 100%;
+  height: 26px;
+  padding: 0 var(--lm-sp-3);
+  background: var(--lm-bg-input);
+  border: 1px solid var(--lm-border);
+  border-radius: 4px;
+  font-family: var(--lm-font-mono);
+  font-size: 11px;
+  color: var(--lm-text-primary);
+  cursor: pointer;
+}
+
+.lm-spacing-select:focus {
+  outline: 1px solid var(--lm-border-focus);
+  border-color: var(--lm-border-focus);
+}
+
+.lm-spacing-select option {
+  background: var(--lm-bg-panel);
+  color: var(--lm-text-primary);
+}
+
+.lm-inspector__value-sub-inline {
+  color: var(--lm-text-muted);
+  font-size: 10px;
+}
+
+/* Padding row — compact inline: label + select + resolved px */
+.lm-inspector__pad-row {
+  display: grid;
+  grid-template-columns: 72px 1fr auto;
+  align-items: center;
+  gap: var(--lm-sp-2);
+  padding: 2px 0;
+}
+
+.lm-spacing-select--inline {
+  height: 22px;
+  font-size: 10px;
 }
 
 /* ── Width control (fluid/fixed toggle + px input) ─────────── */

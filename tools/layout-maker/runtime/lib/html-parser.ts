@@ -369,11 +369,29 @@ export function parseHTMLToConfig(
       if (zVal) slot['z-index'] = parseInt(zVal, 10)
     }
 
-    // Padding
+    // Padding (shorthand)
     const paddingVal = extractProp(css, slotSel, 'padding')
     if (paddingVal) {
       const token = resolveSpacing(paddingVal)
       if (token) slot.padding = token
+    }
+
+    // Padding (split fields)
+    const padTopVal = extractProp(css, slotSel, 'padding-top')
+    if (padTopVal) {
+      const token = resolveSpacing(padTopVal)
+      if (token) slot['padding-top'] = token
+    }
+    const padBottomVal = extractProp(css, slotSel, 'padding-bottom')
+    if (padBottomVal) {
+      const token = resolveSpacing(padBottomVal)
+      if (token) slot['padding-bottom'] = token
+    }
+    const padLeftVal = extractProp(css, slotSel, 'padding-left')
+    const padRightVal = extractProp(css, slotSel, 'padding-right')
+    if (padLeftVal && padRightVal && padLeftVal === padRightVal) {
+      const token = resolveSpacing(padLeftVal)
+      if (token) slot['padding-x'] = token
     }
 
     // Gap
@@ -394,6 +412,12 @@ export function parseHTMLToConfig(
     if (mtVal) {
       const token = resolveSpacing(mtVal)
       if (token) slot['margin-top'] = token
+    }
+
+    // Max-width (inner container)
+    const mwSlotVal = extractProp(css, slotSel, 'max-width')
+    if (mwSlotVal && /^\d+px$/.test(mwSlotVal)) {
+      slot['max-width'] = mwSlotVal
     }
 
     // Align (from align-items)

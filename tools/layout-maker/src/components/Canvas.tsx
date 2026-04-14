@@ -137,7 +137,15 @@ export function Canvas({ config, tokens, activeBreakpoint, gridKey, selectedSlot
     ? Object.entries(grid.columns).filter(([name]) => !name.includes('sidebar'))
     : Object.entries(grid.columns)
 
-  const gridTemplateColumns = visibleColumns.map(([, w]) => w).join(' ')
+  // Fluid outer + inner max-width → minmax(maxW, 1fr) so the slot claims
+  // at least its inner max-width from neighboring fluid tracks.
+  const gridTemplateColumns = visibleColumns.map(([name, w]) => {
+    if (w === '1fr') {
+      const innerMax = config.slots[name]?.['max-width']
+      if (innerMax) return `minmax(${innerMax}, 1fr)`
+    }
+    return w
+  }).join(' ')
 
   // Sidebar slots for drawer mode — check config.slots, not grid.columns
   // (tablet/mobile grids don't include sidebar columns)
@@ -282,10 +290,17 @@ interface SlotZoneProps {
 function SlotZone({ name, config, tokens, width, slotConfig, isSelected, isFlashing, onClick, onMouseEnter, onMouseLeave, blocks }: SlotZoneProps) {
   const ref = useRef<HTMLDivElement>(null)
   const minHeight = slotConfig['min-height'] ?? '80px'
-  const padding = slotConfig.padding ? resolveToken(slotConfig.padding, tokens) : undefined
+  // Padding: prefer split fields, fall back to legacy shorthand
+  const legacyPad = slotConfig.padding ? resolveToken(slotConfig.padding, tokens) : undefined
+  const padTop = slotConfig['padding-top'] ? resolveToken(slotConfig['padding-top'], tokens) : legacyPad
+  const padBottom = slotConfig['padding-bottom'] ? resolveToken(slotConfig['padding-bottom'], tokens) : legacyPad
+  const padX = slotConfig['padding-x'] ? resolveToken(slotConfig['padding-x'], tokens) : legacyPad
+  const hasAnyPad = padTop || padBottom || padX
+  const padding = hasAnyPad ? `${padTop ?? '0'} ${padX ?? '0'} ${padBottom ?? '0'}` : undefined
   const marginTop = slotConfig['margin-top'] ? resolveToken(slotConfig['margin-top'], tokens) : undefined
   const gap = slotConfig.gap ? resolveToken(slotConfig.gap, tokens) : undefined
   const alignItems = slotConfig.align ?? undefined
+  const innerMaxWidth = slotConfig['max-width'] ?? undefined
 
   const testBlockSlugs = config['test-blocks']?.[name] ?? []
   const blockCount = testBlockSlugs.length
@@ -307,38 +322,48 @@ function SlotZone({ name, config, tokens, width, slotConfig, isSelected, isFlash
         minHeight: hasLoadedBlocks ? undefined : minHeight,
         padding,
         marginTop,
+        alignItems,
       }}
       onClick={onClick}
       onMouseEnter={() => ref.current && onMouseEnter(ref.current)}
       onMouseLeave={onMouseLeave}
     >
-      {/* Label row */}
-      <div className="lm-slot-zone__label-row">
-        <span className="lm-slot-zone__name">{name}</span>
-        <span className="lm-slot-zone__width">{width}</span>
-        {blockCount > 0 && (
-          <span className="lm-slot-zone__blocks">{blockCount} blocks</span>
+      {/* Inner container — constrained by max-width, positioned by outer align-items */}
+      <div
+        className="lm-slot-zone__inner"
+        data-constrained={innerMaxWidth ? '' : undefined}
+        style={{ maxWidth: innerMaxWidth }}
+      >
+        {/* Label row */}
+        <div className="lm-slot-zone__label-row">
+          <span className="lm-slot-zone__name">{name}</span>
+          <span className="lm-slot-zone__width">
+            {width}{innerMaxWidth ? ` → ${innerMaxWidth}` : ''}
+          </span>
+          {blockCount > 0 && (
+            <span className="lm-slot-zone__blocks">{blockCount} blocks</span>
+          )}
+        </div>
+
+        {/* Block content — rendered in iframes for full CSS isolation */}
+        {hasLoadedBlocks && (
+          <div className="lm-slot-zone__block-stack" style={{ gap: gap || undefined }}>
+            {testBlockSlugs.map((slug) => {
+              const block = blocks.get(slug)
+              if (!block) {
+                return (
+                  <div key={slug} className="lm-block-missing">
+                    block &apos;{slug}&apos; not found
+                  </div>
+                )
+              }
+              return (
+                <BlockFrame key={slug} block={block} />
+              )
+            })}
+          </div>
         )}
       </div>
-
-      {/* Block content — rendered in iframes for full CSS isolation */}
-      {hasLoadedBlocks && (
-        <div className="lm-slot-zone__block-stack" style={{ gap: gap || undefined, alignItems }}>
-          {testBlockSlugs.map((slug) => {
-            const block = blocks.get(slug)
-            if (!block) {
-              return (
-                <div key={slug} className="lm-block-missing">
-                  block &apos;{slug}&apos; not found
-                </div>
-              )
-            }
-            return (
-              <BlockFrame key={slug} block={block} />
-            )
-          })}
-        </div>
-      )}
     </div>
   )
 }

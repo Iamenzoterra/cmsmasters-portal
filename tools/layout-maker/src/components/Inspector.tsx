@@ -86,23 +86,26 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
     setWidthDraft(newPx)
   }
 
+  // Inner max-width editing state
+  const innerMaxWidth = slotConfig['max-width']
+  const hasInnerMaxWidth = !!innerMaxWidth
+  const innerMaxWidthPx = hasInnerMaxWidth ? parseInt(innerMaxWidth!, 10).toString() : ''
+  const [maxWidthDraft, setMaxWidthDraft] = useState(innerMaxWidthPx)
+
+  // Sync max-width draft on external changes
+  const [prevMaxWidth, setPrevMaxWidth] = useState(innerMaxWidth)
+  if (innerMaxWidth !== prevMaxWidth) {
+    setPrevMaxWidth(innerMaxWidth)
+    setMaxWidthDraft(innerMaxWidth ? parseInt(innerMaxWidth, 10).toString() : '')
+  }
+
   // Build property rows
   const rows: PropertyRow[] = []
 
-  // Width — rendered as interactive control for content, read-only for others
-  if (!isContent) {
-    if (isFullWidth) {
-      rows.push({ label: 'Width', property: 'width', value: 'full width' })
-    } else if (columnWidth) {
-      rows.push({ label: 'Width', property: 'width', value: columnWidth })
-    } else {
-      rows.push({ label: 'Width', property: 'width', value: 'n/a' })
-    }
-  }
+  // Outer width is now handled in the Slot Area section for all slots
 
-  // Spacing properties
+  // Spacing properties (read-only rows — padding is interactive in Slot Area)
   const spacingProps: Array<{ label: string; key: string }> = [
-    { label: 'Padding', key: 'padding' },
     { label: 'Gap', key: 'gap' },
     { label: 'Min-height', key: 'min-height' },
     { label: 'Margin-top', key: 'margin-top' },
@@ -122,11 +125,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
     })
   }
 
-  // Align — rendered as interactive control for sidebars, read-only row for others
-  const isSidebar = selectedSlot.includes('sidebar')
-  if (!isSidebar && slotConfig.align) {
-    rows.push({ label: 'Align', property: 'align', value: slotConfig.align })
-  }
+  // Align is now handled in the Slot Parameters section for all slots
 
   // Usable width
   let usableWidth: string | null = null
@@ -179,19 +178,59 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
           </div>
         </div>
 
-        {/* Content width — toggle between fluid (1fr) and fixed px */}
-        {isContent && columnWidth && (
-          <div className="lm-inspector__section">
-            <div className="lm-inspector__row">
-              <span className="lm-inspector__label">Width</span>
-              <span className="lm-inspector__value">{columnWidth}</span>
+        {/* Slot Area — outer (grid column width + padding) */}
+        <div className="lm-inspector__section lm-inspector__section--outer" data-slot-type={selectedSlot}>
+          <div className="lm-inspector__section-title">
+            <span className="lm-inspector__section-glyph">▭</span> Slot Area
+          </div>
+
+          {/* Outer padding — split into X / top / bottom */}
+          {(['padding-x', 'padding-top', 'padding-bottom'] as const).map((key) => {
+            const label = key === 'padding-x' ? 'Padding ←→' : key === 'padding-top' ? 'Padding ↑' : 'Padding ↓'
+            // Fall back to legacy shorthand if split field is absent
+            const val = slotConfig[key] ?? slotConfig.padding
+            return (
+              <div key={key} className="lm-inspector__pad-row">
+                <span className="lm-inspector__label">{label}</span>
+                <select
+                  className="lm-spacing-select lm-spacing-select--inline"
+                  value={slotConfig[key] ?? ''}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    onUpdateSlotConfig(selectedSlot, key, v === '' ? undefined : v)
+                  }}
+                >
+                  <option value="">{slotConfig.padding && slotConfig[key] === undefined ? `inherit (${slotConfig.padding})` : 'none'}</option>
+                  <option value="0">0</option>
+                  {Object.keys(tokens.all)
+                    .filter((t) => t.startsWith('--spacing-'))
+                    .map((t) => (
+                      <option key={t} value={t}>
+                        {t.replace('--spacing-', '')} ({tokens.all[t]})
+                      </option>
+                    ))}
+                </select>
+                {val && val !== '0' && slotConfig[key] !== undefined && (
+                  <span className="lm-inspector__value-sub-inline">
+                    {resolveToken(val, tokens)}
+                  </span>
+                )}
+              </div>
+            )
+          })}
+
+          {isFullWidth ? (
+            <div className="lm-inspector__locked">
+              <span className="lm-inspector__value">1fr</span>
+              <span className="lm-inspector__locked-note">locked — full width by position</span>
             </div>
+          ) : columnWidth ? (
             <div className="lm-width-control">
               <div className="lm-align-group">
                 <button
                   className={`lm-align-btn${!isFixedWidth ? ' lm-align-btn--active' : ''}`}
                   onClick={() => {
-                    onUpdateColumnWidth('content', gridKey, '1fr')
+                    onUpdateColumnWidth(selectedSlot, gridKey, '1fr')
                     setWidthDraft('')
                   }}
                 >
@@ -200,8 +239,8 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
                 <button
                   className={`lm-align-btn${isFixedWidth ? ' lm-align-btn--active' : ''}`}
                   onClick={() => {
-                    const px = widthDraft || '720'
-                    onUpdateColumnWidth('content', gridKey, `${px}px`)
+                    const px = widthDraft || (selectedSlot === 'content' ? '720' : '360')
+                    onUpdateColumnWidth(selectedSlot, gridKey, `${px}px`)
                     setWidthDraft(px)
                   }}
                 >
@@ -213,22 +252,22 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
                   <input
                     className="lm-width-input__field"
                     type="number"
-                    min={200}
+                    min={100}
                     max={2000}
                     step={10}
                     value={widthDraft}
                     onChange={(e) => setWidthDraft(e.target.value)}
                     onBlur={() => {
                       const n = parseInt(widthDraft, 10)
-                      if (!isNaN(n) && n >= 200) {
-                        onUpdateColumnWidth('content', gridKey, `${n}px`)
+                      if (!isNaN(n) && n >= 100) {
+                        onUpdateColumnWidth(selectedSlot, gridKey, `${n}px`)
                       }
                     }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         const n = parseInt(widthDraft, 10)
-                        if (!isNaN(n) && n >= 200) {
-                          onUpdateColumnWidth('content', gridKey, `${n}px`)
+                        if (!isNaN(n) && n >= 100) {
+                          onUpdateColumnWidth(selectedSlot, gridKey, `${n}px`)
                         }
                       }
                     }}
@@ -237,8 +276,14 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
                 </div>
               )}
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="lm-inspector__locked">
+              <span className="lm-inspector__locked-note">not in grid at this breakpoint</span>
+            </div>
+          )}
+        </div>
+
+        {/* Property rows */}
 
         {/* Property rows */}
         {rows.map((row) => (
@@ -259,26 +304,86 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
           </div>
         ))}
 
-        {/* Content alignment — sidebar slots only */}
-        {isSidebar && (
-          <div className="lm-inspector__section">
-            <div className="lm-inspector__row">
-              <span className="lm-inspector__label">Content align</span>
-            </div>
-            <div className="lm-align-group">
-              {ALIGN_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  className={`lm-align-btn${(slotConfig.align ?? 'flex-start') === opt.value ? ' lm-align-btn--active' : ''}`}
-                  title={opt.label}
-                  onClick={() => onUpdateSlotConfig(selectedSlot, 'align', opt.value)}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+        {/* Slot Parameters — inner container controls */}
+        <div className="lm-inspector__section lm-inspector__section--inner">
+          <div className="lm-inspector__section-title">
+            <span className="lm-inspector__section-glyph">▤</span> Slot Parameters
           </div>
-        )}
+
+          {/* Inner max-width */}
+          <div className="lm-inspector__row">
+            <span className="lm-inspector__label">Inner max-width</span>
+            <span className="lm-inspector__value">{innerMaxWidth ?? 'none'}</span>
+          </div>
+          <div className="lm-width-control">
+            <div className="lm-align-group">
+              <button
+                className={`lm-align-btn${!hasInnerMaxWidth ? ' lm-align-btn--active' : ''}`}
+                onClick={() => {
+                  onUpdateSlotConfig(selectedSlot, 'max-width', undefined)
+                  setMaxWidthDraft('')
+                }}
+              >
+                None
+              </button>
+              <button
+                className={`lm-align-btn${hasInnerMaxWidth ? ' lm-align-btn--active' : ''}`}
+                onClick={() => {
+                  const px = maxWidthDraft || '360'
+                  onUpdateSlotConfig(selectedSlot, 'max-width', `${px}px`)
+                  setMaxWidthDraft(px)
+                }}
+              >
+                Fixed
+              </button>
+            </div>
+            {hasInnerMaxWidth && (
+              <div className="lm-width-input">
+                <input
+                  className="lm-width-input__field"
+                  type="number"
+                  min={100}
+                  max={2000}
+                  step={10}
+                  value={maxWidthDraft}
+                  onChange={(e) => setMaxWidthDraft(e.target.value)}
+                  onBlur={() => {
+                    const n = parseInt(maxWidthDraft, 10)
+                    if (!isNaN(n) && n >= 100) {
+                      onUpdateSlotConfig(selectedSlot, 'max-width', `${n}px`)
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const n = parseInt(maxWidthDraft, 10)
+                      if (!isNaN(n) && n >= 100) {
+                        onUpdateSlotConfig(selectedSlot, 'max-width', `${n}px`)
+                      }
+                    }
+                  }}
+                />
+                <span className="lm-width-input__unit">px</span>
+              </div>
+            )}
+          </div>
+
+          {/* Content align */}
+          <div className="lm-inspector__row" style={{ marginTop: '8px' }}>
+            <span className="lm-inspector__label">Content align</span>
+          </div>
+          <div className="lm-align-group">
+            {ALIGN_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                className={`lm-align-btn${(slotConfig.align ?? 'flex-start') === opt.value ? ' lm-align-btn--active' : ''}`}
+                title={opt.label}
+                onClick={() => onUpdateSlotConfig(selectedSlot, 'align', opt.value)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Usable width */}
         {usableWidth && (

@@ -61,8 +61,12 @@ export interface SlotConfig {
   sticky?: boolean
   'z-index'?: number
   padding?: string
+  'padding-x'?: string
+  'padding-top'?: string
+  'padding-bottom'?: string
   gap?: string
   align?: 'flex-start' | 'center' | 'flex-end' | 'stretch'
+  'max-width'?: string
   'min-height'?: string
   'margin-top'?: string
 }

@@ -41,8 +41,12 @@ const slotSchema = z
     sticky: z.boolean().optional(),
     'z-index': z.number().optional(),
     padding: spacingToken.optional(),
+    'padding-x': spacingToken.optional(),
+    'padding-top': spacingToken.optional(),
+    'padding-bottom': spacingToken.optional(),
     gap: spacingToken.optional(),
     align: z.enum(['flex-start', 'center', 'flex-end', 'stretch']).optional(),
+    'max-width': z.string().regex(/^\d+px$/).optional(),
     'min-height': z.string().regex(/^\d+px$/).optional(),
     'margin-top': spacingToken.optional(),
   })
