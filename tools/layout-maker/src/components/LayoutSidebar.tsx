@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import type { LayoutSummary } from '../lib/types'
 import { api } from '../lib/api-client'
 
@@ -10,6 +11,8 @@ interface Props {
 }
 
 export function LayoutSidebar({ layouts, activeScope, onSelect, onRefresh, onExport }: Props) {
+  const importInputRef = useRef<HTMLInputElement>(null)
+
   async function handleNew() {
     const name = window.prompt('Layout name:')
     if (!name) return
@@ -53,6 +56,36 @@ export function LayoutSidebar({ layouts, activeScope, onSelect, onRefresh, onExp
     }
   }
 
+  function handleImportClick() {
+    importInputRef.current?.click()
+  }
+
+  async function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Derive defaults from filename
+    const baseName = file.name.replace(/\.html?$/i, '')
+    const defaultScope = baseName.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-')
+
+    const name = window.prompt('Layout name:', baseName) ?? ''
+    if (!name) return
+    const scope = window.prompt('Scope (lowercase, hyphens):', defaultScope) ?? ''
+    if (!scope) return
+
+    try {
+      const html = await file.text()
+      await api.importLayout({ html, name, scope })
+      onRefresh()
+      onSelect(scope)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to import layout')
+    }
+
+    // Reset input so the same file can be re-imported
+    e.target.value = ''
+  }
+
   return (
     <div className="lm-sidebar">
       <div className="lm-sidebar__header">Layouts</div>
@@ -78,9 +111,17 @@ export function LayoutSidebar({ layouts, activeScope, onSelect, onRefresh, onExp
 
       <div className="lm-sidebar__actions">
         <button className="lm-btn lm-btn--primary" onClick={handleNew}>New</button>
+        <button className="lm-btn" onClick={handleImportClick}>Import</button>
         <button className="lm-btn" onClick={handleClone} disabled={!activeScope}>Clone</button>
         <button className="lm-btn" onClick={onExport} disabled={!activeScope}>Export</button>
         <button className="lm-btn lm-btn--danger" onClick={handleDelete} disabled={!activeScope}>Delete</button>
+        <input
+          ref={importInputRef}
+          type="file"
+          accept=".html,.htm"
+          style={{ display: 'none' }}
+          onChange={handleImportFile}
+        />
       </div>
     </div>
   )

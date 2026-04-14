@@ -17,6 +17,7 @@ import {
   findConfigByScope,
 } from '../lib/config-resolver.js'
 import { parseTokens } from '../lib/token-parser.js'
+import { parseHTMLToConfig } from '../lib/html-parser.js'
 
 const PRESETS_DIR = path.resolve(import.meta.dirname, '../../layouts/_presets')
 
@@ -196,6 +197,53 @@ layouts.delete('/layouts/:scope', (c) => {
     return c.json({ error: `Layout "${scope}" not found` }, 404)
   }
   return c.json({ ok: true })
+})
+
+/** POST /layouts/import — import an HTML document as a new layout */
+layouts.post('/layouts/import', async (c) => {
+  const body = await c.req.json<{ html: string; name: string; scope: string }>()
+  const { html, name, scope } = body
+
+  if (!html || !name || !scope) {
+    return c.json({ error: 'html, name, and scope are required' }, 400)
+  }
+
+  // Check duplicate scope
+  const existing = getExistingScopes()
+  if (existing.includes(scope)) {
+    return c.json({ error: `Scope "${scope}" already exists` }, 409)
+  }
+
+  // Parse HTML → LayoutConfig
+  let config: LayoutConfig
+  try {
+    config = parseHTMLToConfig(html, name, scope)
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Parse error'
+    return c.json({ error: `Failed to parse HTML: ${msg}` }, 400)
+  }
+
+  // Schema validation
+  const result = configSchema.safeParse(config)
+  if (!result.success) {
+    return c.json(
+      { error: 'Parsed config is invalid', issues: result.error.issues, parsed: config },
+      400,
+    )
+  }
+  config = result.data
+
+  // Cross-field validation (skip token checks — imported layouts may use non-standard spacing)
+  const tokens = parseTokens()
+  const validationErrors = validateConfig(config, tokens, existing)
+  // Filter out token warnings — imported layouts may reference tokens we don't have
+  const criticalErrors = validationErrors.filter((e) => !e.includes('Unknown token'))
+  if (criticalErrors.length > 0) {
+    return c.json({ error: 'Validation failed', issues: criticalErrors }, 400)
+  }
+
+  writeConfig(config)
+  return c.json(config, 201)
 })
 
 /** GET /presets — list available presets */
