@@ -3,73 +3,10 @@ import type { LayoutConfig, TokenMap, BlockData } from '../lib/types'
 import { resolveToken } from '../lib/tokens'
 import { DrawerPreview } from './DrawerPreview'
 import { SlotOverlay } from './SlotOverlay'
-
-/**
- * Scope block CSS so it only applies inside its .lm-block-shell container.
- * Only scopes selectors — does NOT modify property values.
- * Drops only `body` and `html` global selectors. Keeps `*` resets scoped.
- */
-function scopeBlockCSS(css: string, slug: string): string {
-  const containerId = `lm-block-${slug}`
-
-  // Strip @keyframes blocks first (preserve them unmodified)
-  const keyframes: string[] = []
-  // eslint-disable-next-line sonarjs/slow-regex, security/detect-unsafe-regex -- internal tool, trusted input
-  let processed = css.replace(/@keyframes\s+[\w-]+\s*\{[^}]*(?:\{[^}]*\}[^}]*)*\}/g, (match) => {
-    keyframes.push(match)
-    return `/*__KF_${keyframes.length - 1}__*/`
-  })
-
-  // Strip @media wrappers but keep inner content
-  const mediaBlocks: { query: string; inner: string }[] = []
-  // eslint-disable-next-line sonarjs/slow-regex -- internal tool, trusted input
-  processed = processed.replace(/@media\s*([^{]+)\{([\s\S]*?)\n\s*\}/g, (_, query, inner) => {
-    mediaBlocks.push({ query: query.trim(), inner: inner.trim() })
-    return `/*__MEDIA_${mediaBlocks.length - 1}__*/`
-  })
-
-  // Process each rule: scope selectors under #containerId
-  // eslint-disable-next-line sonarjs/slow-regex -- internal tool, trusted input
-  processed = processed.replace(/([^{}@/][^{]*)\{/g, (match, selectorGroup) => {
-    const trimmed = selectorGroup.trim()
-    // Skip comments, @-rules
-    if (trimmed.startsWith('/*') || trimmed.startsWith('@')) return match
-
-    const selectors = trimmed.split(',').map((s: string) => s.trim())
-    const scoped = selectors.map((sel: string) => {
-      // Drop only body/html — these truly leak and break the tool
-      if (sel === 'body' || sel === 'html') return null
-      // Scope * resets under the container (important for box-sizing etc.)
-      if (sel === '*' || sel.startsWith('*, ') || sel.startsWith('*,')) {
-        return `#${containerId} ${sel}`
-      }
-      // Scope .block- and [data-block] selectors
-      if (sel.startsWith('.block-') || sel.startsWith('[data-block')) {
-        return `#${containerId} ${sel}`
-      }
-      // Scope anything else
-      return `#${containerId} ${sel}`
-    }).filter(Boolean)
-
-    if (scoped.length === 0) return '/*dropped*/ .lm-noop {'
-    return `${scoped.join(', ')} {`
-  })
-
-  // Fix viewport units — 100vw refers to browser viewport, not canvas
-  processed = processed.replace(/100vw/g, '100%')
-
-  // Restore @media blocks (with scoped inner CSS)
-  for (const [i, { query, inner }] of mediaBlocks.entries()) {
-    processed = processed.replace(`/*__MEDIA_${i}__*/`, `@media ${query} { ${inner} }`)
-  }
-
-  // Restore @keyframes
-  for (const [i, kf] of keyframes.entries()) {
-    processed = processed.replace(`/*__KF_${i}__*/`, kf)
-  }
-
-  return processed
-}
+// Portal assets for iframe injection (same pattern as Studio's block-preview.tsx)
+import tokensCSS from '../../../../packages/ui/src/theme/tokens.css?raw'
+import portalBlocksCSS from '../../../../packages/ui/src/portal/portal-blocks.css?raw'
+import animateUtilsJS from '../../../../packages/ui/src/portal/animate-utils.js?raw'
 
 /** Renders a block inside an iframe for full CSS isolation */
 function BlockFrame({ block }: { block: BlockData }) {
@@ -78,19 +15,45 @@ function BlockFrame({ block }: { block: BlockData }) {
 
   const srcDoc = `<!DOCTYPE html>
 <html><head>
-<link rel="stylesheet" href="http://localhost:7701/tokens/css">
+<meta charset="utf-8" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>
-html, body { margin: 0; padding: 0; overflow: hidden; }
+@layer tokens, reset, shared, block;
+@layer tokens {
+${tokensCSS}
+}
+@layer reset {
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Manrope', system-ui, sans-serif; overflow: hidden; background: white; }
+}
+@layer shared {
+${portalBlocksCSS}
+}
+@layer block {
 ${block.css || ''}
+}
 </style>
 </head><body>
-<div class="block-${block.slug}" data-block-shell="${block.slug}">
+<div data-block-shell="${block.slug}">
 ${block.html}
 </div>
+<script type="module">
+${animateUtilsJS}
+</script>
 <script>
-new ResizeObserver(() => {
-  const h = document.body.scrollHeight;
-  window.parent.postMessage({ type: 'lm-block-height', slug: '${block.slug}', height: h }, '*');
+(function() {
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('[class*="reveal"]').forEach(function(el) { observer.observe(el); });
+})();
+</script>
+${block.js ? '<script type="module">' + block.js + '<\/script>' : ''}
+<script>
+new ResizeObserver(function() {
+  window.parent.postMessage({ type: 'lm-block-height', slug: '${block.slug}', height: document.body.scrollHeight }, '*');
 }).observe(document.body);
 </script>
 </body></html>`
