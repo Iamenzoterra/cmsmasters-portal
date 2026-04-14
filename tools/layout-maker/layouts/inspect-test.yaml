@@ -5,9 +5,9 @@ grid:
   desktop:
     min-width: 1440px
     columns:
-      sidebar-left: 280px
+      sidebar-left: 360px
       content: 1fr
-      sidebar-right: 380px
+      sidebar-right: 360px
     column-gap: '--spacing-xl'
     max-width: 1280px
     center: true
@@ -25,27 +25,21 @@ slots:
     position: top
     padding: '--spacing-lg'
     min-height: 60px
-  sidebar-left:
-    padding: '--spacing-lg'
-    gap: '--spacing-md'
-    min-height: 400px
   content:
     padding: '--spacing-xl'
     gap: '--spacing-lg'
     min-height: 500px
-  sidebar-right:
-    padding: '--spacing-xs'
-    gap: '--spacing-md'
-    align: flex-start
-    min-height: 400px
   footer:
     position: bottom
     padding: '--spacing-lg'
     min-height: 80px
-test-blocks:
+  sidebar-left:
+    align: flex-start
+    min-height: 400px
   sidebar-right:
-    - sidebar-pricing
-    - sidebar-perfect-for
+    align: flex-start
+    min-height: 400px
+test-blocks:
   header:
     - header
   content:

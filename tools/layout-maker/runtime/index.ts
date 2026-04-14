@@ -11,11 +11,11 @@ import { startWatcher } from './watcher.js'
 
 const app = new Hono()
 
-// CORS — allow Vite UI on :7700
+// CORS — allow any localhost origin (dev tool)
 app.use(
   '/*',
   cors({
-    origin: 'http://localhost:7700',
+    origin: (origin) => origin?.startsWith('http://localhost') ? origin : 'http://localhost:7700',
     allowHeaders: ['Content-Type'],
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   }),

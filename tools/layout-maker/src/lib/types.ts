@@ -1,3 +1,49 @@
+/* ── Canonical canvas breakpoints ────────────────────────────── */
+
+export type CanvasBreakpointId = 'desktop' | 'tablet' | 'mobile'
+
+export interface CanvasBreakpoint {
+  id: CanvasBreakpointId
+  label: string
+  width: number
+}
+
+export const CANVAS_BREAKPOINTS: CanvasBreakpoint[] = [
+  { id: 'desktop', label: 'Desktop', width: 1440 },
+  { id: 'tablet',  label: 'Tablet',  width: 768 },
+  { id: 'mobile',  label: 'Mobile',  width: 375 },
+]
+
+/**
+ * Resolve a canonical breakpoint id to the best matching grid key in the layout config.
+ * Strategy: exact name match → closest by min-width → first key (fallback).
+ */
+export function resolveGridKey(
+  breakpointId: CanvasBreakpointId,
+  grid: Record<string, BreakpointGrid>,
+): string {
+  // Exact match
+  if (grid[breakpointId]) return breakpointId
+
+  const target = CANVAS_BREAKPOINTS.find((b) => b.id === breakpointId)!.width
+  const keys = Object.keys(grid)
+
+  // Find closest by min-width
+  let best = keys[0]
+  let bestDist = Infinity
+  for (const key of keys) {
+    const w = parseInt(grid[key]['min-width'], 10) || 0
+    const dist = Math.abs(w - target)
+    if (dist < bestDist) {
+      bestDist = dist
+      best = key
+    }
+  }
+  return best
+}
+
+/* ── Layout grid per breakpoint ─────────────────────────────── */
+
 export interface BreakpointGrid {
   'min-width': string
   columns: Record<string, string>

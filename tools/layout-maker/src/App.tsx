@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import type { LayoutConfig, LayoutSummary, TokenMap, BlockData, ScopingWarning } from './lib/types'
+import type { LayoutConfig, LayoutSummary, TokenMap, BlockData, ScopingWarning, CanvasBreakpointId } from './lib/types'
+import { resolveGridKey } from './lib/types'
 import { api } from './lib/api-client'
 import { LayoutSidebar } from './components/LayoutSidebar'
 import { BreakpointBar } from './components/BreakpointBar'
@@ -28,7 +29,7 @@ export function App() {
   const [activeScope, setActiveScope] = useState<string | null>(null)
   const [activeConfig, setActiveConfig] = useState<LayoutConfig | null>(null)
   const [tokens, setTokens] = useState<TokenMap | null>(null)
-  const [activeBreakpoint, setActiveBreakpoint] = useState<string>('')
+  const [activeBreakpoint, setActiveBreakpoint] = useState<CanvasBreakpointId>('desktop')
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
   const [changedSlots, setChangedSlots] = useState<string[]>([])
   const [toastMessage, setToastMessage] = useState<string | null>(null)
@@ -78,9 +79,6 @@ export function App() {
     api.getLayout(activeScope).then((config) => {
       setActiveConfig(config)
       prevConfigRef.current = config
-      // Default to first breakpoint
-      const bpKeys = Object.keys(config.grid)
-      if (bpKeys.length > 0) setActiveBreakpoint(bpKeys[0])
     }).catch(() => {
       setActiveConfig(null)
     })
@@ -270,6 +268,7 @@ export function App() {
                 config={activeConfig}
                 tokens={tokens}
                 activeBreakpoint={activeBreakpoint}
+                gridKey={resolveGridKey(activeBreakpoint, activeConfig.grid)}
                 selectedSlot={selectedSlot}
                 onSlotSelect={setSelectedSlot}
                 changedSlots={changedSlots}
@@ -290,6 +289,7 @@ export function App() {
           selectedSlot={selectedSlot}
           config={activeConfig}
           activeBreakpoint={activeBreakpoint}
+          gridKey={activeConfig ? resolveGridKey(activeBreakpoint, activeConfig.grid) : ''}
           tokens={tokens}
           onShowToast={showToast}
           blockWarnings={blockWarnings}

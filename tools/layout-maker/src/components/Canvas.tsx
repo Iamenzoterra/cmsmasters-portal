@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react'
-import type { LayoutConfig, TokenMap, BlockData, SlotConfig } from '../lib/types'
+import type { LayoutConfig, TokenMap, BlockData, SlotConfig, CanvasBreakpointId } from '../lib/types'
+import { CANVAS_BREAKPOINTS } from '../lib/types'
 import { resolveToken } from '../lib/tokens'
 import { DrawerPreview } from './DrawerPreview'
 import { SlotOverlay } from './SlotOverlay'
@@ -85,7 +86,8 @@ new ResizeObserver(function() {
 interface Props {
   config: LayoutConfig
   tokens: TokenMap
-  activeBreakpoint: string
+  activeBreakpoint: CanvasBreakpointId
+  gridKey: string
   selectedSlot: string | null
   onSlotSelect: (name: string) => void
   changedSlots: string[]
@@ -101,7 +103,7 @@ function getSlotType(name: string): string {
   return name
 }
 
-export function Canvas({ config, tokens, activeBreakpoint, selectedSlot, onSlotSelect, changedSlots, blocks }: Props) {
+export function Canvas({ config, tokens, activeBreakpoint, gridKey, selectedSlot, onSlotSelect, changedSlots, blocks }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const viewportRef = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(1)
@@ -112,11 +114,11 @@ export function Canvas({ config, tokens, activeBreakpoint, selectedSlot, onSlotS
     columnWidth: string
   } | null>(null)
 
-  const grid = config.grid[activeBreakpoint]
-  if (!grid) return <div className="lm-empty">No grid config for "{activeBreakpoint}"</div>
+  const grid = config.grid[gridKey]
+  if (!grid) return <div className="lm-empty">No grid config for "{gridKey}"</div>
 
   const isDrawerMode = grid.sidebars === 'drawer'
-  const breakpointWidth = parseInt(grid['min-width'], 10) || 1440
+  const breakpointWidth = CANVAS_BREAKPOINTS.find((b) => b.id === activeBreakpoint)!.width
   const columnGap = grid['column-gap'] ? resolveToken(grid['column-gap'], tokens) : '0px'
 
   // Separate slots by position

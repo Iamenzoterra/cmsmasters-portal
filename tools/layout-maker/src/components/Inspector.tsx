@@ -7,6 +7,7 @@ interface Props {
   selectedSlot: string | null
   config: LayoutConfig | null
   activeBreakpoint: string
+  gridKey: string
   tokens: TokenMap | null
   onShowToast: (message: string) => void
   blockWarnings: ScopingWarning[]
@@ -22,7 +23,7 @@ interface PropertyRow {
 }
 
 // eslint-disable-next-line sonarjs/cognitive-complexity
-export function Inspector({ selectedSlot, config, activeBreakpoint, tokens, onShowToast, blockWarnings, onToggleSlot }: Props) {
+export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tokens, onShowToast, blockWarnings, onToggleSlot }: Props) {
   if (!config || !tokens) {
     return (
       <div className="lm-inspector">
@@ -40,7 +41,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, tokens, onSh
     return (
       <div className="lm-inspector">
         <div className="lm-inspector__header">Inspector</div>
-        <SlotToggles config={config} activeBreakpoint={activeBreakpoint} onToggleSlot={onToggleSlot} />
+        <SlotToggles config={config} activeBreakpoint={gridKey} onToggleSlot={onToggleSlot} />
         <div className="lm-inspector__body">
           <div className="lm-inspector__empty">
             Click a slot in the canvas to inspect its properties.
@@ -51,7 +52,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, tokens, onSh
   }
 
   const slotConfig = config.slots[selectedSlot] ?? {}
-  const grid = config.grid[activeBreakpoint]
+  const grid = config.grid[gridKey]
   const bpWidth = grid?.['min-width'] ?? '0'
   const columnWidth = grid?.columns?.[selectedSlot]
   const isFullWidth = slotConfig.position === 'top' || slotConfig.position === 'bottom'
@@ -136,7 +137,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, tokens, onSh
   return (
     <div className="lm-inspector">
       <div className="lm-inspector__header">Inspector</div>
-      <SlotToggles config={config} activeBreakpoint={activeBreakpoint} onToggleSlot={onToggleSlot} />
+      <SlotToggles config={config} activeBreakpoint={gridKey} onToggleSlot={onToggleSlot} />
       <div className="lm-inspector__body">
         {/* Slot name + Copy all */}
         <div className="lm-inspector__section">
@@ -190,7 +191,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, tokens, onSh
         <div className="lm-inspector__section lm-inspector__info">
           <div className="lm-inspector__row">
             <span className="lm-inspector__label">Breakpoint</span>
-            <span className="lm-inspector__value">{activeBreakpoint} ({bpWidth})</span>
+            <span className="lm-inspector__value">{activeBreakpoint} &rarr; {gridKey} ({bpWidth})</span>
           </div>
         </div>
 
