@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import type { LayoutConfig, LayoutSummary, TokenMap, BlockData, ScopingWarning, CanvasBreakpointId } from './lib/types'
-import { resolveGridKey, getBaseGridKey, CANVAS_BREAKPOINTS } from './lib/types'
+import { resolveGridKey, CANVAS_BREAKPOINTS } from './lib/types'
 import { api } from './lib/api-client'
 import { LayoutSidebar } from './components/LayoutSidebar'
 import { BreakpointBar } from './components/BreakpointBar'
