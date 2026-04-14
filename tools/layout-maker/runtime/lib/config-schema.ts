@@ -44,7 +44,7 @@ const breakpointSchema = z.object({
   'column-gap': spacingToken.default('0'),
   'max-width': z.string().regex(/^\d+px$/).optional(),
   center: z.boolean().optional(),
-  sidebars: z.literal('drawer').optional(),
+  sidebars: z.enum(['drawer', 'hidden']).optional(),
   'drawer-width': z.string().regex(/^\d+px$/).optional(),
   'drawer-trigger': z.enum(['hamburger', 'tab']).optional(),
   'drawer-position': z.enum(['left', 'right', 'both']).optional(),

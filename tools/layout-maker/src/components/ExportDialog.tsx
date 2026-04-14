@@ -38,6 +38,18 @@ export function ExportDialog({ scope, onClose, onShowToast }: Props) {
     onShowToast('Payload copied to clipboard.')
   }, [result, onShowToast])
 
+  const handleDownloadJson = useCallback(() => {
+    if (!result) return
+    const blob = new Blob([JSON.stringify(result.payload, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${result.payload.scope}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+    onShowToast('JSON downloaded.')
+  }, [result, onShowToast])
+
   const handleOverlayClick = useCallback(
     (e: React.MouseEvent) => {
       if (e.target === e.currentTarget) onClose()
@@ -152,12 +164,20 @@ export function ExportDialog({ scope, onClose, onShowToast }: Props) {
 
         <div className="lm-export-dialog__actions">
           {result && (
-            <button
-              className="lm-btn lm-btn--primary"
-              onClick={handleCopyPayload}
-            >
-              Copy payload
-            </button>
+            <>
+              <button
+                className="lm-btn lm-btn--primary"
+                onClick={handleDownloadJson}
+              >
+                Download JSON
+              </button>
+              <button
+                className="lm-btn"
+                onClick={handleCopyPayload}
+              >
+                Copy payload
+              </button>
+            </>
           )}
           <button className="lm-btn" onClick={onClose}>
             Close

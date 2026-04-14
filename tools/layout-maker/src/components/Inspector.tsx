@@ -18,6 +18,7 @@ interface Props {
   onToggleSlot: (slotName: string, enabled: boolean) => void
   onUpdateSlotConfig: (slotName: string, key: string, value: string | undefined, targetGridKey?: string, breakpointId?: CanvasBreakpointId) => void
   onUpdateColumnWidth: (slotName: string, breakpointKey: string, width: string) => void
+  onUpdateGridProp: (breakpointKey: string, key: string, value: string | undefined) => void
 }
 
 interface PropertyRow {
@@ -35,7 +36,7 @@ const ALIGN_OPTIONS = [
   { value: 'flex-end', label: 'Right', icon: '\u258C' },
 ] as const
 
-export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tokens, onShowToast, blockWarnings, onToggleSlot, onUpdateSlotConfig, onUpdateColumnWidth }: Props) {
+export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tokens, onShowToast, blockWarnings, onToggleSlot, onUpdateSlotConfig, onUpdateColumnWidth, onUpdateGridProp }: Props) {
   if (!config || !tokens) {
     return (
       <div className="lm-inspector" data-active-bp={activeBreakpoint}>
@@ -49,12 +50,44 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
     )
   }
 
+  // Sidebar mode control — available for all non-desktop breakpoints regardless of slot selection
+  const isBaseBpGlobal = activeBreakpoint === 'desktop'
+  const hasSidebarSlots = Object.keys(config.slots).some((n) => n.includes('sidebar'))
+  // Use the actual bp grid (not resolved fallback) for reading sidebar mode
+  const bpOwnGrid = config.grid[activeBreakpoint]
+  const currentGrid = config.grid[gridKey]
+  const showSidebarMode = !isBaseBpGlobal && hasSidebarSlots
+
+  const sidebarModeControl = showSidebarMode ? (
+    <div className="lm-inspector__section lm-inspector__info">
+      <div className="lm-inspector__row">
+        <span className="lm-inspector__label">Sidebars at {activeBreakpoint}</span>
+      </div>
+      <div className="lm-align-group">
+        {([
+          { value: undefined, label: 'Visible' },
+          { value: 'hidden', label: 'Hidden' },
+          { value: 'drawer', label: 'Drawer' },
+        ] as const).map((opt) => (
+          <button
+            key={opt.label}
+            className={`lm-align-btn${(bpOwnGrid?.sidebars ?? undefined) === opt.value ? ' lm-align-btn--active' : ''}`}
+            onClick={() => onUpdateGridProp(activeBreakpoint, 'sidebars', opt.value)}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  ) : null
+
   if (!selectedSlot) {
     return (
       <div className="lm-inspector" data-active-bp={activeBreakpoint}>
         <div className="lm-inspector__header">Inspector</div>
         <SlotToggles config={config} activeBreakpoint={gridKey} onToggleSlot={onToggleSlot} />
         <div className="lm-inspector__body">
+          {sidebarModeControl}
           <div className="lm-inspector__empty">
             Click a slot in the canvas to inspect its properties.
           </div>
@@ -466,6 +499,9 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
             <span className="lm-inspector__value">{activeBreakpoint} &rarr; {gridKey} ({bpWidth})</span>
           </div>
         </div>
+
+        {/* Sidebar mode — reuse shared control */}
+        {sidebarModeControl}
 
         {/* Test blocks */}
         {blockCount > 0 && (

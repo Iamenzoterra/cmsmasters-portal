@@ -456,6 +456,24 @@ body {
   border-radius: 1px;
 }
 
+/* ── Hidden sidebars indicator ──────────────────────────────── */
+.lm-hidden-sidebars {
+  display: flex;
+  gap: var(--lm-sp-3);
+  justify-content: center;
+  padding: var(--lm-sp-3) 0;
+}
+
+.lm-hidden-sidebars__badge {
+  font-family: var(--lm-font-mono);
+  font-size: 10px;
+  color: var(--lm-text-muted);
+  background: hsla(0, 0%, 50%, 0.1);
+  border: 1px dashed hsla(0, 0%, 50%, 0.3);
+  border-radius: 3px;
+  padding: 2px 8px;
+}
+
 /* ── Inspector (stub for Phase 3) ────────────────────────────── */
 .lm-inspector {
   background: var(--lm-bg-panel);

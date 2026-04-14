@@ -8,6 +8,21 @@ const seoSchema = z.object({
   description: z.string().optional(),
 })
 
+// ── Slot visual params (mirrors SlotVisualParams in @cmsmasters/db) ──
+
+const slotVisualParamsSchema = z.object({
+  gap: z.string().optional(),
+  'max-width': z.string().optional(),
+  'padding-x': z.string().optional(),
+  'padding-top': z.string().optional(),
+  'padding-bottom': z.string().optional(),
+  align: z.enum(['flex-start', 'center', 'flex-end', 'stretch']).optional(),
+})
+
+const slotConfigEntrySchema = slotVisualParamsSchema.extend({
+  breakpoints: z.record(z.string(), slotVisualParamsSchema).optional(),
+})
+
 // ── Create page ──
 
 export const pageSchema = z.object({
@@ -18,7 +33,7 @@ export const pageSchema = z.object({
   html: z.string().default(''),
   css: z.string().default(''),
   layout_slots: z.record(z.string(), z.union([z.string(), z.array(z.string())])).default({}),
-  slot_config: z.record(z.string(), z.object({ gap: z.string().optional() })).default({}),
+  slot_config: z.record(z.string(), slotConfigEntrySchema).default({}),
   seo: seoSchema.optional(),
   status: z.enum(['draft', 'published', 'archived']).default('draft'),
 })
@@ -31,7 +46,7 @@ export const updatePageSchema = z.object({
   html: z.string().optional(),
   css: z.string().optional(),
   layout_slots: z.record(z.string(), z.union([z.string(), z.array(z.string())])).optional(),
-  slot_config: z.record(z.string(), z.object({ gap: z.string().optional() })).optional(),
+  slot_config: z.record(z.string(), slotConfigEntrySchema).optional(),
   seo: seoSchema.optional(),
   status: z.enum(['draft', 'published', 'archived']).optional(),
 })

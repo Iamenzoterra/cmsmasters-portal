@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { pageSchema, type CreatePagePayload } from '@cmsmasters/validators'
-import type { Page, Block } from '@cmsmasters/db'
+import type { Page, Block, SlotConfig } from '@cmsmasters/db'
 import { GLOBAL_SLOT_NAMES, SLOT_TO_CATEGORY } from '@cmsmasters/db'
 import { AlertTriangle, ChevronLeft, Plus, ArrowUp, ArrowDown, Trash2, Upload, Eye, Download, ExternalLink } from 'lucide-react'
 import { Button } from '@cmsmasters/ui'
@@ -121,7 +121,7 @@ export function PageEditor() {
   const [layoutCode, setLayoutCode] = useState('')
   const [layoutScope, setLayoutScope] = useState('theme')
   const [layoutSlots, setLayoutSlots] = useState<Record<string, string | string[]>>({})
-  const [slotConfig, setSlotConfig] = useState<Record<string, { gap?: string }>>({})
+  const [slotConfig, setSlotConfig] = useState<SlotConfig>({})
   const [slotBlocks, setSlotBlocks] = useState<Block[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -589,18 +589,41 @@ export function PageEditor() {
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".html,.htm"
+                    accept=".html,.htm,.json"
                     onChange={(e) => {
                       const file = e.target.files?.[0]
                       if (!file) return
                       const reader = new FileReader()
                       reader.onload = () => {
-                        const code = parseHtmlFile(reader.result as string)
-                        setLayoutCode(code)
-                        if (!form.getValues('title')) {
-                          const name = file.name.replace(/\.html?$/i, '').replace(/[-_]/g, ' ')
-                          form.setValue('title', name, { shouldDirty: true })
-                          if (isNew) form.setValue('slug', nameToSlug(name), { shouldDirty: false })
+                        const text = reader.result as string
+                        if (file.name.endsWith('.json')) {
+                          try {
+                            const payload = JSON.parse(text)
+                            if (!payload.html || !payload.css) {
+                              toast({ type: 'error', message: 'JSON must contain html and css fields' })
+                              return
+                            }
+                            setLayoutCode(`<style>\n${payload.css}\n</style>\n\n${payload.html}`)
+                            if (payload.slot_config) setSlotConfig(payload.slot_config)
+                            if (payload.scope) setLayoutScope(payload.scope)
+                            if (!form.getValues('title') && payload.title) {
+                              form.setValue('title', payload.title, { shouldDirty: true })
+                            }
+                            if (isNew && !form.getValues('slug') && payload.slug) {
+                              form.setValue('slug', payload.slug, { shouldDirty: false })
+                            }
+                          } catch {
+                            toast({ type: 'error', message: 'Invalid JSON file' })
+                            return
+                          }
+                        } else {
+                          const code = parseHtmlFile(text)
+                          setLayoutCode(code)
+                          if (!form.getValues('title')) {
+                            const name = file.name.replace(/\.html?$/i, '').replace(/[-_]/g, ' ')
+                            form.setValue('title', name, { shouldDirty: true })
+                            if (isNew) form.setValue('slug', nameToSlug(name), { shouldDirty: false })
+                          }
                         }
                         toast({ type: 'success', message: `Imported ${file.name}` })
                       }
@@ -611,7 +634,7 @@ export function PageEditor() {
                   />
                   <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
                     <Upload size={14} />
-                    Import HTML
+                    Import HTML / JSON
                   </Button>
                   <Button
                     variant="outline"

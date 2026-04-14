@@ -316,8 +316,8 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
     }
     out.push('  }')
 
-    // Hide sidebar slots in drawer mode
-    if (grid.sidebars === 'drawer' && sidebarSlots.length > 0) {
+    // Hide sidebar slots in drawer or hidden mode
+    if ((grid.sidebars === 'drawer' || grid.sidebars === 'hidden') && sidebarSlots.length > 0) {
       out.push('')
       const selectors = sidebarSlots
         .map((n) => `  [data-slot="${n}"]`)

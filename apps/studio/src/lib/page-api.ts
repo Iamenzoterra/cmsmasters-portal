@@ -1,4 +1,4 @@
-import type { Page, PageBlock } from '@cmsmasters/db'
+import type { Page, PageBlock, SlotConfig } from '@cmsmasters/db'
 import { authHeaders, parseError } from './block-api'
 
 const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8787'
@@ -28,7 +28,7 @@ export async function createPageApi(payload: {
   html?: string
   css?: string
   layout_slots?: Record<string, string | string[]>
-  slot_config?: Record<string, { gap?: string }>
+  slot_config?: SlotConfig
   seo?: { title?: string; description?: string }
   status?: string
 }): Promise<Page> {
@@ -54,7 +54,7 @@ export async function updatePageApi(
     html?: string
     css?: string
     layout_slots?: Record<string, string | string[]>
-  slot_config?: Record<string, { gap?: string }>
+  slot_config?: SlotConfig
     seo?: { title?: string; description?: string }
     status?: string
   }

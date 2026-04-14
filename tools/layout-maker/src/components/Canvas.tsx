@@ -126,6 +126,8 @@ export function Canvas({ config, tokens, activeBreakpoint, gridKey, selectedSlot
   if (!grid) return <div className="lm-empty">No grid config for "{gridKey}"</div>
 
   const isDrawerMode = grid.sidebars === 'drawer'
+  const isSidebarsHidden = grid.sidebars === 'hidden'
+  const hideSidebars = isDrawerMode || isSidebarsHidden
   const breakpointWidth = CANVAS_BREAKPOINTS.find((b) => b.id === activeBreakpoint)!.width
   const columnGap = grid['column-gap'] ? resolveToken(grid['column-gap'], tokens) : '0px'
 
@@ -137,8 +139,8 @@ export function Canvas({ config, tokens, activeBreakpoint, gridKey, selectedSlot
     .filter(([, s]) => s.position === 'bottom')
     .map(([name]) => [name, resolveSlot(name)] as const)
 
-  // In drawer mode, exclude sidebar columns from the grid
-  const visibleColumns = isDrawerMode
+  // In drawer/hidden mode, exclude sidebar columns from the grid
+  const visibleColumns = hideSidebars
     ? Object.entries(grid.columns).filter(([name]) => !name.includes('sidebar'))
     : Object.entries(grid.columns)
 
@@ -155,6 +157,11 @@ export function Canvas({ config, tokens, activeBreakpoint, gridKey, selectedSlot
   // Sidebar slots for drawer mode — check config.slots, not grid.columns
   // (tablet/mobile grids don't include sidebar columns)
   const drawerSlots = isDrawerMode
+    ? Object.keys(config.slots).filter((name) => name.includes('sidebar'))
+    : []
+
+  // Hidden sidebars — show muted indicators in canvas
+  const hiddenSidebarSlots = isSidebarsHidden
     ? Object.keys(config.slots).filter((name) => name.includes('sidebar'))
     : []
 
@@ -257,6 +264,15 @@ export function Canvas({ config, tokens, activeBreakpoint, gridKey, selectedSlot
             grid={grid}
             drawerSlots={drawerSlots}
           />
+        )}
+
+        {/* Hidden sidebars indicator */}
+        {hiddenSidebarSlots.length > 0 && (
+          <div className="lm-hidden-sidebars">
+            {hiddenSidebarSlots.map((name) => (
+              <span key={name} className="lm-hidden-sidebars__badge">{name} (hidden)</span>
+            ))}
+          </div>
         )}
 
         {/* Hover overlay */}

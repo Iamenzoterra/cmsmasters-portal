@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import type { LayoutConfig, LayoutSummary, TokenMap, BlockData, ScopingWarning, CanvasBreakpointId } from './lib/types'
-import { resolveGridKey, getBaseGridKey } from './lib/types'
+import { resolveGridKey, getBaseGridKey, CANVAS_BREAKPOINTS } from './lib/types'
 import { api } from './lib/api-client'
 import { LayoutSidebar } from './components/LayoutSidebar'
 import { BreakpointBar } from './components/BreakpointBar'
@@ -179,7 +179,7 @@ export function App() {
 
       // Add to desktop grid columns (insert in correct position)
       for (const [, grid] of Object.entries(updated.grid)) {
-        if (grid.sidebars === 'drawer') continue // skip drawer breakpoints
+        if (grid.sidebars === 'drawer') continue // drawer sidebars live in drawer element, not grid columns
         if (!grid.columns[slotName]) {
           // Insert sidebar in the right position relative to content
           const entries = Object.entries(grid.columns)
@@ -224,7 +224,7 @@ export function App() {
       const remainingSidebars = Object.keys(updated.slots).filter((n) => n.includes('sidebar'))
       if (remainingSidebars.length === 0) {
         for (const [, grid] of Object.entries(updated.grid)) {
-          if (grid.sidebars === 'drawer') {
+          if (grid.sidebars === 'drawer' || grid.sidebars === 'hidden') {
             delete grid.sidebars
             delete grid['drawer-width']
             delete grid['drawer-trigger']
@@ -293,6 +293,41 @@ export function App() {
       prevConfigRef.current = saved
       const scope = writeToBase ? 'base' : targetGridKey
       showToast(`${slotName}.${key} updated (${scope})`)
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Failed to update layout')
+    }
+  }, [activeConfig, activeScope, showToast])
+
+  const handleUpdateGridProp = useCallback(async (breakpointKey: string, key: string, value: string | undefined) => {
+    if (!activeConfig || !activeScope) return
+
+    const updated = structuredClone(activeConfig)
+    let grid = updated.grid[breakpointKey]
+
+    // Auto-create grid entry if it doesn't exist (e.g., tablet inheriting from desktop)
+    if (!grid) {
+      const resolvedKey = resolveGridKey(breakpointKey as CanvasBreakpointId, updated.grid)
+      const source = updated.grid[resolvedKey]
+      if (!source) return
+      const bpWidth = CANVAS_BREAKPOINTS.find((b) => b.id === breakpointKey)?.width
+      grid = {
+        ...structuredClone(source),
+        'min-width': bpWidth ? `${bpWidth}px` : source['min-width'],
+      }
+      updated.grid[breakpointKey] = grid
+    }
+
+    if (value === undefined) {
+      delete (grid as unknown as Record<string, unknown>)[key]
+    } else {
+      ;(grid as unknown as Record<string, unknown>)[key] = value
+    }
+
+    try {
+      const saved = await api.updateLayout(activeScope, updated)
+      setActiveConfig(saved)
+      prevConfigRef.current = saved
+      showToast(`${breakpointKey}.${key}: ${value ?? 'removed'}`)
     } catch (e) {
       showToast(e instanceof Error ? e.message : 'Failed to update layout')
     }
@@ -370,6 +405,7 @@ export function App() {
           onToggleSlot={handleToggleSlot}
           onUpdateSlotConfig={handleUpdateSlotConfig}
           onUpdateColumnWidth={handleUpdateColumnWidth}
+          onUpdateGridProp={handleUpdateGridProp}
         />
       </div>
 

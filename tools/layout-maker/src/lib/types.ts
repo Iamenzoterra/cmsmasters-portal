@@ -50,7 +50,7 @@ export interface BreakpointGrid {
   'column-gap'?: string
   'max-width'?: string
   center?: boolean
-  sidebars?: 'drawer'
+  sidebars?: 'drawer' | 'hidden'
   'drawer-width'?: string
   'drawer-trigger'?: 'hamburger' | 'tab'
   'drawer-position'?: 'left' | 'right' | 'both'
