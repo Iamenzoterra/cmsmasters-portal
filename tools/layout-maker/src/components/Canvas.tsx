@@ -52,7 +52,7 @@ ${animateUtilsJS}
   document.querySelectorAll('[class*="reveal"]').forEach(function(el) { observer.observe(el); });
 })();
 </script>
-${block.js ? '<script type="module">' + block.js + '<\/script>' : ''}
+${block.js ? '<script type="module">' + block.js + '</scr' + 'ipt>' : ''}
 <script>
 new ResizeObserver(function() {
   window.parent.postMessage({ type: 'lm-block-height', slug: '${block.slug}', height: document.body.scrollHeight }, '*');

@@ -48,41 +48,16 @@ function extractSlotNames(html: string): string[] {
  * data-slot elements in sequence. Slots before it are 'top', after are 'bottom'.
  */
 function classifySlotPositions(
-  html: string,
+  _html: string,
   slotNames: string[],
 ): Record<string, 'top' | 'bottom' | 'grid'> {
   const result: Record<string, 'top' | 'bottom' | 'grid'> = {}
-
-  // Strip <script> and <style> blocks to work with clean HTML structure
-  const clean = html
-    .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .replace(/<style[\s\S]*?<\/style>/gi, '')
-
-  // Find the body content
-  const bodyMatch = clean.match(/<body[^>]*>([\s\S]*)<\/body>/i)
-  const body = bodyMatch ? bodyMatch[1] : clean
-
-  // Find all data-slot occurrences in order with their surrounding context
-  // The grid container is the parent element that holds sidebar-left + content + sidebar-right
-  // Heuristic: find the block that contains 3+ data-slot elements close together
-  const slotPositions: { name: string; index: number }[] = []
-  const re = /data-slot="([^"]+)"/g
-  let m: RegExpExecArray | null
-  const seenInBody = new Set<string>()
-  while ((m = re.exec(body)) !== null) {
-    if (!seenInBody.has(m[1])) {
-      seenInBody.add(m[1])
-      slotPositions.push({ name: m[1], index: m.index })
-    }
-  }
 
   // Find grid slots — slots that are NOT header/footer type
   // Convention: slots with position 'top' come first, then grid columns, then 'bottom'
   // Use CSS hints: [data-slot="X"] with position:sticky → top
   //                [data-slot="X"] with margin-top → bottom
   // Fallback: first slot is top if named "header", last is bottom if named "footer"
-  const gridSlots: string[] = []
-
   for (const name of slotNames) {
     if (name === 'header' || name.includes('header') || name === 'nav') {
       result[name] = 'top'
@@ -90,7 +65,6 @@ function classifySlotPositions(
       result[name] = 'bottom'
     } else {
       result[name] = 'grid'
-      gridSlots.push(name)
     }
   }
 
@@ -195,7 +169,7 @@ function resolveCalc(
   try {
     // Security: only allow digits, spaces, +, -, *, ., ()
     if (!/^[\d\s+\-*./()]+$/.test(resolved)) return null
-    // eslint-disable-next-line no-eval
+    // eslint-disable-next-line sonarjs/code-eval -- safe: input validated to digits/operators only
     const result = new Function(`return (${resolved})`)() as number
     if (typeof result !== 'number' || isNaN(result)) return null
     return `${Math.round(result)}px`
@@ -230,9 +204,7 @@ function parseGridColumns(
   if (parts.length !== gridSlotNames.length) return null
 
   const columns: Record<string, string> = {}
-  for (let i = 0; i < parts.length; i++) {
-    let value = parts[i]
-
+  for (const [i, value] of parts.entries()) {
     // Normalize: "1fr" stays, "Npx" stays, calc() → try to resolve
     if (value === '1fr' || /^\d+px$/.test(value)) {
       columns[gridSlotNames[i]] = value

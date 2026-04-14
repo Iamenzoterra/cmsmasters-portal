@@ -29,7 +29,6 @@ interface PropertyRow {
   resolvedPx?: string
 }
 
-// eslint-disable-next-line sonarjs/cognitive-complexity
 const ALIGN_OPTIONS = [
   { value: 'flex-start', label: 'Left', icon: '\u2590' },
   { value: 'center', label: 'Center', icon: '\u2503' },
@@ -55,7 +54,6 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
   const hasSidebarSlots = Object.keys(config.slots).some((n) => n.includes('sidebar'))
   // Use the actual bp grid (not resolved fallback) for reading sidebar mode
   const bpOwnGrid = config.grid[activeBreakpoint]
-  const currentGrid = config.grid[gridKey]
   const showSidebarMode = !isBaseBpGlobal && hasSidebarSlots
 
   const sidebarModeControl = showSidebarMode ? (
@@ -126,7 +124,6 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
     onUpdateSlotConfig(selectedSlot, key, undefined, gridKey, activeBreakpoint as CanvasBreakpointId)
 
   // Content width editing state
-  const isContent = selectedSlot === 'content'
   const isFixedWidth = columnWidth ? columnWidth.endsWith('px') : false
   const currentPx = isFixedWidth ? parseInt(columnWidth!, 10).toString() : ''
   const [widthDraft, setWidthDraft] = useState(currentPx)
