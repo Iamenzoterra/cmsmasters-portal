@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { LayoutConfig, TokenMap, ScopingWarning, PerBpSlotField } from '../lib/types'
+import type { LayoutConfig, TokenMap, ScopingWarning, PerBpSlotField, CanvasBreakpointId } from '../lib/types'
 import { resolveSlotConfig, getBaseGridKey, isFieldOverridden } from '../lib/types'
 import { resolveToken, resolveTokenPx } from '../lib/tokens'
 import { CopyButton } from './CopyButton'
@@ -16,7 +16,7 @@ interface Props {
   onShowToast: (message: string) => void
   blockWarnings: ScopingWarning[]
   onToggleSlot: (slotName: string, enabled: boolean) => void
-  onUpdateSlotConfig: (slotName: string, key: string, value: string | undefined, targetGridKey?: string) => void
+  onUpdateSlotConfig: (slotName: string, key: string, value: string | undefined, targetGridKey?: string, breakpointId?: CanvasBreakpointId) => void
   onUpdateColumnWidth: (slotName: string, breakpointKey: string, width: string) => void
 }
 
@@ -68,7 +68,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
   }
 
   const baseGridKey = getBaseGridKey(config.grid)
-  const isBaseBp = gridKey === baseGridKey
+  const isBaseBp = activeBreakpoint === 'desktop'
   // Effective config (base + per-bp override) for display
   const slotConfig = resolveSlotConfig(selectedSlot, gridKey, config)
   // Base slot only (for role fields + inherited indicator)
@@ -85,12 +85,12 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
   const isInherited = (field: PerBpSlotField) =>
     !isBaseBp && !isFieldOverridden(selectedSlot, gridKey, config, field) && baseSlot[field] !== undefined
 
-  // Write target: base when viewing desktop, per-bp otherwise
+  // Write target: base when viewing desktop, per-bp override otherwise
   const writeField = (key: string, value: string | undefined) =>
-    onUpdateSlotConfig(selectedSlot, key, value, gridKey)
+    onUpdateSlotConfig(selectedSlot, key, value, gridKey, activeBreakpoint as CanvasBreakpointId)
   // Reset: explicitly clear per-bp override (always targets current gridKey)
   const resetField = (key: string) =>
-    onUpdateSlotConfig(selectedSlot, key, undefined, gridKey)
+    onUpdateSlotConfig(selectedSlot, key, undefined, gridKey, activeBreakpoint as CanvasBreakpointId)
 
   // Content width editing state
   const isContent = selectedSlot === 'content'

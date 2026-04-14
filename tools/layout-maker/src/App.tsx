@@ -256,12 +256,13 @@ export function App() {
     key: string,
     value: string | undefined,
     targetGridKey?: string,
+    breakpointId?: CanvasBreakpointId,
   ) => {
     if (!activeConfig || !activeScope) return
 
     const updated = structuredClone(activeConfig)
-    const baseKey = getBaseGridKey(updated.grid)
-    const writeToBase = !targetGridKey || targetGridKey === baseKey
+    // Route by canonical breakpoint, not by resolved grid key
+    const writeToBase = !breakpointId || breakpointId === 'desktop'
 
     if (writeToBase) {
       if (!updated.slots[slotName]) updated.slots[slotName] = {}
@@ -271,6 +272,7 @@ export function App() {
         ;(updated.slots[slotName] as Record<string, unknown>)[key] = value
       }
     } else {
+      if (!targetGridKey) return
       const grid = updated.grid[targetGridKey]
       if (!grid) return
       if (!grid.slots) grid.slots = {}
