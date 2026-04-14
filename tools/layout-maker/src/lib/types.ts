@@ -78,9 +78,15 @@ export interface LayoutConfig {
   'test-blocks'?: Record<string, string[]>
 }
 
+export interface TokenCategory {
+  name: string
+  tokens: Array<{ name: string; value: string }>
+}
+
 export interface TokenMap {
   all: Record<string, string>
   spacing: Record<string, number>
+  categories: TokenCategory[]
 }
 
 export interface LayoutSummary {

@@ -2,6 +2,8 @@ import type { LayoutConfig, TokenMap, ScopingWarning } from '../lib/types'
 import { resolveToken, resolveTokenPx } from '../lib/tokens'
 import { CopyButton } from './CopyButton'
 import { SlotToggles } from './SlotToggles'
+import { SlotReference } from './SlotReference'
+import { TokenReference } from './TokenReference'
 
 interface Props {
   selectedSlot: string | null
@@ -46,6 +48,10 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
           <div className="lm-inspector__empty">
             Click a slot in the canvas to inspect its properties.
           </div>
+          <SlotReference onCopied={() => onShowToast('Copied!')} />
+          {tokens.categories && (
+            <TokenReference categories={tokens.categories} onCopied={() => onShowToast('Copied!')} />
+          )}
         </div>
       </div>
     )
@@ -230,6 +236,11 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
             </div>
           )
         })()}
+
+        <SlotReference onCopied={handleCopied} />
+        {tokens.categories && (
+          <TokenReference categories={tokens.categories} onCopied={handleCopied} />
+        )}
       </div>
     </div>
   )

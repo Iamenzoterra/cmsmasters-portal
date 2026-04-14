@@ -15,7 +15,8 @@
     "js-yaml": "^4",
     "react": "^19",
     "react-dom": "^19",
-    "zod": "^3"
+    "zod": "^3",
+    "@cmsmasters/db": "*"
   },
   "devDependencies": {
     "@types/js-yaml": "^4",

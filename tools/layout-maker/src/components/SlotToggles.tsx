@@ -1,12 +1,32 @@
+import { SLOT_DEFINITIONS } from '@cmsmasters/db/slots'
 import type { LayoutConfig } from '../lib/types'
+import { SLOT_VISUAL } from '../lib/slot-visual'
 
-const SLOT_DEFS = [
-  { name: 'header', color: 'hsla(210, 70%, 50%, 0.80)', locked: true },
-  { name: 'sidebar-left', color: 'hsla(32, 80%, 55%, 0.80)', locked: false },
-  { name: 'content', color: 'hsla(142, 55%, 45%, 0.80)', locked: true },
-  { name: 'sidebar-right', color: 'hsla(270, 55%, 55%, 0.80)', locked: false },
-  { name: 'footer', color: 'hsla(210, 40%, 45%, 0.80)', locked: true },
-] as const
+/**
+ * Ordered slot list for the toggles panel.
+ * Derived from SLOT_DEFINITIONS (db registry) + "content" (the page body slot,
+ * which isn't a global-element slot but is always present in layouts).
+ */
+const SLOT_DEFS = (() => {
+  const names = SLOT_DEFINITIONS.map((s) => s.name)
+  const result: Array<{ name: string; color: string; locked: boolean }> = []
+
+  // Display order: header, sidebar-left, content, sidebar-right, …extras…, footer
+  if (names.includes('header')) result.push({ name: 'header', ...SLOT_VISUAL['header'] })
+  if (names.includes('sidebar-left')) result.push({ name: 'sidebar-left', ...SLOT_VISUAL['sidebar-left'] })
+  result.push({ name: 'content', ...SLOT_VISUAL['content'] })
+  if (names.includes('sidebar-right')) result.push({ name: 'sidebar-right', ...SLOT_VISUAL['sidebar-right'] })
+
+  // Any future registry slots not covered above
+  for (const s of SLOT_DEFINITIONS) {
+    if (!result.some((r) => r.name === s.name)) {
+      result.push({ name: s.name, ...(SLOT_VISUAL[s.name] ?? SLOT_VISUAL._fallback) })
+    }
+  }
+
+  if (names.includes('footer')) result.push({ name: 'footer', ...SLOT_VISUAL['footer'] })
+  return result
+})()
 
 interface Props {
   config: LayoutConfig

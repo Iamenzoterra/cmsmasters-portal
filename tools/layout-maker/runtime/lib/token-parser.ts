@@ -8,6 +8,11 @@ const TOKENS_PATH = path.resolve(
 
 export type TokenMap = Record<string, string>
 
+export interface TokenCategory {
+  name: string
+  tokens: Array<{ name: string; value: string }>
+}
+
 /** Parse all CSS custom properties from :root block in tokens.css */
 export function parseTokens(): TokenMap {
   const css = readFileSync(TOKENS_PATH, 'utf-8')
@@ -41,6 +46,38 @@ export function getSpacingTokens(): Record<string, number> {
   }
 
   return spacing
+}
+
+/** Parse tokens grouped by CSS comment sections from :root block */
+export function getCategorizedTokens(): TokenCategory[] {
+  const css = readFileSync(TOKENS_PATH, 'utf-8')
+  const rootMatch = css.match(/:root\s*\{([\s\S]*?)\n\}/)
+  if (!rootMatch) return []
+
+  const lines = rootMatch[1].split('\n')
+  const categories: TokenCategory[] = []
+  let current: TokenCategory | null = null
+
+  for (const line of lines) {
+    // Match section comments like: /* ── spacing (from CMS-DS-Portal) ── */
+    const commentMatch = line.match(/\/\*\s*──\s*(.+?)\s*──\s*\*\//)
+    if (commentMatch) {
+      // Clean up: remove "(from ...)" suffix
+      const rawName = commentMatch[1].replace(/\s*\(from\s+.*?\)\s*$/, '').trim()
+      current = { name: rawName, tokens: [] }
+      categories.push(current)
+      continue
+    }
+
+    // Match token declarations
+    // eslint-disable-next-line sonarjs/slow-regex -- internal tool, trusted input
+    const tokenMatch = line.match(/^\s*--([\w-]+):\s*(.+?)\s*;/)
+    if (tokenMatch && current) {
+      current.tokens.push({ name: `--${tokenMatch[1]}`, value: tokenMatch[2] })
+    }
+  }
+
+  return categories
 }
 
 /** Resolve a single token name to its value. Returns null if unknown. */

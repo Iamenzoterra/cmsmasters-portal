@@ -5,8 +5,10 @@ export {
   SLOT_DEFINITIONS,
   GLOBAL_SLOT_NAMES,
   SLOT_TO_CATEGORY,
+  META_SLOTS,
+  HOOK_SHORTCUTS,
 } from './slot-registry'
-export type { GlobalSlot } from './slot-registry'
+export type { GlobalSlot, MetaSlotKey } from './slot-registry'
 
 export type {
   Database,

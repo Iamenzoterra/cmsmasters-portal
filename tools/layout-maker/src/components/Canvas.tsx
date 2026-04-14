@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from 'react'
+import { SLOT_DEFINITIONS } from '@cmsmasters/db/slots'
 import type { LayoutConfig, TokenMap, BlockData, SlotConfig, CanvasBreakpointId } from '../lib/types'
 import { CANVAS_BREAKPOINTS } from '../lib/types'
 import { resolveToken } from '../lib/tokens'
@@ -94,12 +95,18 @@ interface Props {
   blocks: Map<string, BlockData> | null
 }
 
+/** Known slot types derived from the registry + content */
+const KNOWN_SLOT_TYPES = new Set([
+  ...SLOT_DEFINITIONS.map((s) => s.name),
+  'content',
+])
+
 function getSlotType(name: string): string {
-  if (name === 'header') return 'header'
-  if (name === 'footer') return 'footer'
-  if (name === 'content') return 'content'
-  if (name.includes('sidebar-left') || name === 'sidebar-left') return 'sidebar-left'
-  if (name.includes('sidebar-right') || name === 'sidebar-right') return 'sidebar-right'
+  if (KNOWN_SLOT_TYPES.has(name)) return name
+  // Fuzzy match for variants (e.g. "sidebar-left-2")
+  for (const known of KNOWN_SLOT_TYPES) {
+    if (name.includes(known)) return known
+  }
   return name
 }
 
