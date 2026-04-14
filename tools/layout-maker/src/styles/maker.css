@@ -138,7 +138,8 @@ body {
 
 .lm-sidebar__actions {
   display: flex;
-  gap: var(--lm-sp-3);
+  flex-direction: column;
+  gap: var(--lm-sp-2);
   padding: var(--lm-sp-6) var(--lm-sp-8);
   border-top: 1px solid var(--lm-border-subtle);
 }
@@ -453,6 +454,129 @@ body {
   flex: 1;
   overflow-y: auto;
   padding: var(--lm-sp-6) var(--lm-sp-8);
+}
+
+/* ── Slot Toggles (pinned above inspector body) ─────────────── */
+.lm-slot-toggles {
+  padding: var(--lm-sp-6) var(--lm-sp-8);
+  border-bottom: 1px solid var(--lm-border-subtle);
+}
+
+.lm-slot-toggles__title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--lm-text-secondary);
+  margin-bottom: var(--lm-sp-3);
+}
+
+.lm-slot-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--lm-sp-3);
+  padding: var(--lm-sp-1) 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.lm-slot-toggle:has(.lm-slot-toggle__input:disabled) {
+  cursor: default;
+}
+
+.lm-slot-toggle__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.lm-slot-toggle__track {
+  position: relative;
+  width: 28px;
+  height: 14px;
+  flex-shrink: 0;
+  background: var(--lm-bg-input, #3c3c3c);
+  border: 1px solid var(--lm-border);
+  border-radius: 7px;
+  transition: background var(--lm-transition-fast), border-color var(--lm-transition-fast);
+}
+
+.lm-slot-toggle__track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 8px;
+  height: 8px;
+  background: var(--lm-text-secondary);
+  border-radius: 50%;
+  transition: transform var(--lm-transition-fast), background var(--lm-transition-fast);
+}
+
+.lm-slot-toggle__input:checked ~ .lm-slot-toggle__track {
+  background: var(--lm-bg-button);
+  border-color: var(--lm-bg-button);
+}
+
+.lm-slot-toggle__input:checked ~ .lm-slot-toggle__track::after {
+  transform: translateX(14px);
+  background: var(--lm-text-inverse);
+}
+
+.lm-slot-toggle:hover .lm-slot-toggle__track {
+  border-color: var(--lm-text-secondary);
+}
+
+.lm-slot-toggle:hover .lm-slot-toggle__input:checked ~ .lm-slot-toggle__track {
+  background: var(--lm-bg-button-hover);
+  border-color: var(--lm-bg-button-hover);
+}
+
+.lm-slot-toggle__input:focus-visible ~ .lm-slot-toggle__track {
+  outline: 1px solid var(--lm-border-focus);
+  outline-offset: 1px;
+}
+
+.lm-slot-toggle__input:disabled ~ .lm-slot-toggle__track {
+  opacity: 0.35;
+}
+
+.lm-slot-toggle__input:disabled:checked ~ .lm-slot-toggle__track {
+  background: var(--lm-bg-button);
+  border-color: var(--lm-bg-button);
+}
+
+.lm-slot-toggle__dot {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--lm-slot-color, var(--lm-text-muted));
+}
+
+.lm-slot-toggle__input:not(:checked) ~ .lm-slot-toggle__dot {
+  opacity: 0.35;
+}
+
+.lm-slot-toggle__name {
+  font-family: var(--lm-font-mono);
+  font-size: 11px;
+  color: var(--lm-text-primary);
+  line-height: 1;
+}
+
+.lm-slot-toggle__input:not(:checked) ~ .lm-slot-toggle__name {
+  color: var(--lm-text-muted);
+}
+
+.lm-slot-toggle__input:disabled ~ .lm-slot-toggle__name {
+  color: var(--lm-text-secondary);
 }
 
 .lm-inspector__empty {

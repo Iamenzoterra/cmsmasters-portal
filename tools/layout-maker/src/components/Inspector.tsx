@@ -1,6 +1,7 @@
 import type { LayoutConfig, TokenMap, ScopingWarning } from '../lib/types'
 import { resolveToken, resolveTokenPx } from '../lib/tokens'
 import { CopyButton } from './CopyButton'
+import { SlotToggles } from './SlotToggles'
 
 interface Props {
   selectedSlot: string | null
@@ -9,6 +10,7 @@ interface Props {
   tokens: TokenMap | null
   onShowToast: (message: string) => void
   blockWarnings: ScopingWarning[]
+  onToggleSlot: (slotName: string, enabled: boolean) => void
 }
 
 interface PropertyRow {
@@ -20,7 +22,7 @@ interface PropertyRow {
 }
 
 // eslint-disable-next-line sonarjs/cognitive-complexity
-export function Inspector({ selectedSlot, config, activeBreakpoint, tokens, onShowToast, blockWarnings }: Props) {
+export function Inspector({ selectedSlot, config, activeBreakpoint, tokens, onShowToast, blockWarnings, onToggleSlot }: Props) {
   if (!config || !tokens) {
     return (
       <div className="lm-inspector">
@@ -38,6 +40,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, tokens, onSh
     return (
       <div className="lm-inspector">
         <div className="lm-inspector__header">Inspector</div>
+        <SlotToggles config={config} activeBreakpoint={activeBreakpoint} onToggleSlot={onToggleSlot} />
         <div className="lm-inspector__body">
           <div className="lm-inspector__empty">
             Click a slot in the canvas to inspect its properties.
@@ -133,6 +136,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, tokens, onSh
   return (
     <div className="lm-inspector">
       <div className="lm-inspector__header">Inspector</div>
+      <SlotToggles config={config} activeBreakpoint={activeBreakpoint} onToggleSlot={onToggleSlot} />
       <div className="lm-inspector__body">
         {/* Slot name + Copy all */}
         <div className="lm-inspector__section">

@@ -161,6 +161,89 @@ export function App() {
     return unsubscribe
   }, [activeScope, refreshLayouts, showToast])
 
+  const handleToggleSlot = useCallback(async (slotName: string, enabled: boolean) => {
+    if (!activeConfig || !activeScope) return
+
+    const updated = structuredClone(activeConfig)
+
+    if (enabled) {
+      // Add sidebar to all breakpoints + slots
+      const defaultWidth = '360px'
+
+      // Add to desktop grid columns (insert in correct position)
+      for (const [, grid] of Object.entries(updated.grid)) {
+        if (grid.sidebars === 'drawer') continue // skip drawer breakpoints
+        if (!grid.columns[slotName]) {
+          // Insert sidebar in the right position relative to content
+          const entries = Object.entries(grid.columns)
+          const newColumns: Record<string, string> = {}
+          if (slotName === 'sidebar-left') {
+            newColumns[slotName] = defaultWidth
+            for (const [k, v] of entries) newColumns[k] = v
+          } else if (slotName === 'sidebar-right') {
+            for (const [k, v] of entries) newColumns[k] = v
+            newColumns[slotName] = defaultWidth
+          }
+          grid.columns = newColumns
+        }
+      }
+
+      // Add slot config
+      if (!updated.slots[slotName]) {
+        updated.slots[slotName] = { align: 'flex-start', 'min-height': '400px' }
+      }
+
+      // Add drawer config to tablet/mobile breakpoints
+      for (const [, grid] of Object.entries(updated.grid)) {
+        if (grid.sidebars === 'drawer') {
+          grid['drawer-position'] = 'both'
+        }
+      }
+    } else {
+      // Remove sidebar from all grid breakpoints
+      for (const [, grid] of Object.entries(updated.grid)) {
+        delete grid.columns[slotName]
+      }
+
+      // Remove slot config
+      delete updated.slots[slotName]
+
+      // Remove test-blocks for this slot
+      if (updated['test-blocks']) {
+        delete updated['test-blocks'][slotName]
+      }
+
+      // Update drawer-position if no sidebars remain
+      const remainingSidebars = Object.keys(updated.slots).filter((n) => n.includes('sidebar'))
+      if (remainingSidebars.length === 0) {
+        for (const [, grid] of Object.entries(updated.grid)) {
+          if (grid.sidebars === 'drawer') {
+            delete grid.sidebars
+            delete grid['drawer-width']
+            delete grid['drawer-trigger']
+            delete grid['drawer-position']
+          }
+        }
+      } else if (remainingSidebars.length === 1) {
+        const side = remainingSidebars[0].includes('left') ? 'left' : 'right'
+        for (const [, grid] of Object.entries(updated.grid)) {
+          if (grid.sidebars === 'drawer') {
+            grid['drawer-position'] = side
+          }
+        }
+      }
+    }
+
+    try {
+      const saved = await api.updateLayout(activeScope, updated)
+      setActiveConfig(saved)
+      prevConfigRef.current = saved
+      showToast(`${slotName} ${enabled ? 'enabled' : 'disabled'}`)
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Failed to update layout')
+    }
+  }, [activeConfig, activeScope, showToast])
+
   return (
     <>
       <div className="lm-shell">
@@ -210,6 +293,7 @@ export function App() {
           tokens={tokens}
           onShowToast={showToast}
           blockWarnings={blockWarnings}
+          onToggleSlot={handleToggleSlot}
         />
       </div>
 
