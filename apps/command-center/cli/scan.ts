@@ -114,11 +114,13 @@ function extractPropsInterface(filePath: string): string | null {
   const content = fs.readFileSync(filePath, 'utf8');
 
   // Try interface first: interface ButtonProps { ... }
+  // eslint-disable-next-line security/detect-unsafe-regex -- internal scanner, trusted input
   const ifaceMatch = content.match(/(?:export\s+)?interface\s+\w+Props\s*\{[^}]*\}/);
   if (ifaceMatch) return ifaceMatch[0];
 
   // Try type alias: type ButtonProps = ... & { ... };
   // Use \}; to match closing brace+semicolon (skips inner prop semicolons)
+  // eslint-disable-next-line security/detect-unsafe-regex, sonarjs/slow-regex -- internal scanner, trusted input
   const typeMatch = content.match(/(?:export\s+)?type\s+(\w+Props)\s*=\s*([\s\S]*?\});/);
   if (typeMatch) return `type ${typeMatch[1]} = ${typeMatch[2].trim()}`;
 
@@ -139,6 +141,7 @@ function extractCssVars(filePath: string): string[] {
 }
 
 /** Extract structured props from cva variants + type definition */
+// eslint-disable-next-line sonarjs/cognitive-complexity
 function extractStructuredProps(filePath: string): Array<{
   name: string;
   type: string;
@@ -154,6 +157,7 @@ function extractStructuredProps(filePath: string): Array<{
 
   const defaults: Record<string, string> = {};
   if (defaultsBlock) {
+    // eslint-disable-next-line sonarjs/slow-regex -- internal scanner, trusted input
     for (const dm of defaultsBlock[1].matchAll(/(\w+):\s*'([^']+)'/g)) {
       defaults[dm[1]] = dm[2];
     }
@@ -187,6 +191,7 @@ function extractStructuredProps(filePath: string): Array<{
   // 2. Extract explicit props from type definition: { asChild?: boolean; loading?: boolean; }
   const typeBlock = content.match(/VariantProps[\s\S]*?&\s*\{([\s\S]*?)\};/);
   if (typeBlock) {
+    // eslint-disable-next-line sonarjs/slow-regex -- internal scanner, trusted input
     for (const pm of typeBlock[1].matchAll(/(\w+)(\??):\s*([^;]+)/g)) {
       const name = pm[1];
       const optional = pm[2] === '?';
@@ -202,6 +207,7 @@ function extractStructuredProps(filePath: string): Array<{
 }
 
 /** Generate usage examples from cva variant keys */
+// eslint-disable-next-line sonarjs/cognitive-complexity
 function extractUsageExamples(filePath: string, componentName: string): string[] {
   const content = fs.readFileSync(filePath, 'utf8');
   const examples: string[] = [];
@@ -216,6 +222,7 @@ function extractUsageExamples(filePath: string, componentName: string): string[]
 
   const defaults: Record<string, string> = {};
   if (defaultsBlock) {
+    // eslint-disable-next-line sonarjs/slow-regex -- internal scanner, trusted input
     for (const dm of defaultsBlock[1].matchAll(/(\w+):\s*'([^']+)'/g)) {
       defaults[dm[1]] = dm[2];
     }

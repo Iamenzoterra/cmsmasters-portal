@@ -61,7 +61,7 @@ export async function getThemePrices(client: SupabaseClient, themeId: string) {
     .select('price_id, prices(id, name, slug, type)')
     .eq('theme_id', themeId)
   if (error) throw error
-  return data?.map((r) => (r as any).prices) ?? []
+  return data?.map((r) => (r as unknown as { prices: Record<string, unknown> }).prices) ?? []
 }
 
 /** Replace all price assignments for a theme */

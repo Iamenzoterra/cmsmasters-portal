@@ -6,7 +6,6 @@ import type {
   Project,
   ComponentSummary,
   ContentStatus,
-  ProgressData,
   ADRMeta,
   ADRMetaWithBody,
   InfraItem,
@@ -28,7 +27,6 @@ const MONOREPO_ROOT       = path.resolve(process.cwd(), '..', '..');
 const PHASES_PATH         = path.join(MONOREPO_ROOT, 'workplan', 'phases.json');
 const COMPONENTS_PATH     = path.join(MONOREPO_ROOT, 'workplan', 'components.json');
 const CONTENT_STATUS_PATH = path.join(MONOREPO_ROOT, 'workplan', 'content-status.json');
-const PROGRESS_PATH       = path.join(MONOREPO_ROOT, 'workplan', 'progress.json');
 const ADR_DIR             = path.join(MONOREPO_ROOT, 'workplan', 'adr');
 
 // ─── Private helpers ─────────────────────────────────────────────────────────
@@ -157,16 +155,6 @@ export async function getComponents(): Promise<ComponentSummary[] | null> {
   if (Array.isArray(raw)) return raw;
   if (raw && 'components' in raw && Array.isArray(raw.components)) return raw.components;
   return null;
-}
-
-/** Reads workplan/content-status.json. Returns null when the file is missing. */
-export async function getContentStatus(): Promise<ContentStatus | null> {
-  return readJson<ContentStatus>(CONTENT_STATUS_PATH);
-}
-
-/** Reads workplan/progress.json. Returns null when the file is missing. */
-export async function getProgress(): Promise<ProgressData | null> {
-  return readJson<ProgressData>(PROGRESS_PATH);
 }
 
 // ─── Infra item mapping ───────────────────────────────────────────────────────
@@ -486,6 +474,7 @@ interface PkgJson {
  * dependency references, and builds the package-dependency graph.  Planned apps
  * that lack a package.json are derived from phases.json task.app values.
  */
+// eslint-disable-next-line sonarjs/cognitive-complexity
 export async function loadDependencyGraph(): Promise<DependencyGraphData> {
   const totalExpected = SPEC_APPS.length + SPEC_PACKAGES.length;
 

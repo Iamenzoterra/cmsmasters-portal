@@ -5,7 +5,7 @@ import { ChevronRight } from 'lucide-react';
 import { cn } from '../theme/utils';
 import { ProgressBar } from '../ui/ProgressBar';
 
-export interface ContentMetrics {
+interface ContentMetrics {
   themesPublished: number;
   themesTotal: number;
   docsPublished: number;
@@ -14,7 +14,7 @@ export interface ContentMetrics {
   blogTarget: number;
 }
 
-export interface ThemeItem {
+interface ThemeItem {
   id: string;
   name: string;
   lastUpdated: string;

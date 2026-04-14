@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '../theme/utils';
 import { getRelativeTime } from '../lib/utils';
 
-export interface Task {
+interface Task {
   id: string;
   title: string;
   status: string;

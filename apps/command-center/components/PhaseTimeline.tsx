@@ -16,7 +16,7 @@ export interface PhaseBlock {
   href: string;
 }
 
-export interface PhaseTimelineProps {
+interface PhaseTimelineProps {
   phases: PhaseBlock[];
   overallLabel: string;
 }

@@ -1,4 +1,4 @@
-import type { LayoutConfig, TokenMap } from '../lib/types'
+import type { LayoutConfig, TokenMap, ScopingWarning } from '../lib/types'
 import { resolveToken, resolveTokenPx } from '../lib/tokens'
 import { CopyButton } from './CopyButton'
 
@@ -8,6 +8,7 @@ interface Props {
   activeBreakpoint: string
   tokens: TokenMap | null
   onShowToast: (message: string) => void
+  blockWarnings: ScopingWarning[]
 }
 
 interface PropertyRow {
@@ -18,7 +19,8 @@ interface PropertyRow {
   resolvedPx?: string
 }
 
-export function Inspector({ selectedSlot, config, activeBreakpoint, tokens, onShowToast }: Props) {
+// eslint-disable-next-line sonarjs/cognitive-complexity
+export function Inspector({ selectedSlot, config, activeBreakpoint, tokens, onShowToast, blockWarnings }: Props) {
   if (!config || !tokens) {
     return (
       <div className="lm-inspector">
@@ -193,10 +195,36 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, tokens, onSh
           <div className="lm-inspector__section lm-inspector__info">
             <div className="lm-inspector__row">
               <span className="lm-inspector__label">Test blocks</span>
-              <span className="lm-inspector__value">{blockCount} loaded</span>
+              <span className="lm-inspector__value">{blockCount} configured</span>
+            </div>
+            <div className="lm-inspector__block-list">
+              {testBlocks!.map((slug) => (
+                <div key={slug} className="lm-inspector__block-row">
+                  <span className="lm-inspector__block-slug">{slug}</span>
+                </div>
+              ))}
             </div>
           </div>
         )}
+
+        {/* CSS scoping warnings for this slot's blocks */}
+        {selectedSlot && testBlocks && testBlocks.length > 0 && (() => {
+          const slotWarnings = blockWarnings.filter((w) => testBlocks.includes(w.slug))
+          if (slotWarnings.length === 0) return null
+          return (
+            <div className="lm-inspector__section lm-inspector__warnings">
+              <div className="lm-inspector__warnings-title">CSS Scoping Warnings</div>
+              {slotWarnings.map((w) => (
+                <div key={w.slug} className="lm-inspector__warning">
+                  <div className="lm-inspector__warning-slug">{w.slug}: {w.selectors.length} unscoped</div>
+                  <div className="lm-inspector__warning-selectors">
+                    {w.selectors.join(', ')}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        })()}
       </div>
     </div>
   )

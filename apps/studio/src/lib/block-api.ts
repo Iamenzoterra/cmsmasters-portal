@@ -3,7 +3,7 @@ import { supabase } from './supabase'
 
 const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8787'
 
-export async function getAuthToken(): Promise<string> {
+async function getAuthToken(): Promise<string> {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session?.access_token) throw new Error('Not authenticated')
   return session.access_token
@@ -176,7 +176,7 @@ export interface PresetSummary {
   name: string
 }
 
-export interface PresetData {
+interface PresetData {
   name: string
   items: Array<{ icon_url: string; label: string; value: string }>
 }

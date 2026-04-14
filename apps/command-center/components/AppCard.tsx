@@ -3,9 +3,9 @@
 import Link from 'next/link';
 import { cn } from '../theme/utils';
 
-export type AppStatus = 'not-started' | 'in-progress' | 'beta' | 'live';
+type AppStatus = 'not-started' | 'in-progress' | 'beta' | 'live';
 
-export interface AppCardApp {
+interface AppCardApp {
   id: string;
   name: string;
   description: string;
@@ -13,7 +13,7 @@ export interface AppCardApp {
   href: string;
 }
 
-export interface AppCardProps {
+interface AppCardProps {
   app: AppCardApp;
 }
 

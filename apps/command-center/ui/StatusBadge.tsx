@@ -1,6 +1,6 @@
 import { cn } from '../theme/utils';
 
-export type Status = 'todo' | 'in-progress' | 'review' | 'done' | 'blocked';
+type Status = 'todo' | 'in-progress' | 'review' | 'done' | 'blocked';
 
 interface StatusConfig {
   label: string;

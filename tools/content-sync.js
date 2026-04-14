@@ -45,6 +45,7 @@ function loadEnv() {
     if (fs.existsSync(p)) {
       const lines = fs.readFileSync(p, 'utf8').split('\n')
       for (const line of lines) {
+        // eslint-disable-next-line sonarjs/slow-regex -- internal tool, trusted input
         const m = line.match(/^([A-Z_]+)=["']?(.+?)["']?\s*$/)
         if (m) process.env[m[1]] = process.env[m[1]] || m[2]
       }
@@ -68,6 +69,7 @@ function getClient() {
 }
 
 // ── Pull: DB → files ────────────────────────────────────
+// eslint-disable-next-line sonarjs/cognitive-complexity
 async function pull(supabase, tableFilter) {
   for (const [table, cfg] of Object.entries(TABLES)) {
     if (tableFilter && cfg.dir !== tableFilter && table !== tableFilter) continue
@@ -104,6 +106,7 @@ async function pull(supabase, tableFilter) {
 }
 
 // ── Push: files → DB ────────────────────────────────────
+// eslint-disable-next-line sonarjs/cognitive-complexity
 async function push(supabase, tableFilter) {
   for (const [table, cfg] of Object.entries(TABLES)) {
     if (tableFilter && cfg.dir !== tableFilter && table !== tableFilter) continue

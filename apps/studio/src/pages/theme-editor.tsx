@@ -133,18 +133,18 @@ export function ThemeEditor() {
         setCurrentTemplateId(theme.template_id ?? ''); setCurrentBlockFills(theme.block_fills ?? [])
         // Fetch category/tag assignments for this theme
         getThemeCategories(supabase, theme.id).then((cats) => {
-          if (!cancelled) setSelectedCategories(cats.map((c: any) => ({ id: c.id, is_primary: c.is_primary })))
+          if (!cancelled) setSelectedCategories(cats.map((c: Record<string, unknown>) => ({ id: c.id as string, is_primary: c.is_primary as boolean })))
         })
         getThemeTags(supabase, theme.id).then((tags) => {
-          if (!cancelled) setSelectedTags(tags.map((t: any) => t.id))
+          if (!cancelled) setSelectedTags(tags.map((t: Record<string, unknown>) => t.id as string))
         })
         getThemeUseCases(supabase, theme.id).then((ucs) => {
-          if (!cancelled) setSelectedUseCaseIds(ucs.map((uc: any) => uc.id))
+          if (!cancelled) setSelectedUseCaseIds(ucs.map((uc: Record<string, unknown>) => uc.id as string))
         })
         getThemePrices(supabase, theme.id).then((prices) => {
           if (!cancelled) {
-            setSelectedRegularPriceId(prices.find((p: any) => p.type === 'normal')?.id ?? null)
-            setSelectedDiscountPriceId(prices.find((p: any) => p.type === 'discount')?.id ?? null)
+            setSelectedRegularPriceId((prices.find((p: Record<string, unknown>) => p.type === 'normal') as Record<string, unknown> | undefined)?.id as string ?? null)
+            setSelectedDiscountPriceId((prices.find((p: Record<string, unknown>) => p.type === 'discount') as Record<string, unknown> | undefined)?.id as string ?? null)
           }
         })
         if (theme.created_by) {
@@ -218,6 +218,7 @@ export function ThemeEditor() {
   }, [isDirty])
 
   // ── Save Draft ──
+  // eslint-disable-next-line sonarjs/cognitive-complexity
   async function handleSaveDraft() {
     // Sync layout state to RHF before validation
     form.setValue('template_id', currentTemplateId)

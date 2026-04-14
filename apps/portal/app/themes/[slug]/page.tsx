@@ -67,8 +67,8 @@ export default async function ThemePage({ params }: Props) {
   // Enrich meta with prices from junction table
   try {
     const prices = await getThemePrices(supabase, theme.id)
-    const regularPrice = prices.find((p: any) => p.type === 'normal')
-    const discountPrice = prices.find((p: any) => p.type === 'discount')
+    const regularPrice = prices.find((p: Record<string, unknown>) => p.type === 'normal')
+    const discountPrice = prices.find((p: Record<string, unknown>) => p.type === 'discount')
     if (regularPrice) meta.price = regularPrice.name
     if (discountPrice) meta.discount_price = discountPrice.name
   } catch {
@@ -78,9 +78,9 @@ export default async function ThemePage({ params }: Props) {
   // Enrich meta with primary categories from junction table
   try {
     const cats = await getThemeCategories(supabase, theme.id)
-    const primary = cats.filter((c: any) => c.is_primary)
+    const primary = cats.filter((c: Record<string, unknown>) => c.is_primary)
     if (primary.length > 0) {
-      meta._primary_categories = primary.map((c: any) => c.name)
+      meta._primary_categories = primary.map((c: Record<string, unknown>) => c.name)
     }
   } catch {
     // Fall through — {{primary_categories}} resolves to empty
@@ -90,7 +90,7 @@ export default async function ThemePage({ params }: Props) {
   try {
     const useCases = await getThemeUseCases(supabase, theme.id)
     if (useCases.length > 0) {
-      meta._use_cases = useCases.map((uc: any) => uc.name)
+      meta._use_cases = useCases.map((uc: Record<string, unknown>) => uc.name)
     }
   } catch {
     // Fall through — {{perfect_for}} resolves to empty
@@ -100,7 +100,7 @@ export default async function ThemePage({ params }: Props) {
   try {
     const tags = await getThemeTags(supabase, theme.id)
     if (tags.length > 0) {
-      meta._tags = tags.map((t: any) => t.name)
+      meta._tags = tags.map((t: Record<string, unknown>) => t.name)
     }
   } catch {
     // Fall through — {{tags}} resolves to empty

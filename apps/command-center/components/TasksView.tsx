@@ -5,7 +5,7 @@ import { TaskFilters, type TaskFilterState } from './TaskFilters';
 import { TaskTable, type Task as TableTask } from './TaskTable';
 import type { Phase } from '../lib/types';
 
-export interface TasksViewProps {
+interface TasksViewProps {
   phases: Phase[];
 }
 

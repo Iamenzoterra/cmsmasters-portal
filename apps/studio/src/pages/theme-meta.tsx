@@ -17,6 +17,7 @@ const tabs: { key: TabKey; label: string }[] = [
   { key: 'prices', label: 'Prices' },
 ]
 
+// eslint-disable-next-line sonarjs/cognitive-complexity
 export function ThemeMeta() {
   const [tab, setTab] = useState<TabKey>('categories')
   const [categories, setCategories] = useState<Category[]>([])
@@ -75,8 +76,9 @@ export function ThemeMeta() {
       await createCategory(supabase, { name, slug })
       toast({ type: 'success', message: `Category "${name}" created` })
       await fetchCategories()
-    } catch (err: any) {
-      toast({ type: 'error', message: err?.message?.includes('unique') ? `Slug already exists` : 'Failed to create category' })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : ''
+      toast({ type: 'error', message: msg.includes('unique') ? `Slug already exists` : 'Failed to create category' })
     }
   }
 
@@ -85,8 +87,9 @@ export function ThemeMeta() {
       await updateCategory(supabase, id, { name, slug })
       toast({ type: 'success', message: 'Category updated' })
       await fetchCategories()
-    } catch (err: any) {
-      toast({ type: 'error', message: err?.message?.includes('unique') ? `Slug already exists` : 'Failed to update category' })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : ''
+      toast({ type: 'error', message: msg.includes('unique') ? `Slug already exists` : 'Failed to update category' })
     }
   }
 
@@ -105,8 +108,9 @@ export function ThemeMeta() {
       await createTag(supabase, { name, slug })
       toast({ type: 'success', message: `Tag "${name}" created` })
       await fetchTags()
-    } catch (err: any) {
-      toast({ type: 'error', message: err?.message?.includes('unique') ? `Slug already exists` : 'Failed to create tag' })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : ''
+      toast({ type: 'error', message: msg.includes('unique') ? `Slug already exists` : 'Failed to create tag' })
     }
   }
 
@@ -115,8 +119,9 @@ export function ThemeMeta() {
       await updateTag(supabase, id, { name, slug })
       toast({ type: 'success', message: 'Tag updated' })
       await fetchTags()
-    } catch (err: any) {
-      toast({ type: 'error', message: err?.message?.includes('unique') ? `Slug already exists` : 'Failed to update tag' })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : ''
+      toast({ type: 'error', message: msg.includes('unique') ? `Slug already exists` : 'Failed to update tag' })
     }
   }
 
@@ -135,8 +140,9 @@ export function ThemeMeta() {
       await createPrice(supabase, { name, slug, type: (type as PriceType) ?? 'normal' })
       toast({ type: 'success', message: `Price "${name}" created` })
       await fetchPrices()
-    } catch (err: any) {
-      toast({ type: 'error', message: err?.message?.includes('unique') ? `Slug already exists` : 'Failed to create price' })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : ''
+      toast({ type: 'error', message: msg.includes('unique') ? `Slug already exists` : 'Failed to create price' })
     }
   }
 
@@ -145,8 +151,9 @@ export function ThemeMeta() {
       await updatePrice(supabase, id, { name, slug, ...(type ? { type: type as PriceType } : {}) })
       toast({ type: 'success', message: 'Price updated' })
       await fetchPrices()
-    } catch (err: any) {
-      toast({ type: 'error', message: err?.message?.includes('unique') ? `Slug already exists` : 'Failed to update price' })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : ''
+      toast({ type: 'error', message: msg.includes('unique') ? `Slug already exists` : 'Failed to update price' })
     }
   }
 

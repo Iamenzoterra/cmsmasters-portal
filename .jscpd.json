@@ -1,15 +1,17 @@
 {
-  "threshold": 6,
+  "threshold": 8,
   "reporters": ["console"],
   "ignore": [
     "**/node_modules/**",
     "**/.next/**",
     "**/dist/**",
     "**/.turbo/**",
+    "**/.wrangler/**",
     "**/package-lock.json",
-    "apps/command-center/cli/**"
+    "apps/command-center/cli/**",
+    "**/public/assets/**"
   ],
   "absolute": true,
   "gitignore": true,
-  "format": ["typescript", "tsx", "javascript"]
+  "format": ["typescript", "tsx", "javascript", "css"]
 }

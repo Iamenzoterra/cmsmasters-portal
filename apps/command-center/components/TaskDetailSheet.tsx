@@ -7,7 +7,7 @@ import { cn } from '@/theme/utils';
 import { StatusBadge } from '@/ui/StatusBadge';
 import { formatDate } from '@/lib/utils';
 
-export interface TaskDetailSheetProps {
+interface TaskDetailSheetProps {
   task: Task | null;
   onClose: () => void;
   onTaskSelect?: (taskId: string) => void;

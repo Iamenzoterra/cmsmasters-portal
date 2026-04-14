@@ -535,14 +535,3 @@ export const DOMAINS: Record<string, DomainDefinition> = {
   },
 }
 
-// ── Shared Infrastructure ──
-
-/** Files used by multiple domains but not exclusively owned by any single domain */
-export const SHARED_INFRASTRUCTURE = {
-  root_configs: [
-    'package.json',
-    'tsconfig.json',
-    'eslint.config.mjs',
-    'knip.json',
-  ],
-}

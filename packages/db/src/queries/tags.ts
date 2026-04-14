@@ -61,7 +61,7 @@ export async function getThemeTags(client: SupabaseClient, themeId: string) {
     .select('tag_id, tags(id, name, slug)')
     .eq('theme_id', themeId)
   if (error) throw error
-  return data?.map((r) => (r as any).tags) ?? []
+  return data?.map((r) => (r as unknown as { tags: Record<string, unknown> }).tags) ?? []
 }
 
 /** Replace all tag assignments for a theme */

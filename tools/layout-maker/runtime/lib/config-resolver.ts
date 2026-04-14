@@ -6,11 +6,11 @@ import {
   unlinkSync,
 } from 'node:fs'
 import yaml from 'js-yaml'
-import { resolve, dirname, join } from 'node:path'
+import path from 'node:path'
 import { configSchema, type LayoutConfig } from './config-schema.js'
 
-const LAYOUTS_DIR = resolve(import.meta.dirname, '../../layouts')
-const PRESETS_DIR = join(LAYOUTS_DIR, '_presets')
+const LAYOUTS_DIR = path.resolve(import.meta.dirname, '../../layouts')
+const PRESETS_DIR = path.join(LAYOUTS_DIR, '_presets')
 
 // --- Read operations ---
 
@@ -31,7 +31,7 @@ export function loadConfigFromFile(filePath: string): LayoutConfig {
   }
 
   // Single-level extends
-  const basePath = resolve(dirname(filePath), parsed.extends as string)
+  const basePath = path.resolve(path.dirname(filePath), parsed.extends as string)
   if (!existsSync(basePath)) {
     throw new Error(`Extends target not found: ${parsed.extends}`)
   }
@@ -71,7 +71,7 @@ export function findConfigByScope(scope: string): string | null {
   for (const file of readdirSync(LAYOUTS_DIR)) {
     if (!file.endsWith('.yaml') && !file.endsWith('.yml')) continue
 
-    const filePath = join(LAYOUTS_DIR, file)
+    const filePath = path.join(LAYOUTS_DIR, file)
     try {
       const raw = readFileSync(filePath, 'utf-8')
       const parsed = yaml.load(raw) as Record<string, unknown>
@@ -98,7 +98,7 @@ export function listLayouts(): Array<{
   for (const file of readdirSync(LAYOUTS_DIR)) {
     if (!file.endsWith('.yaml') && !file.endsWith('.yml')) continue
 
-    const filePath = join(LAYOUTS_DIR, file)
+    const filePath = path.join(LAYOUTS_DIR, file)
     try {
       const raw = readFileSync(filePath, 'utf-8')
       const parsed = yaml.load(raw) as Record<string, unknown>
@@ -131,7 +131,7 @@ export function listPresets(): Array<{
   for (const file of readdirSync(PRESETS_DIR)) {
     if (!file.endsWith('.yaml') && !file.endsWith('.yml')) continue
 
-    const filePath = join(PRESETS_DIR, file)
+    const filePath = path.join(PRESETS_DIR, file)
     try {
       const raw = readFileSync(filePath, 'utf-8')
       const parsed = yaml.load(raw) as Record<string, unknown>
@@ -159,7 +159,7 @@ export function getExistingScopes(): string[] {
 
 /** Write a config to a YAML file named by scope */
 export function writeConfig(config: LayoutConfig): string {
-  const filePath = join(LAYOUTS_DIR, `${config.scope}.yaml`)
+  const filePath = path.join(LAYOUTS_DIR, `${config.scope}.yaml`)
   const content = yaml.dump(config, {
     indent: 2,
     lineWidth: 120,
@@ -187,21 +187,18 @@ function deepMerge(
   const result = { ...base }
 
   for (const [key, value] of Object.entries(overrides)) {
-    if (
+    result[key] =
       typeof value === 'object' &&
       value !== null &&
       !Array.isArray(value) &&
       typeof result[key] === 'object' &&
       result[key] !== null &&
       !Array.isArray(result[key])
-    ) {
-      result[key] = deepMerge(
-        result[key] as Record<string, unknown>,
-        value as Record<string, unknown>,
-      )
-    } else {
-      result[key] = value
-    }
+        ? deepMerge(
+            result[key] as Record<string, unknown>,
+            value as Record<string, unknown>,
+          )
+        : value
   }
 
   return result

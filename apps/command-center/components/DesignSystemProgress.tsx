@@ -4,16 +4,16 @@ import { useRouter } from 'next/navigation';
 import { cn } from '../theme/utils';
 import { ProgressBar } from '../ui/ProgressBar';
 
-export type LayerName = 'Primitives' | 'Domain' | 'Layouts' | 'Infrastructure';
+type LayerName = 'Primitives' | 'Domain' | 'Layouts' | 'Infrastructure';
 
-export interface LayerRow {
+interface LayerRow {
   layer: LayerName;
   completed: number;
   total: number;
   href: string;
 }
 
-export interface DesignSystemProgressProps {
+interface DesignSystemProgressProps {
   layers: LayerRow[] | null;
 }
 

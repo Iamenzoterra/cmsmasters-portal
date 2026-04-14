@@ -15,11 +15,13 @@ async function readTokenStats() {
     // Count CSS custom properties (--name: value) in :root
     const rootMatch = content.match(/:root\s*\{([\s\S]*?)\n\}/);
     const rootBlock = rootMatch ? rootMatch[1] : '';
+    // eslint-disable-next-line sonarjs/slow-regex -- internal tool, trusted input
     const lightTokens = (rootBlock.match(/^\s*--[\w-]+:/gm) ?? []).length;
 
     // Count CSS custom properties in .dark
     const darkMatch = content.match(/\.dark\s*\{([\s\S]*?)\n\}/);
     const darkBlock = darkMatch ? darkMatch[1] : '';
+    // eslint-disable-next-line sonarjs/slow-regex -- internal tool, trusted input
     const darkTokens = (darkBlock.match(/^\s*--[\w-]+:/gm) ?? []).length;
 
     return { lightTokens, darkTokens, total: lightTokens + darkTokens, lastSynced };

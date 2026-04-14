@@ -7,7 +7,7 @@ export interface TagInputItem {
   slug: string
 }
 
-export interface TagInputProps {
+interface TagInputProps {
   /** All available items (fallback when no search) */
   items: TagInputItem[]
   /** Currently selected item IDs */

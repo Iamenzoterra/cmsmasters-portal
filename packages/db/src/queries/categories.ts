@@ -62,7 +62,7 @@ export async function getThemeCategories(client: SupabaseClient, themeId: string
     .eq('theme_id', themeId)
   if (error) throw error
   return data?.map((r) => ({
-    ...(r as any).categories,
+    ...(r as unknown as { categories: Record<string, unknown> }).categories,
     is_primary: r.is_primary,
   })) ?? []
 }

@@ -7,7 +7,7 @@
 // ── Color tokens: HSL triplet → token name ──
 // Only semantic tokens (not brand primitives — those duplicate semantics)
 // Format: "H S% L%" → "--token-name"
-export const colorTokens: Record<string, string> = {
+const colorTokens: Record<string, string> = {
   // text
   '0 0% 9%': '--text-primary',
   '0 0% 33%': '--text-secondary',
@@ -65,7 +65,7 @@ export const colorTokens: Record<string, string> = {
 }
 
 // Preferred semantic tokens (when multiple match same HSL, prefer these)
-export const preferredColorTokens: Record<string, string> = {
+const preferredColorTokens: Record<string, string> = {
   '0 0% 100%': '--bg-surface',       // white → surface bg (not --text-inverse)
   '230 58% 20%': '--button-primary-bg', // dark blue → button bg (context-dependent)
   '227 72% 51%': '--text-link',       // blue → link (context-dependent)
@@ -231,14 +231,14 @@ export function rgbToHsl(r: number, g: number, b: number): string {
 }
 
 /** Parse HSL triplet "H S% L%" into numeric components */
-export function parseHsl(triplet: string): { h: number; s: number; l: number } | null {
+function parseHsl(triplet: string): { h: number; s: number; l: number } | null {
   const m = triplet.match(/^(\d+)\s+(\d+)%\s+(\d+)%$/)
   if (!m) return null
   return { h: parseInt(m[1]), s: parseInt(m[2]), l: parseInt(m[3]) }
 }
 
 /** Simple HSL distance (good enough for token matching) */
-export function hslDistance(a: string, b: string): number {
+function hslDistance(a: string, b: string): number {
   const pa = parseHsl(a)
   const pb = parseHsl(b)
   if (!pa || !pb) return Infinity

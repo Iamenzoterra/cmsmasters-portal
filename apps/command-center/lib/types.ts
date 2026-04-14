@@ -92,38 +92,9 @@ export interface Component {
   usageExamples?: string[];
 }
 
-export interface ComponentEntry {
-  id: string;
-  name: string;
-  description: string;
-  app: App;
-  status: ComponentStatus;
-  layer: ComponentLayer;
-  phase: string;
-  dependencies?: string[];
-  source: 'filesystem' | 'phases-json';
-  hasStory?: boolean;
-  hasTests?: boolean;
-  usedBy?: string[];
-  loc?: number;
-  filePath?: string;
-  propsInterface?: string | null;
-}
-
 // ─── packages/validators/src/content-status.ts schema ────────────────────────
 
 export type ContentStatusValue = 'empty' | 'draft' | 'review' | 'approved' | 'published';
-
-export interface ThemeEntry {
-  slug: string;
-  name: string;
-  status: 'empty' | 'draft' | 'published';
-  docsCount: number;
-  hasHeroImage: boolean;
-  pluginsCount: number;
-  featuresCount: number;
-  lastUpdated: string;
-}
 
 export interface ContentStatus {
   themeId: string;

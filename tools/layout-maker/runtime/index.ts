@@ -1,11 +1,12 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { serve } from '@hono/node-server'
-import { resolve } from 'node:path'
+import path from 'node:path'
 import { layouts } from './routes/layouts.js'
 import { tokens } from './routes/tokens.js'
 import { events, broadcastEvent } from './routes/events.js'
 import { exportRoute } from './routes/export.js'
+import { blocks } from './routes/blocks.js'
 import { startWatcher } from './watcher.js'
 
 const app = new Hono()
@@ -25,9 +26,10 @@ app.route('/', layouts)
 app.route('/', tokens)
 app.route('/', events)
 app.route('/', exportRoute)
+app.route('/', blocks)
 
 // Start file watcher
-const layoutsDir = resolve(import.meta.dirname, '../layouts')
+const layoutsDir = path.resolve(import.meta.dirname, '../layouts')
 startWatcher(layoutsDir, (event) => {
   console.log(`[watcher] ${event.type}: ${event.scope}`)
   broadcastEvent(event)

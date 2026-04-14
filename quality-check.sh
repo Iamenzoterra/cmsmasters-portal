@@ -44,7 +44,8 @@ if [ $ESLINT_EXIT -eq 0 ]; then
     pass
   fi
 else
-  if echo "$ESLINT_OUTPUT" | grep -q "error"; then
+  # Check for actual errors (not "0 errors" in the summary)
+  if echo "$ESLINT_OUTPUT" | grep -qE "^\s+[0-9]+:[0-9]+\s+error\s"; then
     fail
   else
     warn

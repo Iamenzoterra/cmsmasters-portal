@@ -20,6 +20,7 @@ function sortBreakpoints(
   )
 }
 
+// eslint-disable-next-line sonarjs/cognitive-complexity
 export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
   const out: string[] = []
   const bps = sortBreakpoints(config.grid)

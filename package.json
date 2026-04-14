@@ -9,10 +9,7 @@
   "knip": {
     "ignore": [
       ".claude/**",
-      "tools/**",
-      "logs/**",
-      "logs-backup-*/**",
-      "workplan/**"
+      "tools/**"
     ]
   },
   "scripts": {

@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { readFileSync, existsSync } from 'node:fs'
-import { resolve, join } from 'node:path'
+import path from 'node:path'
 import yaml from 'js-yaml'
 import {
   configSchema,
@@ -18,7 +18,7 @@ import {
 } from '../lib/config-resolver.js'
 import { parseTokens } from '../lib/token-parser.js'
 
-const PRESETS_DIR = resolve(import.meta.dirname, '../../layouts/_presets')
+const PRESETS_DIR = path.resolve(import.meta.dirname, '../../layouts/_presets')
 
 const layouts = new Hono()
 
@@ -64,7 +64,7 @@ layouts.post('/layouts', async (c) => {
 
   if (preset) {
     // Clone from preset
-    const presetPath = join(PRESETS_DIR, `${preset}.yaml`)
+    const presetPath = path.join(PRESETS_DIR, `${preset}.yaml`)
     if (!existsSync(presetPath)) {
       return c.json({ error: `Preset "${preset}" not found` }, 404)
     }

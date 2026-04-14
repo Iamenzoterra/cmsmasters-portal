@@ -14,7 +14,6 @@
     "react-dom": "^19.0.0",
     "react-router-dom": "^7",
     "@cmsmasters/auth": "*",
-    "@cmsmasters/db": "*",
     "@cmsmasters/ui": "*"
   },
   "devDependencies": {

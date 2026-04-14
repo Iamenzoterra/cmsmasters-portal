@@ -59,3 +59,23 @@ export interface ExportResult {
   payload: ExportPayload
   files: { html: string; css: string }
 }
+
+export interface BlockData {
+  slug: string
+  html: string
+  css: string
+  js: string | null
+}
+
+export interface ScopingWarning {
+  slug: string
+  message: string
+  selectors: string[]
+}
+
+export interface BlockResponse {
+  data: BlockData[]
+  warnings: ScopingWarning[]
+  source: 'supabase' | 'local' | 'cache' | 'none'
+  offline?: boolean
+}

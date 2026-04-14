@@ -1,10 +1,14 @@
+import { timingSafeEqual } from 'node:crypto'
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   const token = request.headers.get('x-revalidate-token')
 
-  if (token !== process.env.REVALIDATE_SECRET) {
+  const secret = process.env.REVALIDATE_SECRET ?? ''
+  const tokenBuf = Buffer.from(token ?? '')
+  const secretBuf = Buffer.from(secret)
+  if (tokenBuf.length !== secretBuf.length || !timingSafeEqual(tokenBuf, secretBuf)) {
     return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
   }
 

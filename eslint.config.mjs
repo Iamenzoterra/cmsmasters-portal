@@ -142,4 +142,13 @@ export default tseslint.config(
       'unicorn/no-keyword-prefix': 'off',
     },
   },
+
+  // ── Portal app — suppress rules that conflict with Next.js internal ESLint ──
+  {
+    files: ['apps/portal/**'],
+    rules: {
+      'sonarjs/cognitive-complexity': 'off',
+      'sonarjs/slow-regex': 'off',
+    },
+  },
 );

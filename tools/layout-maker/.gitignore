@@ -3,3 +3,4 @@ node_modules/
 exports/*.html
 exports/*.css
 dist/
+.env

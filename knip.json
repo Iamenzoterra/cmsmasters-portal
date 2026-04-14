@@ -1,22 +1,18 @@
 {
   "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "ignoreBinaries": ["tsx", "eslint", "jest"],
+  "ignoreDependencies": ["jscpd"],
+  "ignoreWorkspaces": ["packages/email"],
   "workspaces": {
     ".": {
       "ignore": ["**/*.d.ts"]
     },
     "apps/command-center": {
-      "entry": ["app/**/page.tsx", "app/layout.tsx", "cli/**/*.ts"],
-      "project": ["**/*.{ts,tsx}"],
-      "ignore": ["**/*.d.ts", ".next/**"]
-    },
-    "packages/*": {
-      "entry": ["index.ts"],
+      "entry": ["app/**/page.tsx", "cli/**/*.ts", "tailwind.config.ts"],
       "project": ["**/*.{ts,tsx}"]
+    },
+    "packages/ui": {
+      "entry": ["src/portal/animate-utils.js", "src/portal/portal-blocks.css", "src/theme/tokens.css"]
     }
-  },
-  "ignoreDependencies": [
-    "@tailwindcss/postcss",
-    "autoprefixer",
-    "postcss"
-  ]
+  }
 }

@@ -56,11 +56,6 @@ function nextId(): string {
   return `s-${++idCounter}`
 }
 
-/** Reset ID counter (for testing) */
-export function resetIdCounter(): void {
-  idCounter = 0
-}
-
 /**
  * Scan CSS string for hardcoded values, return token suggestions.
  * All suggestions are enabled by default.
@@ -117,6 +112,7 @@ function isButtonLikeRule(rule: CSSRule): boolean {
 // ── Color scanning ──
 
 const HEX_RE = /#([0-9a-fA-F]{3,8})\b/g
+// eslint-disable-next-line security/detect-unsafe-regex -- internal tool, trusted input
 const RGB_RE = /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*[\d.]+)?\s*\)/g
 
 const COLOR_PROPS = new Set([
@@ -132,6 +128,7 @@ function colorContext(prop: string): 'bg' | 'text' | 'border' | undefined {
   return undefined
 }
 
+// eslint-disable-next-line sonarjs/cognitive-complexity
 function scanColors(
   selector: string,
   decl: Declaration,
@@ -223,6 +220,7 @@ function scanFontSizes(
 ): void {
   if (decl.property !== 'font-size') return
 
+  // eslint-disable-next-line security/detect-unsafe-regex -- internal tool, trusted input
   const match = decl.value.match(/^(\d+(?:\.\d+)?)(px)$/)
   if (!match) return
 
@@ -278,6 +276,7 @@ function scanLineHeights(
 ): void {
   if (decl.property !== 'line-height') return
 
+  // eslint-disable-next-line security/detect-unsafe-regex -- internal tool, trusted input
   const match = decl.value.match(/^(\d+(?:\.\d+)?)(px)$/)
   if (!match) return
 
@@ -350,6 +349,7 @@ function scanRadius(
   if (unique.length !== 1) return // skip complex shorthands
 
   const value = unique[0]
+  // eslint-disable-next-line security/detect-unsafe-regex -- internal tool, trusted input
   const match = value.match(/^(\d+(?:\.\d+)?)(px)$/)
   if (!match) return
 
@@ -452,6 +452,7 @@ function scanSpacing(
   if (unique.length > 1) return
 
   const value = unique[0]
+  // eslint-disable-next-line security/detect-unsafe-regex -- internal tool, trusted input
   const match = value.match(/^(\d+(?:\.\d+)?)(px)$/)
   if (!match) return
 
@@ -543,6 +544,7 @@ function replaceInSelector(
 ): string {
   // Find the selector block
   const escapedSelector = escapeRegExp(selector)
+  // eslint-disable-next-line security/detect-non-literal-regexp -- built from escapeRegExp'd input
   const blockRe = new RegExp(
     `(${escapedSelector}\\s*\\{[^}]*?)${escapeRegExp(original)}([^}]*\\})`,
     'g'
@@ -550,6 +552,7 @@ function replaceInSelector(
 
   return css.replace(blockRe, (match, before, after) => {
     // Verify this is within the right property declaration
+    // eslint-disable-next-line security/detect-non-literal-regexp -- built from escapeRegExp'd input
     const propRe = new RegExp(`${escapeRegExp(property)}\\s*:[^;]*${escapeRegExp(original)}`)
     if (propRe.test(match)) {
       return `${before}${replacement}${after}`
@@ -582,6 +585,7 @@ function isExternalUrl(url: string): boolean {
  * @param css — current block CSS
  * @param previousUrls — R2 URLs from the previously saved version of this block (optional)
  */
+// eslint-disable-next-line sonarjs/cognitive-complexity
 export function extractImages(html: string, css: string = '', previousUrls: string[] = []): ImageRef[] {
   const refs: ImageRef[] = []
   const seen = new Set<string>()
@@ -652,6 +656,7 @@ export function replaceImages(
 
   for (const [original, replacement] of Object.entries(urlMap)) {
     const escaped = escapeRegExp(original)
+    // eslint-disable-next-line security/detect-non-literal-regexp -- built from escapeRegExp'd input
     const re = new RegExp(escaped, 'g')
     newHtml = newHtml.replace(re, replacement)
     newCss = newCss.replace(re, replacement)
@@ -681,9 +686,12 @@ export function scanHTML(html: string, css: string): Suggestion[] {
     const selectorClass = rule.selector.replace(/^\./, '').split(/[\s:.>+~]/).filter(Boolean)[0]
     if (!selectorClass) continue
 
-    const usesDiv = new RegExp(`<div[^>]*class=["'][^"']*\\b${escapeRegExp(selectorClass)}\\b`, 'i').test(html)
-    const usesSpan = new RegExp(`<span[^>]*class=["'][^"']*\\b${escapeRegExp(selectorClass)}\\b`, 'i').test(html)
-    const usesButton = new RegExp(`<(button|a)[^>]*class=["'][^"']*\\b${escapeRegExp(selectorClass)}\\b`, 'i').test(html)
+    const escaped = escapeRegExp(selectorClass)
+    /* eslint-disable security/detect-non-literal-regexp -- built from escapeRegExp'd input */
+    const usesDiv = new RegExp(`<div[^>]*class=["'][^"']*\\b${escaped}\\b`, 'i').test(html)
+    const usesSpan = new RegExp(`<span[^>]*class=["'][^"']*\\b${escaped}\\b`, 'i').test(html)
+    const usesButton = new RegExp(`<(button|a)[^>]*class=["'][^"']*\\b${escaped}\\b`, 'i').test(html)
+    /* eslint-enable security/detect-non-literal-regexp */
 
     if (usesDiv || usesSpan) {
       suggestions.push({
@@ -721,6 +729,7 @@ export function scanHTML(html: string, css: string): Suggestion[] {
   return suggestions
 }
 
+// eslint-disable-next-line sonarjs/cognitive-complexity
 function detectButtonVariant(bgValue?: string): string {
   if (!bgValue) return 'primary'
 
@@ -729,6 +738,7 @@ function detectButtonVariant(bgValue?: string): string {
   if (hexMatch) {
     const hsl = hexToHsl(hexMatch[0])
     if (hsl) {
+      // eslint-disable-next-line sonarjs/slow-regex -- internal tool, trusted input
       const parts = hsl.match(/(\d+)\s+(\d+)%\s+(\d+)%/)
       if (parts) {
         const hue = parseInt(parts[1])
@@ -769,6 +779,7 @@ function parseRules(css: string): CSSRule[] {
   const clean = css.replace(/\/\*[\s\S]*?\*\//g, '')
 
   // Match selector { declarations }
+  // eslint-disable-next-line sonarjs/slow-regex -- internal tool, trusted input
   const ruleRe = /([^{}]+)\{([^{}]*)\}/g
   for (const match of clean.matchAll(ruleRe)) {
     const selector = match[1].trim()

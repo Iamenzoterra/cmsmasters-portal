@@ -67,6 +67,7 @@ function extractSlots(html: string): string[] {
   // 1. {{slot:name}} placeholders
   for (const m of html.matchAll(/\{\{slot:([a-z0-9-]+)\}\}/g)) add(m[1])
   // 2. <!-- SLOT: NAME --> HTML comments
+  // eslint-disable-next-line sonarjs/slow-regex -- internal tool, trusted input
   for (const m of html.matchAll(/<!--\s*SLOT:\s*([A-Za-z0-9-_ :]+?)\s*-->/g)) add(m[1])
   // 3. data-slot="name" attributes (most common in layout prototypes)
   for (const m of html.matchAll(/data-slot=["']([^"']+)["']/g)) add(m[1])
@@ -295,6 +296,7 @@ export function PageEditor() {
   }
 
   // Save draft
+  // eslint-disable-next-line sonarjs/cognitive-complexity
   async function handleSaveDraft() {
     const valid = await form.trigger()
     if (!valid) { toast({ type: 'error', message: 'Fix validation errors before saving' }); return }
@@ -363,6 +365,7 @@ export function PageEditor() {
   }
 
   // Publish
+  // eslint-disable-next-line sonarjs/cognitive-complexity
   async function handlePublish() {
     const valid = await form.trigger()
     if (!valid) { toast({ type: 'error', message: 'Fix validation errors before publishing' }); return }

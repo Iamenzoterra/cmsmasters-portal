@@ -59,6 +59,7 @@ describe('Table Ownership', () => {
     const unqueriedTables = domain.known_gaps
       .filter(g => g.includes('declared but no queries'))
       .flatMap(g => {
+        // eslint-disable-next-line sonarjs/slow-regex -- internal tool, trusted input
         const match = g.match(/(\w+) table declared but no queries/)
         return match ? [match[1]] : []
       })
@@ -71,6 +72,7 @@ describe('Table Ownership', () => {
           .map(f => path.resolve(ROOT, f))
           .filter(f => (f.endsWith('.ts') || f.endsWith('.tsx')) && fs.existsSync(f))
 
+        // eslint-disable-next-line security/detect-non-literal-regexp -- table name from manifest, not user input
         const pattern = new RegExp(`\\.from\\s*\\(\\s*['"\`]${table}['"\`]`)
         const found = ownedFiles.some(f => {
           const content = fs.readFileSync(f, 'utf-8')
@@ -141,6 +143,7 @@ describe('Full-Status Skill Sections', () => {
     describe(`${slug} (full)`, () => {
       for (const section of REQUIRED_SECTIONS) {
         it(`has section: "${section}"`, () => {
+          // eslint-disable-next-line security/detect-non-literal-regexp -- section name from constant array
           const pattern = new RegExp(`^## ${section}`, 'm')
           expect(pattern.test(content), `Missing "## ${section}" in ${slug}`).toBe(true)
         })

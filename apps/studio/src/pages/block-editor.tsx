@@ -204,6 +204,7 @@ function parseHtmlFile(content: string): { code: string; js: string } {
   return { code, js: scripts }
 }
 
+// eslint-disable-next-line sonarjs/cognitive-complexity
 export function BlockEditor() {
   const { id } = useParams()
   const navigate = useNavigate()

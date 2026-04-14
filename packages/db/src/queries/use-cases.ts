@@ -73,7 +73,7 @@ export async function getThemeUseCases(client: SupabaseClient, themeId: string) 
     .select('use_case_id, use_cases(id, name, slug)')
     .eq('theme_id', themeId)
   if (error) throw error
-  return data?.map((r) => (r as any).use_cases) ?? []
+  return data?.map((r) => (r as unknown as { use_cases: Record<string, unknown> }).use_cases) ?? []
 }
 
 /** Replace all use case assignments for a theme */

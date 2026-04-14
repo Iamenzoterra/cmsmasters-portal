@@ -15,7 +15,7 @@ export interface TaskFilterState {
   search: string;
 }
 
-export interface TaskFiltersProps {
+interface TaskFiltersProps {
   filters: TaskFilterState;
   onChange: (f: TaskFilterState) => void;
   phaseOptions?: string[];

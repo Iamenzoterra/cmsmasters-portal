@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import type { LayoutConfig, LayoutSummary, TokenMap } from './lib/types'
+import type { LayoutConfig, LayoutSummary, TokenMap, BlockData, ScopingWarning } from './lib/types'
 import { api } from './lib/api-client'
 import { LayoutSidebar } from './components/LayoutSidebar'
 import { BreakpointBar } from './components/BreakpointBar'
@@ -34,6 +34,8 @@ export function App() {
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [toastKey, setToastKey] = useState(0)
   const [showExportDialog, setShowExportDialog] = useState(false)
+  const [blocks, setBlocks] = useState<Map<string, BlockData> | null>(null)
+  const [blockWarnings, setBlockWarnings] = useState<ScopingWarning[]>([])
 
   const prevConfigRef = useRef<LayoutConfig | null>(null)
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -83,6 +85,50 @@ export function App() {
       setActiveConfig(null)
     })
   }, [activeScope])
+
+  // Fetch blocks when config changes
+  useEffect(() => {
+    if (!activeConfig) {
+      setBlocks(null)
+      setBlockWarnings([])
+      return
+    }
+
+    const testBlocks = activeConfig['test-blocks']
+    if (!testBlocks) {
+      setBlocks(null)
+      setBlockWarnings([])
+      return
+    }
+
+    // Collect unique slugs from all slots
+    const slugs = [...new Set(Object.values(testBlocks).flat())]
+    if (slugs.length === 0) {
+      setBlocks(null)
+      setBlockWarnings([])
+      return
+    }
+
+    api.getBlocks(slugs).then((res) => {
+      const map = new Map<string, BlockData>()
+      for (const block of res.data) {
+        map.set(block.slug, block)
+      }
+      setBlocks(map)
+      setBlockWarnings(res.warnings)
+
+      // Toast summary
+      const loaded = res.data.length
+      const missing = slugs.length - loaded
+      let msg = `Loaded ${loaded} block${loaded !== 1 ? 's' : ''} (${res.source})`
+      if (missing > 0) msg += `, ${missing} not found`
+      if (res.warnings.length > 0) msg += ` | ${res.warnings.length} scoping warning${res.warnings.length !== 1 ? 's' : ''}`
+      showToast(msg)
+    }).catch(() => {
+      setBlocks(null)
+      setBlockWarnings([])
+    })
+  }, [activeConfig, showToast])
 
   // SSE subscription
   useEffect(() => {
@@ -144,6 +190,7 @@ export function App() {
                 selectedSlot={selectedSlot}
                 onSlotSelect={setSelectedSlot}
                 changedSlots={changedSlots}
+                blocks={blocks}
               />
             </>
           ) : (
@@ -162,6 +209,7 @@ export function App() {
           activeBreakpoint={activeBreakpoint}
           tokens={tokens}
           onShowToast={showToast}
+          blockWarnings={blockWarnings}
         />
       </div>
 

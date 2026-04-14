@@ -6,7 +6,7 @@ import { PhaseTimeline } from './PhaseTimeline';
 import type { PhaseBlock } from './PhaseTimeline';
 import type { PackageNode, AppNode, DependencyEdge } from '../lib/types';
 
-export interface DependencyGraphProps {
+interface DependencyGraphProps {
   phases: PhaseBlock[];
   packages: PackageNode[];
   apps: AppNode[];

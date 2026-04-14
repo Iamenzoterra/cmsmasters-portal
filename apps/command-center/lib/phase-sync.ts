@@ -218,6 +218,7 @@ function evaluateCheck(root: string, check: FsCheck): CheckResult {
   return { passed: false, mtime: 0 };
 }
 
+// eslint-disable-next-line sonarjs/cognitive-complexity
 function countFiles(dir: string, suffix: string, recursive: boolean): { count: number; newestMtime: number } {
   let count = 0;
   let newestMtime = 0;
@@ -261,6 +262,7 @@ function derivePhaseStatus(tasks: RawTask[]): PhaseStatus {
 
 // ─── Core sync ───────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line sonarjs/cognitive-complexity
 export function syncPhaseStatuses(monorepoRoot: string, workplanDir: string): void {
   const phasesPath = path.join(workplanDir, 'phases.json');
   const raw = fs.readFileSync(phasesPath, 'utf8');

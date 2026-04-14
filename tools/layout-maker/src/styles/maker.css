@@ -238,6 +238,11 @@ body {
 /* ── Layout Grid ─────────────────────────────────────────────── */
 .lm-layout-grid {
   display: grid;
+  overflow: hidden;
+}
+
+.lm-canvas-viewport {
+  overflow: hidden;
 }
 
 /* ── Slot Zones ──────────────────────────────────────────────── */
@@ -251,6 +256,9 @@ body {
   border-radius: 3px;
   cursor: pointer;
   transition: filter var(--lm-transition-fast);
+  /* Prevent block content from expanding grid cells beyond their track size */
+  min-width: 0;
+  min-height: 0;
 }
 
 .lm-slot-zone:hover { filter: brightness(1.05); }
@@ -285,15 +293,80 @@ body {
 }
 
 .lm-slot-zone__blocks {
-  position: absolute;
-  top: var(--lm-sp-2);
-  right: var(--lm-sp-2);
   background: rgba(0, 0, 0, 0.5);
   color: #fff;
   font-size: 10px;
   font-family: var(--lm-font-mono);
   padding: 1px 5px;
   border-radius: 8px;
+  margin-left: auto;
+}
+
+/* Label row — top of slot zone */
+.lm-slot-zone__label-row {
+  display: flex;
+  align-items: center;
+  gap: var(--lm-sp-3);
+  width: 100%;
+  padding-bottom: var(--lm-sp-2);
+}
+
+/* When blocks are loaded: remove colored bg */
+.lm-slot-zone--has-blocks {
+  background: transparent !important;
+  align-items: stretch;
+  justify-content: flex-start;
+  overflow: hidden;
+}
+
+/* Block shell — wraps each block iframe */
+.lm-block-shell {
+  position: relative;
+  width: 100%;
+}
+
+/* Block stack inside slot */
+.lm-slot-zone__block-stack {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* Block shell — merged with rule above */
+
+.lm-block-shell__js-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 2;
+  background: rgba(80, 120, 200, 0.85);
+  color: #fff;
+  font-family: var(--lm-font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+/* Missing block placeholder */
+.lm-block-missing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60px;
+  border: 1.5px dashed rgba(0, 0, 0, 0.25);
+  border-radius: 3px;
+  font-family: var(--lm-font-mono);
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.4);
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 6px,
+    rgba(0, 0, 0, 0.03) 6px,
+    rgba(0, 0, 0, 0.03) 12px
+  );
 }
 
 /* ── Drawer System ───────────────────────────────────────────── */
@@ -489,6 +562,56 @@ body {
 
 .lm-inspector__info {
   opacity: 0.7;
+}
+
+.lm-inspector__block-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: var(--lm-sp-3);
+}
+
+.lm-inspector__block-row {
+  font-family: var(--lm-font-mono);
+  font-size: 11px;
+  color: var(--lm-text-primary);
+}
+
+.lm-inspector__block-slug {
+  color: var(--lm-text-accent);
+}
+
+.lm-inspector__warnings {
+  background: rgba(244, 135, 113, 0.06);
+  margin: 0 calc(var(--lm-sp-8) * -1);
+  padding-left: var(--lm-sp-8);
+  padding-right: var(--lm-sp-8);
+  opacity: 1;
+}
+
+.lm-inspector__warnings-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #f48771;
+  padding-bottom: var(--lm-sp-3);
+}
+
+.lm-inspector__warning {
+  padding: var(--lm-sp-2) 0;
+}
+
+.lm-inspector__warning-slug {
+  font-family: var(--lm-font-mono);
+  font-size: 11px;
+  color: #f48771;
+}
+
+.lm-inspector__warning-selectors {
+  font-family: var(--lm-font-mono);
+  font-size: 10px;
+  color: var(--lm-text-muted);
+  padding-left: var(--lm-sp-4);
+  word-break: break-all;
 }
 
 /* ── Copy Button ────────────────────────────────────────────── */

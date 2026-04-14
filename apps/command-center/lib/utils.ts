@@ -6,14 +6,6 @@ export function formatDate(iso: string): string {
   }).format(new Date(iso));
 }
 
-export function formatHours(decimal: number): string {
-  const hours = Math.floor(decimal);
-  const minutes = Math.round((decimal - hours) * 60);
-  if (hours === 0) return `${minutes}m`;
-  if (minutes === 0) return `${hours}h`;
-  return `${hours}h ${minutes}m`;
-}
-
 export function calculateProgress(done: number, total: number): number {
   if (total === 0) return 0;
   return Math.round((done / total) * 100);

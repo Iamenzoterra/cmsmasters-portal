@@ -1,4 +1,4 @@
-import type { LayoutConfig, LayoutSummary, TokenMap, ExportResult } from './types'
+import type { LayoutConfig, LayoutSummary, TokenMap, ExportResult, BlockResponse } from './types'
 
 const BASE = 'http://localhost:7701'
 
@@ -71,6 +71,9 @@ export const api = {
 
   getTokens: (): Promise<TokenMap> =>
     fetch(`${BASE}/tokens`).then((r) => json(r)),
+
+  getBlocks: (slugs: string[]): Promise<BlockResponse> =>
+    fetch(`${BASE}/blocks?slugs=${slugs.join(',')}`).then((r) => json(r)),
 
   subscribeEvents: (
     callback: (event: { type: string; scope: string }) => void,

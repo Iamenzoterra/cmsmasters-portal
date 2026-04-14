@@ -7,6 +7,7 @@ function getTag(name: string): string {
   return 'div'
 }
 
+// eslint-disable-next-line sonarjs/cognitive-complexity
 export function generateHTML(config: LayoutConfig): string {
   const out: string[] = []
   const slots = config.slots

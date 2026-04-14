@@ -49,13 +49,14 @@ export function LayoutSchematic({ html, css, layoutSlots }: LayoutSchematicProps
  *   2. `<!-- SLOT: X -->` comments only render if no data-slot="x" exists.
  *   3. `{{slot:x}}` text placeholders only render if no data-slot="x" exists.
  */
+const normalize = (name: string) => name.trim().toLowerCase().replace(/\s+/g, '-')
+
+// eslint-disable-next-line sonarjs/cognitive-complexity
 function transformHtml(
   html: string,
   layoutSlots: Record<string, string | string[]>,
 ): string {
   if (typeof DOMParser === 'undefined') return html
-
-  const normalize = (name: string) => name.trim().toLowerCase().replace(/\s+/g, '-')
 
   const buildStub = (name: string): string => {
     const normalized = normalize(name)
@@ -79,7 +80,7 @@ function transformHtml(
   // Pass 1: data-slot elements (authoritative). Collect names to dedupe other forms.
   const processed = new Set<string>()
   root.querySelectorAll<HTMLElement>('[data-slot]').forEach((el) => {
-    const raw = el.getAttribute('data-slot')
+    const raw = el.dataset.slot
     if (!raw) return
     const name = normalize(raw)
     el.classList.add('__slot-host')
@@ -93,6 +94,7 @@ function transformHtml(
   let cnode: Node | null
   while ((cnode = commentWalker.nextNode())) comments.push(cnode as Comment)
   for (const comment of comments) {
+    // eslint-disable-next-line sonarjs/slow-regex -- internal tool, trusted input
     const match = comment.textContent?.match(/^\s*SLOT:\s*([A-Za-z0-9_\- :]+?)\s*$/)
     if (!match) continue
     const name = normalize(match[1])
@@ -114,8 +116,6 @@ function transformHtml(
   for (const text of textNodes) {
     const content = text.textContent ?? ''
     if (!content.includes('{{slot:')) continue
-    const parent = text.parentNode
-    if (!parent) continue
     const frag = doc.createDocumentFragment()
     const parts = content.split(/(\{\{slot:[a-z0-9-]+\}\})/gi)
     for (const part of parts) {
@@ -131,7 +131,7 @@ function transformHtml(
         frag.append(doc.createTextNode(part))
       }
     }
-    parent.replaceChild(frag, text)
+    text.replaceWith(frag)
   }
 
   return root.innerHTML

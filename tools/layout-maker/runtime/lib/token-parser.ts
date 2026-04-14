@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import path from 'node:path'
 
-const TOKENS_PATH = resolve(
+const TOKENS_PATH = path.resolve(
   import.meta.dirname,
   '../../../../packages/ui/src/theme/tokens.css',
 )
@@ -18,6 +18,7 @@ export function parseTokens(): TokenMap {
 
   const rootContent = rootMatch[1]
   const tokens: TokenMap = {}
+  // eslint-disable-next-line sonarjs/slow-regex -- internal tool, trusted input
   const regex = /^\s*--([\w-]+):\s*(.+?)\s*;/gm
   let match
 

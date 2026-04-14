@@ -71,6 +71,7 @@ export type LayoutConfig = z.infer<typeof configSchema>
 
 // --- Cross-field validation ---
 
+// eslint-disable-next-line sonarjs/cognitive-complexity
 export function validateConfig(
   config: LayoutConfig,
   knownTokens: TokenMap,
