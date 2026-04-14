@@ -116,7 +116,7 @@ export default async function ThemePage({ params }: Props) {
 
   // 2. Resolve global elements: layout_slots override > category default > []
   const layoutSlots = (layoutPage as Record<string, unknown>)?.layout_slots as Record<string, string | string[]> ?? {}
-  const slotConfig = ((layoutPage as Record<string, unknown>)?.slot_config ?? {}) as Record<string, { gap?: string }>
+  // slot_config is now consumed via CSS custom properties in layout CSS — no runtime usage needed
   const globalElements = await resolveGlobalBlocks(layoutSlots)
 
   // 3. Fetch template + merge with block fills
@@ -149,16 +149,16 @@ export default async function ThemePage({ params }: Props) {
     })
     .join('\n')
 
-  // 6. Render slot blocks (supports multiple blocks per slot with gap)
-  function renderSlotBlocks(blocks: Block[], gap?: string): string {
-    if (blocks.length === 0) return ''
+  // 6. Render slot blocks — always wrapped in .slot-inner for inner-container styling.
+  //    Gap, max-width, padding, align are driven by CSS custom properties
+  //    injected in the layout CSS (--sl-{slot}-gap, etc.).
+  function renderSlotBlocks(blocks: Block[]): string {
+    if (blocks.length === 0) return '<div class="slot-inner"></div>'
     const rendered = blocks.map((block) => {
       const html = resolveBlockHooks(block.html, block.hooks as Record<string, unknown>, meta)
       return renderBlock(html, block.css, block.slug, block.js || undefined)
     })
-    if (rendered.length === 1) return rendered[0]
-    const g = gap || '24px'
-    return `<div class="slot-stack" style="display:flex;flex-direction:column;gap:${g};width:100%">${rendered.join('\n')}</div>`
+    return `<div class="slot-inner">${rendered.join('\n')}</div>`
   }
 
   // 7. Assemble page
@@ -166,17 +166,17 @@ export default async function ThemePage({ params }: Props) {
   if (layoutPage?.html) {
     const cleanLayout = stripDebug(layoutPage.html)
     pageHTML = resolveSlots(cleanLayout, {
-      header: renderSlotBlocks(globalElements.header, slotConfig.header?.gap),
-      footer: renderSlotBlocks(globalElements.footer, slotConfig.footer?.gap),
-      'sidebar-left': renderSlotBlocks(globalElements['sidebar-left'], slotConfig['sidebar-left']?.gap),
-      'sidebar-right': renderSlotBlocks(globalElements['sidebar-right'], slotConfig['sidebar-right']?.gap),
-      content: contentHTML,
+      header: renderSlotBlocks(globalElements.header),
+      footer: renderSlotBlocks(globalElements.footer),
+      'sidebar-left': renderSlotBlocks(globalElements['sidebar-left']),
+      'sidebar-right': renderSlotBlocks(globalElements['sidebar-right']),
+      content: `<div class="slot-inner">${contentHTML}</div>`,
     })
     pageHTML = resolveMetaHooks(pageHTML, meta)
   } else {
     const header = renderSlotBlocks(globalElements.header)
     const footer = renderSlotBlocks(globalElements.footer)
-    pageHTML = `${header}\n<main>${contentHTML}</main>\n${footer}`
+    pageHTML = `${header}\n<main><div class="slot-inner">${contentHTML}</div></main>\n${footer}`
   }
 
   // 8. JSON-LD Product schema

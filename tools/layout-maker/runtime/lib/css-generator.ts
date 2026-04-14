@@ -10,6 +10,44 @@ function resolveValue(tokenOrValue: string, tokens: TokenMap): string {
   return val
 }
 
+/** CSS var prefix for a slot name: --sl-{name} */
+function slotVarPrefix(name: string): string {
+  return `--sl-${name}`
+}
+
+/** Resolve visual slot params into CSS custom property map */
+function resolveSlotVars(
+  name: string,
+  slot: {
+    gap?: string
+    'max-width'?: string
+    'padding-x'?: string
+    'padding-top'?: string
+    'padding-bottom'?: string
+    padding?: string
+    align?: string
+  },
+  tokens: TokenMap,
+): Record<string, string> {
+  const pf = slotVarPrefix(name)
+  const vars: Record<string, string> = {}
+
+  if (slot['max-width']) vars[`${pf}-mw`] = slot['max-width']
+  if (slot.gap) vars[`${pf}-gap`] = resolveValue(slot.gap, tokens)
+
+  // Padding: prefer split fields, fall back to legacy shorthand
+  const padX = slot['padding-x'] ?? slot.padding
+  const padTop = slot['padding-top'] ?? slot.padding
+  const padBottom = slot['padding-bottom'] ?? slot.padding
+  if (padX) vars[`${pf}-px`] = resolveValue(padX, tokens)
+  if (padTop) vars[`${pf}-pt`] = resolveValue(padTop, tokens)
+  if (padBottom) vars[`${pf}-pb`] = resolveValue(padBottom, tokens)
+
+  if (slot.align) vars[`${pf}-al`] = slot.align
+
+  return vars
+}
+
 /** Sort breakpoints by min-width descending (desktop first) */
 function sortBreakpoints(
   grid: LayoutConfig['grid'],
@@ -81,9 +119,13 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
   out.push('}')
   out.push('')
 
-  // ── Slot styles ──
+  // ── Slot outer styles (role-level: sticky, padding, min-height) ──
   for (const [name, slot] of Object.entries(config.slots)) {
     const rules: string[] = []
+
+    // Outer is always flex-column so .slot-inner can position itself
+    rules.push('display: flex')
+    rules.push('flex-direction: column')
 
     if (slot.sticky) {
       rules.push('position: sticky')
@@ -93,36 +135,54 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
       }
     }
 
-    if (slot.gap || slot.align) {
-      rules.push('display: flex')
-      rules.push('flex-direction: column')
-    }
-
-    if (slot.padding && slot.padding !== '0') {
-      rules.push(`padding: ${resolveValue(slot.padding, tokens)}`)
-    }
-    if (slot.gap) {
-      rules.push(`gap: ${resolveValue(slot.gap, tokens)}`)
-    }
     if (slot['min-height']) {
       rules.push(`min-height: ${slot['min-height']}`)
-    }
-    if (slot.align) {
-      rules.push(`align-items: ${slot.align}`)
     }
     if (slot['margin-top']) {
       rules.push(`margin-top: ${resolveValue(slot['margin-top'], tokens)}`)
     }
 
-    if (rules.length > 0) {
-      out.push(`/* ── Slot: ${name} ── */`)
-      out.push(`[data-slot="${name}"] {`)
-      for (const rule of rules) {
-        out.push(`  ${rule};`)
-      }
-      out.push('}')
-      out.push('')
+    out.push(`/* ── Slot: ${name} ── */`)
+    out.push(`[data-slot="${name}"] {`)
+    for (const rule of rules) {
+      out.push(`  ${rule};`)
     }
+    out.push('}')
+    out.push('')
+  }
+
+  // ── Slot inner CSS custom properties (base = desktop) ──
+  out.push('/* ── Slot inner vars (base) ── */')
+  out.push(':root {')
+  for (const [name, slot] of Object.entries(config.slots)) {
+    const vars = resolveSlotVars(name, slot, tokens)
+    for (const [prop, val] of Object.entries(vars)) {
+      out.push(`  ${prop}: ${val};`)
+    }
+  }
+  out.push('}')
+  out.push('')
+
+  // Generic slot-inner base rule
+  out.push('[data-slot] > .slot-inner {')
+  out.push('  display: flex;')
+  out.push('  flex-direction: column;')
+  out.push('  width: 100%;')
+  out.push('  flex: 1 0 auto;')
+  out.push('}')
+  out.push('')
+
+  // Per-slot inner rules (consume vars, static across layouts)
+  for (const name of Object.keys(config.slots)) {
+    const pf = slotVarPrefix(name)
+    out.push(`[data-slot="${name}"] > .slot-inner {`)
+    out.push(`  max-width: var(${pf}-mw, none);`)
+    out.push(`  padding: var(${pf}-pt, 0) var(${pf}-px, 0) var(${pf}-pb, 0);`)
+    out.push(`  gap: var(${pf}-gap, 0);`)
+    out.push(`  align-self: var(${pf}-al, stretch);`)
+    out.push(`  margin-inline: auto;`)
+    out.push('}')
+    out.push('')
   }
 
   // ── Drawer base CSS (always visible, off-screen by default) ──
@@ -278,6 +338,23 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
         out.push('')
         out.push('  .layout-drawer {')
         out.push(`    width: ${grid['drawer-width']};`)
+        out.push('  }')
+      }
+    }
+
+    // Per-bp slot inner var overrides
+    if (grid.slots) {
+      const bpVars: string[] = []
+      for (const [slotName, overrides] of Object.entries(grid.slots)) {
+        const vars = resolveSlotVars(slotName, overrides, tokens)
+        for (const [prop, val] of Object.entries(vars)) {
+          bpVars.push(`    ${prop}: ${val};`)
+        }
+      }
+      if (bpVars.length > 0) {
+        out.push('')
+        out.push('  :root {')
+        for (const v of bpVars) out.push(v)
         out.push('  }')
       }
     }

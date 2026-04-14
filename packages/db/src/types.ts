@@ -62,8 +62,21 @@ export interface ThemeBlockFill {
 
 // ── Slot configuration (stored in pages.slot_config jsonb) ──
 
+/** Visual params for a single slot at a single breakpoint. */
+export interface SlotVisualParams {
+  gap?: string
+  'max-width'?: string
+  'padding-x'?: string
+  'padding-top'?: string
+  'padding-bottom'?: string
+  align?: 'flex-start' | 'center' | 'flex-end' | 'stretch'
+}
+
 export interface SlotConfig {
-  [slot: string]: { gap?: string }
+  [slot: string]: SlotVisualParams & {
+    /** Per-breakpoint overrides (keys = grid breakpoint names). */
+    breakpoints?: Record<string, SlotVisualParams>
+  }
 }
 
 // ── Activity metadata (stored in activity_log.metadata jsonb) ──

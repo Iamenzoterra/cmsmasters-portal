@@ -156,7 +156,22 @@ export interface ExportPayload {
   html: string
   css: string
   layout_slots: Record<string, unknown>
-  slot_config: Record<string, { gap?: string }>
+  slot_config: Record<string, {
+    gap?: string
+    'max-width'?: string
+    'padding-x'?: string
+    'padding-top'?: string
+    'padding-bottom'?: string
+    align?: string
+    breakpoints?: Record<string, {
+      gap?: string
+      'max-width'?: string
+      'padding-x'?: string
+      'padding-top'?: string
+      'padding-bottom'?: string
+      align?: string
+    }>
+  }>
   status: 'draft'
 }
 
