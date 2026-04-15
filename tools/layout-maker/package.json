@@ -6,7 +6,9 @@
     "dev": "concurrently \"vite\" \"tsx watch runtime/index.ts\"",
     "dev:ui": "vite",
     "dev:runtime": "tsx watch runtime/index.ts",
-    "start": "tsx runtime/index.ts"
+    "start": "tsx runtime/index.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "vite build"
   },
   "dependencies": {
     "@hono/node-server": "^1",

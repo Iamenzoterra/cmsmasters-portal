@@ -12,7 +12,7 @@
 
 import type { LayoutConfig } from './config-schema'
 
-type SlotPosition = SlotPosition
+type SlotPosition = 'top' | 'bottom' | 'grid'
 
 // ---------------------------------------------------------------------------
 // Helpers

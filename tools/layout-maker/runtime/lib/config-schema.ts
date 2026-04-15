@@ -172,8 +172,14 @@ function validateNestedSlots(config: LayoutConfig, errors: string[]): void {
   const parentOf: Record<string, string> = {}
 
   for (const [parent, slot] of Object.entries(config.slots)) {
-    const children = slot['nested-slots'] ?? []
-    for (const child of children) {
+    const children = slot['nested-slots']
+    if (children !== undefined && children.length === 0) {
+      errors.push(
+        `slot '${parent}' has empty nested-slots: [] — remove the key if the slot has no children`,
+      )
+      continue
+    }
+    for (const child of children ?? []) {
       if (!config.slots[child]) {
         errors.push(
           `slot '${parent}' references nested slot '${child}' which is not declared in slots`,
