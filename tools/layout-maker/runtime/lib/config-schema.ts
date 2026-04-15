@@ -75,6 +75,7 @@ const slotSchema = z
 
 export const configSchema = z.object({
   version: z.literal(1),
+  id: z.string().regex(/^[a-z0-9-]+$/, 'id must be lowercase alphanumeric with hyphens').min(1).optional(),
   name: z.string().min(1),
   scope: z.string().regex(/^[a-z0-9-]+$/, 'Scope must be lowercase alphanumeric with hyphens').min(1),
   description: z.string().optional(),
@@ -98,8 +99,6 @@ export type LayoutConfig = z.infer<typeof configSchema>
 export function validateConfig(
   config: LayoutConfig,
   knownTokens: TokenMap,
-  existingScopes: string[],
-  currentScope?: string,
 ): string[] {
   const errors: string[] = []
 
@@ -122,15 +121,7 @@ export function validateConfig(
     }
   }
 
-  // 3. Duplicate scope (skip if updating the same layout)
-  const otherScopes = currentScope
-    ? existingScopes.filter((s) => s !== currentScope)
-    : existingScopes
-  if (otherScopes.includes(config.scope)) {
-    errors.push(`Scope "${config.scope}" already exists`)
-  }
-
-  // 4. Grid overflow: fixed columns + gaps > max-width
+  // 3. Grid overflow: fixed columns + gaps > max-width
   for (const [bp, grid] of Object.entries(config.grid)) {
     if (!grid['max-width']) continue
     const maxWidth = parseInt(grid['max-width'], 10)
