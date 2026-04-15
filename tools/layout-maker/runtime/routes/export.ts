@@ -4,7 +4,7 @@ import path from 'node:path'
 import { loadConfig } from '../lib/config-resolver.js'
 import { generateCSS } from '../lib/css-generator.js'
 import { generateHTML } from '../lib/html-generator.js'
-import { parseTokens } from '../lib/token-parser.js'
+import { parseTokens, hslTripletToHex } from '../lib/token-parser.js'
 import { validateConfig } from '../lib/config-schema.js'
 
 type VisualParams = {
@@ -14,6 +14,21 @@ type VisualParams = {
   'padding-top'?: string
   'padding-bottom'?: string
   align?: string
+  background?: string
+}
+
+/** Resolve a background token ref to #RRGGBB or passthrough hex. */
+function resolveBackground(
+  value: string | undefined,
+  tokens: Record<string, string>,
+): string | undefined {
+  if (!value) return undefined
+  if (value.startsWith('--')) {
+    const raw = tokens[value]
+    if (!raw) return value
+    return hslTripletToHex(raw) ?? raw
+  }
+  return value
 }
 type SlotConfigEntry = VisualParams & { breakpoints?: Record<string, VisualParams> }
 
@@ -36,6 +51,8 @@ function resolveVisualParams(slot: Record<string, unknown>, tokens: Record<strin
   const pb = resolve('padding-bottom') ?? resolve('padding')
   if (pb) out['padding-bottom'] = pb
   if (slot.align) out.align = slot.align as string
+  const bg = resolveBackground(slot.background as string | undefined, tokens)
+  if (bg) out.background = bg
   return out
 }
 
@@ -88,6 +105,7 @@ exportRoute.post('/layouts/:id/export', (c) => {
   const css = generateCSS(config, tokens)
   const slotConfig = buildSlotConfig(config, tokens)
 
+  const layoutBg = resolveBackground(config.background, tokens)
   const payload = {
     slug: `layout-${id}`,
     title: config.name,
@@ -97,6 +115,7 @@ exportRoute.post('/layouts/:id/export', (c) => {
     css,
     layout_slots: {},
     slot_config: slotConfig,
+    ...(layoutBg ? { background: layoutBg } : {}),
     status: 'draft' as const,
   }
 

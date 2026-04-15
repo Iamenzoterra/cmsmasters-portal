@@ -2,7 +2,18 @@ import { useRef, useEffect, useState } from 'react'
 import { SLOT_DEFINITIONS } from '@cmsmasters/db/slots'
 import type { LayoutConfig, TokenMap, BlockData, SlotConfig, CanvasBreakpointId } from '../lib/types'
 import { CANVAS_BREAKPOINTS, resolveSlotConfig } from '../lib/types'
-import { resolveToken } from '../lib/tokens'
+import { resolveToken, hslTripletToHex } from '../lib/tokens'
+
+/** Resolve a background token or raw value to a canvas-usable hex color. */
+function resolveBackgroundStyle(value: string | undefined, tokens: TokenMap): string | undefined {
+  if (!value) return undefined
+  if (value.startsWith('--')) {
+    const raw = tokens.all[value]
+    if (!raw) return undefined
+    return hslTripletToHex(raw) ?? undefined
+  }
+  return value
+}
 import { DrawerPreview } from './DrawerPreview'
 import { SlotOverlay } from './SlotOverlay'
 // Portal assets for iframe injection (same pattern as Studio's block-preview.tsx)
@@ -179,6 +190,8 @@ export function Canvas({ config, tokens, activeBreakpoint, gridKey, selectedSlot
     return () => window.removeEventListener('resize', updateScale)
   }, [breakpointWidth])
 
+  const layoutBgStyle = resolveBackgroundStyle(config.background, tokens)
+
   return (
     <div className="lm-canvas-scroll" ref={scrollRef}>
       <div
@@ -187,6 +200,7 @@ export function Canvas({ config, tokens, activeBreakpoint, gridKey, selectedSlot
         style={{
           width: `${breakpointWidth}px`,
           transform: `scale(${scale})`,
+          background: layoutBgStyle,
         }}
       >
         {/* Top-position slots (header) */}
@@ -323,6 +337,8 @@ function SlotZone({ name, config, tokens, width, slotConfig, isSelected, isFlash
   const alignItems = slotConfig.align ?? undefined
   const innerMaxWidth = slotConfig['max-width'] ?? undefined
 
+  const slotBgStyle = resolveBackgroundStyle(slotConfig.background, tokens)
+
   const testBlockSlugs = config['test-blocks']?.[name] ?? []
   const blockCount = testBlockSlugs.length
   const hasLoadedBlocks = blocks && blockCount > 0
@@ -344,6 +360,7 @@ function SlotZone({ name, config, tokens, width, slotConfig, isSelected, isFlash
         padding,
         marginTop,
         alignItems,
+        background: slotBgStyle,
       }}
       onClick={onClick}
       onMouseEnter={() => ref.current && onMouseEnter(ref.current)}

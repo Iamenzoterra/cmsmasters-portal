@@ -1,5 +1,6 @@
 import type { LayoutConfig } from './config-schema.js'
 import type { TokenMap } from './token-parser.js'
+import { hslTripletToHex } from './token-parser.js'
 
 /** Resolve a token reference or passthrough a raw value */
 function resolveValue(tokenOrValue: string, tokens: TokenMap): string {
@@ -8,6 +9,17 @@ function resolveValue(tokenOrValue: string, tokens: TokenMap): string {
   const val = tokens[tokenOrValue]
   if (!val) throw new Error(`Cannot resolve token: ${tokenOrValue}`)
   return val
+}
+
+/** Resolve a background token ref to #RRGGBB hex or passthrough raw color. */
+function resolveBackgroundCSS(value: string | undefined, tokens: TokenMap): string | undefined {
+  if (!value) return undefined
+  if (value.startsWith('--')) {
+    const raw = tokens[value]
+    if (!raw) return value
+    return hslTripletToHex(raw) ?? raw
+  }
+  return value
 }
 
 /** CSS var prefix for a slot name: --sl-{name} */
@@ -101,6 +113,16 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
   out.push('}')
   out.push('')
 
+  // ── Layout-level background (applied to html+body so it fills the viewport) ──
+  const layoutBg = resolveBackgroundCSS(config.background, tokens)
+  if (layoutBg) {
+    out.push('/* ── Layout background ── */')
+    out.push('html, body {')
+    out.push(`  background: ${layoutBg};`)
+    out.push('}')
+    out.push('')
+  }
+
   // ── Default grid ──
   const defaultCols = Object.values(defaultGrid.columns).join(' ')
   const defaultGap = defaultGrid['column-gap']
@@ -140,6 +162,10 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
     }
     if (slot['margin-top']) {
       rules.push(`margin-top: ${resolveValue(slot['margin-top'], tokens)}`)
+    }
+    const slotBg = resolveBackgroundCSS(slot.background, tokens)
+    if (slotBg) {
+      rules.push(`background: ${slotBg}`)
     }
 
     out.push(`/* ── Slot: ${name} ── */`)

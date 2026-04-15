@@ -102,19 +102,23 @@ Every block MUST follow this structure:
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <!-- Preview-only styles. NOT part of the block.
+       The portal renderer strips html/body/* rules as a safety net, but the
+       block's own <style> below must never depend on that — keep globals OUT. -->
+  <style data-preview-only>
+    body { font-family: 'Manrope', system-ui, sans-serif; margin: 0; }
+  </style>
+
   <style>
     /* ══════════════════════════════════════
        BLOCK: {block-name}
        Scoped under .block-{slug}
-       ══════════════════════════════════════ */
-
-    /* Preview-only: body styles for standalone preview.
-       IMPORTANT: These are stripped on Studio import.
-       NEVER put display, padding, gap, or layout on body — they leak on the portal page. */
-    body {
-      font-family: 'Manrope', system-ui, sans-serif;
-      margin: 0;
-    }
+       ══════════════════════════════════════
+       HARD RULES for this <style>:
+       - EVERY selector must start with .block-{slug}
+       - NO body / html / * selectors
+       - NO global resets, NO global typography, NO global background
+       Globals leak onto the portal page and break layout / other blocks. */
 
     .block-{slug} {
       /* block container styles — ALL styles go under this prefix */
@@ -218,19 +222,36 @@ Figma URLs are temporary — Studio uploads to R2 on import. Always include `alt
 
 ALL selectors MUST be prefixed with `.block-{slug}` to prevent leaking.
 
-**NEVER style global selectors** — `body`, `html`, `*`, `h1`, `p`, `a`, `ul`, `li`, etc.
-These leak to the entire portal page and break other blocks. The only allowed `body` rule is `font-family` + `margin: 0` for standalone preview (stripped on import).
+**ZERO global selectors in the block `<style>`.** Not `body`, not `html`, not `*`, not `h1`/`p`/`a`/`ul`/`li`, not `section`/`main`, not `@keyframes` with global names.
+
+Why: blocks are concatenated into a single page on portal. Any non-scoped rule leaks to ALL other blocks, the layout shell, and page `<body>`. A single `body { background: ... }` in one block overrides the layout's page background. A single `* { margin: 0 }` resets every block's spacing.
+
+**Preview typography** (font-family, body margin) belongs in a **separate** `<style data-preview-only>` tag OUTSIDE the block's main `<style>`. See the HTML template above. The portal renderer strips `html`/`body`/`*` rules as a safety net — **do not rely on it**. The rule is: block CSS must be safe when inlined verbatim into the portal page.
 
 ```css
-/* CORRECT */
-.block-clinic-services .section-header { ... }
+/* CORRECT — every selector starts with .block-{slug} */
+.block-clinic-services { padding: var(--spacing-xl); }
+.block-clinic-services .section-header { color: hsl(var(--text-primary)); }
+.block-clinic-services h2 { font-size: var(--h2-font-size); }
 
-/* WRONG — will leak to other blocks and page layout */
-.section-header { ... }
-h1 { ... }
-body { display: flex; padding: 40px; }
+/* WRONG — all of these leak page-wide */
+body { background: hsl(var(--bg-page)); }     /* overrides layout bg */
+body { font-family: 'Manrope', ...; }          /* leaks to other blocks */
+html { background: white; }
 *, *::before, *::after { margin: 0; padding: 0; }
+.section-header { ... }                        /* no block prefix */
+h1 { font-size: 48px; }                        /* styles every h1 on page */
+section { padding: 40px; }                     /* affects every block wrapper */
 ```
+
+### Self-check before handing off
+
+Before marking a block ready, grep the block's `<style>` block (NOT the `data-preview-only` tag) for:
+
+- `^\s*body\s*\{` — MUST return zero matches
+- `^\s*html\s*\{` — MUST return zero matches
+- `^\s*\*` — MUST return zero matches
+- Any selector that doesn't start with `.block-{slug}` (ignoring `@media`, `@keyframes`, `@supports`, nested child selectors after a prefixed parent)
 
 ---
 
@@ -438,5 +459,5 @@ Don't add `@media` queries. Use `max-width`, flexbox, grid, relative units.
 8. **Don't embed token tables in this skill** — tokens.css is the source of truth
 9. **Don't redefine `.reveal` or `.cms-btn`** — use shared classes from portal-blocks.css
 10. **Don't add `@media (prefers-reduced-motion)`** — it's in portal-blocks.css globally
-11. **Don't style global selectors** (`body`, `html`, `*`, `h1`, `p`, `a`, `ul`, `li`) — they leak to the entire page and break other blocks. Only `body { font-family; margin: 0 }` is allowed for standalone preview.
+11. **Don't style global selectors** — `body`, `html`, `*`, `h1`, `p`, `a`, `ul`, `li`, `section`, `main`, etc. They leak to the entire portal page and break other blocks + the layout shell. Zero exceptions inside the block `<style>` — preview font/margin goes in a separate `<style data-preview-only>` tag.
 12. **Don't add wrapper `<div>`s without a clear purpose** — block HTML root must be `<section class="block-{slug}">` directly, no extra `<div>` wrappers with inline styles (padding, margin, etc.). Extra wrappers break layout spacing in slot stacks and cause alignment bugs with sibling blocks.

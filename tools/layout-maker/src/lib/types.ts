@@ -71,6 +71,7 @@ export interface SlotConfig {
   'max-width'?: string
   'min-height'?: string
   'margin-top'?: string
+  background?: string
 }
 
 export interface LayoutConfig {
@@ -79,6 +80,7 @@ export interface LayoutConfig {
   name: string
   scope: string
   description?: string
+  background?: string
   extends?: string
   grid: Record<string, BreakpointGrid>
   slots: Record<string, SlotConfig>
@@ -166,6 +168,7 @@ export interface ExportPayload {
   scope: string
   html: string
   css: string
+  background?: string
   layout_slots: Record<string, unknown>
   slot_config: Record<string, {
     gap?: string
@@ -174,6 +177,7 @@ export interface ExportPayload {
     'padding-top'?: string
     'padding-bottom'?: string
     align?: string
+    background?: string
     breakpoints?: Record<string, {
       gap?: string
       'max-width'?: string

@@ -161,6 +161,15 @@ export function resolveBlockHooks(
 }
 
 /**
+ * Strip top-level `html`/`body` rules from a block's CSS. Blocks must stay
+ * scoped — any global body/html declarations leak into the page shell and
+ * override layout-level styles (e.g. background).
+ */
+function stripGlobalPageRules(css: string): string {
+  return css.replace(/(^|[}\s])(html|body)\s*\{[^}]*\}/g, '$1')
+}
+
+/**
  * Render a single block: wrap HTML in scoped container, prepend CSS.
  */
 export function renderBlock(
@@ -170,7 +179,8 @@ export function renderBlock(
   js?: string
 ): string {
   let output = ''
-  if (css.trim()) output += `<style>${css}</style>\n`
+  const cleaned = stripGlobalPageRules(css)
+  if (cleaned.trim()) output += `<style>${cleaned}</style>\n`
   output += `<div data-block-shell="${slug}">${html}</div>\n`
   if (js?.trim()) output += `<script type="module">${js}</script>\n`
   return output

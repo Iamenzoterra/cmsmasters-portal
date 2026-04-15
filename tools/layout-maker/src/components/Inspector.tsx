@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { LayoutConfig, TokenMap, ScopingWarning, PerBpSlotField, CanvasBreakpointId } from '../lib/types'
 import { resolveSlotConfig, getBaseGridKey, isFieldOverridden } from '../lib/types'
-import { resolveToken, resolveTokenPx } from '../lib/tokens'
+import { resolveToken, resolveTokenPx, hslTripletToHex } from '../lib/tokens'
 import { CopyButton } from './CopyButton'
 import { SlotToggles } from './SlotToggles'
 import { SlotReference } from './SlotReference'
@@ -19,6 +19,58 @@ interface Props {
   onUpdateSlotConfig: (slotName: string, key: string, value: string | undefined, targetGridKey?: string, breakpointId?: CanvasBreakpointId) => void
   onUpdateColumnWidth: (slotName: string, breakpointKey: string, width: string) => void
   onUpdateGridProp: (breakpointKey: string, key: string, value: string | undefined) => void
+  onUpdateLayoutProp: (key: string, value: string | undefined) => void
+}
+
+/** List of --bg-* tokens from tokens map, with label + preview color. */
+function getBgTokens(tokens: TokenMap): Array<{ name: string; hsl: string }> {
+  return Object.keys(tokens.all)
+    .filter((t) => t.startsWith('--bg-'))
+    .map((name) => ({ name, hsl: `hsl(${tokens.all[name]})` }))
+}
+
+function BackgroundPicker({ value, onChange, tokens, allowInherit, inheritLabel }: {
+  value: string | undefined
+  onChange: (v: string | undefined) => void
+  tokens: TokenMap
+  allowInherit: boolean
+  inheritLabel?: string
+}) {
+  const bgTokens = getBgTokens(tokens)
+  const previewRaw = value?.startsWith('--') ? tokens.all[value] : undefined
+  const previewHex = previewRaw ? hslTripletToHex(previewRaw) : undefined
+  return (
+    <div className="lm-inspector__row" style={{ gap: '8px', alignItems: 'center' }}>
+      <select
+        className="lm-spacing-select lm-spacing-select--inline"
+        value={value ?? ''}
+        onChange={(e) => onChange(e.target.value === '' ? undefined : e.target.value)}
+      >
+        <option value="">{allowInherit ? (inheritLabel ?? 'inherit') : 'none'}</option>
+        {bgTokens.map((t) => {
+          const hex = hslTripletToHex(tokens.all[t.name])
+          return (
+            <option key={t.name} value={t.name}>
+              {t.name.replace('--bg-', '')} ({hex ?? tokens.all[t.name]})
+            </option>
+          )
+        })}
+      </select>
+      {previewHex && (
+        <span
+          style={{
+            display: 'inline-block',
+            width: '20px',
+            height: '20px',
+            borderRadius: '4px',
+            border: '1px solid var(--lm-border)',
+            background: previewHex,
+          }}
+          title={`${value} ${previewHex}`}
+        />
+      )}
+    </div>
+  )
 }
 
 interface PropertyRow {
@@ -194,7 +246,7 @@ function ColumnWidthControl({ selectedSlot, gridKey, columnWidth, isFullWidth, w
   )
 }
 
-export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tokens, onShowToast, blockWarnings, onToggleSlot, onUpdateSlotConfig, onUpdateColumnWidth, onUpdateGridProp }: Props) {
+export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tokens, onShowToast, blockWarnings, onToggleSlot, onUpdateSlotConfig, onUpdateColumnWidth, onUpdateGridProp, onUpdateLayoutProp }: Props) {
   if (!config || !tokens) {
     return (
       <div className="lm-inspector" data-active-bp={activeBreakpoint}>
@@ -215,6 +267,18 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
         <SlotToggles config={config} activeBreakpoint={gridKey} onToggleSlot={onToggleSlot} />
         <div className="lm-inspector__body">
           <SidebarModeControl config={config} activeBreakpoint={activeBreakpoint} onUpdateGridProp={onUpdateGridProp} />
+          <div className="lm-inspector__section">
+            <div className="lm-inspector__section-title">Layout defaults</div>
+            <div className="lm-inspector__row">
+              <span className="lm-inspector__label">Background</span>
+            </div>
+            <BackgroundPicker
+              value={config.background}
+              onChange={(v) => onUpdateLayoutProp('background', v)}
+              tokens={tokens}
+              allowInherit={false}
+            />
+          </div>
           <div className="lm-inspector__empty">
             Click a slot in the canvas to inspect its properties.
           </div>
@@ -501,6 +565,18 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
               </button>
             ))}
           </div>
+
+          {/* Background — inherits from layout when unset */}
+          <div className="lm-inspector__row" style={{ marginTop: '8px' }}>
+            <span className="lm-inspector__label">Background</span>
+          </div>
+          <BackgroundPicker
+            value={baseSlot.background}
+            onChange={(v) => onUpdateSlotConfig(selectedSlot, 'background', v, gridKey)}
+            tokens={tokens}
+            allowInherit
+            inheritLabel={config.background ? `inherit (${config.background.replace('--bg-', '')})` : 'inherit (none)'}
+          />
         </div>
 
         {/* Usable width */}

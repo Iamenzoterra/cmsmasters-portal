@@ -35,6 +35,7 @@ const slotSchemaPartial = z
     'max-width': z.string().regex(/^\d+px$/).optional(),
     'min-height': z.string().regex(/^\d+px$/).optional(),
     'margin-top': spacingToken.optional(),
+    background: z.string().optional(),
   })
   .strict()
 
@@ -68,6 +69,7 @@ const slotSchema = z
     'max-width': z.string().regex(/^\d+px$/).optional(),
     'min-height': z.string().regex(/^\d+px$/).optional(),
     'margin-top': spacingToken.optional(),
+    background: z.string().optional(),
   })
   .strict() // Rejects unknown keys — catches "width" in slots
 
@@ -79,6 +81,7 @@ export const configSchema = z.object({
   name: z.string().min(1),
   scope: z.string().regex(/^[a-z0-9-]+$/, 'Scope must be lowercase alphanumeric with hyphens').min(1),
   description: z.string().optional(),
+  background: z.string().optional(),
   extends: z.string().optional(),
   overrides: z
     .object({

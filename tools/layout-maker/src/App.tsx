@@ -377,6 +377,21 @@ export function App() {
     }
   }, [activeConfig, activeId, showToast])
 
+  const handleUpdateLayoutProp = useCallback(async (key: string, value: string | undefined) => {
+    if (!activeConfig || !activeId) return
+    const updated = structuredClone(activeConfig) as unknown as Record<string, unknown>
+    if (value === undefined) delete updated[key]
+    else updated[key] = value
+    try {
+      const saved = await api.updateLayout(activeId, updated as unknown as LayoutConfig)
+      setActiveConfig(saved)
+      prevConfigRef.current = saved
+      showToast(`layout.${key}: ${value ?? 'removed'}`)
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Failed to update layout')
+    }
+  }, [activeConfig, activeId, showToast])
+
   return (
     <>
       <div className="lm-shell">
@@ -442,6 +457,7 @@ export function App() {
           onUpdateSlotConfig={handleUpdateSlotConfig}
           onUpdateColumnWidth={handleUpdateColumnWidth}
           onUpdateGridProp={handleUpdateGridProp}
+          onUpdateLayoutProp={handleUpdateLayoutProp}
         />
         )}
       </div>
