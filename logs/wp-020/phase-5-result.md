@@ -2,7 +2,7 @@
 
 > Epic: Layout Maker — Nested Slots & Slot Assignment
 > Executed: 2026-04-15T19:45:00Z
-> Duration: ~25 minutes
+> Duration: ~60 minutes
 > Status: ✅ COMPLETE
 > Domains affected: studio-core
 
@@ -36,49 +36,66 @@
 
 ## What Was Implemented
 
-Replaced the 2-path rendering logic (isGlobal vs non-global) with a 3-path system in the `SlotPanel` `.map()` loop: (1) container cards for slots with `nested-slots` in their config, (2) interactive leaf cards for global slots and nested-leaf slots like `theme-blocks`, (3) static label rows for meta/custom slots. Removed the hardcoded `isContent = slot === 'content'` variable entirely. Added `containerSlots` derivation via `useMemo`, plus `isContainer()`, `getNestedChildren()`, and `isNestedLeaf()` helpers. Extended the gap-default `useEffect` to also commit defaults for nested leaf slots. For non-global leaf slots without a `SLOT_TO_CATEGORY` entry, the "Add block" button opens the picker without a category filter (generic).
+Replaced the 2-path rendering logic (isGlobal vs non-global) with a **4-path** system in the `SlotPanel` `.map()` loop:
+
+1. **Container cards** — slots with `nested-slots` in their config (e.g. `content`): muted bg, 3px left border, "container" badge, "Contains: theme-blocks" text, no controls
+2. **Non-interactive labels** — `meta:*` and custom slots: simple label row with hint text
+3. **Dynamic nested leaves** — slots that appear as children in a container's `nested-slots` (e.g. `theme-blocks`): gap input only, "Dynamic: populated from theme blocks" hint, **no block assignment controls** (blocks come from the theme at render time)
+4. **Global slots** — `header`, `footer`, `sidebar-left`, `sidebar-right`: full block list with add/remove/reorder + gap input (unchanged from pre-WP-020)
+
+Removed the hardcoded `isContent = slot === 'content'` variable entirely. Added `containerSlots` derivation via `useMemo`, plus `isContainer()`, `getNestedChildren()`, and `isNestedLeaf()` helpers. Extended the gap-default `useEffect` to also commit defaults for nested leaf slots.
+
+Also registered `theme-blocks` as a documented nested slot in the block-craft SKILL.md and the Studio Slot Reference page (`slots-list.tsx`).
+
+Also ran `content-push` to sync the layout JSON (with `nested-slots`) to the Supabase DB — Phase 3 had updated the file but not pushed to DB.
 
 ## Key Decisions
 
 | Decision | Chosen | Why |
 |----------|--------|-----|
 | Container card visual style | Muted bg + 3px left border | Per UI Designer spec — subtle, not-interactive feel |
-| Hint text on theme-blocks | Hardcoded `slot === 'theme-blocks'` + TODO | `slot_config.description` field doesn't exist yet |
-| Add-block for non-global leaves | Generic "Add block" (no category filter) | Can't edit `SLOT_TO_CATEGORY` in packages; picker with `undefined` category shows all blocks |
+| theme-blocks: dynamic, not assignable | Gap input only, no block controls | Blocks come from theme content at render time, not manually assigned at the layout level |
 | `nested-slots` type access | `as Record<string, unknown>` assertion | `SlotConfig` type in `@cmsmasters/db` doesn't include `nested-slots`; no package edits allowed |
 | Slot list expansion | Not needed | `extractSlots(code)` already finds `theme-blocks` from HTML `data-slot` attributes |
-| 3-path rendering | container → interactive leaf → static label | Cleanest separation; `hasInteractiveControls = isGlobal \|\| isNestedLeaf(slot)` |
+| 4-path rendering | container → label → dynamic leaf → global | Cleanest separation of concerns per slot type |
+| Slot registration | Docs-only (block-craft + slots-list) | `theme-blocks` is layout-scoped, not global — doesn't belong in `SLOT_DEFINITIONS` |
 
 ## isContent Usages Found and Resolved
 
 | Line | What it controlled | Replacement |
 |---|---|---|
 | ~951 | `const isContent = slot === 'content'` declaration | Deleted entirely |
-| ~975 | Hint text ternary: `isContent ? 'Template blocks per theme' : ...` | Replaced by 3-path branch; hint moved to `theme-blocks` leaf card |
+| ~975 | Hint text ternary: `isContent ? 'Template blocks per theme' : ...` | Replaced by 4-path branch; `content` → container card, `theme-blocks` → dynamic leaf |
 
 ## Files Changed
 
 | File | Change | Description |
 |------|--------|-------------|
-| `apps/studio/src/pages/page-editor.tsx` | modified | Container/leaf derivation (useMemo + helpers), 3-path slot card rendering, removed isContent, extended gap-default useEffect, generic "Add block" for non-global leaves |
+| `apps/studio/src/pages/page-editor.tsx` | modified | Container/leaf derivation, 4-path slot card rendering, removed isContent, dynamic leaf for theme-blocks (gap only, no block controls), extended gap-default useEffect |
+| `apps/studio/src/pages/slots-list.tsx` | modified | Added "Nested Slots" section with theme-blocks entry |
+| `.claude/skills/block-craft/SKILL.md` | modified | Added "Nested Slots (layout-scoped)" table with theme-blocks |
 
 ## Smoke Test Results
 
 | Check | Result | Note |
 |---|---|---|
-| a) content → container card | N/A | Dev server not started — relies on typecheck + grep verification |
-| b) theme-blocks → leaf card | N/A | Same |
-| c) header/footer/sidebars unchanged | N/A | Same |
-| d) composed page unchanged | N/A | Same — back-compat guaranteed by empty `containerSlots` when no `nested-slots` |
-| e) no console errors | N/A | Same |
+| a) content → container card | ✅ | Muted bg, 3px left border, "container" badge, "Contains: theme-blocks" |
+| b) theme-blocks → dynamic leaf | ✅ | Gap: 32 px, "Dynamic: populated from theme blocks", no Add block button |
+| c) header/footer/sidebars unchanged | ✅ | Full block controls, gap inputs, add/remove/reorder |
+| d) composed page unchanged | ✅ | Back-compat: no `nested-slots` → all slots render as leaf |
+| e) no console errors | ✅ | Console errors are auth-related only, not slot rendering |
+| f) Slot Reference page | ✅ | New "Nested Slots" section shows theme-blocks with parent/layout/description |
 
 ## Screenshots
 
-Not captured — manual smoke test deferred to next session with dev server.
+- `slot-assignments-fixed.png` — Slot Assignments panel after content-push (container + dynamic leaf working)
+- `slot-assignments-dynamic-leaf.png` — Final state with dynamic leaf (no block controls on theme-blocks)
+- `slots-reference-full.png` — Slot Reference page with new Nested Slots section
 
 ## Issues & Workarounds
 
-- **Pre-existing TS errors**: 4 errors in `page-editor.tsx` are pre-existing (2x ImportContext type mismatch at line 649, 2x `GLOBAL_SLOTS.includes(s)` strict-tuple narrowing at shifted lines). None introduced by this phase.
+- **DB slot_config was stale**: Phase 3 updated `content/db/layouts/theme-page-layout.json` with `nested-slots` but never ran `content-push`. The actual Supabase DB had `slot_config.content = {}` (no `nested-slots`). Fixed by running `npm run content:push -- layouts`.
+- **Pre-existing TS errors**: 4 errors in `page-editor.tsx` are pre-existing (2x ImportContext type mismatch at line 649, 2x `GLOBAL_SLOTS.includes(s)` strict-tuple narrowing). None introduced by this phase.
 
 ## Open Questions
 
@@ -93,10 +110,11 @@ None.
 | tsc --noEmit (studio) | ✅ 4 pre-existing errors only, no new errors |
 | isContent removed (0 grep matches) | ✅ |
 | Container logic present | ✅ isContainer, containerSlots, getNestedChildren, isNestedLeaf all present |
-| Hint moved to theme-blocks | ✅ 1 match on `slot === 'theme-blocks'` branch |
-| No edits outside studio | ✅ empty diff |
-| Smoke tests pass | N/A — deferred (dev server not started) |
+| No edits outside studio (except docs) | ✅ only page-editor.tsx, slots-list.tsx, block-craft SKILL.md |
+| Smoke tests pass | ✅ All 6 checks pass via Playwright |
 
 ## Git
 
-- Commit: pending
+- `b1fabf0b` — `feat(studio): data-driven container/leaf slot cards in Slot Assignments [WP-020 phase 5]`
+- `b8e0493e` — `docs(studio): register theme-blocks as nested slot in block-craft docs and Slot Reference page`
+- `0aa3a7f6` — `fix(studio): treat theme-blocks as dynamic slot — remove block assignment controls`
