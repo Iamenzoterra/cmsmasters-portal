@@ -123,6 +123,12 @@ function getSlotType(name: string): string {
 
 export function Canvas({ config, tokens, activeBreakpoint, gridKey, selectedSlot, onSlotSelect, changedSlots, blocks }: Props) {
   const resolveSlot = (name: string): SlotConfig => resolveSlotConfig(name, gridKey, config)
+  // Slots that are nested inside a container — omit from top-level renders since they draw inside the parent.
+  const nestedChildNames = new Set<string>()
+  for (const [, s] of Object.entries(config.slots)) {
+    const nl = s['nested-slots']
+    if (Array.isArray(nl)) nl.forEach((c) => nestedChildNames.add(c))
+  }
   const scrollRef = useRef<HTMLDivElement>(null)
   const viewportRef = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(1)
@@ -150,10 +156,12 @@ export function Canvas({ config, tokens, activeBreakpoint, gridKey, selectedSlot
     .filter(([, s]) => s.position === 'bottom')
     .map(([name]) => [name, resolveSlot(name)] as const)
 
-  // In drawer/hidden mode, exclude sidebar columns from the grid
-  const visibleColumns = hideSidebars
+  // In drawer/hidden mode, exclude sidebar columns from the grid.
+  // Also exclude slots that are nested inside another slot (they render inside the parent zone).
+  const visibleColumns = (hideSidebars
     ? Object.entries(grid.columns).filter(([name]) => !name.includes('sidebar'))
     : Object.entries(grid.columns)
+  ).filter(([name]) => !nestedChildNames.has(name))
 
   // Fluid outer + inner max-width → minmax(maxW, 1fr) so the slot claims
   // at least its inner max-width from neighboring fluid tracks.
@@ -204,7 +212,7 @@ export function Canvas({ config, tokens, activeBreakpoint, gridKey, selectedSlot
         }}
       >
         {/* Top-position slots (header) */}
-        {topSlots.map(([name, slotConfig]) => (
+        {topSlots.filter(([name]) => !nestedChildNames.has(name)).map(([name, slotConfig]) => (
           <SlotZone
             key={name}
             name={name}
@@ -218,6 +226,9 @@ export function Canvas({ config, tokens, activeBreakpoint, gridKey, selectedSlot
             onMouseEnter={(el) => setHoverInfo({ name, element: el, slotConfig, columnWidth: '100%' })}
             onMouseLeave={() => setHoverInfo(null)}
             blocks={blocks}
+            selectedSlot={selectedSlot}
+            onSlotSelect={onSlotSelect}
+            resolveSlot={resolveSlot}
           />
         ))}
 
@@ -247,13 +258,16 @@ export function Canvas({ config, tokens, activeBreakpoint, gridKey, selectedSlot
                 onMouseEnter={(el) => setHoverInfo({ name, element: el, slotConfig, columnWidth: width })}
                 onMouseLeave={() => setHoverInfo(null)}
                 blocks={blocks}
+                selectedSlot={selectedSlot}
+                onSlotSelect={onSlotSelect}
+                resolveSlot={resolveSlot}
               />
             )
           })}
         </div>
 
         {/* Bottom-position slots (footer) */}
-        {bottomSlots.map(([name, slotConfig]) => (
+        {bottomSlots.filter(([name]) => !nestedChildNames.has(name)).map(([name, slotConfig]) => (
           <SlotZone
             key={name}
             name={name}
@@ -267,6 +281,9 @@ export function Canvas({ config, tokens, activeBreakpoint, gridKey, selectedSlot
             onMouseEnter={(el) => setHoverInfo({ name, element: el, slotConfig, columnWidth: '100%' })}
             onMouseLeave={() => setHoverInfo(null)}
             blocks={blocks}
+            selectedSlot={selectedSlot}
+            onSlotSelect={onSlotSelect}
+            resolveSlot={resolveSlot}
           />
         ))}
 
@@ -320,9 +337,12 @@ interface SlotZoneProps {
   onMouseEnter: (el: HTMLElement) => void
   onMouseLeave: () => void
   blocks: Map<string, BlockData> | null
+  selectedSlot: string | null
+  onSlotSelect: (name: string) => void
+  resolveSlot: (name: string) => SlotConfig
 }
 
-function SlotZone({ name, config, tokens, width, slotConfig, isSelected, isFlashing, onClick, onMouseEnter, onMouseLeave, blocks }: SlotZoneProps) {
+function SlotZone({ name, config, tokens, width, slotConfig, isSelected, isFlashing, onClick, onMouseEnter, onMouseLeave, blocks, selectedSlot, onSlotSelect, resolveSlot }: SlotZoneProps) {
   const ref = useRef<HTMLDivElement>(null)
   const minHeight = slotConfig['min-height'] ?? '80px'
   // Padding: prefer split fields, fall back to legacy shorthand
@@ -382,6 +402,42 @@ function SlotZone({ name, config, tokens, width, slotConfig, isSelected, isFlash
             <span className="lm-slot-zone__blocks">{blockCount} blocks</span>
           )}
         </div>
+
+        {/* Nested children — dashed zones rendered inside parent. One level deep.
+            TODO: deeper nesting when needed. */}
+        {Array.isArray(slotConfig['nested-slots']) && slotConfig['nested-slots']!.length > 0 && (
+          <div className="lm-nested-stack" style={{ gap: gap || undefined }}>
+            {slotConfig['nested-slots']!.map((childName) => {
+              const childCfg = resolveSlot(childName)
+              const childMaxW = childCfg['max-width']
+              const isChildSelected = childName === selectedSlot
+              return (
+                <div
+                  key={childName}
+                  className={`lm-slot-zone--nested${isChildSelected ? ' lm-slot-zone--nested-selected' : ''}`}
+                  role="button"
+                  tabIndex={0}
+                  data-slot-name={childName}
+                  aria-label={`Nested slot ${childName} inside ${name}`}
+                  style={{ maxWidth: childMaxW }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onSlotSelect(childName)
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      onSlotSelect(childName)
+                    }
+                  }}
+                >
+                  <span className="lm-slot-zone--nested__label">nested: {childName}</span>
+                </div>
+              )
+            })}
+          </div>
+        )}
 
         {/* Block content — rendered in iframes for full CSS isolation */}
         {hasLoadedBlocks && (

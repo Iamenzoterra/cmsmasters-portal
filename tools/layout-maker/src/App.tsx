@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import type { LayoutConfig, LayoutSummary, TokenMap, BlockData, ScopingWarning, CanvasBreakpointId, ScopeEntry } from './lib/types'
+import type { LayoutConfig, LayoutSummary, TokenMap, BlockData, ScopingWarning, CanvasBreakpointId, ScopeEntry, SlotConfig } from './lib/types'
 import { resolveGridKey, CANVAS_BREAKPOINTS } from './lib/types'
 import { api } from './lib/api-client'
 import { LayoutSidebar } from './components/LayoutSidebar'
@@ -377,6 +377,56 @@ export function App() {
     }
   }, [activeConfig, activeId, showToast])
 
+  /** Write `nested-slots: string[]` (or delete the key when `children === null`) on a slot. */
+  const handleUpdateNestedSlots = useCallback(async (parentName: string, children: string[] | null) => {
+    if (!activeConfig || !activeId) return
+    const updated = structuredClone(activeConfig)
+    if (!updated.slots[parentName]) updated.slots[parentName] = {}
+    if (children === null) {
+      delete (updated.slots[parentName] as Record<string, unknown>)['nested-slots']
+    } else {
+      ;(updated.slots[parentName] as Record<string, unknown>)['nested-slots'] = children
+    }
+    try {
+      const saved = await api.updateLayout(activeId, updated)
+      setActiveConfig(saved)
+      prevConfigRef.current = saved
+      showToast(
+        children === null
+          ? `${parentName}: converted to leaf`
+          : `${parentName}.nested-slots updated (${children.length})`,
+      )
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Failed to update layout')
+    }
+  }, [activeConfig, activeId, showToast])
+
+  /** Atomically create a new leaf slot and append it to parent's nested-slots. */
+  const handleCreateNestedSlot = useCallback(async (
+    parentName: string,
+    childName: string,
+    defaults: SlotConfig,
+  ) => {
+    if (!activeConfig || !activeId) return
+    const updated = structuredClone(activeConfig)
+    if (updated.slots[childName]) {
+      showToast(`Slot '${childName}' already exists`)
+      return
+    }
+    if (!updated.slots[parentName]) updated.slots[parentName] = {}
+    updated.slots[childName] = defaults
+    const existing = (updated.slots[parentName]['nested-slots'] as string[] | undefined) ?? []
+    updated.slots[parentName]['nested-slots'] = [...existing, childName]
+    try {
+      const saved = await api.updateLayout(activeId, updated)
+      setActiveConfig(saved)
+      prevConfigRef.current = saved
+      showToast(`${childName} created in ${parentName}`)
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Failed to update layout')
+    }
+  }, [activeConfig, activeId, showToast])
+
   const handleUpdateLayoutProp = useCallback(async (key: string, value: string | undefined) => {
     if (!activeConfig || !activeId) return
     const updated = structuredClone(activeConfig) as unknown as Record<string, unknown>
@@ -458,6 +508,9 @@ export function App() {
           onUpdateColumnWidth={handleUpdateColumnWidth}
           onUpdateGridProp={handleUpdateGridProp}
           onUpdateLayoutProp={handleUpdateLayoutProp}
+          onUpdateNestedSlots={handleUpdateNestedSlots}
+          onCreateNestedSlot={handleCreateNestedSlot}
+          onSelectSlot={setSelectedSlot}
         />
         )}
       </div>

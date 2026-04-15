@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import type { LayoutConfig, TokenMap, ScopingWarning, PerBpSlotField, CanvasBreakpointId } from '../lib/types'
+import type { LayoutConfig, TokenMap, ScopingWarning, PerBpSlotField, CanvasBreakpointId, SlotConfig } from '../lib/types'
 import { resolveSlotConfig, getBaseGridKey, isFieldOverridden } from '../lib/types'
 import { resolveToken, resolveTokenPx, hslTripletToHex } from '../lib/tokens'
 import { CopyButton } from './CopyButton'
 import { SlotToggles } from './SlotToggles'
 import { SlotReference } from './SlotReference'
 import { TokenReference } from './TokenReference'
+import { CreateSlotModal } from './CreateSlotModal'
 
 interface Props {
   selectedSlot: string | null
@@ -20,6 +21,9 @@ interface Props {
   onUpdateColumnWidth: (slotName: string, breakpointKey: string, width: string) => void
   onUpdateGridProp: (breakpointKey: string, key: string, value: string | undefined) => void
   onUpdateLayoutProp: (key: string, value: string | undefined) => void
+  onUpdateNestedSlots: (parentName: string, children: string[] | null) => void
+  onCreateNestedSlot: (parentName: string, childName: string, defaults: SlotConfig) => void
+  onSelectSlot: (name: string | null) => void
 }
 
 /** List of --bg-* tokens from tokens map, with label + preview color. */
@@ -246,7 +250,7 @@ function ColumnWidthControl({ selectedSlot, gridKey, columnWidth, isFullWidth, w
   )
 }
 
-export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tokens, onShowToast, blockWarnings, onToggleSlot, onUpdateSlotConfig, onUpdateColumnWidth, onUpdateGridProp, onUpdateLayoutProp }: Props) {
+export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tokens, onShowToast, blockWarnings, onToggleSlot, onUpdateSlotConfig, onUpdateColumnWidth, onUpdateGridProp, onUpdateLayoutProp, onUpdateNestedSlots, onCreateNestedSlot, onSelectSlot }: Props) {
   if (!config || !tokens) {
     return (
       <div className="lm-inspector" data-active-bp={activeBreakpoint}>
@@ -348,6 +352,26 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
   const testBlocks = config['test-blocks']?.[selectedSlot]
   const blockCount = testBlocks?.length ?? 0
 
+  // Container/leaf: a slot is a container when its base config declares nested-slots (even if empty [])
+  const nestedChildren = (baseSlot['nested-slots'] as string[] | undefined)
+  const isContainer = Array.isArray(nestedChildren)
+
+  // Slots eligible for "+ Add slot" dropdown: existing leaves not already nested anywhere, excluding self.
+  const nestedAnywhere = new Set<string>()
+  for (const name of Object.keys(config.slots)) {
+    const nl = config.slots[name]['nested-slots']
+    if (Array.isArray(nl)) nl.forEach((c) => nestedAnywhere.add(c))
+  }
+  const addCandidates = Object.keys(config.slots).filter((name) => {
+    if (name === selectedSlot) return false
+    if (nestedAnywhere.has(name)) return false
+    // Containers are excluded — keep it simple (one level only for now)
+    if (Array.isArray(config.slots[name]['nested-slots'])) return false
+    return true
+  })
+
+  const [showCreateModal, setShowCreateModal] = useState(false)
+
   // Format helpers
   function formatLine(prop: string, token: string | undefined, resolved: string): string {
     const prefix = `[${activeBreakpoint} ${bpWidth}] ${selectedSlot}.${prop}`
@@ -373,14 +397,115 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
       <SlotToggles config={config} activeBreakpoint={gridKey} onToggleSlot={onToggleSlot} />
       <div className="lm-inspector__body">
         {/* Slot name + Copy all */}
-        <div className="lm-inspector__section">
+        <div className={`lm-inspector__section${isContainer ? ' lm-inspector__panel--container' : ''}`}>
           <div className="lm-inspector__slot-name">
             {selectedSlot}
+            {isContainer && <span className="lm-badge lm-badge--container">container</span>}
             <CopyButton text={formatSummary()} onCopied={handleCopied} />
           </div>
         </div>
 
-        {/* Slot Area — outer (grid column width + padding) */}
+        {/* Container panel — children + create controls */}
+        {isContainer && (
+          <div className="lm-inspector__section lm-inspector__panel--container">
+            <div className="lm-inspector__section-title">Child slots</div>
+            {nestedChildren!.length === 0 ? (
+              <div className="lm-inspector__empty" style={{ padding: 'var(--lm-sp-4) 0' }}>
+                No children yet. Add or create one below.
+              </div>
+            ) : (
+              <div className="lm-chip-list">
+                {nestedChildren!.map((childName) => (
+                  <span key={childName} className="lm-chip">
+                    <button
+                      className="lm-chip__label"
+                      onClick={() => onSelectSlot(childName)}
+                      title={`Select ${childName}`}
+                    >
+                      {childName}
+                    </button>
+                    <button
+                      className="lm-chip__remove"
+                      aria-label={`Remove nested slot ${childName} from ${selectedSlot}`}
+                      title={`Remove ${childName}`}
+                      onClick={() => {
+                        const next = nestedChildren!.filter((n) => n !== childName)
+                        onUpdateNestedSlots(selectedSlot, next)
+                      }}
+                    >
+                      &times;
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className="lm-inspector__row" style={{ gap: 'var(--lm-sp-3)', marginTop: 'var(--lm-sp-6)' }}>
+              <select
+                className="lm-spacing-select lm-spacing-select--inline"
+                value=""
+                disabled={addCandidates.length === 0}
+                onChange={(e) => {
+                  const pick = e.target.value
+                  if (!pick) return
+                  onUpdateNestedSlots(selectedSlot, [...nestedChildren!, pick])
+                  e.target.value = ''
+                }}
+              >
+                <option value="">
+                  {addCandidates.length === 0 ? 'No unnested leaves' : '+ Add slot…'}
+                </option>
+                {addCandidates.map((name) => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+              <button
+                className="lm-btn lm-btn--primary"
+                onClick={() => setShowCreateModal(true)}
+              >
+                + Create slot
+              </button>
+            </div>
+
+            {/* Container outer params — background (min-height / margin-top tuned via yaml for MVP). */}
+            <div className="lm-inspector__row" style={{ marginTop: 'var(--lm-sp-8)' }}>
+              <span className="lm-inspector__label">Background</span>
+            </div>
+            <BackgroundPicker
+              value={baseSlot.background}
+              onChange={(v) => onUpdateSlotConfig(selectedSlot, 'background', v, gridKey)}
+              tokens={tokens}
+              allowInherit
+              inheritLabel={config.background ? `inherit (${config.background.replace('--bg-', '')})` : 'inherit (none)'}
+            />
+
+            <div style={{ marginTop: 'var(--lm-sp-8)' }}>
+              <button
+                className="lm-btn"
+                disabled={nestedChildren!.length > 0}
+                title={nestedChildren!.length > 0 ? 'Remove all children first' : 'Convert to leaf'}
+                onClick={() => onUpdateNestedSlots(selectedSlot, null)}
+              >
+                Convert to leaf
+              </button>
+            </div>
+          </div>
+        )}
+
+        <CreateSlotModal
+          isOpen={showCreateModal}
+          parentContainer={selectedSlot}
+          existingSlotNames={Object.keys(config.slots)}
+          tokens={tokens}
+          onClose={() => setShowCreateModal(false)}
+          onCreate={(name, defaults) => {
+            onCreateNestedSlot(selectedSlot, name, defaults)
+            setShowCreateModal(false)
+          }}
+        />
+
+        {/* Slot Area — outer (grid column width + padding). Hidden for containers — they have no inner host. */}
+        {!isContainer && (
         <div className="lm-inspector__section lm-inspector__section--outer" data-slot-type={selectedSlot}>
           <div className="lm-inspector__section-title">
             <span className="lm-inspector__section-glyph">▭</span> Slot Area
@@ -447,11 +572,10 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
             onUpdateColumnWidth={onUpdateColumnWidth}
           />
         </div>
+        )}
 
-        {/* Property rows */}
-
-        {/* Property rows */}
-        {rows.map((row) => (
+        {/* Property rows — leaf only */}
+        {!isContainer && rows.map((row) => (
           <div key={row.property} className="lm-inspector__section">
             <div className="lm-inspector__row">
               <span className="lm-inspector__label">{row.label}</span>
@@ -469,7 +593,8 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
           </div>
         ))}
 
-        {/* Slot Parameters — inner container controls */}
+        {/* Slot Parameters — inner container controls (leaf only) */}
+        {!isContainer && (
         <div className="lm-inspector__section lm-inspector__section--inner">
           <div className="lm-inspector__section-title">
             <span className="lm-inspector__section-glyph">▤</span> Slot Parameters
@@ -577,10 +702,22 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
             allowInherit
             inheritLabel={config.background ? `inherit (${config.background.replace('--bg-', '')})` : 'inherit (none)'}
           />
-        </div>
 
-        {/* Usable width */}
-        {usableWidth && (
+          {/* Convert leaf -> container */}
+          <div style={{ marginTop: 'var(--lm-sp-8)' }}>
+            <button
+              className="lm-btn"
+              onClick={() => onUpdateNestedSlots(selectedSlot, [])}
+              title="Make this slot hold nested slots instead of blocks"
+            >
+              Convert to container
+            </button>
+          </div>
+        </div>
+        )}
+
+        {/* Usable width (leaf only — derived from padding + column width) */}
+        {!isContainer && usableWidth && (
           <div className="lm-inspector__section lm-inspector__derived">
             <div className="lm-inspector__row">
               <span className="lm-inspector__label">Usable width</span>
