@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { writeFileSync, mkdirSync } from 'node:fs'
 import path from 'node:path'
-import { loadConfig, getExistingScopes } from '../lib/config-resolver.js'
+import { loadConfig } from '../lib/config-resolver.js'
 import { generateCSS } from '../lib/css-generator.js'
 import { generateHTML } from '../lib/html-generator.js'
 import { parseTokens } from '../lib/token-parser.js'
@@ -67,20 +67,19 @@ function buildSlotConfig(
 
 const exportRoute = new Hono()
 
-exportRoute.post('/layouts/:scope/export', (c) => {
-  const scope = c.req.param('scope')
+exportRoute.post('/layouts/:id/export', (c) => {
+  const id = c.req.param('id')
 
   let config
   try {
-    config = loadConfig(scope)
+    config = loadConfig(id)
   } catch {
-    return c.json({ error: `Layout "${scope}" not found` }, 404)
+    return c.json({ error: `Layout "${id}" not found` }, 404)
   }
 
   const tokens = parseTokens()
 
-  const existingScopes = getExistingScopes()
-  const errors = validateConfig(config, tokens, existingScopes, scope)
+  const errors = validateConfig(config, tokens)
   if (errors.length > 0) {
     return c.json({ error: 'Validation failed', details: errors }, 400)
   }
@@ -90,7 +89,7 @@ exportRoute.post('/layouts/:scope/export', (c) => {
   const slotConfig = buildSlotConfig(config, tokens)
 
   const payload = {
-    slug: `layout-${config.scope}`,
+    slug: `layout-${id}`,
     title: config.name,
     type: 'layout' as const,
     scope: config.scope,
@@ -103,14 +102,14 @@ exportRoute.post('/layouts/:scope/export', (c) => {
 
   const exportsDir = path.resolve(import.meta.dirname, '../../exports')
   mkdirSync(exportsDir, { recursive: true })
-  writeFileSync(path.resolve(exportsDir, `${scope}.html`), html, 'utf-8')
-  writeFileSync(path.resolve(exportsDir, `${scope}.css`), css, 'utf-8')
+  writeFileSync(path.resolve(exportsDir, `${id}.html`), html, 'utf-8')
+  writeFileSync(path.resolve(exportsDir, `${id}.css`), css, 'utf-8')
 
   return c.json({
     payload,
     files: {
-      html: `exports/${scope}.html`,
-      css: `exports/${scope}.css`,
+      html: `exports/${id}.html`,
+      css: `exports/${id}.css`,
     },
   })
 })

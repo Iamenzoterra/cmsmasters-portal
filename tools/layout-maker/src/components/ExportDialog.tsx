@@ -3,12 +3,12 @@ import { api } from '../lib/api-client'
 import type { ExportResult } from '../lib/types'
 
 interface Props {
-  scope: string
+  id: string
   onClose: () => void
   onShowToast: (message: string) => void
 }
 
-export function ExportDialog({ scope, onClose, onShowToast }: Props) {
+export function ExportDialog({ id, onClose, onShowToast }: Props) {
   const [result, setResult] = useState<ExportResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [details, setDetails] = useState<string[]>([])
@@ -18,7 +18,7 @@ export function ExportDialog({ scope, onClose, onShowToast }: Props) {
 
   useEffect(() => {
     api
-      .exportLayout(scope)
+      .exportLayout(id)
       .then((res) => {
         setResult(res)
         setLoading(false)
@@ -28,7 +28,7 @@ export function ExportDialog({ scope, onClose, onShowToast }: Props) {
         if (e.details) setDetails(e.details)
         setLoading(false)
       })
-  }, [scope])
+  }, [id])
 
   const handleCopyPayload = useCallback(async () => {
     if (!result) return
@@ -61,7 +61,7 @@ export function ExportDialog({ scope, onClose, onShowToast }: Props) {
     <div className="lm-export-overlay" onClick={handleOverlayClick}>
       <div className="lm-export-dialog">
         <div className="lm-export-dialog__header">
-          <span>Export: {scope}</span>
+          <span>Export: {id}</span>
           <button
             className="lm-export-dialog__close"
             onClick={onClose}

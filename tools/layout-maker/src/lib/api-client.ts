@@ -14,8 +14,8 @@ export const api = {
   listLayouts: (): Promise<LayoutSummary[]> =>
     fetch(`${BASE}/layouts`).then((r) => json(r)),
 
-  getLayout: (scope: string): Promise<LayoutConfig> =>
-    fetch(`${BASE}/layouts/${scope}`).then((r) => json(r)),
+  getLayout: (id: string): Promise<LayoutConfig> =>
+    fetch(`${BASE}/layouts/${id}`).then((r) => json(r)),
 
   createLayout: (body: {
     name: string
@@ -29,25 +29,25 @@ export const api = {
       body: JSON.stringify(body),
     }).then((r) => json(r)),
 
-  updateLayout: (scope: string, config: LayoutConfig): Promise<LayoutConfig> =>
-    fetch(`${BASE}/layouts/${scope}`, {
+  updateLayout: (id: string, config: LayoutConfig): Promise<LayoutConfig> =>
+    fetch(`${BASE}/layouts/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(config),
     }).then((r) => json(r)),
 
   cloneLayout: (
-    scope: string,
-    body: { name: string; scope: string },
+    id: string,
+    body: { name: string; scope?: string },
   ): Promise<LayoutConfig> =>
-    fetch(`${BASE}/layouts/${scope}/clone`, {
+    fetch(`${BASE}/layouts/${id}/clone`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     }).then((r) => json(r)),
 
-  deleteLayout: (scope: string): Promise<{ ok: boolean }> =>
-    fetch(`${BASE}/layouts/${scope}`, { method: 'DELETE' }).then((r) =>
+  deleteLayout: (id: string): Promise<{ ok: boolean }> =>
+    fetch(`${BASE}/layouts/${id}`, { method: 'DELETE' }).then((r) =>
       json(r),
     ),
 
@@ -65,8 +65,8 @@ export const api = {
   listPresets: (): Promise<LayoutSummary[]> =>
     fetch(`${BASE}/presets`).then((r) => json(r)),
 
-  exportLayout: async (scope: string): Promise<ExportResult> => {
-    const res = await fetch(`${BASE}/layouts/${scope}/export`, {
+  exportLayout: async (id: string): Promise<ExportResult> => {
+    const res = await fetch(`${BASE}/layouts/${id}/export`, {
       method: 'POST',
     })
     const body = await res.json()
@@ -97,7 +97,7 @@ export const api = {
     fetch(`${BASE}/blocks?slugs=${slugs.join(',')}`).then((r) => json(r)),
 
   subscribeEvents: (
-    callback: (event: { type: string; scope: string }) => void,
+    callback: (event: { type: string; id: string }) => void,
   ): (() => void) => {
     let source: EventSource | null = null
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null
@@ -116,7 +116,6 @@ export const api = {
 
       source.onerror = () => {
         source?.close()
-        // Auto-reconnect after 2s
         reconnectTimer = setTimeout(connect, 2000)
       }
     }

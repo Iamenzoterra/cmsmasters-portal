@@ -4,18 +4,24 @@ import { api } from '../lib/api-client'
 
 interface Props {
   layouts: LayoutSummary[]
-  activeScope: string | null
+  activeId: string | null
   scopes: ScopeEntry[]
   view: 'layouts' | 'settings'
-  onSelect: (scope: string) => void
+  onSelect: (id: string) => void
   onRefresh: () => void
   onExport: () => void
   onNavigate: (view: 'layouts' | 'settings') => void
 }
 
+type DialogState =
+  | { mode: 'new'; name: string; scope: string }
+  | { mode: 'clone'; name: string; scope: string }
+  | { mode: 'import'; html: string; name: string; scope: string }
+  | { mode: 'rename'; targetId: string; name: string; scope: string }
+
 export function LayoutSidebar({
   layouts,
-  activeScope,
+  activeId,
   scopes,
   view,
   onSelect,
@@ -24,42 +30,48 @@ export function LayoutSidebar({
   onNavigate,
 }: Props) {
   const importInputRef = useRef<HTMLInputElement>(null)
-  const [createDialogState, setCreateDialogState] = useState<
-    | null
-    | { mode: 'new'; name: string; scope: string }
-    | { mode: 'clone'; name: string; scope: string }
-    | { mode: 'import'; html: string; name: string; scope: string }
-  >(null)
+  const [dialog, setDialog] = useState<DialogState | null>(null)
 
-  const availableScopes = scopes.filter(
-    (s) => !layouts.some((l) => l.scope === s.id),
-  )
+  function guardScopesConfigured(): boolean {
+    if (scopes.length === 0) {
+      alert('No scopes registered. Add one in Settings first.')
+      onNavigate('settings')
+      return false
+    }
+    return true
+  }
 
   function handleNewClick() {
-    if (availableScopes.length === 0) {
-      alert('No free scopes available. Add a scope in Settings first.')
-      onNavigate('settings')
-      return
-    }
-    setCreateDialogState({ mode: 'new', name: '', scope: availableScopes[0].id })
+    if (!guardScopesConfigured()) return
+    setDialog({ mode: 'new', name: '', scope: scopes[0].id })
   }
 
   function handleCloneClick() {
-    if (!activeScope) return
-    if (availableScopes.length === 0) {
-      alert('No free scopes available. Add a scope in Settings first.')
-      onNavigate('settings')
-      return
-    }
-    setCreateDialogState({ mode: 'clone', name: '', scope: availableScopes[0].id })
+    if (!activeId || !guardScopesConfigured()) return
+    const src = layouts.find((l) => l.id === activeId)
+    setDialog({
+      mode: 'clone',
+      name: src ? `${src.name} (copy)` : '',
+      scope: src?.scope ?? scopes[0].id,
+    })
+  }
+
+  function handleRenameClick() {
+    if (!activeId || !guardScopesConfigured()) return
+    const src = layouts.find((l) => l.id === activeId)
+    if (!src) return
+    const scope = scopes.some((s) => s.id === src.scope) ? src.scope : scopes[0].id
+    setDialog({ mode: 'rename', targetId: src.id, name: src.name, scope })
   }
 
   async function handleDelete() {
-    if (!activeScope) return
-    if (!window.confirm(`Delete layout "${activeScope}"?`)) return
+    if (!activeId) return
+    const src = layouts.find((l) => l.id === activeId)
+    const label = src ? `"${src.name}"` : activeId
+    if (!window.confirm(`Delete layout ${label}?`)) return
 
     try {
-      await api.deleteLayout(activeScope)
+      await api.deleteLayout(activeId)
       onRefresh()
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Failed to delete layout')
@@ -67,11 +79,7 @@ export function LayoutSidebar({
   }
 
   function handleImportClick() {
-    if (availableScopes.length === 0) {
-      alert('No free scopes available. Add a scope in Settings first.')
-      onNavigate('settings')
-      return
-    }
+    if (!guardScopesConfigured()) return
     importInputRef.current?.click()
   }
 
@@ -80,36 +88,56 @@ export function LayoutSidebar({
     if (!file) return
     const baseName = file.name.replace(/\.html?$/i, '')
     const html = await file.text()
-    setCreateDialogState({
+    setDialog({
       mode: 'import',
       html,
       name: baseName,
-      scope: availableScopes[0]?.id ?? '',
+      scope: scopes[0]?.id ?? '',
     })
     e.target.value = ''
   }
 
-  async function handleCreateConfirm() {
-    if (!createDialogState) return
-    const { mode, name, scope } = createDialogState
+  async function handleConfirm() {
+    if (!dialog) return
+    const { mode, name, scope } = dialog
     if (!name.trim() || !scope) return
 
     try {
       if (mode === 'new') {
-        await api.createLayout({ name: name.trim(), scope })
+        const created = await api.createLayout({ name: name.trim(), scope })
+        setDialog(null)
+        onRefresh()
+        if (created.id) onSelect(created.id)
       } else if (mode === 'clone') {
-        if (!activeScope) return
-        await api.cloneLayout(activeScope, { name: name.trim(), scope })
+        if (!activeId) return
+        const created = await api.cloneLayout(activeId, { name: name.trim(), scope })
+        setDialog(null)
+        onRefresh()
+        if (created.id) onSelect(created.id)
+      } else if (mode === 'import') {
+        const created = await api.importLayout({ html: dialog.html, name: name.trim(), scope })
+        setDialog(null)
+        onRefresh()
+        if (created.id) onSelect(created.id)
       } else {
-        await api.importLayout({ html: createDialogState.html, name: name.trim(), scope })
+        // rename — PUT existing layout with new name + scope
+        const current = await api.getLayout(dialog.targetId)
+        const updated = { ...current, name: name.trim(), scope }
+        await api.updateLayout(dialog.targetId, updated)
+        setDialog(null)
+        onRefresh()
       }
-      setCreateDialogState(null)
-      onRefresh()
-      onSelect(scope)
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to create layout')
+      alert(err instanceof Error ? err.message : 'Operation failed')
     }
   }
+
+  const dialogTitle =
+    dialog?.mode === 'new' ? 'New Layout'
+    : dialog?.mode === 'clone' ? 'Clone Layout'
+    : dialog?.mode === 'import' ? 'Import Layout'
+    : dialog?.mode === 'rename' ? 'Rename Layout'
+    : ''
 
   return (
     <div className="lm-sidebar">
@@ -135,9 +163,9 @@ export function LayoutSidebar({
               const scopeEntry = scopes.find((s) => s.id === layout.scope)
               return (
                 <div
-                  key={layout.scope}
-                  className={`lm-sidebar__item ${layout.scope === activeScope ? 'lm-sidebar__item--active' : ''}`}
-                  onClick={() => onSelect(layout.scope)}
+                  key={layout.id}
+                  className={`lm-sidebar__item ${layout.id === activeId ? 'lm-sidebar__item--active' : ''}`}
+                  onClick={() => onSelect(layout.id)}
                 >
                   <div className="lm-sidebar__item-name">{layout.name}</div>
                   <div className="lm-sidebar__item-scope">
@@ -157,9 +185,10 @@ export function LayoutSidebar({
           <div className="lm-sidebar__actions">
             <button className="lm-btn lm-btn--primary" onClick={handleNewClick}>New</button>
             <button className="lm-btn" onClick={handleImportClick}>Import</button>
-            <button className="lm-btn" onClick={handleCloneClick} disabled={!activeScope}>Clone</button>
-            <button className="lm-btn" onClick={onExport} disabled={!activeScope}>Export</button>
-            <button className="lm-btn lm-btn--danger" onClick={handleDelete} disabled={!activeScope}>Delete</button>
+            <button className="lm-btn" onClick={handleRenameClick} disabled={!activeId}>Rename</button>
+            <button className="lm-btn" onClick={handleCloneClick} disabled={!activeId}>Clone</button>
+            <button className="lm-btn" onClick={onExport} disabled={!activeId}>Export</button>
+            <button className="lm-btn lm-btn--danger" onClick={handleDelete} disabled={!activeId}>Delete</button>
             <input
               ref={importInputRef}
               type="file"
@@ -171,22 +200,18 @@ export function LayoutSidebar({
         </>
       )}
 
-      {createDialogState && (
-        <div className="lm-dialog-overlay" onClick={(e) => e.target === e.currentTarget && setCreateDialogState(null)}>
+      {dialog && (
+        <div className="lm-dialog-overlay" onClick={(e) => e.target === e.currentTarget && setDialog(null)}>
           <div className="lm-dialog">
-            <div className="lm-dialog__header">
-              {createDialogState.mode === 'new' && 'New Layout'}
-              {createDialogState.mode === 'clone' && 'Clone Layout'}
-              {createDialogState.mode === 'import' && 'Import Layout'}
-            </div>
+            <div className="lm-dialog__header">{dialogTitle}</div>
             <div className="lm-dialog__body">
               <label className="lm-dialog__field">
                 <span className="lm-dialog__label">Name</span>
                 <input
                   type="text"
                   className="lm-settings__input"
-                  value={createDialogState.name}
-                  onChange={(e) => setCreateDialogState({ ...createDialogState, name: e.target.value })}
+                  value={dialog.name}
+                  onChange={(e) => setDialog({ ...dialog, name: e.target.value })}
                   autoFocus
                 />
               </label>
@@ -194,10 +219,10 @@ export function LayoutSidebar({
                 <span className="lm-dialog__label">Scope</span>
                 <select
                   className="lm-settings__input"
-                  value={createDialogState.scope}
-                  onChange={(e) => setCreateDialogState({ ...createDialogState, scope: e.target.value })}
+                  value={dialog.scope}
+                  onChange={(e) => setDialog({ ...dialog, scope: e.target.value })}
                 >
-                  {availableScopes.map((s) => (
+                  {scopes.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.label} ({s.id})
                     </option>
@@ -206,13 +231,13 @@ export function LayoutSidebar({
               </label>
             </div>
             <div className="lm-dialog__actions">
-              <button className="lm-btn" onClick={() => setCreateDialogState(null)}>Cancel</button>
+              <button className="lm-btn" onClick={() => setDialog(null)}>Cancel</button>
               <button
                 className="lm-btn lm-btn--primary"
-                onClick={handleCreateConfirm}
-                disabled={!createDialogState.name.trim() || !createDialogState.scope}
+                onClick={handleConfirm}
+                disabled={!dialog.name.trim() || !dialog.scope}
               >
-                Create
+                {dialog.mode === 'rename' ? 'Save' : 'Create'}
               </button>
             </div>
           </div>

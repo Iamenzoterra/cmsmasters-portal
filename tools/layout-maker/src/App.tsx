@@ -130,7 +130,7 @@ function getChangedSlots(prev: LayoutConfig, next: LayoutConfig): string[] {
 
 export function App() {
   const [layouts, setLayouts] = useState<LayoutSummary[]>([])
-  const [activeScope, setActiveScope] = useState<string | null>(null)
+  const [activeId, setActiveId] = useState<string | null>(null)
   const [activeConfig, setActiveConfig] = useState<LayoutConfig | null>(null)
   const [tokens, setTokens] = useState<TokenMap | null>(null)
   const [activeBreakpoint, setActiveBreakpoint] = useState<CanvasBreakpointId>('desktop')
@@ -188,7 +188,7 @@ export function App() {
 
   // Fetch full config when active scope changes
   useEffect(() => {
-    if (!activeScope) {
+    if (!activeId) {
       setActiveConfig(null)
       setSelectedSlot(null)
       prevConfigRef.current = null
@@ -197,13 +197,13 @@ export function App() {
 
     setSelectedSlot(null)
 
-    api.getLayout(activeScope).then((config) => {
+    api.getLayout(activeId).then((config) => {
       setActiveConfig(config)
       prevConfigRef.current = config
     }).catch(() => {
       setActiveConfig(null)
     })
-  }, [activeScope])
+  }, [activeId])
 
   // Fetch blocks when config changes
   useEffect(() => {
@@ -255,12 +255,12 @@ export function App() {
       if (event.type === 'layout-added' || event.type === 'layout-deleted') {
         refreshLayouts()
       }
-      if (event.type === 'layout-deleted' && event.scope === activeScope) {
-        setActiveScope(null)
+      if (event.type === 'layout-deleted' && event.id === activeId) {
+        setActiveId(null)
         showToast('Layout deleted.')
       }
-      if (event.type === 'layout-changed' && event.scope === activeScope) {
-        api.getLayout(event.scope).then((newConfig) => {
+      if (event.type === 'layout-changed' && event.id === activeId) {
+        api.getLayout(event.id).then((newConfig) => {
           // Diff for flash
           if (prevConfigRef.current) {
             const changed = getChangedSlots(prevConfigRef.current, newConfig)
@@ -278,10 +278,10 @@ export function App() {
       }
     })
     return unsubscribe
-  }, [activeScope, refreshLayouts, showToast])
+  }, [activeId, refreshLayouts, showToast])
 
   const handleToggleSlot = useCallback(async (slotName: string, enabled: boolean) => {
-    if (!activeConfig || !activeScope) return
+    if (!activeConfig || !activeId) return
 
     const updated = structuredClone(activeConfig)
     if (enabled) {
@@ -291,14 +291,14 @@ export function App() {
     }
 
     try {
-      const saved = await api.updateLayout(activeScope, updated)
+      const saved = await api.updateLayout(activeId, updated)
       setActiveConfig(saved)
       prevConfigRef.current = saved
       showToast(`${slotName} ${enabled ? 'enabled' : 'disabled'}`)
     } catch (e) {
       showToast(e instanceof Error ? e.message : 'Failed to update layout')
     }
-  }, [activeConfig, activeScope, showToast])
+  }, [activeConfig, activeId, showToast])
 
   const handleUpdateSlotConfig = useCallback(async (
     slotName: string,
@@ -307,14 +307,14 @@ export function App() {
     targetGridKey?: string,
     breakpointId?: CanvasBreakpointId,
   ) => {
-    if (!activeConfig || !activeScope) return
+    if (!activeConfig || !activeId) return
 
     const updated = structuredClone(activeConfig)
     const writeToBase = !breakpointId || breakpointId === 'desktop'
     applySlotConfigUpdate(updated, slotName, key, value, writeToBase, targetGridKey)
 
     try {
-      const saved = await api.updateLayout(activeScope, updated)
+      const saved = await api.updateLayout(activeId, updated)
       setActiveConfig(saved)
       prevConfigRef.current = saved
       const scope = writeToBase ? 'base' : targetGridKey
@@ -322,10 +322,10 @@ export function App() {
     } catch (e) {
       showToast(e instanceof Error ? e.message : 'Failed to update layout')
     }
-  }, [activeConfig, activeScope, showToast])
+  }, [activeConfig, activeId, showToast])
 
   const handleUpdateGridProp = useCallback(async (breakpointKey: string, key: string, value: string | undefined) => {
-    if (!activeConfig || !activeScope) return
+    if (!activeConfig || !activeId) return
 
     const updated = structuredClone(activeConfig)
     let grid = updated.grid[breakpointKey]
@@ -350,17 +350,17 @@ export function App() {
     }
 
     try {
-      const saved = await api.updateLayout(activeScope, updated)
+      const saved = await api.updateLayout(activeId, updated)
       setActiveConfig(saved)
       prevConfigRef.current = saved
       showToast(`${breakpointKey}.${key}: ${value ?? 'removed'}`)
     } catch (e) {
       showToast(e instanceof Error ? e.message : 'Failed to update layout')
     }
-  }, [activeConfig, activeScope, showToast])
+  }, [activeConfig, activeId, showToast])
 
   const handleUpdateColumnWidth = useCallback(async (slotName: string, breakpointKey: string, width: string) => {
-    if (!activeConfig || !activeScope) return
+    if (!activeConfig || !activeId) return
 
     const updated = structuredClone(activeConfig)
     if (updated.grid[breakpointKey]?.columns) {
@@ -368,14 +368,14 @@ export function App() {
     }
 
     try {
-      const saved = await api.updateLayout(activeScope, updated)
+      const saved = await api.updateLayout(activeId, updated)
       setActiveConfig(saved)
       prevConfigRef.current = saved
       showToast(`${slotName} width: ${width}`)
     } catch (e) {
       showToast(e instanceof Error ? e.message : 'Failed to update layout')
     }
-  }, [activeConfig, activeScope, showToast])
+  }, [activeConfig, activeId, showToast])
 
   return (
     <>
@@ -383,10 +383,10 @@ export function App() {
         {/* Left sidebar */}
         <LayoutSidebar
           layouts={layouts}
-          activeScope={activeScope}
+          activeId={activeId}
           scopes={scopes}
           view={view}
-          onSelect={setActiveScope}
+          onSelect={setActiveId}
           onRefresh={refreshLayouts}
           onExport={() => setShowExportDialog(true)}
           onNavigate={setView}
@@ -447,9 +447,9 @@ export function App() {
       </div>
 
       {/* Export dialog */}
-      {showExportDialog && activeScope && (
+      {showExportDialog && activeId && (
         <ExportDialog
-          scope={activeScope}
+          id={activeId}
           onClose={() => setShowExportDialog(false)}
           onShowToast={showToast}
         />

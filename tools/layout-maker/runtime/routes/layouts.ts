@@ -11,10 +11,11 @@ import {
   loadConfig,
   listLayouts,
   listPresets,
-  getExistingScopes,
+  getExistingIds,
   writeConfig,
   deleteConfig,
-  findConfigByScope,
+  findConfigById,
+  generateId,
 } from '../lib/config-resolver.js'
 import { parseTokens } from '../lib/token-parser.js'
 import { parseHTMLToConfig } from '../lib/html-parser.js'
@@ -22,7 +23,7 @@ import { parseHTMLToConfig } from '../lib/html-parser.js'
 const PRESETS_DIR = path.resolve(import.meta.dirname, '../../layouts/_presets')
 const SETTINGS_PATH = path.resolve(import.meta.dirname, '../../settings.yaml')
 
-/** Load allowed scope ids from settings.yaml. Returns empty set if settings missing. */
+/** Load allowed scope ids from settings.yaml. */
 function loadAllowedScopes(): Set<string> {
   if (!existsSync(SETTINGS_PATH)) {
     mkdirSync(path.dirname(SETTINGS_PATH), { recursive: true })
@@ -41,11 +42,11 @@ layouts.get('/layouts', (c) => {
   return c.json(listLayouts())
 })
 
-/** GET /layouts/:scope — full resolved config */
-layouts.get('/layouts/:scope', (c) => {
-  const scope = c.req.param('scope')
+/** GET /layouts/:id — full resolved config */
+layouts.get('/layouts/:id', (c) => {
+  const id = c.req.param('id')
   try {
-    const config = loadConfig(scope)
+    const config = loadConfig(id)
     return c.json(config)
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Not found'
@@ -74,11 +75,8 @@ layouts.post('/layouts', async (c) => {
     return c.json({ error: `Scope "${scope}" is not registered in settings` }, 400)
   }
 
-  // Check duplicate scope
-  const existing = getExistingScopes()
-  if (existing.includes(scope)) {
-    return c.json({ error: `Scope "${scope}" already exists` }, 409)
-  }
+  const existingIds = new Set(getExistingIds())
+  const id = generateId(name, existingIds)
 
   let config: LayoutConfig
 
@@ -94,8 +92,8 @@ layouts.post('/layouts', async (c) => {
     base.name = name
     base.scope = scope
     if (description) base.description = description
-    // Remove extends — preset content is copied, not referenced
     delete base.extends
+    delete base.id
 
     const result = configSchema.safeParse(base)
     if (!result.success) {
@@ -106,7 +104,6 @@ layouts.post('/layouts', async (c) => {
     }
     config = result.data
   } else {
-    // Blank layout with minimal structure
     config = {
       version: 1,
       name,
@@ -127,23 +124,29 @@ layouts.post('/layouts', async (c) => {
     }
   }
 
-  // Validate
   const tokens = parseTokens()
-  const validationErrors = validateConfig(config, tokens, existing)
+  const validationErrors = validateConfig(config, tokens)
   if (validationErrors.length > 0) {
     return c.json({ error: 'Validation failed', issues: validationErrors }, 400)
   }
 
-  writeConfig(config)
-  return c.json(config, 201)
+  const saved = { ...config, id }
+  writeConfig(saved)
+  return c.json(saved, 201)
 })
 
-/** PUT /layouts/:scope — save/update full config */
-layouts.put('/layouts/:scope', async (c) => {
-  const scope = c.req.param('scope')
-  const body = await c.req.json()
+/** PUT /layouts/:id — save/update full config. Can change name + scope. */
+layouts.put('/layouts/:id', async (c) => {
+  const id = c.req.param('id')
 
-  // Zod parse
+  if (!findConfigById(id)) {
+    return c.json({ error: `Layout "${id}" not found` }, 404)
+  }
+
+  const body = await c.req.json()
+  // Strip id from body — URL param is authoritative, we don't persist id inside YAML.
+  delete body.id
+
   const result = configSchema.safeParse(body)
   if (!result.success) {
     return c.json(
@@ -154,72 +157,66 @@ layouts.put('/layouts/:scope', async (c) => {
 
   const config = result.data
 
-  // Cross-field validation
-  const tokens = parseTokens()
-  const existing = getExistingScopes()
-  const validationErrors = validateConfig(config, tokens, existing, scope)
-  if (validationErrors.length > 0) {
-    return c.json({ error: 'Validation failed', issues: validationErrors }, 400)
-  }
-
-  // Delete old file if scope changed
-  if (config.scope !== scope) {
-    deleteConfig(scope)
-  }
-
-  writeConfig(config)
-  return c.json(config)
-})
-
-/** POST /layouts/:scope/clone — clone with new name+scope */
-layouts.post('/layouts/:scope/clone', async (c) => {
-  const sourceScope = c.req.param('scope')
-  const body = await c.req.json<{ name: string; scope: string }>()
-
-  if (!body.name || !body.scope) {
-    return c.json({ error: 'name and scope are required' }, 400)
-  }
-
-  // Validate scope against settings
+  // Validate scope against settings (scope is still a controlled tag)
   const allowedScopes = loadAllowedScopes()
-  if (!allowedScopes.has(body.scope)) {
-    return c.json({ error: `Scope "${body.scope}" is not registered in settings` }, 400)
+  if (!allowedScopes.has(config.scope)) {
+    return c.json({ error: `Scope "${config.scope}" is not registered in settings` }, 400)
   }
 
-  // Check source exists
-  const sourceFile = findConfigByScope(sourceScope)
-  if (!sourceFile) {
-    return c.json({ error: `Layout "${sourceScope}" not found` }, 404)
-  }
-
-  // Check new scope is unique
-  const existing = getExistingScopes()
-  if (existing.includes(body.scope)) {
-    return c.json({ error: `Scope "${body.scope}" already exists` }, 409)
-  }
-
-  // Load source, update identity
-  const config = loadConfig(sourceScope)
-  config.name = body.name
-  config.scope = body.scope
-
-  // Validate
   const tokens = parseTokens()
-  const validationErrors = validateConfig(config, tokens, existing)
+  const validationErrors = validateConfig(config, tokens)
   if (validationErrors.length > 0) {
     return c.json({ error: 'Validation failed', issues: validationErrors }, 400)
   }
 
-  writeConfig(config)
-  return c.json(config, 201)
+  writeConfig({ ...config, id })
+  return c.json({ ...config, id })
 })
 
-/** DELETE /layouts/:scope — delete layout file */
-layouts.delete('/layouts/:scope', (c) => {
-  const scope = c.req.param('scope')
-  const deleted = deleteConfig(scope)
+/** POST /layouts/:id/clone — clone with new name */
+layouts.post('/layouts/:id/clone', async (c) => {
+  const sourceId = c.req.param('id')
+  const body = await c.req.json<{ name: string; scope?: string }>()
+
+  if (!body.name) {
+    return c.json({ error: 'name is required' }, 400)
+  }
+
+  const sourceFile = findConfigById(sourceId)
+  if (!sourceFile) {
+    return c.json({ error: `Layout "${sourceId}" not found` }, 404)
+  }
+
+  const allowedScopes = loadAllowedScopes()
+  const config = loadConfig(sourceId)
+  config.name = body.name
+  if (body.scope) {
+    if (!allowedScopes.has(body.scope)) {
+      return c.json({ error: `Scope "${body.scope}" is not registered in settings` }, 400)
+    }
+    config.scope = body.scope
+  }
+
+  const existingIds = new Set(getExistingIds())
+  const id = generateId(body.name, existingIds)
+
+  const tokens = parseTokens()
+  const validationErrors = validateConfig(config, tokens)
+  if (validationErrors.length > 0) {
+    return c.json({ error: 'Validation failed', issues: validationErrors }, 400)
+  }
+
+  const saved = { ...config, id }
+  writeConfig(saved)
+  return c.json(saved, 201)
+})
+
+/** DELETE /layouts/:id — delete layout file */
+layouts.delete('/layouts/:id', (c) => {
+  const id = c.req.param('id')
+  const deleted = deleteConfig(id)
   if (!deleted) {
-    return c.json({ error: `Layout "${scope}" not found` }, 404)
+    return c.json({ error: `Layout "${id}" not found` }, 404)
   }
   return c.json({ ok: true })
 })
@@ -233,19 +230,11 @@ layouts.post('/layouts/import', async (c) => {
     return c.json({ error: 'html, name, and scope are required' }, 400)
   }
 
-  // Validate scope against settings
   const allowedScopes = loadAllowedScopes()
   if (!allowedScopes.has(scope)) {
     return c.json({ error: `Scope "${scope}" is not registered in settings` }, 400)
   }
 
-  // Check duplicate scope
-  const existing = getExistingScopes()
-  if (existing.includes(scope)) {
-    return c.json({ error: `Scope "${scope}" already exists` }, 409)
-  }
-
-  // Parse HTML → LayoutConfig
   let config: LayoutConfig
   try {
     config = parseHTMLToConfig(html, name, scope)
@@ -254,7 +243,6 @@ layouts.post('/layouts/import', async (c) => {
     return c.json({ error: `Failed to parse HTML: ${msg}` }, 400)
   }
 
-  // Schema validation
   const result = configSchema.safeParse(config)
   if (!result.success) {
     return c.json(
@@ -264,17 +252,18 @@ layouts.post('/layouts/import', async (c) => {
   }
   config = result.data
 
-  // Cross-field validation (skip token checks — imported layouts may use non-standard spacing)
   const tokens = parseTokens()
-  const validationErrors = validateConfig(config, tokens, existing)
-  // Filter out token warnings — imported layouts may reference tokens we don't have
+  const validationErrors = validateConfig(config, tokens)
   const criticalErrors = validationErrors.filter((e) => !e.includes('Unknown token'))
   if (criticalErrors.length > 0) {
     return c.json({ error: 'Validation failed', issues: criticalErrors }, 400)
   }
 
-  writeConfig(config)
-  return c.json(config, 201)
+  const existingIds = new Set(getExistingIds())
+  const id = generateId(name, existingIds)
+  const saved = { ...config, id }
+  writeConfig(saved)
+  return c.json(saved, 201)
 })
 
 /** GET /presets — list available presets */

@@ -33,7 +33,7 @@ app.route('/', settings)
 // Start file watcher
 const layoutsDir = path.resolve(import.meta.dirname, '../layouts')
 startWatcher(layoutsDir, (event) => {
-  console.log(`[watcher] ${event.type}: ${event.scope}`)
+  console.log(`[watcher] ${event.type}: ${event.id}`)
   broadcastEvent(event)
 })
 

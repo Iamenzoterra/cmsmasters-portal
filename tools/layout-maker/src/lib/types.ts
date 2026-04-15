@@ -75,6 +75,7 @@ export interface SlotConfig {
 
 export interface LayoutConfig {
   version: number
+  id?: string
   name: string
   scope: string
   description?: string
@@ -143,6 +144,7 @@ export interface TokenMap {
 }
 
 export interface LayoutSummary {
+  id: string
   name: string
   scope: string
   description?: string
