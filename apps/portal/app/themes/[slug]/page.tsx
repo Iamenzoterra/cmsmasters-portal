@@ -187,14 +187,7 @@ export default async function ThemePage({ params }: Props) {
   // 7. Assemble page
   let pageHTML: string
   if (layoutPage?.html) {
-    let cleanLayout = stripDebug(layoutPage.html)
-    // Treat `content` as a universal container slot. The theme renderer
-    // injects a `theme-blocks` slot inside it — other page renderers can
-    // inject their own slots (article, related-posts, etc.) the same way.
-    cleanLayout = cleanLayout.replace(
-      /(<(\w+)[^>]*\s+data-slot="content"[^>]*)>\s*<\/\2>/,
-      '$1><div data-slot="theme-blocks"></div></$2>',
-    )
+    const cleanLayout = stripDebug(layoutPage.html)
     pageHTML = resolveSlots(cleanLayout, {
       header: renderSlotBlocks(globalElements.header),
       footer: renderSlotBlocks(globalElements.footer),
