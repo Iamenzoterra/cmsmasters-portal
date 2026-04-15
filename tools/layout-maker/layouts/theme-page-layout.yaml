@@ -23,8 +23,11 @@ slots:
     position: top
     sticky: true
     z-index: 100
+    gap: '--spacing-xl'
   content:
     min-height: 600px
+    padding-top: '--spacing-xl'
+    padding-bottom: '--spacing-xl'
     nested-slots:
       - theme-blocks
   theme-blocks:
@@ -35,9 +38,18 @@ slots:
     position: bottom
     min-height: 120px
     margin-top: '--spacing-2xl'
+    gap: '--spacing-xl'
   sidebar-left:
-    align: flex-start
+    align: center
     min-height: 400px
+    max-width: 360px
+    padding-top: '--spacing-xl'
+    padding-bottom: '--spacing-xl'
+    gap: '--spacing-xl'
   sidebar-right:
-    align: flex-start
+    align: center
     min-height: 400px
+    max-width: 360px
+    padding-top: '--spacing-xl'
+    padding-bottom: '--spacing-xl'
+    gap: '--spacing-xl'
