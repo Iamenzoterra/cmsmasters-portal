@@ -892,6 +892,20 @@ function SlotPanel({ code, layoutSlots, slotConfig, onSlotsChange, onConfigChang
   const slots = useMemo(() => extractSlots(code), [code])
   const [pickingSlot, setPickingSlot] = useState<string | null>(null)
 
+  // Commit the displayed default gap (24px) into state for any global slot
+  // that lacks one. Without this, the UI shows "24" via `?? '24'` but state
+  // stays empty — Save then writes slot_config WITHOUT gap, and portal renders
+  // with gap:0 because the CSS var is missing.
+  useEffect(() => {
+    const missing = slots.filter(
+      (s) => GLOBAL_SLOTS.includes(s) && !slotConfig[s]?.gap,
+    )
+    if (missing.length === 0) return
+    const next = { ...slotConfig }
+    for (const s of missing) next[s] = { ...next[s], gap: '24px' }
+    onConfigChange(next)
+  }, [slots, slotConfig, onConfigChange])
+
   if (slots.length === 0) return null
 
   function handleSlotMove(slot: string, index: number, direction: 'up' | 'down') {
