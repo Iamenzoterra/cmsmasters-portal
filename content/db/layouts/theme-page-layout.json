@@ -9,13 +9,25 @@
     "sidebar-right": [
       "fe39e04d-af63-44ed-b16e-e23af05896e0",
       "5d639da0-48f0-44ad-b0b8-35cd9a55979d",
-      "acdda498-7cbb-480e-a51c-cadd7e59c32b"
+      "acdda498-7cbb-480e-a51c-cadd7e59c32b",
+      "0c115e43-6546-4c4b-958f-ae29cfdff30f",
+      "4ea296a5-77d2-431d-a5dd-db2ed4ae45ad"
     ]
   },
   "slot_config": {
+    "footer": {
+      "gap": "24px"
+    },
+    "header": {
+      "gap": "24px"
+    },
     "content": {},
-    "sidebar-left": {},
-    "sidebar-right": {}
+    "sidebar-left": {
+      "gap": "24px"
+    },
+    "sidebar-right": {
+      "gap": "24px"
+    }
   },
   "seo": {
     "title": "",
