@@ -129,7 +129,14 @@ export default async function ThemePage({ params }: Props) {
       if (params['padding-bottom']) vars.push(`--sl-${slot}-pb: ${params['padding-bottom']}`)
       if (params.align) vars.push(`--sl-${slot}-al: ${params.align}`)
     }
-    if (vars.length > 0) slotConfigCSS = `:root { ${vars.join('; ')} }`
+    if (vars.length > 0) {
+      // Base .slot-inner rule (ensures flex+gap works even if layout CSS lacks it)
+      const slotInnerBase = '[data-slot] > .slot-inner { display: flex; flex-direction: column; width: 100%; flex: 1 0 auto; }'
+      const perSlot = Object.keys(slotConfig).map((slot) =>
+        `[data-slot="${slot}"] > .slot-inner { max-width: var(--sl-${slot}-mw, none); padding: var(--sl-${slot}-pt, 0) var(--sl-${slot}-px, 0) var(--sl-${slot}-pb, 0); gap: var(--sl-${slot}-gap, 0); align-self: var(--sl-${slot}-al, stretch); margin-inline: auto; }`
+      ).join(' ')
+      slotConfigCSS = `:root { ${vars.join('; ')} } ${slotInnerBase} ${perSlot}`
+    }
   }
   const globalElements = await resolveGlobalBlocks(layoutSlots)
 
