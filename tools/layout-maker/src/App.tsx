@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import type { LayoutConfig, LayoutSummary, TokenMap, BlockData, ScopingWarning, CanvasBreakpointId } from './lib/types'
+import type { LayoutConfig, LayoutSummary, TokenMap, BlockData, ScopingWarning, CanvasBreakpointId, ScopeEntry } from './lib/types'
 import { resolveGridKey, CANVAS_BREAKPOINTS } from './lib/types'
 import { api } from './lib/api-client'
 import { LayoutSidebar } from './components/LayoutSidebar'
@@ -7,6 +7,7 @@ import { BreakpointBar } from './components/BreakpointBar'
 import { Canvas } from './components/Canvas'
 import { Inspector } from './components/Inspector'
 import { ExportDialog } from './components/ExportDialog'
+import { SettingsPage } from './components/SettingsPage'
 import { Toast } from './components/Toast'
 
 /** Insert a sidebar column into an existing columns map at the correct position */
@@ -140,6 +141,8 @@ export function App() {
   const [showExportDialog, setShowExportDialog] = useState(false)
   const [blocks, setBlocks] = useState<Map<string, BlockData> | null>(null)
   const [blockWarnings, setBlockWarnings] = useState<ScopingWarning[]>([])
+  const [scopes, setScopes] = useState<ScopeEntry[]>([])
+  const [view, setView] = useState<'layouts' | 'settings'>('layouts')
 
   const prevConfigRef = useRef<LayoutConfig | null>(null)
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -148,6 +151,15 @@ export function App() {
     try {
       const list = await api.listLayouts()
       setLayouts(list)
+    } catch {
+      // Runtime may not be ready yet
+    }
+  }, [])
+
+  const refreshSettings = useCallback(async () => {
+    try {
+      const s = await api.getSettings()
+      setScopes(s.scopes)
     } catch {
       // Runtime may not be ready yet
     }
@@ -162,11 +174,17 @@ export function App() {
     setToastMessage(null)
   }, [])
 
-  // Fetch layouts + tokens on mount
+  // Fetch layouts + tokens + settings on mount
   useEffect(() => {
     refreshLayouts()
+    refreshSettings()
     api.getTokens().then(setTokens).catch(() => {})
-  }, [refreshLayouts])
+  }, [refreshLayouts, refreshSettings])
+
+  // Refresh settings whenever we navigate back from settings view
+  useEffect(() => {
+    if (view === 'layouts') refreshSettings()
+  }, [view, refreshSettings])
 
   // Fetch full config when active scope changes
   useEffect(() => {
@@ -366,42 +384,52 @@ export function App() {
         <LayoutSidebar
           layouts={layouts}
           activeScope={activeScope}
+          scopes={scopes}
+          view={view}
           onSelect={setActiveScope}
           onRefresh={refreshLayouts}
           onExport={() => setShowExportDialog(true)}
+          onNavigate={setView}
         />
 
-        {/* Center canvas */}
-        <div className="lm-canvas-area">
-          {activeConfig && tokens ? (
-            <>
-              <BreakpointBar
-                config={activeConfig}
-                tokens={tokens}
-                activeBreakpoint={activeBreakpoint}
-                onBreakpointChange={setActiveBreakpoint}
-              />
-              <Canvas
-                config={activeConfig}
-                tokens={tokens}
-                activeBreakpoint={activeBreakpoint}
-                gridKey={resolveGridKey(activeBreakpoint, activeConfig.grid)}
-                selectedSlot={selectedSlot}
-                onSlotSelect={setSelectedSlot}
-                changedSlots={changedSlots}
-                blocks={blocks}
-              />
-            </>
-          ) : (
-            <div className="lm-empty">
-              {layouts.length === 0
-                ? 'No layouts yet. Create one to get started.'
-                : 'Select a layout from the sidebar.'}
-            </div>
-          )}
-        </div>
+        {/* Center area — canvas or settings */}
+        {view === 'settings' ? (
+          <div className="lm-settings-area">
+            <SettingsPage onShowToast={showToast} />
+          </div>
+        ) : (
+          <div className="lm-canvas-area">
+            {activeConfig && tokens ? (
+              <>
+                <BreakpointBar
+                  config={activeConfig}
+                  tokens={tokens}
+                  activeBreakpoint={activeBreakpoint}
+                  onBreakpointChange={setActiveBreakpoint}
+                />
+                <Canvas
+                  config={activeConfig}
+                  tokens={tokens}
+                  activeBreakpoint={activeBreakpoint}
+                  gridKey={resolveGridKey(activeBreakpoint, activeConfig.grid)}
+                  selectedSlot={selectedSlot}
+                  onSlotSelect={setSelectedSlot}
+                  changedSlots={changedSlots}
+                  blocks={blocks}
+                />
+              </>
+            ) : (
+              <div className="lm-empty">
+                {layouts.length === 0
+                  ? 'No layouts yet. Create one to get started.'
+                  : 'Select a layout from the sidebar.'}
+              </div>
+            )}
+          </div>
+        )}
 
-        {/* Right inspector */}
+        {/* Right inspector — hidden on settings view */}
+        {view === 'layouts' && (
         <Inspector
           selectedSlot={selectedSlot}
           config={activeConfig}
@@ -415,6 +443,7 @@ export function App() {
           onUpdateColumnWidth={handleUpdateColumnWidth}
           onUpdateGridProp={handleUpdateGridProp}
         />
+        )}
       </div>
 
       {/* Export dialog */}

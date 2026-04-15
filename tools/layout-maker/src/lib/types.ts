@@ -148,6 +148,15 @@ export interface LayoutSummary {
   description?: string
 }
 
+export interface ScopeEntry {
+  id: string
+  label: string
+}
+
+export interface LMSettings {
+  scopes: ScopeEntry[]
+}
+
 export interface ExportPayload {
   slug: string
   title: string

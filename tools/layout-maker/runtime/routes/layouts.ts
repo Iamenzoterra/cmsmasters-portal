@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'node:fs'
 import path from 'node:path'
 import yaml from 'js-yaml'
 import {
@@ -20,6 +20,19 @@ import { parseTokens } from '../lib/token-parser.js'
 import { parseHTMLToConfig } from '../lib/html-parser.js'
 
 const PRESETS_DIR = path.resolve(import.meta.dirname, '../../layouts/_presets')
+const SETTINGS_PATH = path.resolve(import.meta.dirname, '../../settings.yaml')
+
+/** Load allowed scope ids from settings.yaml. Returns empty set if settings missing. */
+function loadAllowedScopes(): Set<string> {
+  if (!existsSync(SETTINGS_PATH)) {
+    mkdirSync(path.dirname(SETTINGS_PATH), { recursive: true })
+    const defaults = { scopes: [{ id: 'theme', label: 'Theme page' }] }
+    writeFileSync(SETTINGS_PATH, yaml.dump(defaults), 'utf-8')
+    return new Set(['theme'])
+  }
+  const data = yaml.load(readFileSync(SETTINGS_PATH, 'utf-8')) as { scopes?: Array<{ id: string }> }
+  return new Set((data.scopes ?? []).map((s) => s.id))
+}
 
 const layouts = new Hono()
 
@@ -53,6 +66,12 @@ layouts.post('/layouts', async (c) => {
 
   if (!name || !scope) {
     return c.json({ error: 'name and scope are required' }, 400)
+  }
+
+  // Validate scope against settings
+  const allowedScopes = loadAllowedScopes()
+  if (!allowedScopes.has(scope)) {
+    return c.json({ error: `Scope "${scope}" is not registered in settings` }, 400)
   }
 
   // Check duplicate scope
@@ -161,6 +180,12 @@ layouts.post('/layouts/:scope/clone', async (c) => {
     return c.json({ error: 'name and scope are required' }, 400)
   }
 
+  // Validate scope against settings
+  const allowedScopes = loadAllowedScopes()
+  if (!allowedScopes.has(body.scope)) {
+    return c.json({ error: `Scope "${body.scope}" is not registered in settings` }, 400)
+  }
+
   // Check source exists
   const sourceFile = findConfigByScope(sourceScope)
   if (!sourceFile) {
@@ -206,6 +231,12 @@ layouts.post('/layouts/import', async (c) => {
 
   if (!html || !name || !scope) {
     return c.json({ error: 'html, name, and scope are required' }, 400)
+  }
+
+  // Validate scope against settings
+  const allowedScopes = loadAllowedScopes()
+  if (!allowedScopes.has(scope)) {
+    return c.json({ error: `Scope "${scope}" is not registered in settings` }, 400)
   }
 
   // Check duplicate scope

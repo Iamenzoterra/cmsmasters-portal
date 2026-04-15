@@ -1,4 +1,4 @@
-import type { LayoutConfig, LayoutSummary, TokenMap, ExportResult, BlockResponse } from './types'
+import type { LayoutConfig, LayoutSummary, TokenMap, ExportResult, BlockResponse, LMSettings } from './types'
 
 const BASE = 'http://localhost:7701'
 
@@ -82,6 +82,16 @@ export const api = {
 
   getTokens: (): Promise<TokenMap> =>
     fetch(`${BASE}/tokens`).then((r) => json(r)),
+
+  getSettings: (): Promise<LMSettings> =>
+    fetch(`${BASE}/settings`).then((r) => json(r)),
+
+  updateSettings: (body: LMSettings): Promise<LMSettings> =>
+    fetch(`${BASE}/settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }).then((r) => json(r)),
 
   getBlocks: (slugs: string[]): Promise<BlockResponse> =>
     fetch(`${BASE}/blocks?slugs=${slugs.join(',')}`).then((r) => json(r)),
