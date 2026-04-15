@@ -1786,45 +1786,63 @@ body {
   overflow: hidden;
 }
 
-/* Nested slot zones inside a parent slot. One level deep. */
+/* Container slots: strip the inner dark tint — a container has no .slot-inner host.
+   The nested child zones carry their own slot-type coloring. */
+.lm-slot-zone--has-nested > .lm-slot-zone__inner {
+  background: transparent;
+  outline: none;
+}
+/* Container must not center-align children — child zones need to stretch to
+   their own max-width (or parent width), not shrink to label content. */
+.lm-slot-zone--has-nested {
+  align-items: stretch;
+  justify-content: flex-start;
+}
+/* Container's own label row must not reserve vertical space — the container
+   has no real inner padding; child zones start at y=0 inside. Decorative
+   label floats in the top-left corner. */
+.lm-slot-zone--has-nested > .lm-slot-zone__inner > .lm-slot-zone__label-row {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  padding: 0;
+  width: auto;
+  pointer-events: none;
+}
+
+/* Nested stack — transparent wrapper. No decorative padding. */
 .lm-nested-stack {
   display: flex;
   flex-direction: column;
   width: 100%;
-  padding: var(--lm-sp-4);
 }
+
+/* Nested child zone — takes the CONTAINER's slot-type color (inherited via
+   --slot-h/s/l custom props) so child frames match the container's stroke.
+   No decorative padding / min-height — padding/background/align come from
+   the child's yaml via inline style. */
 .lm-slot-zone--nested {
-  position: relative;
-  display: flex;
+  width: 100%;
+  min-height: 0;
+  border-radius: 2px;
+  background: transparent;
+  border-color: hsla(var(--slot-h, 200), var(--slot-s, 30%), var(--slot-l, 50%), 0.40);
+  /* Child's label row sits top-left, not centered (we're measuring a real box). */
   align-items: flex-start;
   justify-content: flex-start;
-  min-height: 60px;
-  padding: var(--lm-sp-6);
-  border: 2px dashed hsla(0, 0%, 100%, 0.35);
-  background: hsla(0, 0%, 100%, 0.03);
-  border-radius: 2px;
-  cursor: pointer;
-  transition: border-color var(--lm-transition-fast);
 }
-.lm-slot-zone--nested:hover { border-color: hsla(0, 0%, 100%, 0.55); }
-.lm-slot-zone--nested:focus-visible {
-  outline: 1px solid var(--lm-text-accent);
-  outline-offset: 2px;
+/* Content area inside the nested zone — fills the area INSIDE the child's
+   padding. Dark-tinted so padding is visually distinguishable from the
+   actual slot content box. */
+.lm-slot-zone--nested__content {
+  width: 100%;
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  background: hsla(var(--slot-h, 200), var(--slot-s, 30%), var(--slot-l, 50%), 0.18);
+  outline: 1px dashed hsla(var(--slot-h, 200), var(--slot-s, 30%), var(--slot-l, 50%), 0.45);
+  outline-offset: -1px;
 }
-.lm-slot-zone--nested-selected {
-  border-color: var(--lm-text-accent);
-  box-shadow: inset 0 0 0 1px var(--lm-text-accent);
-}
-.lm-slot-zone--nested__label {
-  font-family: var(--lm-font-mono);
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.65);
-  background: rgba(0, 0, 0, 0.35);
-  padding: 1px 5px;
-  border-radius: 2px;
-  pointer-events: none;
-  user-select: none;
-}
-.lm-slot-zone--nested-selected .lm-slot-zone--nested__label {
-  color: var(--lm-text-accent);
+.lm-slot-zone--nested .lm-slot-zone__name {
+  color: rgba(0, 0, 0, 0.55);
 }

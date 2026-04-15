@@ -352,9 +352,16 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
   const testBlocks = config['test-blocks']?.[selectedSlot]
   const blockCount = testBlocks?.length ?? 0
 
-  // Container/leaf: a slot is a container when its base config declares nested-slots (even if empty [])
-  const nestedChildren = (baseSlot['nested-slots'] as string[] | undefined)
-  const isContainer = Array.isArray(nestedChildren)
+  // Container/leaf: persisted when base config has a non-empty nested-slots array
+  // (validator rejects empty []; see runtime validate). A "pending" local container
+  // state lets the UI show the container panel before the first child is added —
+  // never persisted until an add/create produces a non-empty array.
+  const [pendingContainerSlot, setPendingContainerSlot] = useState<string | null>(null)
+  const nestedChildren = (baseSlot['nested-slots'] as string[] | undefined) ?? null
+  const hasPersistedNested = Array.isArray(nestedChildren) && nestedChildren.length > 0
+  const isPendingContainer = pendingContainerSlot === selectedSlot && !hasPersistedNested
+  const isContainer = hasPersistedNested || isPendingContainer
+  const effectiveChildren: string[] = hasPersistedNested ? nestedChildren! : []
 
   // Slots eligible for "+ Add slot" dropdown: existing leaves not already nested anywhere, excluding self.
   const nestedAnywhere = new Set<string>()
@@ -409,13 +416,13 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
         {isContainer && (
           <div className="lm-inspector__section lm-inspector__panel--container">
             <div className="lm-inspector__section-title">Child slots</div>
-            {nestedChildren!.length === 0 ? (
+            {effectiveChildren.length === 0 ? (
               <div className="lm-inspector__empty" style={{ padding: 'var(--lm-sp-4) 0' }}>
                 No children yet. Add or create one below.
               </div>
             ) : (
               <div className="lm-chip-list">
-                {nestedChildren!.map((childName) => (
+                {effectiveChildren.map((childName) => (
                   <span key={childName} className="lm-chip">
                     <button
                       className="lm-chip__label"
@@ -429,8 +436,9 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
                       aria-label={`Remove nested slot ${childName} from ${selectedSlot}`}
                       title={`Remove ${childName}`}
                       onClick={() => {
-                        const next = nestedChildren!.filter((n) => n !== childName)
-                        onUpdateNestedSlots(selectedSlot, next)
+                        const next = effectiveChildren.filter((n) => n !== childName)
+                        // Validator rejects empty arrays — delete the key instead to revert to leaf.
+                        onUpdateNestedSlots(selectedSlot, next.length === 0 ? null : next)
                       }}
                     >
                       &times;
@@ -448,7 +456,8 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
                 onChange={(e) => {
                   const pick = e.target.value
                   if (!pick) return
-                  onUpdateNestedSlots(selectedSlot, [...nestedChildren!, pick])
+                  onUpdateNestedSlots(selectedSlot, [...effectiveChildren, pick])
+                  setPendingContainerSlot(null)
                   e.target.value = ''
                 }}
               >
@@ -482,9 +491,15 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
             <div style={{ marginTop: 'var(--lm-sp-8)' }}>
               <button
                 className="lm-btn"
-                disabled={nestedChildren!.length > 0}
-                title={nestedChildren!.length > 0 ? 'Remove all children first' : 'Convert to leaf'}
-                onClick={() => onUpdateNestedSlots(selectedSlot, null)}
+                disabled={effectiveChildren.length > 0}
+                title={effectiveChildren.length > 0 ? 'Remove all children first' : 'Convert to leaf'}
+                onClick={() => {
+                  if (isPendingContainer) {
+                    setPendingContainerSlot(null)
+                  } else {
+                    onUpdateNestedSlots(selectedSlot, null)
+                  }
+                }}
               >
                 Convert to leaf
               </button>
@@ -500,6 +515,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
           onClose={() => setShowCreateModal(false)}
           onCreate={(name, defaults) => {
             onCreateNestedSlot(selectedSlot, name, defaults)
+            setPendingContainerSlot(null)
             setShowCreateModal(false)
           }}
         />
@@ -703,12 +719,13 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
             inheritLabel={config.background ? `inherit (${config.background.replace('--bg-', '')})` : 'inherit (none)'}
           />
 
-          {/* Convert leaf -> container */}
+          {/* Convert leaf -> container (local pending until first child is added;
+              validator rejects persisted empty nested-slots arrays). */}
           <div style={{ marginTop: 'var(--lm-sp-8)' }}>
             <button
               className="lm-btn"
-              onClick={() => onUpdateNestedSlots(selectedSlot, [])}
-              title="Make this slot hold nested slots instead of blocks"
+              onClick={() => setPendingContainerSlot(selectedSlot)}
+              title="Hold nested slots instead of blocks (add a child to persist)"
             >
               Convert to container
             </button>

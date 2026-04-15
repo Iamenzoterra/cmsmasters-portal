@@ -25,9 +25,11 @@ slots:
     z-index: 100
   content:
     min-height: 600px
-    nested-slots: [theme-blocks]
+    nested-slots:
+      - theme-blocks
   theme-blocks:
     gap: '--spacing-2xl'
+    align: center
     max-width: 615px
   footer:
     position: bottom

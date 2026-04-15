@@ -363,11 +363,18 @@ function SlotZone({ name, config, tokens, width, slotConfig, isSelected, isFlash
   const blockCount = testBlockSlugs.length
   const hasLoadedBlocks = blocks && blockCount > 0
 
+  const hasNested = Array.isArray(slotConfig['nested-slots']) && slotConfig['nested-slots']!.length > 0
+  // Container has no inner host — Phase 1 css-generator drops inner fields silently.
+  // Mirror that on canvas: never paint padding/gap/align/maxWidth on a container.
+  const outerPadding = hasNested ? undefined : padding
+  const outerAlign = hasNested ? undefined : alignItems
+
   const className = [
     'lm-slot-zone',
     isSelected && 'lm-slot-zone--selected',
     isFlashing && 'lm-flash',
     hasLoadedBlocks && 'lm-slot-zone--has-blocks',
+    hasNested && 'lm-slot-zone--has-nested',
   ].filter(Boolean).join(' ')
 
   return (
@@ -377,9 +384,9 @@ function SlotZone({ name, config, tokens, width, slotConfig, isSelected, isFlash
       data-slot-type={getSlotType(name)}
       style={{
         minHeight: hasLoadedBlocks ? undefined : minHeight,
-        padding,
+        padding: outerPadding,
         marginTop,
-        alignItems,
+        alignItems: outerAlign,
         background: slotBgStyle,
       }}
       onClick={onClick}
@@ -389,8 +396,8 @@ function SlotZone({ name, config, tokens, width, slotConfig, isSelected, isFlash
       {/* Inner container — constrained by max-width, positioned by outer align-items */}
       <div
         className="lm-slot-zone__inner"
-        data-constrained={innerMaxWidth ? '' : undefined}
-        style={{ maxWidth: innerMaxWidth }}
+        data-constrained={!hasNested && innerMaxWidth ? '' : undefined}
+        style={{ maxWidth: hasNested ? undefined : innerMaxWidth }}
       >
         {/* Label row */}
         <div className="lm-slot-zone__label-row">
@@ -405,21 +412,36 @@ function SlotZone({ name, config, tokens, width, slotConfig, isSelected, isFlash
 
         {/* Nested children — dashed zones rendered inside parent. One level deep.
             TODO: deeper nesting when needed. */}
-        {Array.isArray(slotConfig['nested-slots']) && slotConfig['nested-slots']!.length > 0 && (
+        {hasNested && (
           <div className="lm-nested-stack" style={{ gap: gap || undefined }}>
             {slotConfig['nested-slots']!.map((childName) => {
               const childCfg = resolveSlot(childName)
               const childMaxW = childCfg['max-width']
+              const childAlign = childCfg.align
+              const childBg = resolveBackgroundStyle(childCfg.background, tokens)
+              // Child padding: prefer split fields, fall back to legacy shorthand
+              const cLegacy = childCfg.padding ? resolveToken(childCfg.padding, tokens) : undefined
+              const cPadTop = childCfg['padding-top'] ? resolveToken(childCfg['padding-top'], tokens) : cLegacy
+              const cPadBot = childCfg['padding-bottom'] ? resolveToken(childCfg['padding-bottom'], tokens) : cLegacy
+              const cPadX = childCfg['padding-x'] ? resolveToken(childCfg['padding-x'], tokens) : cLegacy
+              const cHasPad = cPadTop || cPadBot || cPadX
+              const childPadding = cHasPad ? `${cPadTop ?? '0'} ${cPadX ?? '0'} ${cPadBot ?? '0'}` : undefined
               const isChildSelected = childName === selectedSlot
               return (
                 <div
                   key={childName}
-                  className={`lm-slot-zone--nested${isChildSelected ? ' lm-slot-zone--nested-selected' : ''}`}
+                  className={`lm-slot-zone lm-slot-zone--nested${isChildSelected ? ' lm-slot-zone--selected' : ''}`}
                   role="button"
                   tabIndex={0}
                   data-slot-name={childName}
                   aria-label={`Nested slot ${childName} inside ${name}`}
-                  style={{ maxWidth: childMaxW }}
+                  style={{
+                    maxWidth: childMaxW,
+                    padding: childPadding,
+                    alignItems: childAlign,
+                    background: childBg,
+                    marginInline: childAlign === 'center' ? 'auto' : undefined,
+                  }}
                   onClick={(e) => {
                     e.stopPropagation()
                     onSlotSelect(childName)
@@ -432,7 +454,12 @@ function SlotZone({ name, config, tokens, width, slotConfig, isSelected, isFlash
                     }
                   }}
                 >
-                  <span className="lm-slot-zone--nested__label">nested: {childName}</span>
+                  <div className="lm-slot-zone--nested__content">
+                    <div className="lm-slot-zone__label-row">
+                      <span className="lm-slot-zone__name">{childName}</span>
+                      {childMaxW && <span className="lm-slot-zone__width">{childMaxW}</span>}
+                    </div>
+                  </div>
                 </div>
               )
             })}
