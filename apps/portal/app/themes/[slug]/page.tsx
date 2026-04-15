@@ -107,7 +107,7 @@ export default async function ThemePage({ params }: Props) {
   }
 
   // 1. Fetch layout page (scope = 'theme')
-  let layoutPage: { html: string; css: string; layout_slots?: Record<string, string | string[]>; slot_config?: Record<string, { gap?: string }> } | null = null
+  let layoutPage: { html: string; css: string; layout_slots?: Record<string, string | string[]>; slot_config?: Record<string, Record<string, string>> } | null = null
   try {
     layoutPage = await getLayoutByScope('theme')
   } catch {
@@ -116,7 +116,21 @@ export default async function ThemePage({ params }: Props) {
 
   // 2. Resolve global elements: layout_slots override > category default > []
   const layoutSlots = (layoutPage as Record<string, unknown>)?.layout_slots as Record<string, string | string[]> ?? {}
-  // slot_config is now consumed via CSS custom properties in layout CSS — no runtime usage needed
+  // Build CSS vars from slot_config (DB overrides / fallback for layouts without baked-in vars)
+  const slotConfig = (layoutPage as Record<string, unknown>)?.slot_config as Record<string, Record<string, string>> | undefined
+  let slotConfigCSS = ''
+  if (slotConfig && Object.keys(slotConfig).length > 0) {
+    const vars: string[] = []
+    for (const [slot, params] of Object.entries(slotConfig)) {
+      if (params.gap) vars.push(`--sl-${slot}-gap: ${params.gap}`)
+      if (params['max-width']) vars.push(`--sl-${slot}-mw: ${params['max-width']}`)
+      if (params['padding-x']) vars.push(`--sl-${slot}-px: ${params['padding-x']}`)
+      if (params['padding-top']) vars.push(`--sl-${slot}-pt: ${params['padding-top']}`)
+      if (params['padding-bottom']) vars.push(`--sl-${slot}-pb: ${params['padding-bottom']}`)
+      if (params.align) vars.push(`--sl-${slot}-al: ${params.align}`)
+    }
+    if (vars.length > 0) slotConfigCSS = `:root { ${vars.join('; ')} }`
+  }
   const globalElements = await resolveGlobalBlocks(layoutSlots)
 
   // 3. Fetch template + merge with block fills
@@ -213,6 +227,9 @@ export default async function ThemePage({ params }: Props) {
       />
       {layoutPage?.css && (
         <style dangerouslySetInnerHTML={{ __html: layoutPage.css }} />
+      )}
+      {slotConfigCSS && (
+        <style dangerouslySetInnerHTML={{ __html: slotConfigCSS }} />
       )}
       <div dangerouslySetInnerHTML={{ __html: pageHTML }} />
     </>
