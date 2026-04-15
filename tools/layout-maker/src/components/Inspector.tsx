@@ -35,28 +35,60 @@ const ALIGN_OPTIONS = [
   { value: 'flex-end', label: 'Right', icon: '\u258C' },
 ] as const
 
-export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tokens, onShowToast, blockWarnings, onToggleSlot, onUpdateSlotConfig, onUpdateColumnWidth, onUpdateGridProp }: Props) {
-  if (!config || !tokens) {
-    return (
-      <div className="lm-inspector" data-active-bp={activeBreakpoint}>
-        <div className="lm-inspector__header">Inspector</div>
-        <div className="lm-inspector__body">
-          <div className="lm-inspector__empty">
-            Select a layout to get started.
-          </div>
-        </div>
-      </div>
-    )
+function buildPropertyRows(
+  slotConfig: Record<string, unknown>,
+  tokens: TokenMap,
+): PropertyRow[] {
+  const rows: PropertyRow[] = []
+  const spacingProps = [
+    { label: 'Gap', key: 'gap' },
+    { label: 'Min-height', key: 'min-height' },
+    { label: 'Margin-top', key: 'margin-top' },
+  ]
+  for (const { label, key } of spacingProps) {
+    const val = slotConfig[key] as string | undefined
+    if (!val) continue
+    const resolved = resolveToken(val, tokens)
+    const isToken = resolved !== val
+    rows.push({
+      label,
+      property: key,
+      value: val,
+      token: isToken ? val : undefined,
+      resolvedPx: isToken ? resolved : undefined,
+    })
   }
+  return rows
+}
 
-  // Sidebar mode control — available for all non-desktop breakpoints regardless of slot selection
-  const isBaseBpGlobal = activeBreakpoint === 'desktop'
-  const hasSidebarSlots = Object.keys(config.slots).some((n) => n.includes('sidebar'))
-  // Use the actual bp grid (not resolved fallback) for reading sidebar mode
+function computeUsableWidth(
+  columnWidth: string | undefined,
+  isFullWidth: boolean,
+  slotConfig: Record<string, unknown>,
+  tokens: TokenMap,
+): string | null {
+  if (isFullWidth || !columnWidth) return null
+  const colPx = parseInt(columnWidth, 10)
+  const paddingToken = slotConfig.padding as string | undefined
+  if (!isNaN(colPx) && columnWidth.endsWith('px') && paddingToken) {
+    const paddingPx = resolveTokenPx(paddingToken, tokens)
+    if (paddingPx != null) return `${colPx - paddingPx * 2}px`
+  }
+  if (columnWidth === '1fr' || columnWidth.includes('fr')) return 'dynamic'
+  return null
+}
+
+function SidebarModeControl({ config, activeBreakpoint, onUpdateGridProp }: {
+  config: LayoutConfig
+  activeBreakpoint: string
+  onUpdateGridProp: Props['onUpdateGridProp']
+}) {
+  const isDesktop = activeBreakpoint === 'desktop'
+  const hasSidebars = Object.keys(config.slots).some((n) => n.includes('sidebar'))
+  if (isDesktop || !hasSidebars) return null
+
   const bpOwnGrid = config.grid[activeBreakpoint]
-  const showSidebarMode = !isBaseBpGlobal && hasSidebarSlots
-
-  const sidebarModeControl = showSidebarMode ? (
+  return (
     <div className="lm-inspector__section lm-inspector__info">
       <div className="lm-inspector__row">
         <span className="lm-inspector__label">Sidebars at {activeBreakpoint}</span>
@@ -77,7 +109,104 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
         ))}
       </div>
     </div>
-  ) : null
+  )
+}
+
+function ColumnWidthControl({ selectedSlot, gridKey, columnWidth, isFullWidth, widthDraft, setWidthDraft, onUpdateColumnWidth }: {
+  selectedSlot: string
+  gridKey: string
+  columnWidth: string | undefined
+  isFullWidth: boolean
+  widthDraft: string
+  setWidthDraft: (v: string) => void
+  onUpdateColumnWidth: Props['onUpdateColumnWidth']
+}) {
+  const isFixedWidth = columnWidth ? columnWidth.endsWith('px') : false
+
+  if (isFullWidth) {
+    return (
+      <div className="lm-inspector__locked">
+        <span className="lm-inspector__value">1fr</span>
+        <span className="lm-inspector__locked-note">locked — full width by position</span>
+      </div>
+    )
+  }
+  if (!columnWidth) {
+    return (
+      <div className="lm-inspector__locked">
+        <span className="lm-inspector__locked-note">not in grid at this breakpoint</span>
+      </div>
+    )
+  }
+
+  return (
+    <div className="lm-width-control">
+      <div className="lm-align-group">
+        <button
+          className={`lm-align-btn${!isFixedWidth ? ' lm-align-btn--active' : ''}`}
+          onClick={() => {
+            onUpdateColumnWidth(selectedSlot, gridKey, '1fr')
+            setWidthDraft('')
+          }}
+        >
+          Fluid
+        </button>
+        <button
+          className={`lm-align-btn${isFixedWidth ? ' lm-align-btn--active' : ''}`}
+          onClick={() => {
+            const px = widthDraft || (selectedSlot === 'content' ? '720' : '360')
+            onUpdateColumnWidth(selectedSlot, gridKey, `${px}px`)
+            setWidthDraft(px)
+          }}
+        >
+          Fixed
+        </button>
+      </div>
+      {isFixedWidth && (
+        <div className="lm-width-input">
+          <input
+            className="lm-width-input__field"
+            type="number"
+            min={100}
+            max={2000}
+            step={10}
+            value={widthDraft}
+            onChange={(e) => setWidthDraft(e.target.value)}
+            onBlur={() => {
+              const n = parseInt(widthDraft, 10)
+              if (!isNaN(n) && n >= 100) {
+                onUpdateColumnWidth(selectedSlot, gridKey, `${n}px`)
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                const n = parseInt(widthDraft, 10)
+                if (!isNaN(n) && n >= 100) {
+                  onUpdateColumnWidth(selectedSlot, gridKey, `${n}px`)
+                }
+              }
+            }}
+          />
+          <span className="lm-width-input__unit">px</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tokens, onShowToast, blockWarnings, onToggleSlot, onUpdateSlotConfig, onUpdateColumnWidth, onUpdateGridProp }: Props) {
+  if (!config || !tokens) {
+    return (
+      <div className="lm-inspector" data-active-bp={activeBreakpoint}>
+        <div className="lm-inspector__header">Inspector</div>
+        <div className="lm-inspector__body">
+          <div className="lm-inspector__empty">
+            Select a layout to get started.
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   if (!selectedSlot) {
     return (
@@ -85,7 +214,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
         <div className="lm-inspector__header">Inspector</div>
         <SlotToggles config={config} activeBreakpoint={gridKey} onToggleSlot={onToggleSlot} />
         <div className="lm-inspector__body">
-          {sidebarModeControl}
+          <SidebarModeControl config={config} activeBreakpoint={activeBreakpoint} onUpdateGridProp={onUpdateGridProp} />
           <div className="lm-inspector__empty">
             Click a slot in the canvas to inspect its properties.
           </div>
@@ -124,8 +253,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
     onUpdateSlotConfig(selectedSlot, key, undefined, gridKey, activeBreakpoint as CanvasBreakpointId)
 
   // Content width editing state
-  const isFixedWidth = columnWidth ? columnWidth.endsWith('px') : false
-  const currentPx = isFixedWidth ? parseInt(columnWidth!, 10).toString() : ''
+  const currentPx = columnWidth?.endsWith('px') ? parseInt(columnWidth, 10).toString() : ''
   const [widthDraft, setWidthDraft] = useState(currentPx)
 
   // Sync draft when column width changes externally (SSE, slot switch)
@@ -149,48 +277,8 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
     setMaxWidthDraft(innerMaxWidth ? parseInt(innerMaxWidth, 10).toString() : '')
   }
 
-  // Build property rows
-  const rows: PropertyRow[] = []
-
-  // Outer width is now handled in the Slot Area section for all slots
-
-  // Spacing properties (read-only rows — padding is interactive in Slot Area)
-  const spacingProps: Array<{ label: string; key: string }> = [
-    { label: 'Gap', key: 'gap' },
-    { label: 'Min-height', key: 'min-height' },
-    { label: 'Margin-top', key: 'margin-top' },
-  ]
-
-  for (const { label, key } of spacingProps) {
-    const val = slotConfig[key as keyof typeof slotConfig] as string | undefined
-    if (!val) continue
-    const resolved = resolveToken(val, tokens)
-    const isToken = resolved !== val
-    rows.push({
-      label,
-      property: key,
-      value: val,
-      token: isToken ? val : undefined,
-      resolvedPx: isToken ? resolved : undefined,
-    })
-  }
-
-  // Align is now handled in the Slot Parameters section for all slots
-
-  // Usable width
-  let usableWidth: string | null = null
-  if (!isFullWidth && columnWidth) {
-    const colPx = parseInt(columnWidth, 10)
-    const paddingToken = slotConfig.padding
-    if (!isNaN(colPx) && columnWidth.endsWith('px') && paddingToken) {
-      const paddingPx = resolveTokenPx(paddingToken, tokens)
-      if (paddingPx != null) {
-        usableWidth = `${colPx - paddingPx * 2}px`
-      }
-    } else if (columnWidth === '1fr' || columnWidth.includes('fr')) {
-      usableWidth = 'dynamic'
-    }
-  }
+  const rows = buildPropertyRows(slotConfig as unknown as Record<string, unknown>, tokens)
+  const usableWidth = computeUsableWidth(columnWidth, isFullWidth, slotConfig as unknown as Record<string, unknown>, tokens)
 
   // Test blocks
   const testBlocks = config['test-blocks']?.[selectedSlot]
@@ -285,68 +373,15 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
             )
           })}
 
-          {isFullWidth ? (
-            <div className="lm-inspector__locked">
-              <span className="lm-inspector__value">1fr</span>
-              <span className="lm-inspector__locked-note">locked — full width by position</span>
-            </div>
-          ) : columnWidth ? (
-            <div className="lm-width-control">
-              <div className="lm-align-group">
-                <button
-                  className={`lm-align-btn${!isFixedWidth ? ' lm-align-btn--active' : ''}`}
-                  onClick={() => {
-                    onUpdateColumnWidth(selectedSlot, gridKey, '1fr')
-                    setWidthDraft('')
-                  }}
-                >
-                  Fluid
-                </button>
-                <button
-                  className={`lm-align-btn${isFixedWidth ? ' lm-align-btn--active' : ''}`}
-                  onClick={() => {
-                    const px = widthDraft || (selectedSlot === 'content' ? '720' : '360')
-                    onUpdateColumnWidth(selectedSlot, gridKey, `${px}px`)
-                    setWidthDraft(px)
-                  }}
-                >
-                  Fixed
-                </button>
-              </div>
-              {isFixedWidth && (
-                <div className="lm-width-input">
-                  <input
-                    className="lm-width-input__field"
-                    type="number"
-                    min={100}
-                    max={2000}
-                    step={10}
-                    value={widthDraft}
-                    onChange={(e) => setWidthDraft(e.target.value)}
-                    onBlur={() => {
-                      const n = parseInt(widthDraft, 10)
-                      if (!isNaN(n) && n >= 100) {
-                        onUpdateColumnWidth(selectedSlot, gridKey, `${n}px`)
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        const n = parseInt(widthDraft, 10)
-                        if (!isNaN(n) && n >= 100) {
-                          onUpdateColumnWidth(selectedSlot, gridKey, `${n}px`)
-                        }
-                      }
-                    }}
-                  />
-                  <span className="lm-width-input__unit">px</span>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="lm-inspector__locked">
-              <span className="lm-inspector__locked-note">not in grid at this breakpoint</span>
-            </div>
-          )}
+          <ColumnWidthControl
+            selectedSlot={selectedSlot}
+            gridKey={gridKey}
+            columnWidth={columnWidth}
+            isFullWidth={isFullWidth}
+            widthDraft={widthDraft}
+            setWidthDraft={setWidthDraft}
+            onUpdateColumnWidth={onUpdateColumnWidth}
+          />
         </div>
 
         {/* Property rows */}
@@ -498,7 +533,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
         </div>
 
         {/* Sidebar mode — reuse shared control */}
-        {sidebarModeControl}
+        <SidebarModeControl config={config} activeBreakpoint={activeBreakpoint} onUpdateGridProp={onUpdateGridProp} />
 
         {/* Test blocks */}
         {blockCount > 0 && (

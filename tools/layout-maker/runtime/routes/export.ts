@@ -7,78 +7,52 @@ import { generateHTML } from '../lib/html-generator.js'
 import { parseTokens } from '../lib/token-parser.js'
 import { validateConfig } from '../lib/config-schema.js'
 
-const exportRoute = new Hono()
+type VisualParams = {
+  gap?: string
+  'max-width'?: string
+  'padding-x'?: string
+  'padding-top'?: string
+  'padding-bottom'?: string
+  align?: string
+}
+type SlotConfigEntry = VisualParams & { breakpoints?: Record<string, VisualParams> }
 
-exportRoute.post('/layouts/:scope/export', (c) => {
-  const scope = c.req.param('scope')
-
-  // 1. Load config
-  let config
-  try {
-    config = loadConfig(scope)
-  } catch {
-    return c.json({ error: `Layout "${scope}" not found` }, 404)
+function resolveVisualParams(slot: Record<string, unknown>, tokens: Record<string, string>): VisualParams {
+  const out: VisualParams = {}
+  const resolve = (key: string) => {
+    const v = slot[key] as string | undefined
+    if (!v || v === '0') return undefined
+    if (v.startsWith('--')) return tokens[v] ?? v
+    return v
   }
+  const gap = resolve('gap')
+  if (gap) out.gap = gap
+  const mw = resolve('max-width')
+  if (mw) out['max-width'] = mw
+  const px = resolve('padding-x') ?? resolve('padding')
+  if (px) out['padding-x'] = px
+  const pt = resolve('padding-top') ?? resolve('padding')
+  if (pt) out['padding-top'] = pt
+  const pb = resolve('padding-bottom') ?? resolve('padding')
+  if (pb) out['padding-bottom'] = pb
+  if (slot.align) out.align = slot.align as string
+  return out
+}
 
-  // 2. Load tokens
-  const tokens = parseTokens()
-
-  // 3. Validate (includes grid overflow check)
-  const existingScopes = getExistingScopes()
-  const errors = validateConfig(config, tokens, existingScopes, scope)
-  if (errors.length > 0) {
-    return c.json({ error: 'Validation failed', details: errors }, 400)
-  }
-
-  // 4. Generate HTML and CSS
-  const html = generateHTML(config)
-  const css = generateCSS(config, tokens)
-
-  // 5. Build slot_config (resolved visual params + per-bp overrides)
-  type VisualParams = {
-    gap?: string
-    'max-width'?: string
-    'padding-x'?: string
-    'padding-top'?: string
-    'padding-bottom'?: string
-    align?: string
-  }
-  type SlotConfigEntry = VisualParams & { breakpoints?: Record<string, VisualParams> }
-
-  function resolveVisualParams(slot: Record<string, unknown>): VisualParams {
-    const out: VisualParams = {}
-    const resolve = (key: string) => {
-      const v = slot[key] as string | undefined
-      if (!v || v === '0') return undefined
-      // Resolve token ref → px value; passthrough raw values
-      if (v.startsWith('--')) return tokens[v] ?? v
-      return v
-    }
-    const gap = resolve('gap')
-    if (gap) out.gap = gap
-    const mw = resolve('max-width')
-    if (mw) out['max-width'] = mw
-    const px = resolve('padding-x') ?? resolve('padding')
-    if (px) out['padding-x'] = px
-    const pt = resolve('padding-top') ?? resolve('padding')
-    if (pt) out['padding-top'] = pt
-    const pb = resolve('padding-bottom') ?? resolve('padding')
-    if (pb) out['padding-bottom'] = pb
-    if (slot.align) out.align = slot.align as string
-    return out
-  }
-
+function buildSlotConfig(
+  config: ReturnType<typeof loadConfig>,
+  tokens: Record<string, string>,
+): Record<string, SlotConfigEntry> {
   const slotConfig: Record<string, SlotConfigEntry> = {}
   for (const [name, slot] of Object.entries(config.slots)) {
-    const base = resolveVisualParams(slot as unknown as Record<string, unknown>)
+    const base = resolveVisualParams(slot as unknown as Record<string, unknown>, tokens)
     const entry: SlotConfigEntry = { ...base }
 
-    // Collect per-bp overrides
     const bpOverrides: Record<string, VisualParams> = {}
     for (const [bpName, grid] of Object.entries(config.grid)) {
       const override = grid.slots?.[name]
       if (override && Object.keys(override).length > 0) {
-        const resolved = resolveVisualParams(override as unknown as Record<string, unknown>)
+        const resolved = resolveVisualParams(override as unknown as Record<string, unknown>, tokens)
         if (Object.keys(resolved).length > 0) {
           bpOverrides[bpName] = resolved
         }
@@ -88,8 +62,33 @@ exportRoute.post('/layouts/:scope/export', (c) => {
 
     if (Object.keys(entry).length > 0) slotConfig[name] = entry
   }
+  return slotConfig
+}
 
-  // 6. Build payload matching pageSchema
+const exportRoute = new Hono()
+
+exportRoute.post('/layouts/:scope/export', (c) => {
+  const scope = c.req.param('scope')
+
+  let config
+  try {
+    config = loadConfig(scope)
+  } catch {
+    return c.json({ error: `Layout "${scope}" not found` }, 404)
+  }
+
+  const tokens = parseTokens()
+
+  const existingScopes = getExistingScopes()
+  const errors = validateConfig(config, tokens, existingScopes, scope)
+  if (errors.length > 0) {
+    return c.json({ error: 'Validation failed', details: errors }, 400)
+  }
+
+  const html = generateHTML(config)
+  const css = generateCSS(config, tokens)
+  const slotConfig = buildSlotConfig(config, tokens)
+
   const payload = {
     slug: `layout-${config.scope}`,
     title: config.name,
@@ -102,7 +101,6 @@ exportRoute.post('/layouts/:scope/export', (c) => {
     status: 'draft' as const,
   }
 
-  // 7. Write files to exports/
   const exportsDir = path.resolve(import.meta.dirname, '../../exports')
   mkdirSync(exportsDir, { recursive: true })
   writeFileSync(path.resolve(exportsDir, `${scope}.html`), html, 'utf-8')

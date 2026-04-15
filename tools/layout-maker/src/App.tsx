@@ -9,6 +9,100 @@ import { Inspector } from './components/Inspector'
 import { ExportDialog } from './components/ExportDialog'
 import { Toast } from './components/Toast'
 
+/** Insert a sidebar column into an existing columns map at the correct position */
+function insertSidebarColumn(
+  existing: Record<string, string>,
+  slotName: string,
+  width: string,
+): Record<string, string> {
+  const entries = Object.entries(existing)
+  const result: Record<string, string> = {}
+  if (slotName === 'sidebar-left') {
+    result[slotName] = width
+    for (const [k, v] of entries) result[k] = v
+  } else {
+    for (const [k, v] of entries) result[k] = v
+    result[slotName] = width
+  }
+  return result
+}
+
+function enableSidebar(config: LayoutConfig, slotName: string): void {
+  const defaultWidth = '360px'
+  for (const [, grid] of Object.entries(config.grid)) {
+    if (grid.sidebars === 'drawer' || grid.columns[slotName]) continue
+    grid.columns = insertSidebarColumn(grid.columns, slotName, defaultWidth)
+  }
+  if (!config.slots[slotName]) {
+    config.slots[slotName] = { align: 'flex-start', 'min-height': '400px' }
+  }
+  for (const [, grid] of Object.entries(config.grid)) {
+    if (grid.sidebars === 'drawer') grid['drawer-position'] = 'both'
+  }
+}
+
+/** Clean up drawer config after sidebar removal */
+function pruneDrawerConfig(config: LayoutConfig): void {
+  const remainingSidebars = Object.keys(config.slots).filter((n) => n.includes('sidebar'))
+  if (remainingSidebars.length === 0) {
+    for (const [, grid] of Object.entries(config.grid)) {
+      if (grid.sidebars !== 'drawer' && grid.sidebars !== 'hidden') continue
+      delete grid.sidebars
+      delete grid['drawer-width']
+      delete grid['drawer-trigger']
+      delete grid['drawer-position']
+    }
+  } else if (remainingSidebars.length === 1) {
+    const side = remainingSidebars[0].includes('left') ? 'left' : 'right'
+    for (const [, grid] of Object.entries(config.grid)) {
+      if (grid.sidebars === 'drawer') grid['drawer-position'] = side
+    }
+  }
+}
+
+function disableSidebar(config: LayoutConfig, slotName: string): void {
+  for (const [, grid] of Object.entries(config.grid)) {
+    delete grid.columns[slotName]
+  }
+  delete config.slots[slotName]
+  if (config['test-blocks']) delete config['test-blocks'][slotName]
+  pruneDrawerConfig(config)
+}
+
+/** Set or delete a key in a record, returning whether it was a set */
+function setOrDelete(obj: Record<string, unknown>, key: string, value: string | undefined): void {
+  if (value === undefined) {
+    delete obj[key]
+  } else {
+    obj[key] = value
+  }
+}
+
+function applySlotConfigUpdate(
+  config: LayoutConfig,
+  slotName: string,
+  key: string,
+  value: string | undefined,
+  writeToBase: boolean,
+  targetGridKey?: string,
+): void {
+  if (writeToBase) {
+    if (!config.slots[slotName]) config.slots[slotName] = {}
+    setOrDelete(config.slots[slotName] as Record<string, unknown>, key, value)
+    return
+  }
+  if (!targetGridKey) return
+  const grid = config.grid[targetGridKey]
+  if (!grid) return
+  if (!grid.slots) grid.slots = {}
+  if (!grid.slots[slotName]) grid.slots[slotName] = {}
+  setOrDelete(grid.slots[slotName] as Record<string, unknown>, key, value)
+  if (value === undefined) {
+    if (Object.keys(grid.slots[slotName]!).length === 0) delete grid.slots[slotName]
+    if (Object.keys(grid.slots).length === 0) delete grid.slots
+  }
+}
+
 function getChangedSlots(prev: LayoutConfig, next: LayoutConfig): string[] {
   const changed: string[] = []
   for (const slot of Object.keys(next.slots)) {
@@ -172,73 +266,10 @@ export function App() {
     if (!activeConfig || !activeScope) return
 
     const updated = structuredClone(activeConfig)
-
     if (enabled) {
-      // Add sidebar to all breakpoints + slots
-      const defaultWidth = '360px'
-
-      // Add to desktop grid columns (insert in correct position)
-      for (const [, grid] of Object.entries(updated.grid)) {
-        if (grid.sidebars === 'drawer') continue // drawer sidebars live in drawer element, not grid columns
-        if (!grid.columns[slotName]) {
-          // Insert sidebar in the right position relative to content
-          const entries = Object.entries(grid.columns)
-          const newColumns: Record<string, string> = {}
-          if (slotName === 'sidebar-left') {
-            newColumns[slotName] = defaultWidth
-            for (const [k, v] of entries) newColumns[k] = v
-          } else if (slotName === 'sidebar-right') {
-            for (const [k, v] of entries) newColumns[k] = v
-            newColumns[slotName] = defaultWidth
-          }
-          grid.columns = newColumns
-        }
-      }
-
-      // Add slot config
-      if (!updated.slots[slotName]) {
-        updated.slots[slotName] = { align: 'flex-start', 'min-height': '400px' }
-      }
-
-      // Add drawer config to tablet/mobile breakpoints
-      for (const [, grid] of Object.entries(updated.grid)) {
-        if (grid.sidebars === 'drawer') {
-          grid['drawer-position'] = 'both'
-        }
-      }
+      enableSidebar(updated, slotName)
     } else {
-      // Remove sidebar from all grid breakpoints
-      for (const [, grid] of Object.entries(updated.grid)) {
-        delete grid.columns[slotName]
-      }
-
-      // Remove slot config
-      delete updated.slots[slotName]
-
-      // Remove test-blocks for this slot
-      if (updated['test-blocks']) {
-        delete updated['test-blocks'][slotName]
-      }
-
-      // Update drawer-position if no sidebars remain
-      const remainingSidebars = Object.keys(updated.slots).filter((n) => n.includes('sidebar'))
-      if (remainingSidebars.length === 0) {
-        for (const [, grid] of Object.entries(updated.grid)) {
-          if (grid.sidebars === 'drawer' || grid.sidebars === 'hidden') {
-            delete grid.sidebars
-            delete grid['drawer-width']
-            delete grid['drawer-trigger']
-            delete grid['drawer-position']
-          }
-        }
-      } else if (remainingSidebars.length === 1) {
-        const side = remainingSidebars[0].includes('left') ? 'left' : 'right'
-        for (const [, grid] of Object.entries(updated.grid)) {
-          if (grid.sidebars === 'drawer') {
-            grid['drawer-position'] = side
-          }
-        }
-      }
+      disableSidebar(updated, slotName)
     }
 
     try {
@@ -261,31 +292,8 @@ export function App() {
     if (!activeConfig || !activeScope) return
 
     const updated = structuredClone(activeConfig)
-    // Route by canonical breakpoint, not by resolved grid key
     const writeToBase = !breakpointId || breakpointId === 'desktop'
-
-    if (writeToBase) {
-      if (!updated.slots[slotName]) updated.slots[slotName] = {}
-      if (value === undefined) {
-        delete (updated.slots[slotName] as Record<string, unknown>)[key]
-      } else {
-        ;(updated.slots[slotName] as Record<string, unknown>)[key] = value
-      }
-    } else {
-      if (!targetGridKey) return
-      const grid = updated.grid[targetGridKey]
-      if (!grid) return
-      if (!grid.slots) grid.slots = {}
-      if (!grid.slots[slotName]) grid.slots[slotName] = {}
-      if (value === undefined) {
-        delete (grid.slots[slotName] as Record<string, unknown>)[key]
-        // Prune empty override objects
-        if (Object.keys(grid.slots[slotName]!).length === 0) delete grid.slots[slotName]
-        if (Object.keys(grid.slots).length === 0) delete grid.slots
-      } else {
-        ;(grid.slots[slotName] as Record<string, unknown>)[key] = value
-      }
-    }
+    applySlotConfigUpdate(updated, slotName, key, value, writeToBase, targetGridKey)
 
     try {
       const saved = await api.updateLayout(activeScope, updated)

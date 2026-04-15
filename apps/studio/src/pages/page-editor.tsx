@@ -97,6 +97,48 @@ function parseHtmlFile(content: string): string {
   return code
 }
 
+interface ImportContext {
+  setLayoutCode: (code: string) => void
+  setSlotConfig: (config: SlotConfig) => void
+  setLayoutScope: (scope: string) => void
+  form: { getValues: (key: string) => string; setValue: (key: string, val: string, opts: { shouldDirty: boolean }) => void }
+  isNew: boolean
+  toast: (opts: { type: string; message: string }) => void
+}
+
+function handleJsonImport(text: string, ctx: ImportContext): boolean {
+  try {
+    const payload = JSON.parse(text)
+    if (!payload.html || !payload.css) {
+      ctx.toast({ type: 'error', message: 'JSON must contain html and css fields' })
+      return false
+    }
+    ctx.setLayoutCode(`<style>\n${payload.css}\n</style>\n\n${payload.html}`)
+    if (payload.slot_config) ctx.setSlotConfig(payload.slot_config)
+    if (payload.scope) ctx.setLayoutScope(payload.scope)
+    if (!ctx.form.getValues('title') && payload.title) {
+      ctx.form.setValue('title', payload.title, { shouldDirty: true })
+    }
+    if (ctx.isNew && !ctx.form.getValues('slug') && payload.slug) {
+      ctx.form.setValue('slug', payload.slug, { shouldDirty: false })
+    }
+    return true
+  } catch {
+    ctx.toast({ type: 'error', message: 'Invalid JSON file' })
+    return false
+  }
+}
+
+function handleHtmlImport(text: string, fileName: string, ctx: ImportContext): void {
+  const code = parseHtmlFile(text)
+  ctx.setLayoutCode(code)
+  if (!ctx.form.getValues('title')) {
+    const name = fileName.replace(/\.html?$/i, '').replace(/[-_]/g, ' ')
+    ctx.form.setValue('title', name, { shouldDirty: true })
+    if (ctx.isNew) ctx.form.setValue('slug', nameToSlug(name), { shouldDirty: false })
+  }
+}
+
 interface BlockEntry {
   block_id: string
   position: number
@@ -593,37 +635,14 @@ export function PageEditor() {
                     onChange={(e) => {
                       const file = e.target.files?.[0]
                       if (!file) return
+                      const ctx: ImportContext = { setLayoutCode, setSlotConfig, setLayoutScope, form, isNew, toast }
                       const reader = new FileReader()
                       reader.onload = () => {
                         const text = reader.result as string
                         if (file.name.endsWith('.json')) {
-                          try {
-                            const payload = JSON.parse(text)
-                            if (!payload.html || !payload.css) {
-                              toast({ type: 'error', message: 'JSON must contain html and css fields' })
-                              return
-                            }
-                            setLayoutCode(`<style>\n${payload.css}\n</style>\n\n${payload.html}`)
-                            if (payload.slot_config) setSlotConfig(payload.slot_config)
-                            if (payload.scope) setLayoutScope(payload.scope)
-                            if (!form.getValues('title') && payload.title) {
-                              form.setValue('title', payload.title, { shouldDirty: true })
-                            }
-                            if (isNew && !form.getValues('slug') && payload.slug) {
-                              form.setValue('slug', payload.slug, { shouldDirty: false })
-                            }
-                          } catch {
-                            toast({ type: 'error', message: 'Invalid JSON file' })
-                            return
-                          }
+                          if (!handleJsonImport(text, ctx)) return
                         } else {
-                          const code = parseHtmlFile(text)
-                          setLayoutCode(code)
-                          if (!form.getValues('title')) {
-                            const name = file.name.replace(/\.html?$/i, '').replace(/[-_]/g, ' ')
-                            form.setValue('title', name, { shouldDirty: true })
-                            if (isNew) form.setValue('slug', nameToSlug(name), { shouldDirty: false })
-                          }
+                          handleHtmlImport(text, file.name, ctx)
                         }
                         toast({ type: 'success', message: `Imported ${file.name}` })
                       }

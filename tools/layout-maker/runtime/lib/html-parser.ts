@@ -12,6 +12,8 @@
 
 import type { LayoutConfig } from './config-schema'
 
+type SlotPosition = SlotPosition
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -50,8 +52,8 @@ function extractSlotNames(html: string): string[] {
 function classifySlotPositions(
   _html: string,
   slotNames: string[],
-): Record<string, 'top' | 'bottom' | 'grid'> {
-  const result: Record<string, 'top' | 'bottom' | 'grid'> = {}
+): Record<string, SlotPosition> {
+  const result: Record<string, SlotPosition> = {}
 
   // Find grid slots — slots that are NOT header/footer type
   // Convention: slots with position 'top' come first, then grid columns, then 'bottom'
@@ -102,11 +104,13 @@ function extractProp(css: string, selector: string, prop: string): string | unde
   // Find the rule block for the selector
   // Handle both exact selectors and attribute selectors
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  // eslint-disable-next-line security/detect-non-literal-regexp -- selector is escaped above
   const re = new RegExp(escaped + '\\s*\\{([^}]*?)\\}', 'g')
   let m: RegExpExecArray | null
 
   while ((m = re.exec(css)) !== null) {
     const block = m[1]
+    // eslint-disable-next-line security/detect-non-literal-regexp -- prop is a known CSS property name
     const propRe = new RegExp(`${prop}\\s*:\\s*([^;]+)`, 'i')
     const propMatch = block.match(propRe)
     if (propMatch) return propMatch[1].trim()
@@ -116,6 +120,7 @@ function extractProp(css: string, selector: string, prop: string): string | unde
 
 /** Extract CSS custom property value from :root */
 function extractCustomProp(css: string, name: string): string | undefined {
+  // eslint-disable-next-line security/detect-non-literal-regexp -- name is escaped inline
   const re = new RegExp(`${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*:\\s*([^;]+)`, 'i')
   const m = css.match(re)
   return m ? m[1].trim() : undefined
@@ -129,7 +134,9 @@ function extractAllCustomProps(css: string): Record<string, string> {
   if (!rootBlocks) return props
 
   for (const block of rootBlocks) {
+    // eslint-disable-next-line sonarjs/slow-regex -- simple CSS block extraction, trusted input
     const inner = block.match(/\{([^}]+)\}/)?.[1] ?? ''
+    // eslint-disable-next-line sonarjs/slow-regex -- simple CSS property extraction, trusted input
     const re = /--([\w-]+)\s*:\s*([^;]+)/g
     let m: RegExpExecArray | null
     while ((m = re.exec(inner)) !== null) {
@@ -155,7 +162,8 @@ function resolveCalc(
   if (!inner) return null
 
   // Replace var(--name) and var(--name, fallback) with their values
-  const resolved = inner.replace(/var\((--[\w-]+)(?:\s*,\s*[^)]+)?\)/g, (_, name) => {
+  // eslint-disable-next-line sonarjs/slow-regex -- simple var() extraction, trusted CSS input
+  const resolved = inner.replace(/var\((--[\w-]+)[^)]*\)/g, (_, name) => {
     const val = customProps[name]
     if (!val) return 'NaN'
     // Strip px suffix for math
@@ -178,18 +186,13 @@ function resolveCalc(
   }
 }
 
-/** Parse grid-template-columns into column names based on slot order */
-function parseGridColumns(
-  gtc: string,
-  gridSlotNames: string[],
-  customProps: Record<string, string>,
-): Record<string, string> | null {
-  // Split by spaces but respect calc() and var() parentheses
+/** Split CSS value by spaces, respecting parentheses depth */
+function splitCSSValue(value: string): string[] {
   const parts: string[] = []
   let depth = 0
   let current = ''
 
-  for (const ch of gtc) {
+  for (const ch of value) {
     if (ch === '(') depth++
     if (ch === ')') depth--
     if (ch === ' ' && depth === 0) {
@@ -200,22 +203,29 @@ function parseGridColumns(
     }
   }
   if (current.trim()) parts.push(current.trim())
+  return parts
+}
 
+/** Normalize a single column value — resolve calc() if possible */
+function normalizeColumnValue(value: string, customProps: Record<string, string>): string {
+  if (value === '1fr' || /^\d+px$/.test(value)) return value
+  if (value.startsWith('calc(')) return resolveCalc(value, customProps) ?? value
+  return '1fr'
+}
+
+/** Parse grid-template-columns into column names based on slot order */
+function parseGridColumns(
+  gtc: string,
+  gridSlotNames: string[],
+  customProps: Record<string, string>,
+): Record<string, string> | null {
+  const parts = splitCSSValue(gtc)
   if (parts.length !== gridSlotNames.length) return null
 
   const columns: Record<string, string> = {}
   for (const [i, value] of parts.entries()) {
-    // Normalize: "1fr" stays, "Npx" stays, calc() → try to resolve
-    if (value === '1fr' || /^\d+px$/.test(value)) {
-      columns[gridSlotNames[i]] = value
-    } else if (value.startsWith('calc(')) {
-      const resolved = resolveCalc(value, customProps)
-      columns[gridSlotNames[i]] = resolved ?? value
-    } else {
-      columns[gridSlotNames[i]] = '1fr'
-    }
+    columns[gridSlotNames[i]] = normalizeColumnValue(value, customProps)
   }
-
   return columns
 }
 
@@ -246,53 +256,34 @@ function parseMediaBreakpoints(css: string): Array<{
 }
 
 // ---------------------------------------------------------------------------
-// Main parser
+// Desktop grid extraction
 // ---------------------------------------------------------------------------
 
-export function parseHTMLToConfig(
-  html: string,
-  name: string,
-  scope: string,
-): LayoutConfig {
-  const css = extractCSS(html)
-  const customProps = extractAllCustomProps(css)
-  const slotNames = extractSlotNames(html)
-  const positions = classifySlotPositions(html, slotNames)
-
-  const gridSlotNames = slotNames.filter((n) => positions[n] === 'grid')
-
-  // --- Grid: desktop breakpoint ---
-
-  // Find grid-template-columns — could be in various selectors
-  let gtcValue: string | undefined
-
-  // Try common grid container selectors
+function findGridTemplateColumns(css: string): string | undefined {
   for (const sel of ['.layout-grid', '.theme-layout', '[class*="layout"]', '[class*="grid"]']) {
     const v = extractProp(css, sel, 'grid-template-columns')
-    if (v) { gtcValue = v; break }
+    if (v) return v
   }
+  const gtcMatch = css.match(/grid-template-columns\s*:\s*([^;]+)/i)
+  return gtcMatch ? gtcMatch[1].trim() : undefined
+}
 
-  // Fallback: search any rule with grid-template-columns
-  if (!gtcValue) {
-    const gtcMatch = css.match(/grid-template-columns\s*:\s*([^;]+)/i)
-    if (gtcMatch) gtcValue = gtcMatch[1].trim()
-  }
+function parseDesktopGrid(
+  css: string,
+  gridSlotNames: string[],
+  customProps: Record<string, string>,
+): { columns: Record<string, string>; columnGap: string; maxWidth?: string; center?: boolean } {
+  const gtcValue = findGridTemplateColumns(css)
 
-  // Parse columns
   let columns: Record<string, string> = {}
   if (gtcValue && gridSlotNames.length > 0) {
     const parsed = parseGridColumns(gtcValue, gridSlotNames, customProps)
     if (parsed) columns = parsed
   }
-
-  // Fallback: if no columns parsed, all grid slots get 1fr
   if (Object.keys(columns).length === 0) {
-    for (const name of gridSlotNames) {
-      columns[name] = '1fr'
-    }
+    for (const n of gridSlotNames) columns[n] = '1fr'
   }
 
-  // Column gap
   let columnGap = '0'
   const gapValue = extractProp(css, '.layout-grid', 'column-gap')
     ?? extractProp(css, '.theme-layout', 'column-gap')
@@ -303,138 +294,108 @@ export function parseHTMLToConfig(
     if (token) columnGap = token
   }
 
-  // Max-width from layout frame/container
   let maxWidth: string | undefined
   const mwValue = extractProp(css, '.layout-frame', 'max-width')
     ?? extractProp(css, '.theme-layout-frame', 'max-width')
     ?? extractProp(css, '.theme-layout', 'max-width')
-  if (mwValue && /^\d+px$/.test(mwValue)) {
-    maxWidth = mwValue
-  }
+  if (mwValue && /^\d+px$/.test(mwValue)) maxWidth = mwValue
 
-  // Center: check for margin: 0 auto
   let center: boolean | undefined
   const marginValue = extractProp(css, '.layout-frame', 'margin')
     ?? extractProp(css, '.theme-layout', 'margin')
-  if (marginValue && /auto/.test(marginValue)) {
-    center = true
+  if (marginValue && /auto/.test(marginValue)) center = true
+
+  return { columns, columnGap, maxWidth, center }
+}
+
+// ---------------------------------------------------------------------------
+// Slot extraction
+// ---------------------------------------------------------------------------
+
+function parseSlotProps(
+  css: string,
+  slotName: string,
+  position: SlotPosition,
+): LayoutConfig['slots'][string] {
+  const slotSel = `[data-slot="${slotName}"]`
+  const slot: LayoutConfig['slots'][string] = {}
+
+  if (position === 'top') slot.position = 'top'
+  if (position === 'bottom') slot.position = 'bottom'
+
+  const positionVal = extractProp(css, slotSel, 'position')
+  if (positionVal === 'sticky') {
+    slot.sticky = true
+    const zVal = extractProp(css, slotSel, 'z-index')
+    if (zVal) slot['z-index'] = parseInt(zVal, 10)
   }
 
-  // --- Slots ---
+  parseSlotSpacing(css, slotSel, slot)
 
-  const slots: LayoutConfig['slots'] = {}
+  const mhVal = extractProp(css, slotSel, 'min-height')
+  if (mhVal && /^\d+px$/.test(mhVal)) slot['min-height'] = mhVal
 
-  for (const slotName of slotNames) {
-    const slotSel = `[data-slot="${slotName}"]`
-    const slot: LayoutConfig['slots'][string] = {}
+  const mwSlotVal = extractProp(css, slotSel, 'max-width')
+  if (mwSlotVal && /^\d+px$/.test(mwSlotVal)) slot['max-width'] = mwSlotVal
 
-    // Position
-    const pos = positions[slotName]
-    if (pos === 'top') slot.position = 'top'
-    if (pos === 'bottom') slot.position = 'bottom'
-
-    // Sticky + z-index
-    const positionVal = extractProp(css, slotSel, 'position')
-    if (positionVal === 'sticky') {
-      slot.sticky = true
-      const zVal = extractProp(css, slotSel, 'z-index')
-      if (zVal) slot['z-index'] = parseInt(zVal, 10)
-    }
-
-    // Padding (shorthand)
-    const paddingVal = extractProp(css, slotSel, 'padding')
-    if (paddingVal) {
-      const token = resolveSpacing(paddingVal)
-      if (token) slot.padding = token
-    }
-
-    // Padding (split fields)
-    const padTopVal = extractProp(css, slotSel, 'padding-top')
-    if (padTopVal) {
-      const token = resolveSpacing(padTopVal)
-      if (token) slot['padding-top'] = token
-    }
-    const padBottomVal = extractProp(css, slotSel, 'padding-bottom')
-    if (padBottomVal) {
-      const token = resolveSpacing(padBottomVal)
-      if (token) slot['padding-bottom'] = token
-    }
-    const padLeftVal = extractProp(css, slotSel, 'padding-left')
-    const padRightVal = extractProp(css, slotSel, 'padding-right')
-    if (padLeftVal && padRightVal && padLeftVal === padRightVal) {
-      const token = resolveSpacing(padLeftVal)
-      if (token) slot['padding-x'] = token
-    }
-
-    // Gap
-    const gapVal = extractProp(css, slotSel, 'gap')
-    if (gapVal) {
-      const token = resolveSpacing(gapVal)
-      if (token) slot.gap = token
-    }
-
-    // Min-height
-    const mhVal = extractProp(css, slotSel, 'min-height')
-    if (mhVal && /^\d+px$/.test(mhVal)) {
-      slot['min-height'] = mhVal
-    }
-
-    // Margin-top
-    const mtVal = extractProp(css, slotSel, 'margin-top')
-    if (mtVal) {
-      const token = resolveSpacing(mtVal)
-      if (token) slot['margin-top'] = token
-    }
-
-    // Max-width (inner container)
-    const mwSlotVal = extractProp(css, slotSel, 'max-width')
-    if (mwSlotVal && /^\d+px$/.test(mwSlotVal)) {
-      slot['max-width'] = mwSlotVal
-    }
-
-    // Align (from align-items)
-    const alignVal = extractProp(css, slotSel, 'align-items')
-    if (alignVal === 'flex-start' || alignVal === 'center' || alignVal === 'flex-end' || alignVal === 'stretch') {
-      slot.align = alignVal
-    }
-
-    slots[slotName] = slot
+  const alignVal = extractProp(css, slotSel, 'align-items')
+  if (alignVal === 'flex-start' || alignVal === 'center' || alignVal === 'flex-end' || alignVal === 'stretch') {
+    slot.align = alignVal
   }
 
-  // --- Responsive breakpoints ---
+  return slot
+}
 
-  const mediaBreakpoints = parseMediaBreakpoints(css)
-  const grid: LayoutConfig['grid'] = {}
+/** Extract a CSS prop and resolve it to a spacing token, writing to slot if found */
+function assignSpacingProp(
+  css: string,
+  slotSel: string,
+  cssProp: string,
+  slot: LayoutConfig['slots'][string],
+  slotKey: keyof LayoutConfig['slots'][string],
+): void {
+  const value = extractProp(css, slotSel, cssProp)
+  if (!value) return
+  const token = resolveSpacing(value)
+  if (token) (slot as Record<string, unknown>)[slotKey] = token
+}
 
-  // Desktop breakpoint (default — no @media)
-  grid.desktop = {
-    'min-width': '1440px',
-    columns,
-    'column-gap': columnGap,
-    ...(maxWidth ? { 'max-width': maxWidth } : {}),
-    ...(center ? { center } : {}),
+function parseSlotSpacing(
+  css: string,
+  slotSel: string,
+  slot: LayoutConfig['slots'][string],
+): void {
+  assignSpacingProp(css, slotSel, 'padding', slot, 'padding')
+  assignSpacingProp(css, slotSel, 'padding-top', slot, 'padding-top')
+  assignSpacingProp(css, slotSel, 'padding-bottom', slot, 'padding-bottom')
+  assignSpacingProp(css, slotSel, 'gap', slot, 'gap')
+  assignSpacingProp(css, slotSel, 'margin-top', slot, 'margin-top')
+
+  const padLeftVal = extractProp(css, slotSel, 'padding-left')
+  const padRightVal = extractProp(css, slotSel, 'padding-right')
+  if (padLeftVal && padRightVal && padLeftVal === padRightVal) {
+    const token = resolveSpacing(padLeftVal)
+    if (token) slot['padding-x'] = token
   }
+}
 
-  // Parse responsive breakpoints
+// ---------------------------------------------------------------------------
+// Responsive breakpoint extraction
+// ---------------------------------------------------------------------------
+
+function parseResponsiveGrid(
+  css: string,
+  mediaBreakpoints: Array<{ maxWidth: number; body: string }>,
+): Record<string, LayoutConfig['grid'][string]> {
+  const grid: Record<string, LayoutConfig['grid'][string]> = {}
+
   for (const bp of mediaBreakpoints) {
     const bpName = bp.maxWidth <= 768 ? 'mobile' : 'tablet'
-
-    // Check if sidebars become drawers (position: fixed on sidebar slots)
     const hasDrawer = /position:\s*fixed/.test(bp.body) &&
       /data-slot.*sidebar|sidebar/.test(bp.body)
 
-    // Extract drawer width
-    let drawerWidth: string | undefined
-    const dwMatch = bp.body.match(/(?:sidebar|drawer)[^}]*width:\s*(\d+px)/i)
-    if (dwMatch) drawerWidth = dwMatch[1]
+    const drawerWidth = extractDrawerWidth(bp.body, css)
 
-    // Extract custom property drawer width
-    if (!drawerWidth) {
-      const varDw = extractCustomProp(css, '--sidebar-drawer-width')
-      if (varDw && /^\d+px$/.test(varDw)) drawerWidth = varDw
-    }
-
-    // Check grid change
     const bpGtc = bp.body.match(/grid-template-columns\s*:\s*([^;]+)/i)
     const isSingleColumn = bpGtc && bpGtc[1].trim() === '1fr'
 
@@ -455,11 +416,53 @@ export function parseHTMLToConfig(
     }
   }
 
-  return {
-    version: 1,
-    name,
-    scope,
-    grid,
-    slots,
+  return grid
+}
+
+function extractDrawerWidth(bpBody: string, css: string): string | undefined {
+  const dwMatch = bpBody.match(/(?:sidebar|drawer)[^}]*width:\s*(\d+px)/i)
+  if (dwMatch) return dwMatch[1]
+
+  const varDw = extractCustomProp(css, '--sidebar-drawer-width')
+  if (varDw && /^\d+px$/.test(varDw)) return varDw
+  return undefined
+}
+
+// ---------------------------------------------------------------------------
+// Main parser
+// ---------------------------------------------------------------------------
+
+export function parseHTMLToConfig(
+  html: string,
+  name: string,
+  scope: string,
+): LayoutConfig {
+  const css = extractCSS(html)
+  const customProps = extractAllCustomProps(css)
+  const slotNames = extractSlotNames(html)
+  const positions = classifySlotPositions(html, slotNames)
+  const gridSlotNames = slotNames.filter((n) => positions[n] === 'grid')
+
+  const { columns, columnGap, maxWidth, center } = parseDesktopGrid(css, gridSlotNames, customProps)
+
+  const slots: LayoutConfig['slots'] = {}
+  for (const slotName of slotNames) {
+    slots[slotName] = parseSlotProps(css, slotName, positions[slotName])
   }
+
+  const mediaBreakpoints = parseMediaBreakpoints(css)
+  const responsiveGrid = parseResponsiveGrid(css, mediaBreakpoints)
+
+  const grid: LayoutConfig['grid'] = {
+    desktop: {
+      'min-width': '1440px',
+      columns,
+      'column-gap': columnGap,
+      ...(maxWidth ? { 'max-width': maxWidth } : {}),
+      ...(center ? { center } : {}),
+    },
+    ...responsiveGrid,
+  }
+
+  return { version: 1, name, scope, grid, slots }
 }

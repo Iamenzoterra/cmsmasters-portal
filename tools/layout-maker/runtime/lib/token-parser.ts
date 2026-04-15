@@ -60,10 +60,12 @@ export function getCategorizedTokens(): TokenCategory[] {
 
   for (const line of lines) {
     // Match section comments like: /* ── spacing (from CMS-DS-Portal) ── */
-    const commentMatch = line.match(/\/\*\s*──\s*(.+?)\s*──\s*\*\//)
+    // eslint-disable-next-line sonarjs/slow-regex -- internal tool, trusted CSS input
+    const commentMatch = line.match(/\/\*\s*──\s*([^─]+?)\s*──\s*\*\//)
     if (commentMatch) {
       // Clean up: remove "(from ...)" suffix
-      const rawName = commentMatch[1].replace(/\s*\(from\s+.*?\)\s*$/, '').trim()
+      // eslint-disable-next-line sonarjs/slow-regex -- internal tool, trusted CSS input
+      const rawName = commentMatch[1].replace(/\s*\(from\s[^)]*\)\s*$/, '').trim()
       current = { name: rawName, tokens: [] }
       categories.push(current)
       continue
