@@ -160,8 +160,10 @@ export default async function ThemePage({ params }: Props) {
   const allBlockIds = [...new Set([...globalBlockIds, ...contentBlockIds])]
   const blockMap = await fetchBlocksById(allBlockIds)
 
-  // 5. Render content blocks with hooks resolved
-  const contentHTML = contentPositions
+  // 5. Render theme blocks (template positions + theme block_fills) with hooks resolved.
+  //    These fill the `theme-blocks` slot — a theme-page-specific slot that the
+  //    layout HTML places inside the universal `content` container.
+  const themeBlocksHTML = contentPositions
     .map((pos) => {
       const block = blockMap.get(pos.block_id)
       if (!block) return ''
@@ -185,19 +187,26 @@ export default async function ThemePage({ params }: Props) {
   // 7. Assemble page
   let pageHTML: string
   if (layoutPage?.html) {
-    const cleanLayout = stripDebug(layoutPage.html)
+    let cleanLayout = stripDebug(layoutPage.html)
+    // Treat `content` as a universal container slot. The theme renderer
+    // injects a `theme-blocks` slot inside it — other page renderers can
+    // inject their own slots (article, related-posts, etc.) the same way.
+    cleanLayout = cleanLayout.replace(
+      /(<(\w+)[^>]*\s+data-slot="content"[^>]*)>\s*<\/\2>/,
+      '$1><div data-slot="theme-blocks"></div></$2>',
+    )
     pageHTML = resolveSlots(cleanLayout, {
       header: renderSlotBlocks(globalElements.header),
       footer: renderSlotBlocks(globalElements.footer),
       'sidebar-left': renderSlotBlocks(globalElements['sidebar-left']),
       'sidebar-right': renderSlotBlocks(globalElements['sidebar-right']),
-      content: `<div class="slot-inner">${contentHTML}</div>`,
+      'theme-blocks': `<div class="slot-inner">${themeBlocksHTML}</div>`,
     })
     pageHTML = resolveMetaHooks(pageHTML, meta)
   } else {
     const header = renderSlotBlocks(globalElements.header)
     const footer = renderSlotBlocks(globalElements.footer)
-    pageHTML = `${header}\n<main><div class="slot-inner">${contentHTML}</div></main>\n${footer}`
+    pageHTML = `${header}\n<main data-slot="content"><div data-slot="theme-blocks"><div class="slot-inner">${themeBlocksHTML}</div></div></main>\n${footer}`
   }
 
   // 8. JSON-LD Product schema

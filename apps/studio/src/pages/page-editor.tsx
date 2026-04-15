@@ -99,11 +99,22 @@ function parseHtmlFile(content: string): string {
 
 interface ImportContext {
   setLayoutCode: (code: string) => void
-  setSlotConfig: (config: SlotConfig) => void
+  setSlotConfig: (update: SlotConfig | ((prev: SlotConfig) => SlotConfig)) => void
   setLayoutScope: (scope: string) => void
   form: { getValues: (key: string) => string; setValue: (key: string, val: string, opts: { shouldDirty: boolean }) => void }
   isNew: boolean
   toast: (opts: { type: string; message: string }) => void
+}
+
+/** Merge an incoming slot_config (from JSON import) with existing state:
+ *  preserve per-slot keys the import doesn't set (notably `gap`, which lives
+ *  in Studio only — Layout Maker never writes it). */
+function mergeSlotConfig(prev: SlotConfig, incoming: SlotConfig): SlotConfig {
+  const next: SlotConfig = { ...prev }
+  for (const [slot, params] of Object.entries(incoming)) {
+    next[slot] = { ...(prev[slot] ?? {}), ...params }
+  }
+  return next
 }
 
 function handleJsonImport(text: string, ctx: ImportContext): boolean {
@@ -114,7 +125,7 @@ function handleJsonImport(text: string, ctx: ImportContext): boolean {
       return false
     }
     ctx.setLayoutCode(`<style>\n${payload.css}\n</style>\n\n${payload.html}`)
-    if (payload.slot_config) ctx.setSlotConfig(payload.slot_config)
+    if (payload.slot_config) ctx.setSlotConfig((prev) => mergeSlotConfig(prev, payload.slot_config))
     if (payload.scope) ctx.setLayoutScope(payload.scope)
     if (!ctx.form.getValues('title') && payload.title) {
       ctx.form.setValue('title', payload.title, { shouldDirty: true })
