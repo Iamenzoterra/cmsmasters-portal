@@ -1,0 +1,41 @@
+version: 1
+name: theme-page-layout
+scope: theme
+grid:
+  desktop:
+    min-width: 1440px
+    columns:
+      sidebar-left: 360px
+      content: 711px
+      sidebar-right: 360px
+    column-gap: '0'
+  tablet:
+    min-width: 1400px
+    columns:
+      content: 1fr
+    column-gap: '0'
+    sidebars: drawer
+    drawer-width: 280px
+    drawer-trigger: hamburger
+    drawer-position: both
+slots:
+  header:
+    position: top
+    sticky: true
+    z-index: 100
+  content:
+    min-height: 600px
+    nested-slots: [theme-blocks]
+  theme-blocks:
+    gap: '--spacing-2xl'
+    max-width: 615px
+  footer:
+    position: bottom
+    min-height: 120px
+    margin-top: '--spacing-2xl'
+  sidebar-left:
+    align: flex-start
+    min-height: 400px
+  sidebar-right:
+    align: flex-start
+    min-height: 400px

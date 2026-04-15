@@ -7,6 +7,15 @@ function getTag(name: string): string {
   return 'div'
 }
 
+/** Inner HTML for a slot: nested-child placeholders (no whitespace) or empty. */
+function renderSlotInner(slot: { 'nested-slots'?: string[] }): string {
+  const nested = slot['nested-slots']
+  if (nested && nested.length > 0) {
+    return nested.map((child) => `<div data-slot="${child}"></div>`).join('')
+  }
+  return ''
+}
+
 // eslint-disable-next-line sonarjs/cognitive-complexity
 export function generateHTML(config: LayoutConfig): string {
   const out: string[] = []
@@ -55,9 +64,10 @@ export function generateHTML(config: LayoutConfig): string {
   out.push('')
 
   // Top-position slots (header, hero, etc.)
-  for (const [name] of topSlots) {
+  for (const [name, slot] of topSlots) {
     const tag = getTag(name)
-    out.push(`<${tag} data-slot="${name}"></${tag}>`)
+    const inner = renderSlotInner(slot)
+    out.push(`<${tag} data-slot="${name}">${inner}</${tag}>`)
     out.push('')
   }
 
@@ -67,7 +77,9 @@ export function generateHTML(config: LayoutConfig): string {
 
   for (const name of desktopColumns) {
     const tag = getTag(name)
-    out.push(`    <${tag} data-slot="${name}"></${tag}>`)
+    const slot = slots[name] ?? {}
+    const inner = renderSlotInner(slot)
+    out.push(`    <${tag} data-slot="${name}">${inner}</${tag}>`)
   }
 
   out.push('  </div>')
@@ -75,9 +87,10 @@ export function generateHTML(config: LayoutConfig): string {
   out.push('')
 
   // Bottom-position slots (footer, etc.)
-  for (const [name] of bottomSlots) {
+  for (const [name, slot] of bottomSlots) {
     const tag = getTag(name)
-    out.push(`<${tag} data-slot="${name}"></${tag}>`)
+    const inner = renderSlotInner(slot)
+    out.push(`<${tag} data-slot="${name}">${inner}</${tag}>`)
     out.push('')
   }
 

@@ -70,6 +70,7 @@ const slotSchema = z
     'min-height': z.string().regex(/^\d+px$/).optional(),
     'margin-top': spacingToken.optional(),
     background: z.string().optional(),
+    'nested-slots': z.array(z.string().min(1)).optional(),
   })
   .strict() // Rejects unknown keys — catches "width" in slots
 
@@ -108,7 +109,7 @@ export function validateConfig(
   // 1. Grid columns must reference defined slots (content is implicit)
   for (const [bp, grid] of Object.entries(config.grid)) {
     for (const colName of Object.keys(grid.columns)) {
-      if (colName !== 'content' && !config.slots[colName]) {
+      if (!config.slots[colName]) {
         errors.push(
           `Grid "${bp}" column "${colName}" has no slot definition`,
         )
@@ -151,6 +152,9 @@ export function validateConfig(
     }
   }
 
+  // 4. nested-slots cross-field validation
+  validateNestedSlots(config, errors)
+
   // 5. Drawer breakpoint requires drawer-trigger
   for (const [bp, grid] of Object.entries(config.grid)) {
     if (grid.sidebars === 'drawer' && !grid['drawer-trigger']) {
@@ -161,6 +165,59 @@ export function validateConfig(
   }
 
   return errors
+}
+
+/** nested-slots: existence + single-parent + no-cycles */
+function validateNestedSlots(config: LayoutConfig, errors: string[]): void {
+  const parentOf: Record<string, string> = {}
+
+  for (const [parent, slot] of Object.entries(config.slots)) {
+    const children = slot['nested-slots'] ?? []
+    for (const child of children) {
+      if (!config.slots[child]) {
+        errors.push(
+          `slot '${parent}' references nested slot '${child}' which is not declared in slots`,
+        )
+        continue
+      }
+      if (parentOf[child] && parentOf[child] !== parent) {
+        errors.push(
+          `slot '${child}' is nested under both '${parentOf[child]}' and '${parent}' — a slot can only have one parent`,
+        )
+        continue
+      }
+      parentOf[child] = parent
+    }
+  }
+
+  // Cycle detection via DFS coloring
+  const WHITE = 0, GRAY = 1, BLACK = 2
+  const color: Record<string, number> = {}
+  const reported = new Set<string>()
+
+  function dfs(node: string, path: string[]): void {
+    if (color[node] === GRAY) {
+      const cycleStart = path.indexOf(node)
+      const cyclePath = [...path.slice(cycleStart), node]
+      const key = cyclePath.join('→')
+      if (!reported.has(key)) {
+        reported.add(key)
+        errors.push(`cycle detected in nested-slots: ${cyclePath.join(' → ')}`)
+      }
+      return
+    }
+    if (color[node] === BLACK) return
+    color[node] = GRAY
+    const children = config.slots[node]?.['nested-slots'] ?? []
+    for (const c of children) {
+      if (config.slots[c]) dfs(c, [...path, node])
+    }
+    color[node] = BLACK
+  }
+
+  for (const slot of Object.keys(config.slots)) {
+    if (color[slot] === undefined) dfs(slot, [])
+  }
 }
 
 /** Walk config and collect all --spacing-* token references */

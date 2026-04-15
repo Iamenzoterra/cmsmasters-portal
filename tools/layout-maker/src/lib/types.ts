@@ -72,6 +72,7 @@ export interface SlotConfig {
   'min-height'?: string
   'margin-top'?: string
   background?: string
+  'nested-slots'?: string[]
 }
 
 export interface LayoutConfig {
@@ -178,6 +179,7 @@ export interface ExportPayload {
     'padding-bottom'?: string
     align?: string
     background?: string
+    'nested-slots'?: string[]
     breakpoints?: Record<string, {
       gap?: string
       'max-width'?: string

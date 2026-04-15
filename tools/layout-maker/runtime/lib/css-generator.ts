@@ -198,8 +198,10 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
   out.push('}')
   out.push('')
 
-  // Per-slot inner rules (consume vars, static across layouts)
-  for (const name of Object.keys(config.slots)) {
+  // Per-slot inner rules (consume vars, static across layouts).
+  // Skip container slots — they hold a nested <div data-slot> instead of .slot-inner.
+  for (const [name, slot] of Object.entries(config.slots)) {
+    if (slot['nested-slots'] && slot['nested-slots'].length > 0) continue
     const pf = slotVarPrefix(name)
     out.push(`[data-slot="${name}"] > .slot-inner {`)
     out.push(`  max-width: var(${pf}-mw, none);`)
