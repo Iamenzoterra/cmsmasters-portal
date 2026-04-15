@@ -903,13 +903,30 @@ function SlotPanel({ code, layoutSlots, slotConfig, onSlotsChange, onConfigChang
   const slots = useMemo(() => extractSlots(code), [code])
   const [pickingSlot, setPickingSlot] = useState<string | null>(null)
 
+  // Derive container/leaf from slot_config['nested-slots']
+  const containerSlots = useMemo(() => {
+    const map: Record<string, string[]> = {}
+    for (const [name, cfg] of Object.entries(slotConfig)) {
+      const nested = (cfg as Record<string, unknown>)?.['nested-slots']
+      if (Array.isArray(nested) && nested.length > 0) {
+        map[name] = nested as string[]
+      }
+    }
+    return map
+  }, [slotConfig])
+
+  const isContainer = (slot: string) => !!containerSlots[slot]
+  const getNestedChildren = (slot: string) => containerSlots[slot] ?? []
+  const isNestedLeaf = (slot: string) =>
+    Object.values(containerSlots).some((children) => children.includes(slot))
+
   // Commit the displayed default gap (24px) into state for any global slot
-  // that lacks one. Without this, the UI shows "24" via `?? '24'` but state
-  // stays empty — Save then writes slot_config WITHOUT gap, and portal renders
-  // with gap:0 because the CSS var is missing.
+  // or nested leaf that lacks one. Without this, the UI shows "24" via
+  // `?? '24'` but state stays empty — Save then writes slot_config WITHOUT
+  // gap, and portal renders with gap:0 because the CSS var is missing.
   useEffect(() => {
     const missing = slots.filter(
-      (s) => GLOBAL_SLOTS.includes(s) && !slotConfig[s]?.gap,
+      (s) => (GLOBAL_SLOTS.includes(s) || isNestedLeaf(s)) && !slotConfig[s]?.gap,
     )
     if (missing.length === 0) return
     const next = { ...slotConfig }
@@ -948,15 +965,45 @@ function SlotPanel({ code, layoutSlots, slotConfig, onSlotsChange, onConfigChang
       <div className="flex flex-col" style={{ gap: 'var(--spacing-md)' }}>
         {slots.map((slot) => {
           const isGlobal = GLOBAL_SLOTS.includes(slot)
-          const isContent = slot === 'content'
           const isMeta = slot.startsWith('meta:')
           const category = SLOT_TO_CATEGORY[slot]
           const categoryBlocks = category ? blocks.filter((b) => b.block_type === category) : []
           const blockIds = getSlotBlockIds(layoutSlots, slot)
           const gapVal = parseInt(slotConfig[slot]?.gap ?? '24', 10)
+          const hasInteractiveControls = isGlobal || isNestedLeaf(slot)
 
-          // Non-global slots: static label row
-          if (!isGlobal) {
+          // Container slots: informational card (no block controls)
+          if (isContainer(slot)) {
+            const children = getNestedChildren(slot)
+            return (
+              <div
+                key={slot}
+                className="flex flex-col border"
+                style={{
+                  padding: 'var(--spacing-sm) var(--spacing-md)',
+                  borderColor: 'hsl(var(--border-default))',
+                  borderRadius: 'var(--rounded-lg)',
+                  backgroundColor: 'hsl(var(--muted))',
+                  borderLeft: '3px solid hsl(var(--border))',
+                }}
+              >
+                <div className="flex items-center" style={{ gap: 'var(--spacing-sm)' }}>
+                  <code style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-link))', backgroundColor: 'hsl(var(--bg-surface))', padding: '2px 6px', borderRadius: 'var(--rounded-sm)' }}>
+                    {slot}
+                  </code>
+                  <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))', backgroundColor: 'hsl(var(--bg-surface))', padding: '2px 8px', borderRadius: 'var(--rounded-sm)' }}>
+                    container
+                  </span>
+                </div>
+                <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))', marginTop: 'var(--spacing-xs)' }}>
+                  Contains: {children.join(', ')}
+                </span>
+              </div>
+            )
+          }
+
+          // Non-interactive slots (meta:*, custom): static label row
+          if (!hasInteractiveControls) {
             return (
               <div
                 key={slot}
@@ -972,13 +1019,15 @@ function SlotPanel({ code, layoutSlots, slotConfig, onSlotsChange, onConfigChang
                   {slot}
                 </code>
                 <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>
-                  {isContent ? 'Template blocks per theme' : isMeta ? 'Resolved from theme.meta' : 'Custom slot'}
+                  {isMeta ? 'Resolved from theme.meta' : 'Custom slot'}
                 </span>
               </div>
             )
           }
 
-          // Global slots: multi-block list
+          // Interactive leaf slots (global + nested leaves): block list + controls
+          // TODO WP-020: drive hint text from slot_config.description when available
+          const hintText = slot === 'theme-blocks' ? 'Template blocks per theme' : undefined
           return (
             <div
               key={slot}
@@ -998,9 +1047,16 @@ function SlotPanel({ code, layoutSlots, slotConfig, onSlotsChange, onConfigChang
                   borderBottom: blockIds.length > 0 ? '1px solid hsl(var(--border-default))' : 'none',
                 }}
               >
-                <code style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-link))', backgroundColor: 'hsl(var(--bg-surface))', padding: '2px 6px', borderRadius: 'var(--rounded-sm)' }}>
-                  {slot}
-                </code>
+                <div className="flex items-center" style={{ gap: 'var(--spacing-sm)' }}>
+                  <code style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-link))', backgroundColor: 'hsl(var(--bg-surface))', padding: '2px 6px', borderRadius: 'var(--rounded-sm)' }}>
+                    {slot}
+                  </code>
+                  {hintText && (
+                    <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>
+                      {hintText}
+                    </span>
+                  )}
+                </div>
                 <div className="flex items-center" style={{ gap: 'var(--spacing-xs)' }}>
                   <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>Gap:</span>
                   <input
@@ -1106,16 +1162,23 @@ function SlotPanel({ code, layoutSlots, slotConfig, onSlotsChange, onConfigChang
 
               {/* Add button or empty state */}
               <div style={{ padding: 'var(--spacing-xs) var(--spacing-md) var(--spacing-sm)' }}>
-                {categoryBlocks.length > 0 ? (
+                {category ? (
+                  categoryBlocks.length > 0 ? (
+                    <Button variant="outline" size="sm" onClick={() => setPickingSlot(slot)}>
+                      <Plus size={14} />
+                      Add {category} block
+                    </Button>
+                  ) : (
+                    <Link to="/global-elements" className="flex items-center no-underline" style={{ gap: '4px', fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-link))' }}>
+                      Create {category} blocks first
+                      <ExternalLink size={11} />
+                    </Link>
+                  )
+                ) : (
                   <Button variant="outline" size="sm" onClick={() => setPickingSlot(slot)}>
                     <Plus size={14} />
-                    Add {category} block
+                    Add block
                   </Button>
-                ) : (
-                  <Link to="/global-elements" className="flex items-center no-underline" style={{ gap: '4px', fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-link))' }}>
-                    Create {category} blocks first
-                    <ExternalLink size={11} />
-                  </Link>
                 )}
               </div>
             </div>
