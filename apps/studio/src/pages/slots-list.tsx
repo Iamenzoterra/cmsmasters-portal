@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { SLOT_DEFINITIONS, META_SLOTS, HOOK_SHORTCUTS } from '@cmsmasters/db'
-import { Layers, Copy, Check } from 'lucide-react'
+import { Layers, GitBranch, Copy, Check } from 'lucide-react'
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false)
@@ -195,6 +195,55 @@ export function SlotsList() {
                   </td>
                 </tr>
               )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* Nested Slots */}
+      <section style={{ marginTop: 'var(--spacing-2xl)' }}>
+        <div className="flex items-center" style={{ gap: 'var(--spacing-sm)', marginBottom: 'var(--spacing-md)' }}>
+          <GitBranch size={18} style={{ color: 'hsl(var(--status-warning-fg))' }} />
+          <h2 style={sectionTitleStyle}>Nested Slots</h2>
+        </div>
+        <p style={{ margin: '0 0 var(--spacing-md)', fontSize: 'var(--text-sm-font-size)', color: 'hsl(var(--text-secondary))' }}>
+          Layout-scoped slots that live inside a container slot. Not global — only present in layouts that declare them via <code className="font-mono" style={{ fontSize: 'var(--text-xs-font-size)' }}>nested-slots</code> in slot_config.
+        </p>
+        <div style={{ borderRadius: 'var(--rounded-lg)', border: '1px solid hsl(var(--border-default))', overflow: 'hidden' }}>
+          <table style={tableStyle}>
+            <thead>
+              <tr style={{ backgroundColor: 'hsl(var(--bg-surface-alt))' }}>
+                <th style={thStyle}>Name</th>
+                <th style={thStyle}>Parent</th>
+                <th style={thStyle}>Layout</th>
+                <th style={thStyle}>Description</th>
+                <th style={thStyle}>Syntax</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style={tdStyle}>
+                  <span style={{ fontWeight: 'var(--font-weight-medium)' }}>theme-blocks</span>
+                </td>
+                <td style={tdStyle}>
+                  <span
+                    style={{
+                      fontSize: 'var(--text-xs-font-size)',
+                      padding: '2px 8px',
+                      borderRadius: 'var(--rounded-full)',
+                      backgroundColor: 'hsl(var(--bg-surface-alt))',
+                      color: 'hsl(var(--text-secondary))',
+                    }}
+                  >
+                    content
+                  </span>
+                </td>
+                <td style={{ ...tdStyle, color: 'hsl(var(--text-secondary))' }}>theme-page-layout</td>
+                <td style={{ ...tdStyle, color: 'hsl(var(--text-secondary))' }}>Template blocks per theme</td>
+                <td style={tdStyle}>
+                  <CodeChip>{`<div data-slot="theme-blocks"></div>`}</CodeChip>
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>

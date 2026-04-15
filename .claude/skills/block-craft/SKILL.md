@@ -335,6 +335,14 @@ Used in layout page HTML. Each slot is filled by a global element or per-layout 
 | sidebar-left | sidebar | `{{slot:sidebar-left}}` or `<div data-slot="sidebar-left"></div>` |
 | sidebar-right | sidebar | `{{slot:sidebar-right}}` or `<div data-slot="sidebar-right"></div>` |
 
+### Nested Slots (layout-scoped)
+
+Nested slots live inside a container slot and are specific to a layout. They are NOT global — they only appear in layouts that declare them via `slot_config[parent]['nested-slots']`.
+
+| Slot | Parent | Layout | Description | Syntax |
+|------|--------|--------|-------------|--------|
+| theme-blocks | content | theme-page-layout | Template blocks per theme | `<div data-slot="theme-blocks"></div>` |
+
 ### Meta Slots
 
 Resolved from `theme.meta` at build time. Use in block HTML for dynamic theme data.
