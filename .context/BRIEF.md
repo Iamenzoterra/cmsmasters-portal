@@ -138,6 +138,8 @@ Layer 3: Dashboard + Admin        ✅ DONE (WP-017: 9 phases, DB migration + aut
 
 Each theme references a **template** (ordered position grid with block assignments) and optionally fills empty positions via **block_fills**. Portal resolves blocks from DB at build time, injects dynamic data via hooks.
 
+**Slot types (WP-020):** Layout Maker supports container slots (hold other slots via `nested-slots`) and leaf slots (hold blocks via `.slot-inner`). The theme-page-layout uses `content` as a container for `theme-blocks`. Studio's Slot Assignments panel reads this structure from the layout row — container slots show info cards; leaf slots show block controls.
+
 **Resource Sidebar access tiers (ADR-005 V2):**
 - 🔓 Public: Live Demo, Documentation, Changelog, FAQ
 - 🔒 Licensed: Theme Download, Child Theme, PSD Files, Support Ticket

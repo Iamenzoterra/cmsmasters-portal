@@ -24,8 +24,15 @@ status: full
 - **Elements page is blocks filtered by `category === 'element'`.** `elements-list.tsx` is NOT a separate entity type — it calls `fetchAllBlocks()` and filters.
 - **App layout has two shells:** `auth-layout.tsx` (login/callback) and `app-layout.tsx` (authenticated — sidebar + topbar + content area).
 
+## Invariants (cont.)
+
+- **Slot Assignments derives container vs leaf from `slot_config[slot]['nested-slots']`** on the layout row. No slot-name hardcoding — the old `isContent = slot === 'content'` branch was removed in WP-020 Phase 5.
+- **4-path slot rendering** in Slot Assignments `.map()`: (1) container → info card with children list, (2) meta/label → simple text row, (3) dynamic nested leaf (e.g. `theme-blocks`) → gap input only, no block controls, (4) global slots → full block assignment controls.
+
 ## Traps & Gotchas
 
+- **`theme-blocks` is layout-scoped, NOT in `SLOT_DEFINITIONS`.** Don't add it there — it would force global category defaults onto a slot whose content comes from theme blocks at render time. (WP-020)
+- **`SlotConfig` type in `@cmsmasters/db` does NOT include `nested-slots`.** Studio accesses it via `as Record<string, unknown>` cast. If the DB package type is ever expanded, remove the cast. (WP-020)
 - **"block-api.ts is in studio-core, not studio-blocks"** — counterintuitive name. It contains shared auth utilities (authHeaders, parseError) used by ALL API wrappers. The block CRUD functions happen to live here too.
 - **block-picker-modal is shared** — used by theme-editor (block fills), page-editor (page blocks + slot blocks), and template-editor (default blocks). Accepts optional `filterCategory` prop to show only blocks of a specific `block_type`. Not block-specific.
 - **SlotPanel supports multi-block slots** — global slots show ordered block list with add/remove/reorder (ArrowUp/ArrowDown/Trash2) + per-slot gap input. `layout_slots` stores `string | string[]` per slot. `slot_config` stores `{ gap: "24px" }` per slot. Wired through all 4 save paths (save-update, save-create, publish-update, publish-create).

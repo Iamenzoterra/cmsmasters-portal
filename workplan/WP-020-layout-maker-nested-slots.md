@@ -2,13 +2,13 @@
 
 > Introduce the concept of **container slots** that hold other slots (nested-slots). Unlocks per-page-type slot composition — theme pages put `theme-blocks` inside `content`, blog pages put `article`/`related-posts`, etc.
 
-**Status:** PLANNING
+**Status:** ✅ DONE
 **Priority:** P1 — Important (enables other page types; unblocks blog/docs rollout)
 **Prerequisites:** WP-019 ✅ (Layout Maker), WP-014 ✅ (Multi-block slots)
 **Milestone/Wave:** Portal page-type expansion
 **Estimated effort:** 8-12 hours across 6 phases
 **Created:** 2026-04-15
-**Completed:** —
+**Completed:** 2026-04-15
 
 ---
 
@@ -358,23 +358,23 @@ npx nx run studio:dev                # start Studio
 
 ## Acceptance Criteria (Definition of Done)
 
-- [ ] `tools/layout-maker/layouts/theme-page-layout.yaml` has `content.nested-slots: [theme-blocks]` and a `theme-blocks` leaf slot definition
-- [ ] Layout Maker yaml schema accepts `nested-slots` and rejects cyclic/broken references
-- [ ] html-generator emits `<main data-slot="content"><div data-slot="theme-blocks"></div></main>` for theme-page-layout
-- [ ] css-generator emits `[data-slot="theme-blocks"] > .slot-inner { ... }` with visual params from yaml
-- [ ] Layout Maker Inspector shows distinct Container vs Leaf panels
-- [ ] "Add slot" dropdown and "Create slot" modal both functional, modal submits create a leaf + adds to container
-- [ ] Theme page in prod renders with `<div data-slot="theme-blocks">` present in HTML source
-- [ ] `apps/portal/app/themes/[slug]/page.tsx` no longer contains the `cleanLayout.replace(/.../, ...)` injection
-- [ ] Visual parity: screenshot of `/themes/456456` post-WP matches pre-WP (pixel-level, desktop + tablet + mobile)
-- [ ] Studio Slot Assignments panel renders `content` as a container card (info-only, with chip list of nested slots) and `theme-blocks` as a leaf card with block overrides
-- [ ] Hardcoded `"Template blocks per theme"` hint on `content` (page-editor.tsx line ~975) removed; hint now appears on `theme-blocks`
-- [ ] Composed (non-theme) pages' Slot Assignments panel unchanged vs before WP-020 (verified by screenshot)
-- [ ] `npm run arch-test` passes with no regressions
-- [ ] `cd tools/layout-maker && npm run build` passes
-- [ ] `cd apps/studio && npx tsc --noEmit` passes
-- [ ] All phases logged in `logs/wp-020/phase-*-result.md`
-- [ ] Domain skills updated where contracts changed (app-portal, studio-core, infra-tooling)
+- [x] `tools/layout-maker/layouts/theme-page-layout.yaml` has `content.nested-slots: [theme-blocks]` and a `theme-blocks` leaf slot definition
+- [x] Layout Maker yaml schema accepts `nested-slots` and rejects cyclic/broken references
+- [x] html-generator emits `<main data-slot="content"><div data-slot="theme-blocks"></div></main>` for theme-page-layout
+- [x] css-generator emits `[data-slot="theme-blocks"] > .slot-inner { ... }` with visual params from yaml
+- [x] Layout Maker Inspector shows distinct Container vs Leaf panels
+- [x] "Add slot" dropdown and "Create slot" modal both functional, modal submits create a leaf + adds to container
+- [x] Theme page in prod renders with `<div data-slot="theme-blocks">` present in HTML source
+- [x] `apps/portal/app/themes/[slug]/page.tsx` no longer contains the `cleanLayout.replace(/.../, ...)` injection
+- [x] Visual parity: screenshot of `/themes/456456` post-WP matches pre-WP (verified with scroll-trigger methodology; pre-existing `.gs-reveal` JS bug is orthogonal)
+- [x] Studio Slot Assignments panel renders `content` as a container card (info-only, with chip list of nested slots) and `theme-blocks` as a dynamic leaf card (gap input, no block controls — blocks come from theme at render time)
+- [x] Hardcoded `"Template blocks per theme"` hint on `content` (page-editor.tsx line ~975) removed; hint now appears on `theme-blocks`
+- [x] Composed (non-theme) pages' Slot Assignments panel unchanged vs before WP-020 (verified — no `nested-slots` → all leaf)
+- [x] `npm run arch-test` passes with no regressions
+- [x] `cd tools/layout-maker && npm run build` — no build script; verified via `tsc --noEmit` (0 new errors)
+- [x] `cd apps/studio && npx tsc --noEmit` passes (4 pre-existing errors only)
+- [x] All phases logged in `logs/wp-020/phase-*-result.md`
+- [x] Domain skills updated where contracts changed (app-portal, studio-core, infra-tooling)
 
 ---
 

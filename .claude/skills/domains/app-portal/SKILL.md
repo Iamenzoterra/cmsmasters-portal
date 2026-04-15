@@ -25,11 +25,17 @@ status: full
 - **`[[...slug]]` catch-all** handles all composed pages. `/themes/[slug]` handles theme pages.
 - **`mergePositions`** combines template positions + per-theme block_fills. Fills override template at same position. Extra fill positions (not in template) get appended.
 
+## Invariants (cont.)
+
+- **`resolveSlots` is single-pass.** Nested slots work because layout HTML (from DB) already contains `<main data-slot="content"><div data-slot="theme-blocks"></div></main>` — the outer is non-empty so it's skipped; the inner is empty and gets filled. NO runtime injection needed. (WP-020)
+- **The temporary injection regex in `themes/[slug]/page.tsx` (commit `640faa93`) has been deleted** (WP-020 Phase 4). Don't re-add it.
+
 ## Traps & Gotchas
 
 - **"New page not showing"** — SSG pages are built at deploy time. New pages need revalidation via POST to `/api/revalidate` with the correct path.
 - **"Block styles leaking between blocks"** — check CSS scoping. Every block MUST use `.block-{slug}` prefix. BlockRenderer wraps in `<div class="block-{slug}">` but the CSS itself must also scope.
 - **`resolveSlots` temporarily removes `<style>` blocks** before processing `data-slot` attributes — to avoid matching CSS selectors that contain `data-slot`. Style blocks are restored after.
+- **Layout/portal slot mismatch is silent.** If a new layout is pushed to DB without nested structure but portal code fills `'theme-blocks'` in `resolveSlots`, the slot content silently won't render (no placeholder to fill). Always ensure layout HTML matches the slots the renderer fills. (WP-020)
 - **`stripDebug` removes debug toggle buttons** — blocks from /block-craft may include debug UI that must be stripped before production render.
 - **Portal uses its own Supabase client** (`lib/supabase.ts`) with the anon key — NOT the service_role from the API. RLS applies to all portal reads.
 - **`getThemeBySlug` uses `.eq('status', 'published')`** — draft themes are invisible to the portal.
