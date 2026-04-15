@@ -1025,9 +1025,64 @@ function SlotPanel({ code, layoutSlots, slotConfig, onSlotsChange, onConfigChang
             )
           }
 
-          // Interactive leaf slots (global + nested leaves): block list + controls
+          // Dynamic nested leaves: gap input only, blocks come from the theme
           // TODO WP-020: drive hint text from slot_config.description when available
-          const hintText = slot === 'theme-blocks' ? 'Template blocks per theme' : undefined
+          if (isNestedLeaf(slot) && !isGlobal) {
+            return (
+              <div
+                key={slot}
+                className="flex flex-col border"
+                style={{
+                  borderColor: 'hsl(var(--border-default))',
+                  borderRadius: 'var(--rounded-lg)',
+                  backgroundColor: 'hsl(var(--bg-surface-alt))',
+                  overflow: 'hidden',
+                }}
+              >
+                <div
+                  className="flex items-center justify-between"
+                  style={{ padding: 'var(--spacing-sm) var(--spacing-md)' }}
+                >
+                  <div className="flex items-center" style={{ gap: 'var(--spacing-sm)' }}>
+                    <code style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-link))', backgroundColor: 'hsl(var(--bg-surface))', padding: '2px 6px', borderRadius: 'var(--rounded-sm)' }}>
+                      {slot}
+                    </code>
+                    <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>
+                      Dynamic: populated from theme blocks
+                    </span>
+                  </div>
+                  <div className="flex items-center" style={{ gap: 'var(--spacing-xs)' }}>
+                    <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>Gap:</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={200}
+                      value={gapVal}
+                      onChange={(e) => {
+                        const gap = `${e.target.value}px`
+                        onConfigChange({ ...slotConfig, [slot]: { ...slotConfig[slot], gap } })
+                      }}
+                      className="outline-none"
+                      style={{
+                        width: '48px',
+                        height: '28px',
+                        textAlign: 'center',
+                        padding: '0 4px',
+                        backgroundColor: 'hsl(var(--input))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: 'var(--rounded-md)',
+                        fontSize: 'var(--text-xs-font-size)',
+                        color: 'hsl(var(--foreground))',
+                      }}
+                    />
+                    <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>px</span>
+                  </div>
+                </div>
+              </div>
+            )
+          }
+
+          // Global slots: block list + controls
           return (
             <div
               key={slot}
@@ -1047,16 +1102,9 @@ function SlotPanel({ code, layoutSlots, slotConfig, onSlotsChange, onConfigChang
                   borderBottom: blockIds.length > 0 ? '1px solid hsl(var(--border-default))' : 'none',
                 }}
               >
-                <div className="flex items-center" style={{ gap: 'var(--spacing-sm)' }}>
-                  <code style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-link))', backgroundColor: 'hsl(var(--bg-surface))', padding: '2px 6px', borderRadius: 'var(--rounded-sm)' }}>
-                    {slot}
-                  </code>
-                  {hintText && (
-                    <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>
-                      {hintText}
-                    </span>
-                  )}
-                </div>
+                <code style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-link))', backgroundColor: 'hsl(var(--bg-surface))', padding: '2px 6px', borderRadius: 'var(--rounded-sm)' }}>
+                  {slot}
+                </code>
                 <div className="flex items-center" style={{ gap: 'var(--spacing-xs)' }}>
                   <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>Gap:</span>
                   <input
@@ -1162,23 +1210,16 @@ function SlotPanel({ code, layoutSlots, slotConfig, onSlotsChange, onConfigChang
 
               {/* Add button or empty state */}
               <div style={{ padding: 'var(--spacing-xs) var(--spacing-md) var(--spacing-sm)' }}>
-                {category ? (
-                  categoryBlocks.length > 0 ? (
-                    <Button variant="outline" size="sm" onClick={() => setPickingSlot(slot)}>
-                      <Plus size={14} />
-                      Add {category} block
-                    </Button>
-                  ) : (
-                    <Link to="/global-elements" className="flex items-center no-underline" style={{ gap: '4px', fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-link))' }}>
-                      Create {category} blocks first
-                      <ExternalLink size={11} />
-                    </Link>
-                  )
-                ) : (
+                {categoryBlocks.length > 0 ? (
                   <Button variant="outline" size="sm" onClick={() => setPickingSlot(slot)}>
                     <Plus size={14} />
-                    Add block
+                    Add {category} block
                   </Button>
+                ) : (
+                  <Link to="/global-elements" className="flex items-center no-underline" style={{ gap: '4px', fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-link))' }}>
+                    Create {category} blocks first
+                    <ExternalLink size={11} />
+                  </Link>
                 )}
               </div>
             </div>
