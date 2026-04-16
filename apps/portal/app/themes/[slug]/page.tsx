@@ -11,6 +11,7 @@ import {
 } from '@/lib/blocks'
 import { getThemePrices, getThemeUseCases, getThemeCategories, getThemeTags } from '@cmsmasters/db'
 import type { Block } from '@cmsmasters/db'
+import { GLOBAL_SLOT_NAMES } from '@cmsmasters/db'
 import { resolveGlobalBlocks } from '@/lib/global-elements'
 import {
   resolveSlots,
@@ -152,12 +153,21 @@ export default async function ThemePage({ params }: Props) {
     }
   }
 
+  // 3b. Identify custom slot block assignments (not global, not theme-blocks)
+  const globalSlotSet = new Set<string>([...GLOBAL_SLOT_NAMES, 'theme-blocks'])
+  const customSlotBlockIds: string[] = []
+  for (const [slot, val] of Object.entries(layoutSlots)) {
+    if (globalSlotSet.has(slot)) continue
+    const ids = Array.isArray(val) ? val : val ? [val] : []
+    customSlotBlockIds.push(...ids)
+  }
+
   // 4. Collect all block IDs and batch fetch
   const globalBlockIds = Object.values(globalElements)
     .flat()
     .map((b) => b.id)
   const contentBlockIds = contentPositions.map((p) => p.block_id)
-  const allBlockIds = [...new Set([...globalBlockIds, ...contentBlockIds])]
+  const allBlockIds = [...new Set([...globalBlockIds, ...contentBlockIds, ...customSlotBlockIds])]
   const blockMap = await fetchBlocksById(allBlockIds)
 
   // 5. Render theme blocks (template positions + theme block_fills) with hooks resolved.
@@ -184,7 +194,17 @@ export default async function ThemePage({ params }: Props) {
     return `<div class="slot-inner">${rendered.join('\n')}</div>`
   }
 
-  // 7. Assemble page
+  // 7. Assemble page — resolve global + custom slots
+  const customSlotContent: Record<string, string> = {}
+  for (const [slot, val] of Object.entries(layoutSlots)) {
+    if (globalSlotSet.has(slot)) continue
+    const ids = Array.isArray(val) ? val : val ? [val] : []
+    const blocks = ids.map((id) => blockMap.get(id)).filter((b): b is Block => b !== undefined)
+    if (blocks.length > 0) {
+      customSlotContent[slot] = renderSlotBlocks(blocks)
+    }
+  }
+
   let pageHTML: string
   if (layoutPage?.html) {
     const cleanLayout = stripDebug(layoutPage.html)
@@ -194,6 +214,7 @@ export default async function ThemePage({ params }: Props) {
       'sidebar-left': renderSlotBlocks(globalElements['sidebar-left']),
       'sidebar-right': renderSlotBlocks(globalElements['sidebar-right']),
       'theme-blocks': `<div class="slot-inner">${themeBlocksHTML}</div>`,
+      ...customSlotContent,
     })
     pageHTML = resolveMetaHooks(pageHTML, meta)
   } else {
