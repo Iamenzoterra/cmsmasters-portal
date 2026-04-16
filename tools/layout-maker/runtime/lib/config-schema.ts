@@ -39,6 +39,8 @@ const slotSchemaPartial = z
     'border-sides': z.string().regex(/^(top|right|bottom|left)(,(top|right|bottom|left))*$/).optional(),
     'border-width': z.string().regex(/^\d+px$/).optional(),
     'border-color': z.string().regex(/^--border[\w-]*$/).optional(),
+    visibility: z.enum(['visible', 'hidden', 'drawer']).optional(),
+    order: z.number().int().min(0).max(99).optional(),
   })
   .strict()
 
@@ -76,6 +78,8 @@ const slotSchema = z
     'border-sides': z.string().regex(/^(top|right|bottom|left)(,(top|right|bottom|left))*$/).optional(),
     'border-width': z.string().regex(/^\d+px$/).optional(),
     'border-color': z.string().regex(/^--border[\w-]*$/).optional(),
+    visibility: z.enum(['visible', 'hidden', 'drawer']).optional(),
+    order: z.number().int().min(0).max(99).optional(),
     'nested-slots': z.array(z.string().min(1)).optional(),
     'allowed-block-types': z.array(z.enum(['theme-block', 'element', 'header', 'footer', 'sidebar'])).optional(),
   })
@@ -167,6 +171,19 @@ export function validateConfig(
     if (grid.sidebars === 'drawer' && !grid['drawer-trigger']) {
       errors.push(
         `Grid "${bp}" has sidebars:drawer but no drawer-trigger`,
+      )
+    }
+  }
+
+  // 6. Per-slot drawer visibility requires drawer-trigger at grid level
+  for (const [bp, grid] of Object.entries(config.grid)) {
+    if (!grid.slots) continue
+    const hasPerSlotDrawer = Object.values(grid.slots).some(
+      (s) => s.visibility === 'drawer',
+    )
+    if (hasPerSlotDrawer && !grid['drawer-trigger'] && grid.sidebars !== 'drawer') {
+      errors.push(
+        `Grid "${bp}" has per-slot visibility:drawer but no drawer-trigger`,
       )
     }
   }

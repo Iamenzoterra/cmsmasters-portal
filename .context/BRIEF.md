@@ -149,8 +149,11 @@ Layout Maker defines responsive layouts with 3 canonical breakpoints (desktop 14
 3. **Studio** — imports JSON, saves to DB. TODO: consume `breakpoints` in slot_config, show in UI.
 4. **Portal** — renders theme pages with layout HTML+CSS. TODO: generate media queries from `slot_config.breakpoints` at render time.
 
-Per-BP fields: padding-*, gap, align, max-width, min-height, margin-top, border-*, background.
+Per-BP fields: padding-*, gap, align, max-width, min-height, margin-top, border-*, background, visibility, order.
 Global fields (never per-BP): position, sticky, z-index, nested-slots, allowed-block-types.
+
+Per-slot visibility (WP-023): `visible` / `hidden` / `drawer` per breakpoint, per slot. Replaces grid-level `sidebars` for fine-grained control (e.g., sidebar-left=hidden, sidebar-right=stacked). Grid-level `sidebars` is fallback.
+Display order (WP-023): CSS `order` per slot, per breakpoint. Controls stacking when grid collapses to single column on mobile (e.g., sidebar below content).
 
 **Resource Sidebar access tiers (ADR-005 V2):**
 - 🔓 Public: Live Demo, Documentation, Changelog, FAQ

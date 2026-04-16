@@ -22,7 +22,20 @@ When user clicks a breakpoint button: both update to canonical values.
 When user picks a device preset: breakpoint = preset's BP, width = preset's width.
 
 ### Per-breakpoint fields (PER_BP_SLOT_FIELDS)
-padding, padding-x, padding-top, padding-bottom, gap, align, max-width, min-height, margin-top, border-sides, border-width, border-color
+padding, padding-x, padding-top, padding-bottom, gap, align, max-width, min-height, margin-top, border-sides, border-width, border-color, visibility, order
+
+### Per-slot visibility (per-BP, WP-023)
+- `visible` (default) — slot renders normally in grid
+- `hidden` — slot gets `display: none` at this BP
+- `drawer` — slot hidden in grid, content moves to off-canvas drawer
+
+Per-slot visibility overrides grid-level `sidebars` when set. Grid-level `sidebars` still works as fallback for sidebar slots without explicit visibility.
+
+"All sidebars" batch control in Inspector sets visibility on all sidebar slots at once.
+
+### Display order (per-BP, WP-023)
+CSS `order` property for controlling visual stacking when grid collapses to single column.
+Example: on mobile, set content order=1, sidebar-right order=2 to stack sidebar below content.
 
 ### Global fields (role-level, never per-BP)
 position (top/bottom), sticky, z-index, nested-slots, allowed-block-types

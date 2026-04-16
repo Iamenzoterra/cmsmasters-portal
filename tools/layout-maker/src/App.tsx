@@ -71,7 +71,7 @@ function disableSidebar(config: LayoutConfig, slotName: string): void {
 }
 
 /** Set or delete a key in a record, returning whether it was a set */
-function setOrDelete(obj: Record<string, unknown>, key: string, value: string | undefined): void {
+function setOrDelete(obj: Record<string, unknown>, key: string, value: string | number | undefined): void {
   if (value === undefined) {
     delete obj[key]
   } else {
@@ -83,7 +83,7 @@ function applySlotConfigUpdate(
   config: LayoutConfig,
   slotName: string,
   key: string,
-  value: string | undefined,
+  value: string | number | undefined,
   writeToBase: boolean,
   targetGridKey?: string,
 ): void {
@@ -346,7 +346,7 @@ export function App() {
   const handleUpdateSlotConfig = useCallback(async (
     slotName: string,
     key: string,
-    value: string | undefined,
+    value: string | number | undefined,
     targetGridKey?: string,
     breakpointId?: CanvasBreakpointId,
   ) => {

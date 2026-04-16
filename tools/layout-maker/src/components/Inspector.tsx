@@ -25,7 +25,7 @@ interface Props {
   onShowToast: (message: string) => void
   blockWarnings: ScopingWarning[]
   onToggleSlot: (slotName: string, enabled: boolean) => void
-  onUpdateSlotConfig: (slotName: string, key: string, value: string | undefined, targetGridKey?: string, breakpointId?: CanvasBreakpointId) => void
+  onUpdateSlotConfig: (slotName: string, key: string, value: string | number | undefined, targetGridKey?: string, breakpointId?: CanvasBreakpointId) => void
   onUpdateSlotRole: (slotName: string, updates: Record<string, unknown>) => void
   onUpdateColumnWidth: (slotName: string, breakpointKey: string, width: string) => void
   onUpdateGridProp: (breakpointKey: string, key: string, value: string | undefined) => void
@@ -218,20 +218,28 @@ function computeUsableWidth(
   return null
 }
 
-function SidebarModeControl({ config, activeBreakpoint, onUpdateGridProp }: {
+function SidebarModeControl({ config, activeBreakpoint, gridKey, onUpdateSlotConfig }: {
   config: LayoutConfig
   activeBreakpoint: string
-  onUpdateGridProp: Props['onUpdateGridProp']
+  gridKey: string
+  onUpdateSlotConfig: Props['onUpdateSlotConfig']
 }) {
   const isDesktop = activeBreakpoint === 'desktop'
-  const hasSidebars = Object.keys(config.slots).some((n) => n.includes('sidebar'))
-  if (isDesktop || !hasSidebars) return null
+  const sidebarNames = Object.keys(config.slots).filter((n) => n.includes('sidebar'))
+  if (isDesktop || sidebarNames.length === 0) return null
 
-  const bpOwnGrid = config.grid[activeBreakpoint]
+  // Determine current effective mode: if all sidebar slots share the same per-slot visibility, show it as active
+  const sidebarVisibilities = sidebarNames.map((name) => {
+    const override = config.grid[gridKey]?.slots?.[name]?.visibility
+    return override ?? undefined
+  })
+  const allSame = sidebarVisibilities.every((v) => v === sidebarVisibilities[0])
+  const currentMode = allSame ? sidebarVisibilities[0] : undefined
+
   return (
     <div className="lm-inspector__section lm-inspector__info">
       <div className="lm-inspector__row">
-        <span className="lm-inspector__label">Sidebars at {activeBreakpoint}</span>
+        <span className="lm-inspector__label">All sidebars at {activeBreakpoint}</span>
       </div>
       <div className="lm-align-group">
         {([
@@ -241,8 +249,12 @@ function SidebarModeControl({ config, activeBreakpoint, onUpdateGridProp }: {
         ] as const).map((opt) => (
           <button
             key={opt.label}
-            className={`lm-align-btn${(bpOwnGrid?.sidebars ?? undefined) === opt.value ? ' lm-align-btn--active' : ''}`}
-            onClick={() => onUpdateGridProp(activeBreakpoint, 'sidebars', opt.value)}
+            className={`lm-align-btn${currentMode === opt.value ? ' lm-align-btn--active' : ''}`}
+            onClick={() => {
+              for (const name of sidebarNames) {
+                onUpdateSlotConfig(name, 'visibility', opt.value, gridKey, activeBreakpoint as CanvasBreakpointId)
+              }
+            }}
           >
             {opt.label}
           </button>
@@ -390,7 +402,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
           <AddSlotButton config={config} tokens={tokens} onCreateTopLevelSlot={onCreateTopLevelSlot} />
         </div>
         <div className="lm-inspector__body">
-          <SidebarModeControl config={config} activeBreakpoint={activeBreakpoint} onUpdateGridProp={onUpdateGridProp} />
+          <SidebarModeControl config={config} activeBreakpoint={activeBreakpoint} gridKey={gridKey} onUpdateSlotConfig={onUpdateSlotConfig} />
           <div className="lm-inspector__section">
             <div className="lm-inspector__section-title">Layout defaults</div>
             <div className="lm-inspector__row">
@@ -434,7 +446,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
     !isBaseBp && !isFieldOverridden(selectedSlot, gridKey, config, field) && baseSlot[field] !== undefined
 
   // Write target: base when viewing desktop, per-bp override otherwise
-  const writeField = (key: string, value: string | undefined) =>
+  const writeField = (key: string, value: string | number | undefined) =>
     onUpdateSlotConfig(selectedSlot, key, value, gridKey, activeBreakpoint as CanvasBreakpointId)
   // Reset: explicitly clear per-bp override (always targets current gridKey)
   const resetField = (key: string) =>
@@ -749,6 +761,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
         <div className="lm-inspector__section lm-inspector__section--outer" data-slot-type={selectedSlot}>
           <div className="lm-inspector__section-title">
             <span className="lm-inspector__section-glyph">▭</span> Slot Area
+            {!isBaseBp && <span className="lm-bp-badge" data-bp={activeBreakpoint}>{activeBreakpoint}</span>}
           </div>
 
           {/* Outer padding — split into X / top / bottom */}
@@ -895,6 +908,64 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
             setWidthDraft={setWidthDraft}
             onUpdateColumnWidth={onUpdateColumnWidth}
           />
+
+          {/* Per-slot visibility — shown on non-desktop BPs */}
+          {!isBaseBp && (
+            <div className="lm-inspector__row" style={{ marginTop: '12px' }}>
+              <span className="lm-inspector__label">
+                Visibility
+                {isOverridden('visibility') && <span className="lm-bp-dot" data-bp={activeBreakpoint} title={`Overridden at ${activeBreakpoint}`} />}
+                {isInherited('visibility') && <span className="lm-inherit-dot" title={`Inherited from ${baseGridKey}`} />}
+              </span>
+              {isOverridden('visibility') && (
+                <button className="lm-reset-btn" onClick={() => resetField('visibility')} title="Reset to inherited">↺</button>
+              )}
+            </div>
+          )}
+          {!isBaseBp && (
+            <div className="lm-align-group">
+              {([
+                { value: undefined, label: 'Visible' },
+                { value: 'hidden', label: 'Hidden' },
+                { value: 'drawer', label: 'Drawer' },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.label}
+                  className={`lm-align-btn${(slotConfig.visibility ?? undefined) === opt.value ? ' lm-align-btn--active' : ''}`}
+                  onClick={() => writeField('visibility', opt.value)}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Per-slot display order — shown on non-desktop BPs */}
+          {!isBaseBp && (
+            <div className="lm-inspector__row" style={{ marginTop: '8px' }}>
+              <span className="lm-inspector__label">
+                Order
+                {isOverridden('order') && <span className="lm-bp-dot" data-bp={activeBreakpoint} title={`Overridden at ${activeBreakpoint}`} />}
+                {isInherited('order') && <span className="lm-inherit-dot" title={`Inherited from ${baseGridKey}`} />}
+              </span>
+              <input
+                type="number"
+                className="lm-spacing-select lm-spacing-select--inline"
+                min={0}
+                max={99}
+                value={slotConfig.order ?? ''}
+                placeholder="auto"
+                onChange={(e) => {
+                  const v = e.target.value
+                  writeField('order', v === '' ? undefined : parseInt(v, 10))
+                }}
+                style={{ width: '60px' }}
+              />
+              {isOverridden('order') && (
+                <button className="lm-reset-btn" onClick={() => resetField('order')} title="Reset to inherited">↺</button>
+              )}
+            </div>
+          )}
         </div>
         )}
 
@@ -1071,7 +1142,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
         </div>
 
         {/* Sidebar mode — reuse shared control */}
-        <SidebarModeControl config={config} activeBreakpoint={activeBreakpoint} onUpdateGridProp={onUpdateGridProp} />
+        <SidebarModeControl config={config} activeBreakpoint={activeBreakpoint} gridKey={gridKey} onUpdateSlotConfig={onUpdateSlotConfig} />
 
         {/* Test blocks */}
         {blockCount > 0 && (

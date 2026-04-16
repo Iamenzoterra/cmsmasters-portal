@@ -76,9 +76,14 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
   const bps = sortBreakpoints(config.grid)
   const [defaultBpName, defaultGrid] = bps[0]
 
-  const hasDrawers = bps.some(([, g]) => g.sidebars === 'drawer')
   const sidebarSlots = Object.keys(config.slots).filter((n) =>
     n.includes('sidebar'),
+  )
+
+  // Detect drawer usage: grid-level sidebars OR per-slot visibility:'drawer'
+  const hasDrawers = bps.some(([, g]) =>
+    g.sidebars === 'drawer' ||
+    Object.values(g.slots ?? {}).some((s) => s.visibility === 'drawer'),
   )
 
   // Determine drawer sides needed
@@ -90,6 +95,13 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
         const pos = g['drawer-position'] ?? 'both'
         if (pos === 'left' || pos === 'both') needLeftDrawer = true
         if (pos === 'right' || pos === 'both') needRightDrawer = true
+      }
+      // Per-slot drawer: check which sidebar slots have visibility:'drawer'
+      for (const [slotName, slotOverride] of Object.entries(g.slots ?? {})) {
+        if (slotOverride.visibility === 'drawer') {
+          if (slotName.includes('left')) needLeftDrawer = true
+          if (slotName.includes('right')) needRightDrawer = true
+        }
       }
     }
   }
@@ -366,19 +378,46 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
     }
     out.push('  }')
 
-    // Hide sidebar slots in drawer or hidden mode
-    if ((grid.sidebars === 'drawer' || grid.sidebars === 'hidden') && sidebarSlots.length > 0) {
+    // Per-slot visibility: per-slot override wins, then grid-level sidebars fallback
+    const hiddenSlots: string[] = []
+    for (const slotName of Object.keys(config.slots)) {
+      const perSlotVis = grid.slots?.[slotName]?.visibility
+      let effectiveVis: string | undefined
+      if (perSlotVis) {
+        effectiveVis = perSlotVis
+      } else if (sidebarSlots.includes(slotName) && grid.sidebars) {
+        effectiveVis = grid.sidebars
+      }
+      if (effectiveVis === 'hidden' || effectiveVis === 'drawer') {
+        hiddenSlots.push(slotName)
+      }
+    }
+    if (hiddenSlots.length > 0) {
       out.push('')
-      const selectors = sidebarSlots
-        .map((n) => `  [data-slot="${n}"]`)
-        .join(',\n')
+      const selectors = hiddenSlots.map((n) => `  [data-slot="${n}"]`).join(',\n')
       out.push(`${selectors} {`)
       out.push('    display: none;')
       out.push('  }')
     }
 
-    // Show drawer triggers
-    if (grid.sidebars === 'drawer') {
+    // Per-slot CSS order for responsive stacking
+    const orderRules: string[] = []
+    for (const [slotName] of Object.entries(config.slots)) {
+      const slotOrder = grid.slots?.[slotName]?.order
+      if (slotOrder !== undefined) {
+        orderRules.push(`  [data-slot="${slotName}"] { order: ${slotOrder}; }`)
+      }
+    }
+    if (orderRules.length > 0) {
+      out.push('')
+      for (const r of orderRules) out.push(r)
+    }
+
+    // Show drawer triggers (grid-level OR per-slot drawer)
+    const hasDrawerAtBp = grid.sidebars === 'drawer' ||
+      Object.values(grid.slots ?? {}).some((s) => s.visibility === 'drawer')
+
+    if (hasDrawerAtBp) {
       out.push('')
       out.push('  .drawer-trigger {')
       out.push('    display: block;')

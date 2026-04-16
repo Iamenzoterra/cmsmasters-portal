@@ -96,6 +96,10 @@ export interface SlotConfig {
   'border-sides'?: string
   'border-width'?: string
   'border-color'?: string
+  /** Per-BP slot visibility: visible (default), hidden, or drawer */
+  visibility?: 'visible' | 'hidden' | 'drawer'
+  /** Per-BP CSS order for responsive stacking (lower = first) */
+  order?: number
   'nested-slots'?: string[]
   'allowed-block-types'?: string[]
 }
@@ -128,6 +132,8 @@ export const PER_BP_SLOT_FIELDS = [
   'border-sides',
   'border-width',
   'border-color',
+  'visibility',
+  'order',
 ] as const satisfies ReadonlyArray<keyof SlotConfig>
 
 export type PerBpSlotField = (typeof PER_BP_SLOT_FIELDS)[number]
@@ -210,6 +216,8 @@ export interface ExportPayload {
     'border-sides'?: string
     'border-width'?: string
     'border-color'?: string
+    visibility?: 'visible' | 'hidden' | 'drawer'
+    order?: number
     'nested-slots'?: string[]
     'allowed-block-types'?: string[]
     breakpoints?: Record<string, {
@@ -222,6 +230,8 @@ export interface ExportPayload {
       'border-sides'?: string
       'border-width'?: string
       'border-color'?: string
+      visibility?: 'visible' | 'hidden' | 'drawer'
+      order?: number
     }>
   }>
   status: 'draft'

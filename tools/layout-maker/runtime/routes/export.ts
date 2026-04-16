@@ -18,6 +18,8 @@ type VisualParams = {
   'border-sides'?: string
   'border-width'?: string
   'border-color'?: string
+  visibility?: 'visible' | 'hidden' | 'drawer'
+  order?: number
 }
 
 /** Resolve a background token ref to #RRGGBB or passthrough hex. */
@@ -66,6 +68,9 @@ function resolveVisualParams(slot: Record<string, unknown>, tokens: Record<strin
   if (borderWidth) out['border-width'] = borderWidth
   const borderColor = resolveBackground(slot['border-color'] as string | undefined, tokens)
   if (borderColor) out['border-color'] = borderColor
+  const vis = slot.visibility as string | undefined
+  if (vis && vis !== 'visible') out.visibility = vis as VisualParams['visibility']
+  if (slot.order !== undefined) out.order = slot.order as number
   return out
 }
 
