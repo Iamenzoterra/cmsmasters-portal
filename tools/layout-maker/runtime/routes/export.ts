@@ -15,6 +15,9 @@ type VisualParams = {
   'padding-bottom'?: string
   align?: string
   background?: string
+  'border-sides'?: string
+  'border-width'?: string
+  'border-color'?: string
 }
 
 /** Resolve a background token ref to #RRGGBB or passthrough hex. */
@@ -53,6 +56,12 @@ function resolveVisualParams(slot: Record<string, unknown>, tokens: Record<strin
   if (slot.align) out.align = slot.align as string
   const bg = resolveBackground(slot.background as string | undefined, tokens)
   if (bg) out.background = bg
+  const borderSides = slot['border-sides'] as string | undefined
+  if (borderSides) out['border-sides'] = borderSides
+  const borderWidth = slot['border-width'] as string | undefined
+  if (borderWidth) out['border-width'] = borderWidth
+  const borderColor = resolveBackground(slot['border-color'] as string | undefined, tokens)
+  if (borderColor) out['border-color'] = borderColor
   return out
 }
 

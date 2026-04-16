@@ -168,6 +168,17 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
       rules.push(`background: ${slotBg}`)
     }
 
+    // Border
+    const borderSides = slot['border-sides']?.split(',') ?? []
+    if (borderSides.length > 0) {
+      const borderWidth = slot['border-width'] ?? '1px'
+      const borderColorHex = resolveBackgroundCSS(slot['border-color'], tokens) ?? '#e2e8f0'
+      rules.push('border: none')
+      for (const side of borderSides) {
+        rules.push(`border-${side}: ${borderWidth} solid ${borderColorHex}`)
+      }
+    }
+
     out.push(`/* ── Slot: ${name} ── */`)
     out.push(`[data-slot="${name}"] {`)
     for (const rule of rules) {
@@ -383,6 +394,29 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
         out.push('')
         out.push('  :root {')
         for (const v of bpVars) out.push(v)
+        out.push('  }')
+      }
+
+      // Per-bp border overrides
+      for (const [slotName, overrides] of Object.entries(grid.slots)) {
+        const hasBorderOverride = overrides['border-sides'] !== undefined ||
+          overrides['border-width'] !== undefined || overrides['border-color'] !== undefined
+        if (!hasBorderOverride) continue
+
+        // Merge base + override to get effective config
+        const baseSlot = config.slots[slotName] ?? {}
+        const merged = { ...baseSlot, ...overrides }
+        const sides = merged['border-sides']?.split(',') ?? []
+        out.push('')
+        out.push(`  [data-slot="${slotName}"] {`)
+        out.push('    border: none;')
+        if (sides.length > 0) {
+          const bw = merged['border-width'] ?? '1px'
+          const bc = resolveBackgroundCSS(merged['border-color'], tokens) ?? '#e2e8f0'
+          for (const side of sides) {
+            out.push(`    border-${side}: ${bw} solid ${bc};`)
+          }
+        }
         out.push('  }')
       }
     }

@@ -36,6 +36,9 @@ const slotSchemaPartial = z
     'min-height': z.string().regex(/^\d+px$/).optional(),
     'margin-top': spacingToken.optional(),
     background: z.string().optional(),
+    'border-sides': z.string().regex(/^(top|right|bottom|left)(,(top|right|bottom|left))*$/).optional(),
+    'border-width': z.string().regex(/^\d+px$/).optional(),
+    'border-color': z.string().regex(/^--border[\w-]*$/).optional(),
   })
   .strict()
 
@@ -70,6 +73,9 @@ const slotSchema = z
     'min-height': z.string().regex(/^\d+px$/).optional(),
     'margin-top': spacingToken.optional(),
     background: z.string().optional(),
+    'border-sides': z.string().regex(/^(top|right|bottom|left)(,(top|right|bottom|left))*$/).optional(),
+    'border-width': z.string().regex(/^\d+px$/).optional(),
+    'border-color': z.string().regex(/^--border[\w-]*$/).optional(),
     'nested-slots': z.array(z.string().min(1)).optional(),
   })
   .strict() // Rejects unknown keys — catches "width" in slots

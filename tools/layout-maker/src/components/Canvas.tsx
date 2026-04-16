@@ -359,6 +359,22 @@ function SlotZone({ name, config, tokens, width, slotConfig, isSelected, isFlash
 
   const slotBgStyle = resolveBackgroundStyle(slotConfig.background, tokens)
 
+  // Border
+  const borderSides = slotConfig['border-sides']?.split(',').filter(Boolean) ?? []
+  const borderWidth = slotConfig['border-width'] ?? '1px'
+  const borderColorHex = slotConfig['border-color']
+    ? resolveBackgroundStyle(slotConfig['border-color'], tokens)
+    : undefined
+  const borderStyle: Record<string, string> = {}
+  if (borderSides.length > 0) {
+    borderStyle.border = 'none'
+    const bc = borderColorHex ?? '#e2e8f0'
+    for (const side of borderSides) {
+      const prop = `border${side.charAt(0).toUpperCase()}${side.slice(1)}` as string
+      borderStyle[prop] = `${borderWidth} solid ${bc}`
+    }
+  }
+
   const testBlockSlugs = config['test-blocks']?.[name] ?? []
   const blockCount = testBlockSlugs.length
   const hasLoadedBlocks = blocks && blockCount > 0
@@ -388,6 +404,7 @@ function SlotZone({ name, config, tokens, width, slotConfig, isSelected, isFlash
         marginTop,
         alignItems: outerAlign,
         background: slotBgStyle,
+        ...borderStyle,
       }}
       onClick={onClick}
       onMouseEnter={() => ref.current && onMouseEnter(ref.current)}
@@ -426,6 +443,21 @@ function SlotZone({ name, config, tokens, width, slotConfig, isSelected, isFlash
               const cPadX = childCfg['padding-x'] ? resolveToken(childCfg['padding-x'], tokens) : cLegacy
               const cHasPad = cPadTop || cPadBot || cPadX
               const childPadding = cHasPad ? `${cPadTop ?? '0'} ${cPadX ?? '0'} ${cPadBot ?? '0'}` : undefined
+              // Child border
+              const cBorderSides = childCfg['border-sides']?.split(',').filter(Boolean) ?? []
+              const cBorderWidth = childCfg['border-width'] ?? '1px'
+              const cBorderColorHex = childCfg['border-color']
+                ? resolveBackgroundStyle(childCfg['border-color'], tokens)
+                : undefined
+              const childBorderStyle: Record<string, string> = {}
+              if (cBorderSides.length > 0) {
+                childBorderStyle.border = 'none'
+                const cbc = cBorderColorHex ?? '#e2e8f0'
+                for (const side of cBorderSides) {
+                  const prop = `border${side.charAt(0).toUpperCase()}${side.slice(1)}` as string
+                  childBorderStyle[prop] = `${cBorderWidth} solid ${cbc}`
+                }
+              }
               const isChildSelected = childName === selectedSlot
               return (
                 <div
@@ -441,6 +473,7 @@ function SlotZone({ name, config, tokens, width, slotConfig, isSelected, isFlash
                     alignItems: childAlign,
                     background: childBg,
                     marginInline: childAlign === 'center' ? 'auto' : undefined,
+                    ...childBorderStyle,
                   }}
                   onClick={(e) => {
                     e.stopPropagation()

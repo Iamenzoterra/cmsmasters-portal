@@ -33,6 +33,13 @@ function getBgTokens(tokens: TokenMap): Array<{ name: string; hsl: string }> {
     .map((name) => ({ name, hsl: `hsl(${tokens.all[name]})` }))
 }
 
+/** List of --border-* tokens (excluding bare --border) */
+function getBorderTokens(tokens: TokenMap): Array<{ name: string; hsl: string }> {
+  return Object.keys(tokens.all)
+    .filter((t) => t.startsWith('--border-'))
+    .map((name) => ({ name, hsl: `hsl(${tokens.all[name]})` }))
+}
+
 function BackgroundPicker({ value, onChange, tokens, allowInherit, inheritLabel }: {
   value: string | undefined
   onChange: (v: string | undefined) => void
@@ -56,6 +63,48 @@ function BackgroundPicker({ value, onChange, tokens, allowInherit, inheritLabel 
           return (
             <option key={t.name} value={t.name}>
               {t.name.replace('--bg-', '')} ({hex ?? tokens.all[t.name]})
+            </option>
+          )
+        })}
+      </select>
+      {previewHex && (
+        <span
+          style={{
+            display: 'inline-block',
+            width: '20px',
+            height: '20px',
+            borderRadius: '4px',
+            border: '1px solid var(--lm-border)',
+            background: previewHex,
+          }}
+          title={`${value} ${previewHex}`}
+        />
+      )}
+    </div>
+  )
+}
+
+function BorderColorPicker({ value, onChange, tokens }: {
+  value: string | undefined
+  onChange: (v: string | undefined) => void
+  tokens: TokenMap
+}) {
+  const borderTokens = getBorderTokens(tokens)
+  const previewRaw = value?.startsWith('--') ? tokens.all[value] : undefined
+  const previewHex = previewRaw ? hslTripletToHex(previewRaw) : undefined
+  return (
+    <div className="lm-inspector__row" style={{ gap: '8px', alignItems: 'center' }}>
+      <select
+        className="lm-spacing-select lm-spacing-select--inline"
+        value={value ?? ''}
+        onChange={(e) => onChange(e.target.value === '' ? undefined : e.target.value)}
+      >
+        <option value="">none</option>
+        {borderTokens.map((t) => {
+          const hex = hslTripletToHex(tokens.all[t.name])
+          return (
+            <option key={t.name} value={t.name}>
+              {t.name.replace('--border-', '')} ({hex ?? tokens.all[t.name]})
             </option>
           )
         })}
@@ -577,6 +626,90 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
               </div>
             )
           })}
+
+          {/* Border controls */}
+          {(() => {
+            const BORDER_SIDES = ['top', 'right', 'bottom', 'left'] as const
+            const SIDE_LABELS = { top: 'T', right: 'R', bottom: 'B', left: 'L' } as const
+            const activeSides = (slotConfig['border-sides'] ?? '').split(',').filter(Boolean)
+            const hasSides = activeSides.length > 0
+
+            const toggleSide = (side: string) => {
+              const current = new Set(activeSides)
+              if (current.has(side)) current.delete(side)
+              else current.add(side)
+              const ordered = BORDER_SIDES.filter((s) => current.has(s))
+              writeField('border-sides', ordered.length === 0 ? undefined : ordered.join(','))
+            }
+
+            return (
+              <div style={{ marginTop: '8px' }}>
+                <div className="lm-inspector__row">
+                  <span className="lm-inspector__label">
+                    Border sides
+                    {isOverridden('border-sides') && <span className="lm-bp-dot" data-bp={activeBreakpoint} title={`Overridden at ${activeBreakpoint}`} />}
+                    {isInherited('border-sides') && <span className="lm-inherit-dot" title={`Inherited from ${baseGridKey}`} />}
+                  </span>
+                  {isOverridden('border-sides') && (
+                    <button className="lm-reset-btn" onClick={() => resetField('border-sides')} title="Reset to inherited">↺</button>
+                  )}
+                </div>
+                <div className="lm-align-group">
+                  {BORDER_SIDES.map((side) => (
+                    <button
+                      key={side}
+                      className={`lm-align-btn${activeSides.includes(side) ? ' lm-align-btn--active' : ''}`}
+                      title={side}
+                      onClick={() => toggleSide(side)}
+                    >
+                      {SIDE_LABELS[side]}
+                    </button>
+                  ))}
+                </div>
+
+                {hasSides && (
+                  <>
+                    <div className="lm-inspector__row" style={{ marginTop: '8px' }}>
+                      <span className="lm-inspector__label">
+                        Border width
+                        {isOverridden('border-width') && <span className="lm-bp-dot" data-bp={activeBreakpoint} title={`Overridden at ${activeBreakpoint}`} />}
+                        {isInherited('border-width') && <span className="lm-inherit-dot" title={`Inherited from ${baseGridKey}`} />}
+                      </span>
+                      {isOverridden('border-width') && (
+                        <button className="lm-reset-btn" onClick={() => resetField('border-width')} title="Reset to inherited">↺</button>
+                      )}
+                    </div>
+                    <select
+                      className="lm-spacing-select lm-spacing-select--inline"
+                      value={slotConfig['border-width'] ?? '1px'}
+                      onChange={(e) => writeField('border-width', e.target.value)}
+                    >
+                      <option value="1px">1px</option>
+                      <option value="2px">2px</option>
+                      <option value="3px">3px</option>
+                      <option value="4px">4px</option>
+                    </select>
+
+                    <div className="lm-inspector__row" style={{ marginTop: '8px' }}>
+                      <span className="lm-inspector__label">
+                        Border color
+                        {isOverridden('border-color') && <span className="lm-bp-dot" data-bp={activeBreakpoint} title={`Overridden at ${activeBreakpoint}`} />}
+                        {isInherited('border-color') && <span className="lm-inherit-dot" title={`Inherited from ${baseGridKey}`} />}
+                      </span>
+                      {isOverridden('border-color') && (
+                        <button className="lm-reset-btn" onClick={() => resetField('border-color')} title="Reset to inherited">↺</button>
+                      )}
+                    </div>
+                    <BorderColorPicker
+                      value={slotConfig['border-color']}
+                      onChange={(v) => writeField('border-color', v)}
+                      tokens={tokens}
+                    />
+                  </>
+                )}
+              </div>
+            )
+          })()}
 
           <ColumnWidthControl
             selectedSlot={selectedSlot}

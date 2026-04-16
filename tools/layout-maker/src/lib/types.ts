@@ -72,6 +72,9 @@ export interface SlotConfig {
   'min-height'?: string
   'margin-top'?: string
   background?: string
+  'border-sides'?: string
+  'border-width'?: string
+  'border-color'?: string
   'nested-slots'?: string[]
 }
 
@@ -100,6 +103,9 @@ export const PER_BP_SLOT_FIELDS = [
   'max-width',
   'min-height',
   'margin-top',
+  'border-sides',
+  'border-width',
+  'border-color',
 ] as const satisfies ReadonlyArray<keyof SlotConfig>
 
 export type PerBpSlotField = (typeof PER_BP_SLOT_FIELDS)[number]
@@ -179,6 +185,9 @@ export interface ExportPayload {
     'padding-bottom'?: string
     align?: string
     background?: string
+    'border-sides'?: string
+    'border-width'?: string
+    'border-color'?: string
     'nested-slots'?: string[]
     breakpoints?: Record<string, {
       gap?: string
@@ -187,6 +196,9 @@ export interface ExportPayload {
       'padding-top'?: string
       'padding-bottom'?: string
       align?: string
+      'border-sides'?: string
+      'border-width'?: string
+      'border-color'?: string
     }>
   }>
   status: 'draft'
