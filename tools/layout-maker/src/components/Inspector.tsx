@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import type { LayoutConfig, TokenMap, ScopingWarning, PerBpSlotField, CanvasBreakpointId, SlotConfig } from '../lib/types'
 import { resolveSlotConfig, getBaseGridKey, isFieldOverridden } from '../lib/types'
 import { resolveToken, resolveTokenPx, hslTripletToHex } from '../lib/tokens'
@@ -40,6 +40,73 @@ function getBorderTokens(tokens: TokenMap): Array<{ name: string; hsl: string }>
     .map((name) => ({ name, hsl: `hsl(${tokens.all[name]})` }))
 }
 
+/** Shared custom dropdown with color swatches. */
+function ColorTokenSelect({ options, value, onChange, placeholder }: {
+  options: Array<{ value: string; label: string; hex: string }>
+  value: string | undefined
+  onChange: (v: string | undefined) => void
+  placeholder: string
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  const selected = options.find((o) => o.value === value)
+
+  return (
+    <div className="lm-color-select" ref={ref}>
+      <button
+        type="button"
+        className="lm-color-select__trigger"
+        onClick={() => setOpen(!open)}
+      >
+        {selected ? (
+          <>
+            <span className="lm-color-select__swatch" style={{ background: selected.hex }} />
+            <span className="lm-color-select__label">{selected.label}</span>
+            <span className="lm-color-select__hex">{selected.hex}</span>
+          </>
+        ) : (
+          <span className="lm-color-select__label">{placeholder}</span>
+        )}
+        <span className="lm-color-select__chevron">▾</span>
+      </button>
+      {open && (
+        <div className="lm-color-select__menu">
+          <button
+            type="button"
+            className={`lm-color-select__option ${!value ? 'lm-color-select__option--active' : ''}`}
+            onClick={() => { onChange(undefined); setOpen(false) }}
+          >
+            <span className="lm-color-select__swatch lm-color-select__swatch--none" />
+            <span className="lm-color-select__label">{placeholder}</span>
+          </button>
+          {options.map((o) => (
+            <button
+              key={o.value}
+              type="button"
+              className={`lm-color-select__option ${value === o.value ? 'lm-color-select__option--active' : ''}`}
+              onClick={() => { onChange(o.value); setOpen(false) }}
+            >
+              <span className="lm-color-select__swatch" style={{ background: o.hex }} />
+              <span className="lm-color-select__label">{o.label}</span>
+              <span className="lm-color-select__hex">{o.hex}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function BackgroundPicker({ value, onChange, tokens, allowInherit, inheritLabel }: {
   value: string | undefined
   onChange: (v: string | undefined) => void
@@ -48,39 +115,18 @@ function BackgroundPicker({ value, onChange, tokens, allowInherit, inheritLabel 
   inheritLabel?: string
 }) {
   const bgTokens = getBgTokens(tokens)
-  const previewRaw = value?.startsWith('--') ? tokens.all[value] : undefined
-  const previewHex = previewRaw ? hslTripletToHex(previewRaw) : undefined
+  const options = bgTokens.map((t) => ({
+    value: t.name,
+    label: t.name.replace('--bg-', ''),
+    hex: hslTripletToHex(tokens.all[t.name]) ?? `hsl(${tokens.all[t.name]})`,
+  }))
   return (
-    <div className="lm-inspector__row" style={{ gap: '8px', alignItems: 'center' }}>
-      <select
-        className="lm-spacing-select lm-spacing-select--inline"
-        value={value ?? ''}
-        onChange={(e) => onChange(e.target.value === '' ? undefined : e.target.value)}
-      >
-        <option value="">{allowInherit ? (inheritLabel ?? 'inherit') : 'none'}</option>
-        {bgTokens.map((t) => {
-          const hex = hslTripletToHex(tokens.all[t.name])
-          return (
-            <option key={t.name} value={t.name}>
-              {t.name.replace('--bg-', '')} ({hex ?? tokens.all[t.name]})
-            </option>
-          )
-        })}
-      </select>
-      {previewHex && (
-        <span
-          style={{
-            display: 'inline-block',
-            width: '20px',
-            height: '20px',
-            borderRadius: '4px',
-            border: '1px solid var(--lm-border)',
-            background: previewHex,
-          }}
-          title={`${value} ${previewHex}`}
-        />
-      )}
-    </div>
+    <ColorTokenSelect
+      options={options}
+      value={value}
+      onChange={onChange}
+      placeholder={allowInherit ? (inheritLabel ?? 'inherit') : 'none'}
+    />
   )
 }
 
@@ -90,39 +136,18 @@ function BorderColorPicker({ value, onChange, tokens }: {
   tokens: TokenMap
 }) {
   const borderTokens = getBorderTokens(tokens)
-  const previewRaw = value?.startsWith('--') ? tokens.all[value] : undefined
-  const previewHex = previewRaw ? hslTripletToHex(previewRaw) : undefined
+  const options = borderTokens.map((t) => ({
+    value: t.name,
+    label: t.name.replace('--border-', ''),
+    hex: hslTripletToHex(tokens.all[t.name]) ?? `hsl(${tokens.all[t.name]})`,
+  }))
   return (
-    <div className="lm-inspector__row" style={{ gap: '8px', alignItems: 'center' }}>
-      <select
-        className="lm-spacing-select lm-spacing-select--inline"
-        value={value ?? ''}
-        onChange={(e) => onChange(e.target.value === '' ? undefined : e.target.value)}
-      >
-        <option value="">none</option>
-        {borderTokens.map((t) => {
-          const hex = hslTripletToHex(tokens.all[t.name])
-          return (
-            <option key={t.name} value={t.name}>
-              {t.name.replace('--border-', '')} ({hex ?? tokens.all[t.name]})
-            </option>
-          )
-        })}
-      </select>
-      {previewHex && (
-        <span
-          style={{
-            display: 'inline-block',
-            width: '20px',
-            height: '20px',
-            borderRadius: '4px',
-            border: '1px solid var(--lm-border)',
-            background: previewHex,
-          }}
-          title={`${value} ${previewHex}`}
-        />
-      )}
-    </div>
+    <ColorTokenSelect
+      options={options}
+      value={value}
+      onChange={onChange}
+      placeholder="none"
+    />
   )
 }
 

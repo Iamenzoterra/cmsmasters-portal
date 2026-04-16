@@ -1168,6 +1168,95 @@ body {
   font-size: 10px;
 }
 
+/* ── Color token select (custom dropdown with swatches) ─────────── */
+.lm-color-select {
+  position: relative;
+  width: 100%;
+}
+.lm-color-select__trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  height: 22px;
+  padding: 0 var(--lm-sp-3);
+  background: var(--lm-bg-input);
+  border: 1px solid var(--lm-border);
+  border-radius: 4px;
+  font-family: var(--lm-font-mono);
+  font-size: 10px;
+  color: var(--lm-text-primary);
+  cursor: pointer;
+  text-align: left;
+}
+.lm-color-select__trigger:focus {
+  outline: 1px solid var(--lm-border-focus);
+  border-color: var(--lm-border-focus);
+}
+.lm-color-select__chevron {
+  margin-left: auto;
+  font-size: 9px;
+  opacity: 0.6;
+}
+.lm-color-select__menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 2px;
+  background: var(--lm-bg-panel);
+  border: 1px solid var(--lm-border);
+  border-radius: 4px;
+  z-index: 50;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 2px;
+}
+.lm-color-select__option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 3px 6px;
+  background: none;
+  border: none;
+  border-radius: 3px;
+  font-family: var(--lm-font-mono);
+  font-size: 10px;
+  color: var(--lm-text-primary);
+  cursor: pointer;
+  text-align: left;
+}
+.lm-color-select__option:hover {
+  background: hsla(210, 50%, 50%, 0.15);
+}
+.lm-color-select__option--active {
+  background: hsla(210, 50%, 50%, 0.25);
+}
+.lm-color-select__swatch {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid var(--lm-border);
+}
+.lm-color-select__swatch--none {
+  background: repeating-conic-gradient(var(--lm-bg-input) 0% 25%, transparent 0% 50%) 50% / 6px 6px;
+}
+.lm-color-select__hex {
+  color: var(--lm-text-muted);
+  margin-left: auto;
+}
+
+/* Override/inherited states for color select (mirrors lm-spacing-select) */
+.lm-inspector__pad-row--override .lm-color-select__trigger {
+  border-color: hsl(var(--lm-bp-hue, 210), 60%, 50%);
+  background: hsla(var(--lm-bp-hue, 210), 50%, 15%, 0.4);
+}
+.lm-inspector__pad-row--inherited .lm-color-select__trigger {
+  opacity: 0.6;
+}
+
 /* ── Per-breakpoint inheritance indicators (WP-style) ─────────── */
 /* Per-bp hue tokens — each breakpoint gets a distinct color */
 .lm-inspector[data-active-bp='desktop'] { --lm-bp-hue: 210; } /* blue */
