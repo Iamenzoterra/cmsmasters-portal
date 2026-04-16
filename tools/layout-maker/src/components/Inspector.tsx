@@ -18,11 +18,13 @@ interface Props {
   blockWarnings: ScopingWarning[]
   onToggleSlot: (slotName: string, enabled: boolean) => void
   onUpdateSlotConfig: (slotName: string, key: string, value: string | undefined, targetGridKey?: string, breakpointId?: CanvasBreakpointId) => void
+  onUpdateSlotRole: (slotName: string, updates: Record<string, unknown>) => void
   onUpdateColumnWidth: (slotName: string, breakpointKey: string, width: string) => void
   onUpdateGridProp: (breakpointKey: string, key: string, value: string | undefined) => void
   onUpdateLayoutProp: (key: string, value: string | undefined) => void
   onUpdateNestedSlots: (parentName: string, children: string[] | null) => void
   onCreateNestedSlot: (parentName: string, childName: string, defaults: SlotConfig) => void
+  onCreateTopLevelSlot: (name: string, defaults: SlotConfig, position?: 'top' | 'bottom') => void
   onSelectSlot: (name: string | null) => void
 }
 
@@ -324,7 +326,40 @@ function ColumnWidthControl({ selectedSlot, gridKey, columnWidth, isFullWidth, w
   )
 }
 
-export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tokens, onShowToast, blockWarnings, onToggleSlot, onUpdateSlotConfig, onUpdateColumnWidth, onUpdateGridProp, onUpdateLayoutProp, onUpdateNestedSlots, onCreateNestedSlot, onSelectSlot }: Props) {
+/** Self-contained "+ Slot" button with its own modal state (avoids hooks-order issues with early returns). */
+function AddSlotButton({ config, tokens, onCreateTopLevelSlot }: {
+  config: LayoutConfig
+  tokens: TokenMap
+  onCreateTopLevelSlot: Props['onCreateTopLevelSlot']
+}) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <button
+        className="lm-btn"
+        title="Add a new slot to the layout"
+        onClick={() => setOpen(true)}
+        style={{ flex: 'none', marginTop: 'var(--lm-sp-6)', marginRight: 'var(--lm-sp-4)', padding: 'var(--lm-sp-1) var(--lm-sp-4)', fontSize: '11px', whiteSpace: 'nowrap' }}
+      >
+        + Slot
+      </button>
+      <CreateSlotModal
+        isOpen={open}
+        parentContainer=""
+        existingSlotNames={Object.keys(config.slots)}
+        tokens={tokens}
+        topLevel
+        onClose={() => setOpen(false)}
+        onCreate={(name, defaults, position) => {
+          onCreateTopLevelSlot(name, defaults, position)
+          setOpen(false)
+        }}
+      />
+    </>
+  )
+}
+
+export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tokens, onShowToast, blockWarnings, onToggleSlot, onUpdateSlotConfig, onUpdateSlotRole, onUpdateColumnWidth, onUpdateGridProp, onUpdateLayoutProp, onUpdateNestedSlots, onCreateNestedSlot, onCreateTopLevelSlot, onSelectSlot }: Props) {
   if (!config || !tokens) {
     return (
       <div className="lm-inspector" data-active-bp={activeBreakpoint}>
@@ -342,7 +377,10 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
     return (
       <div className="lm-inspector" data-active-bp={activeBreakpoint}>
         <div className="lm-inspector__header">Inspector</div>
-        <SlotToggles config={config} activeBreakpoint={gridKey} onToggleSlot={onToggleSlot} />
+        <div className="lm-slot-toggles-row">
+          <SlotToggles config={config} activeBreakpoint={gridKey} onToggleSlot={onToggleSlot} />
+          <AddSlotButton config={config} tokens={tokens} onCreateTopLevelSlot={onCreateTopLevelSlot} />
+        </div>
         <div className="lm-inspector__body">
           <SidebarModeControl config={config} activeBreakpoint={activeBreakpoint} onUpdateGridProp={onUpdateGridProp} />
           <div className="lm-inspector__section">
@@ -475,7 +513,10 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
   return (
     <div className="lm-inspector" data-active-bp={activeBreakpoint}>
       <div className="lm-inspector__header">Inspector</div>
-      <SlotToggles config={config} activeBreakpoint={gridKey} onToggleSlot={onToggleSlot} />
+      <div className="lm-slot-toggles-row">
+        <SlotToggles config={config} activeBreakpoint={gridKey} onToggleSlot={onToggleSlot} />
+        <AddSlotButton config={config} tokens={tokens} onCreateTopLevelSlot={onCreateTopLevelSlot} />
+      </div>
       <div className="lm-inspector__body">
         {/* Slot name + Copy all */}
         <div className={`lm-inspector__section${isContainer ? ' lm-inspector__panel--container' : ''}`}>
@@ -484,6 +525,74 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
             {isContainer && <span className="lm-badge lm-badge--container">container</span>}
             <CopyButton text={formatSummary()} onCopied={handleCopied} />
           </div>
+        </div>
+
+        {/* Slot Role — position, sticky, z-index (applies to leaf AND container) */}
+        <div className="lm-inspector__section lm-inspector__section--role">
+          <div className="lm-inspector__section-title">
+            <span className="lm-inspector__section-glyph">&#9650;</span> Slot Role
+          </div>
+
+          <div className="lm-inspector__row">
+            <span className="lm-inspector__label">Position</span>
+            <select
+              className="lm-spacing-select lm-spacing-select--inline"
+              value={baseSlot.position ?? ''}
+              onChange={(e) => {
+                const v = e.target.value as 'top' | 'bottom' | ''
+                const updates: Record<string, unknown> = { position: v || undefined }
+                // Clear sticky + z-index when leaving 'top'
+                if (v !== 'top') {
+                  updates.sticky = undefined
+                  updates['z-index'] = undefined
+                }
+                onUpdateSlotRole(selectedSlot, updates)
+              }}
+            >
+              <option value="">(grid)</option>
+              <option value="top">top</option>
+              <option value="bottom">bottom</option>
+            </select>
+          </div>
+
+          {baseSlot.position === 'top' && (
+            <div className="lm-inspector__row">
+              <span className="lm-inspector__label">Sticky</span>
+              <input
+                type="checkbox"
+                className="lm-inspector__checkbox"
+                checked={!!baseSlot.sticky}
+                onChange={(e) => {
+                  const updates: Record<string, unknown> = {
+                    sticky: e.target.checked || undefined,
+                  }
+                  if (!e.target.checked) updates['z-index'] = undefined
+                  onUpdateSlotRole(selectedSlot, updates)
+                }}
+              />
+            </div>
+          )}
+
+          {baseSlot.sticky && (
+            <div className="lm-inspector__row">
+              <span className="lm-inspector__label">Z-index</span>
+              <input
+                type="number"
+                className="lm-width-input__field"
+                style={{ width: '64px' }}
+                value={baseSlot['z-index'] ?? ''}
+                placeholder="100"
+                onChange={(e) => {
+                  const n = parseInt(e.target.value, 10)
+                  onUpdateSlotRole(selectedSlot, { 'z-index': isNaN(n) ? undefined : n })
+                }}
+              />
+            </div>
+          )}
+
+          {isFullWidth && (
+            <div className="lm-inspector__locked-note">Full width — locked by position</div>
+          )}
         </div>
 
         {/* Container panel — children + create controls */}

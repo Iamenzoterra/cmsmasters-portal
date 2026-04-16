@@ -1795,6 +1795,54 @@ body {
   border: 1px solid hsla(270, 55%, 55%, 0.35);
 }
 
+/* Slot Role section — position / sticky controls */
+.lm-inspector__section--role {
+  border-left: 2px solid hsla(210, 50%, 55%, 0.45);
+  background: linear-gradient(90deg, hsla(210, 50%, 55%, 0.04), transparent 60%);
+}
+.lm-inspector__section--role .lm-inspector__section-glyph {
+  color: hsl(210, 50%, 60%);
+}
+.lm-inspector__checkbox {
+  accent-color: var(--lm-bg-button);
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+
+/* Sticky badge on canvas slot label */
+.lm-slot-zone__sticky-badge {
+  font-family: var(--lm-font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: hsla(210, 60%, 50%, 0.2);
+  color: rgba(0, 0, 0, 0.5);
+  user-select: none;
+}
+
+/* SlotToggles row with + button */
+.lm-slot-toggles-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--lm-sp-4);
+}
+.lm-slot-toggles-row .lm-slot-toggles {
+  flex: 1;
+  min-width: 0;
+}
+.lm-slot-toggles-row > .lm-btn {
+  flex: none;
+  margin-top: var(--lm-sp-6);
+  margin-right: var(--lm-sp-4);
+  padding: var(--lm-sp-1) var(--lm-sp-4);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
 /* Container panel tint — differentiates from leaf panel. */
 .lm-inspector__panel--container {
   border-left: 2px solid hsla(270, 55%, 55%, 0.55);

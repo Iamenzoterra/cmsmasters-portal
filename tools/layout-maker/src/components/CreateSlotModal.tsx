@@ -6,8 +6,10 @@ interface Props {
   parentContainer: string
   existingSlotNames: string[]
   tokens: TokenMap | null
+  /** When true, creates a top-level slot (not nested). Shows position dropdown. */
+  topLevel?: boolean
   onClose: () => void
-  onCreate: (name: string, defaults: SlotConfig) => void
+  onCreate: (name: string, defaults: SlotConfig, position?: 'top' | 'bottom') => void
 }
 
 const ALIGN_OPTIONS = [
@@ -34,12 +36,13 @@ function validateName(slug: string, existing: Set<string>): string | null {
   return null
 }
 
-export function CreateSlotModal({ isOpen, parentContainer, existingSlotNames, tokens, onClose, onCreate }: Props) {
+export function CreateSlotModal({ isOpen, parentContainer, existingSlotNames, tokens, topLevel, onClose, onCreate }: Props) {
   const [rawName, setRawName] = useState('')
   const [gap, setGap] = useState<string>('')
   const [maxWidth, setMaxWidth] = useState<string>('')
   const [padding, setPadding] = useState<string>('')
   const [align, setAlign] = useState<Align>('stretch')
+  const [position, setPosition] = useState<'' | 'top' | 'bottom'>('')
 
   const dialogRef = useRef<HTMLDivElement>(null)
   const nameInputRef = useRef<HTMLInputElement>(null)
@@ -57,6 +60,7 @@ export function CreateSlotModal({ isOpen, parentContainer, existingSlotNames, to
     setMaxWidth('')
     setPadding('')
     setAlign('stretch')
+    setPosition('')
     // Autofocus after paint
     const id = requestAnimationFrame(() => nameInputRef.current?.focus())
     return () => cancelAnimationFrame(id)
@@ -69,8 +73,8 @@ export function CreateSlotModal({ isOpen, parentContainer, existingSlotNames, to
     if (maxWidth) defaults['max-width'] = maxWidth
     if (padding) defaults['padding-x'] = padding
     if (align && align !== 'stretch') defaults.align = align as SlotConfig['align']
-    onCreate(slug, defaults)
-  }, [canSubmit, gap, maxWidth, padding, align, slug, onCreate])
+    onCreate(slug, defaults, (topLevel && position) ? position as 'top' | 'bottom' : undefined)
+  }, [canSubmit, gap, maxWidth, padding, align, slug, topLevel, position, onCreate])
 
   // Keyboard: ESC close, Enter submit, Tab focus-trap
   useEffect(() => {
@@ -133,7 +137,7 @@ export function CreateSlotModal({ isOpen, parentContainer, existingSlotNames, to
         ref={dialogRef}
       >
         <div className="lm-export-dialog__header">
-          <span id="lm-create-slot-title">Create slot in {parentContainer}</span>
+          <span id="lm-create-slot-title">{topLevel ? 'Create new slot' : `Create slot in ${parentContainer}`}</span>
           <button className="lm-export-dialog__close" onClick={onClose} aria-label="Close">
             &times;
           </button>
@@ -165,6 +169,24 @@ export function CreateSlotModal({ isOpen, parentContainer, existingSlotNames, to
               )}
             </div>
           </div>
+
+          {/* Position — top-level only */}
+          {topLevel && (
+            <div className="lm-inspector__section">
+              <div className="lm-inspector__row">
+                <span className="lm-inspector__label">Position</span>
+              </div>
+              <select
+                className="lm-spacing-select lm-spacing-select--inline"
+                value={position}
+                onChange={(e) => setPosition(e.target.value as '' | 'top' | 'bottom')}
+              >
+                <option value="">(grid)</option>
+                <option value="top">top — before grid</option>
+                <option value="bottom">bottom — after grid</option>
+              </select>
+            </div>
+          )}
 
           {/* Gap */}
           <div className="lm-inspector__section">

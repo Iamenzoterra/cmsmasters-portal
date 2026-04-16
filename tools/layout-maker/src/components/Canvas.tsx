@@ -419,6 +419,9 @@ function SlotZone({ name, config, tokens, width, slotConfig, isSelected, isFlash
         {/* Label row */}
         <div className="lm-slot-zone__label-row">
           <span className="lm-slot-zone__name">{name}</span>
+          {config.slots[name]?.sticky && (
+            <span className="lm-slot-zone__sticky-badge" title="Sticky">sticky</span>
+          )}
           <span className="lm-slot-zone__width">
             {width}{innerMaxWidth ? ` → ${innerMaxWidth}` : ''}
           </span>

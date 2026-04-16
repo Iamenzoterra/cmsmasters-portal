@@ -427,6 +427,77 @@ export function App() {
     }
   }, [activeConfig, activeId, showToast])
 
+  /** Update a role-level field (position, sticky, z-index) on base slot config — never per-breakpoint. */
+  const handleUpdateSlotRole = useCallback(async (
+    slotName: string,
+    updates: Record<string, unknown>,
+  ) => {
+    if (!activeConfig || !activeId) return
+    const updated = structuredClone(activeConfig)
+    if (!updated.slots[slotName]) updated.slots[slotName] = {}
+    const slot = updated.slots[slotName] as Record<string, unknown>
+    for (const [key, value] of Object.entries(updates)) {
+      if (value === undefined) delete slot[key]
+      else slot[key] = value
+    }
+
+    // When position leaves 'top', also remove from grid columns (it's now a positioned slot).
+    // When position becomes undefined (grid), ensure it's in grid columns.
+    const pos = slot.position as string | undefined
+    if (pos === 'top' || pos === 'bottom') {
+      // Remove from grid columns — positioned slots don't participate in the grid
+      for (const grid of Object.values(updated.grid)) {
+        delete grid.columns[slotName]
+      }
+    } else if (!pos) {
+      // Ensure grid slot exists in all breakpoints
+      for (const grid of Object.values(updated.grid)) {
+        if (!grid.columns[slotName]) grid.columns[slotName] = '1fr'
+      }
+    }
+
+    try {
+      const saved = await api.updateLayout(activeId, updated)
+      setActiveConfig(saved)
+      prevConfigRef.current = saved
+      const fields = Object.entries(updates).map(([k, v]) => `${k}=${v ?? 'removed'}`).join(', ')
+      showToast(`${slotName} role: ${fields}`)
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Failed to update layout')
+    }
+  }, [activeConfig, activeId, showToast])
+
+  /** Create a new top-level slot (not nested). For grid position, adds column to all breakpoints. */
+  const handleCreateTopLevelSlot = useCallback(async (
+    name: string,
+    defaults: SlotConfig,
+    position?: 'top' | 'bottom',
+  ) => {
+    if (!activeConfig || !activeId) return
+    const updated = structuredClone(activeConfig)
+    if (updated.slots[name]) {
+      showToast(`Slot '${name}' already exists`)
+      return
+    }
+    updated.slots[name] = { ...defaults }
+    if (position) {
+      ;(updated.slots[name] as Record<string, unknown>).position = position
+    } else {
+      // Grid slot — add column to each breakpoint
+      for (const grid of Object.values(updated.grid)) {
+        grid.columns[name] = '1fr'
+      }
+    }
+    try {
+      const saved = await api.updateLayout(activeId, updated)
+      setActiveConfig(saved)
+      prevConfigRef.current = saved
+      showToast(`${name} created (${position ?? 'grid'})`)
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Failed to update layout')
+    }
+  }, [activeConfig, activeId, showToast])
+
   const handleUpdateLayoutProp = useCallback(async (key: string, value: string | undefined) => {
     if (!activeConfig || !activeId) return
     const updated = structuredClone(activeConfig) as unknown as Record<string, unknown>
@@ -505,11 +576,13 @@ export function App() {
           blockWarnings={blockWarnings}
           onToggleSlot={handleToggleSlot}
           onUpdateSlotConfig={handleUpdateSlotConfig}
+          onUpdateSlotRole={handleUpdateSlotRole}
           onUpdateColumnWidth={handleUpdateColumnWidth}
           onUpdateGridProp={handleUpdateGridProp}
           onUpdateLayoutProp={handleUpdateLayoutProp}
           onUpdateNestedSlots={handleUpdateNestedSlots}
           onCreateNestedSlot={handleCreateNestedSlot}
+          onCreateTopLevelSlot={handleCreateTopLevelSlot}
           onSelectSlot={setSelectedSlot}
         />
         )}

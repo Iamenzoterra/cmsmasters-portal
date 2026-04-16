@@ -17,9 +17,11 @@ const SLOT_DEFS = (() => {
   result.push({ name: 'content', ...SLOT_VISUAL['content'] })
   if (names.includes('sidebar-right')) result.push({ name: 'sidebar-right', ...SLOT_VISUAL['sidebar-right'] })
 
-  // Any future registry slots not covered above
+  // Any future registry slots not covered above (exclude footer — added last for ordering)
+  const placed = new Set(result.map((r) => r.name))
+  placed.add('footer')
   for (const s of SLOT_DEFINITIONS) {
-    if (!result.some((r) => r.name === s.name)) {
+    if (!placed.has(s.name)) {
       result.push({ name: s.name, ...(SLOT_VISUAL[s.name] ?? SLOT_VISUAL._fallback) })
     }
   }
