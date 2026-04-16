@@ -73,6 +73,7 @@ export function CreateSlotModal({ isOpen, parentContainer, existingSlotNames, to
     if (maxWidth) defaults['max-width'] = maxWidth
     if (padding) defaults['padding-x'] = padding
     if (align && align !== 'stretch') defaults.align = align as SlotConfig['align']
+    if (topLevel) defaults['allowed-block-types'] = ['theme-block', 'element']
     onCreate(slug, defaults, (topLevel && position) ? position as 'top' | 'bottom' : undefined)
   }, [canSubmit, gap, maxWidth, padding, align, slug, topLevel, position, onCreate])
 

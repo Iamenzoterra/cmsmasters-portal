@@ -77,6 +77,7 @@ const slotSchema = z
     'border-width': z.string().regex(/^\d+px$/).optional(),
     'border-color': z.string().regex(/^--border[\w-]*$/).optional(),
     'nested-slots': z.array(z.string().min(1)).optional(),
+    'allowed-block-types': z.array(z.enum(['theme-block', 'element', 'header', 'footer', 'sidebar'])).optional(),
   })
   .strict() // Rejects unknown keys — catches "width" in slots
 

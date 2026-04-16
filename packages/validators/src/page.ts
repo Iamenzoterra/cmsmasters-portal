@@ -21,6 +21,8 @@ const slotVisualParamsSchema = z.object({
 
 const slotConfigEntrySchema = slotVisualParamsSchema.extend({
   breakpoints: z.record(z.string(), slotVisualParamsSchema).optional(),
+  'nested-slots': z.array(z.string()).optional(),
+  'allowed-block-types': z.array(z.string()).optional(),
 })
 
 // ── Create page ──

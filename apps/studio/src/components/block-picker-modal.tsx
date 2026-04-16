@@ -10,9 +10,10 @@ interface BlockPickerModalProps {
   onClose: () => void
   excludeIds?: string[]
   filterCategory?: string
+  filterCategories?: string[]
 }
 
-export function BlockPickerModal({ onSelect, onClose, excludeIds = [], filterCategory }: BlockPickerModalProps) {
+export function BlockPickerModal({ onSelect, onClose, excludeIds = [], filterCategory, filterCategories }: BlockPickerModalProps) {
   const [blocks, setBlocks] = useState<Block[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -34,6 +35,7 @@ export function BlockPickerModal({ onSelect, onClose, excludeIds = [], filterCat
     .filter((b) => !excludeIds.includes(b.id))
     .filter((b) => {
       if (filterCategory) return b.block_type === filterCategory
+      if (filterCategories) return filterCategories.includes(b.block_type)
       return !b.block_type || b.block_type === 'element'
     })
     .filter((b) => {

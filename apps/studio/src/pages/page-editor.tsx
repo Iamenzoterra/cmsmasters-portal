@@ -58,6 +58,15 @@ const LAYOUT_SCOPES = [
 
 const GLOBAL_SLOTS = GLOBAL_SLOT_NAMES
 
+/** Map Layout Maker friendly identifiers to DB block_type values. */
+const ALLOWED_TYPE_MAP: Record<string, string> = {
+  'theme-block': '',
+  'element': 'element',
+  'header': 'header',
+  'footer': 'footer',
+  'sidebar': 'sidebar',
+}
+
 function extractSlots(html: string): string[] {
   const slots: string[] = []
   function add(name: string) {
@@ -920,13 +929,17 @@ function SlotPanel({ code, layoutSlots, slotConfig, onSlotsChange, onConfigChang
   const isNestedLeaf = (slot: string) =>
     Object.values(containerSlots).some((children) => children.includes(slot))
 
-  // Commit the displayed default gap (24px) into state for any global slot
-  // or nested leaf that lacks one. Without this, the UI shows "24" via
-  // `?? '24'` but state stays empty — Save then writes slot_config WITHOUT
-  // gap, and portal renders with gap:0 because the CSS var is missing.
+  const getAllowedBlockTypes = (slot: string): string[] | undefined => {
+    const cfg = slotConfig[slot] as Record<string, unknown> | undefined
+    const types = cfg?.['allowed-block-types']
+    return Array.isArray(types) && types.length > 0 ? types as string[] : undefined
+  }
+
+  // Commit the displayed default gap (24px) into state for any global slot,
+  // nested leaf, or custom slot with allowed-block-types that lacks one.
   useEffect(() => {
     const missing = slots.filter(
-      (s) => (GLOBAL_SLOTS.includes(s) || isNestedLeaf(s)) && !slotConfig[s]?.gap,
+      (s) => (GLOBAL_SLOTS.includes(s) || isNestedLeaf(s) || !!getAllowedBlockTypes(s)) && !slotConfig[s]?.gap,
     )
     if (missing.length === 0) return
     const next = { ...slotConfig }
@@ -967,10 +980,16 @@ function SlotPanel({ code, layoutSlots, slotConfig, onSlotsChange, onConfigChang
           const isGlobal = GLOBAL_SLOTS.includes(slot)
           const isMeta = slot.startsWith('meta:')
           const category = SLOT_TO_CATEGORY[slot]
-          const categoryBlocks = category ? blocks.filter((b) => b.block_type === category) : []
+          const allowedTypes = getAllowedBlockTypes(slot)
+          const mappedAllowed = allowedTypes?.map(t => ALLOWED_TYPE_MAP[t] ?? t)
+          const categoryBlocks = category
+            ? blocks.filter((b) => b.block_type === category)
+            : mappedAllowed
+              ? blocks.filter((b) => mappedAllowed.includes(b.block_type))
+              : []
           const blockIds = getSlotBlockIds(layoutSlots, slot)
           const gapVal = parseInt(slotConfig[slot]?.gap ?? '24', 10)
-          const hasInteractiveControls = isGlobal || isNestedLeaf(slot)
+          const hasInteractiveControls = isGlobal || isNestedLeaf(slot) || !!allowedTypes
 
           // Container slots: informational card (no block controls)
           if (isContainer(slot)) {
@@ -1213,13 +1232,17 @@ function SlotPanel({ code, layoutSlots, slotConfig, onSlotsChange, onConfigChang
                 {categoryBlocks.length > 0 ? (
                   <Button variant="outline" size="sm" onClick={() => setPickingSlot(slot)}>
                     <Plus size={14} />
-                    Add {category} block
+                    {category ? `Add ${category} block` : 'Add block'}
                   </Button>
-                ) : (
+                ) : category ? (
                   <Link to="/global-elements" className="flex items-center no-underline" style={{ gap: '4px', fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-link))' }}>
                     Create {category} blocks first
                     <ExternalLink size={11} />
                   </Link>
+                ) : (
+                  <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>
+                    No matching blocks available
+                  </span>
                 )}
               </div>
             </div>
@@ -1231,6 +1254,11 @@ function SlotPanel({ code, layoutSlots, slotConfig, onSlotsChange, onConfigChang
       {pickingSlot && (
         <BlockPickerModal
           filterCategory={SLOT_TO_CATEGORY[pickingSlot]}
+          filterCategories={
+            !SLOT_TO_CATEGORY[pickingSlot]
+              ? getAllowedBlockTypes(pickingSlot)?.map(t => ALLOWED_TYPE_MAP[t] ?? t)
+              : undefined
+          }
           excludeIds={getSlotBlockIds(layoutSlots, pickingSlot)}
           onSelect={(block) => handleSlotAdd(pickingSlot, block)}
           onClose={() => setPickingSlot(null)}

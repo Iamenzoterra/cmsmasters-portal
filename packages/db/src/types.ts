@@ -76,6 +76,8 @@ export interface SlotConfig {
   [slot: string]: SlotVisualParams & {
     /** Per-breakpoint overrides (keys = grid breakpoint names). */
     breakpoints?: Record<string, SlotVisualParams>
+    'nested-slots'?: string[]
+    'allowed-block-types'?: string[]
   }
 }
 

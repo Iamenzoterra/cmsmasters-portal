@@ -33,7 +33,11 @@ function resolveBackground(
   }
   return value
 }
-type SlotConfigEntry = VisualParams & { breakpoints?: Record<string, VisualParams> }
+type SlotConfigEntry = VisualParams & {
+  breakpoints?: Record<string, VisualParams>
+  'nested-slots'?: string[]
+  'allowed-block-types'?: string[]
+}
 
 function resolveVisualParams(slot: Record<string, unknown>, tokens: Record<string, string>): VisualParams {
   const out: VisualParams = {}
@@ -71,8 +75,17 @@ function buildSlotConfig(
 ): Record<string, SlotConfigEntry> {
   const slotConfig: Record<string, SlotConfigEntry> = {}
   for (const [name, slot] of Object.entries(config.slots)) {
-    const base = resolveVisualParams(slot as unknown as Record<string, unknown>, tokens)
+    const raw = slot as unknown as Record<string, unknown>
+    const base = resolveVisualParams(raw, tokens)
     const entry: SlotConfigEntry = { ...base }
+
+    // Structural fields (not visual — resolveVisualParams intentionally skips these)
+    if (Array.isArray(raw['nested-slots']) && (raw['nested-slots'] as string[]).length > 0) {
+      entry['nested-slots'] = raw['nested-slots'] as string[]
+    }
+    if (Array.isArray(raw['allowed-block-types']) && (raw['allowed-block-types'] as string[]).length > 0) {
+      entry['allowed-block-types'] = raw['allowed-block-types'] as string[]
+    }
 
     const bpOverrides: Record<string, VisualParams> = {}
     for (const [bpName, grid] of Object.entries(config.grid)) {

@@ -2,11 +2,19 @@ import { useState, useRef, useEffect } from 'react'
 import type { LayoutConfig, TokenMap, ScopingWarning, PerBpSlotField, CanvasBreakpointId, SlotConfig } from '../lib/types'
 import { resolveSlotConfig, getBaseGridKey, isFieldOverridden } from '../lib/types'
 import { resolveToken, resolveTokenPx, hslTripletToHex } from '../lib/tokens'
+import { SLOT_DEFINITIONS } from '@cmsmasters/db/slots'
 import { CopyButton } from './CopyButton'
 import { SlotToggles } from './SlotToggles'
 import { SlotReference } from './SlotReference'
 import { TokenReference } from './TokenReference'
 import { CreateSlotModal } from './CreateSlotModal'
+
+const GLOBAL_SLOT_NAMES_SET: Set<string> = new Set(SLOT_DEFINITIONS.map(s => s.name))
+
+const BLOCK_TYPE_OPTIONS = [
+  { id: 'theme-block', label: 'Theme blocks' },
+  { id: 'element', label: 'Elements' },
+] as const
 
 interface Props {
   selectedSlot: string | null
@@ -589,6 +597,39 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
               />
             </div>
           )}
+
+          {/* Allowed block types — custom leaf slots only */}
+          {!GLOBAL_SLOT_NAMES_SET.has(selectedSlot) && !isContainer && (() => {
+            const currentTypes = (baseSlot['allowed-block-types'] as string[] | undefined) ?? []
+            return (
+              <div className="lm-inspector__row lm-inspector__row--col">
+                <span className="lm-inspector__label">Block types</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--lm-sp-2)' }}>
+                  {BLOCK_TYPE_OPTIONS.map(({ id, label }) => (
+                    <label key={id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--lm-sp-2)', fontSize: '12px', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        className="lm-inspector__checkbox"
+                        checked={currentTypes.includes(id)}
+                        onChange={(e) => {
+                          const next = e.target.checked
+                            ? [...currentTypes, id]
+                            : currentTypes.filter(t => t !== id)
+                          onUpdateSlotRole(selectedSlot, {
+                            'allowed-block-types': next.length > 0 ? next : undefined,
+                          })
+                        }}
+                      />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+                {currentTypes.length === 0 && (
+                  <span className="lm-inspector__hint">No types — slot won't show block controls in Studio</span>
+                )}
+              </div>
+            )
+          })()}
 
           {isFullWidth && (
             <div className="lm-inspector__locked-note">Full width — locked by position</div>

@@ -76,6 +76,7 @@ export interface SlotConfig {
   'border-width'?: string
   'border-color'?: string
   'nested-slots'?: string[]
+  'allowed-block-types'?: string[]
 }
 
 export interface LayoutConfig {
@@ -189,6 +190,7 @@ export interface ExportPayload {
     'border-width'?: string
     'border-color'?: string
     'nested-slots'?: string[]
+    'allowed-block-types'?: string[]
     breakpoints?: Record<string, {
       gap?: string
       'max-width'?: string
