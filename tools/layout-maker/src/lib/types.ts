@@ -14,6 +14,27 @@ export const CANVAS_BREAKPOINTS: CanvasBreakpoint[] = [
   { id: 'mobile',  label: 'Mobile',  width: 375 },
 ]
 
+/* ── Device presets (common viewport widths per breakpoint) ── */
+
+export interface DevicePreset {
+  name: string
+  width: number
+  breakpoint: CanvasBreakpointId
+}
+
+export const DEVICE_PRESETS: DevicePreset[] = [
+  { name: 'Desktop HD',    width: 1920, breakpoint: 'desktop' },
+  { name: 'Desktop',       width: 1440, breakpoint: 'desktop' },
+  { name: 'Laptop',        width: 1280, breakpoint: 'desktop' },
+  { name: 'iPad Pro 12.9', width: 1024, breakpoint: 'tablet' },
+  { name: 'iPad Air',      width: 820,  breakpoint: 'tablet' },
+  { name: 'Tablet',        width: 768,  breakpoint: 'tablet' },
+  { name: 'Galaxy S21',    width: 412,  breakpoint: 'mobile' },
+  { name: 'iPhone 14',     width: 390,  breakpoint: 'mobile' },
+  { name: 'iPhone SE',     width: 375,  breakpoint: 'mobile' },
+  { name: 'iPhone Mini',   width: 360,  breakpoint: 'mobile' },
+]
+
 /**
  * Resolve a canonical breakpoint id to the best matching grid key in the layout config.
  * Strategy: exact name match → closest by min-width → first key (fallback).

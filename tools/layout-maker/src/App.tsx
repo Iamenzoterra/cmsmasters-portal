@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import type { LayoutConfig, LayoutSummary, TokenMap, BlockData, ScopingWarning, CanvasBreakpointId, ScopeEntry, SlotConfig } from './lib/types'
-import { resolveGridKey, CANVAS_BREAKPOINTS } from './lib/types'
+import { resolveGridKey, CANVAS_BREAKPOINTS, DEVICE_PRESETS } from './lib/types'
 import { api } from './lib/api-client'
 import { LayoutSidebar } from './components/LayoutSidebar'
 import { BreakpointBar } from './components/BreakpointBar'
@@ -134,6 +134,7 @@ export function App() {
   const [activeConfig, setActiveConfig] = useState<LayoutConfig | null>(null)
   const [tokens, setTokens] = useState<TokenMap | null>(null)
   const [activeBreakpoint, setActiveBreakpoint] = useState<CanvasBreakpointId>('desktop')
+  const [viewportWidth, setViewportWidth] = useState(1440)
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
   const [changedSlots, setChangedSlots] = useState<string[]>([])
   const [toastMessage, setToastMessage] = useState<string | null>(null)
@@ -146,6 +147,48 @@ export function App() {
 
   const prevConfigRef = useRef<LayoutConfig | null>(null)
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  /** Switch breakpoint — resets viewport width to canonical. */
+  const handleBreakpointChange = useCallback((bp: CanvasBreakpointId) => {
+    setActiveBreakpoint(bp)
+    setViewportWidth(CANVAS_BREAKPOINTS.find((b) => b.id === bp)!.width)
+  }, [])
+
+  /** Pick a device preset — changes both breakpoint and viewport width. */
+  const handleDevicePreset = useCallback((presetWidth: number) => {
+    const preset = DEVICE_PRESETS.find((p) => p.width === presetWidth)
+    if (!preset) return
+    setActiveBreakpoint(preset.breakpoint)
+    setViewportWidth(preset.width)
+  }, [])
+
+  // Keyboard shortcuts for breakpoint switching
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      // Ignore when typing in inputs
+      const tag = (e.target as HTMLElement).tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+
+      const ctrl = e.ctrlKey || e.metaKey
+
+      // Ctrl+1/2/3 — switch to desktop/tablet/mobile
+      if (ctrl && e.key === '1') { e.preventDefault(); handleBreakpointChange('desktop'); return }
+      if (ctrl && e.key === '2') { e.preventDefault(); handleBreakpointChange('tablet'); return }
+      if (ctrl && e.key === '3') { e.preventDefault(); handleBreakpointChange('mobile'); return }
+
+      // Ctrl+[ / Ctrl+] — cycle breakpoints
+      if (ctrl && (e.key === '[' || e.key === ']')) {
+        e.preventDefault()
+        const idx = CANVAS_BREAKPOINTS.findIndex((b) => b.id === activeBreakpoint)
+        const next = e.key === ']'
+          ? Math.min(idx + 1, CANVAS_BREAKPOINTS.length - 1)
+          : Math.max(idx - 1, 0)
+        handleBreakpointChange(CANVAS_BREAKPOINTS[next].id)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [activeBreakpoint, handleBreakpointChange])
 
   const refreshLayouts = useCallback(async () => {
     try {
@@ -551,12 +594,15 @@ export function App() {
                   config={activeConfig}
                   tokens={tokens}
                   activeBreakpoint={activeBreakpoint}
-                  onBreakpointChange={setActiveBreakpoint}
+                  viewportWidth={viewportWidth}
+                  onBreakpointChange={handleBreakpointChange}
+                  onDevicePreset={handleDevicePreset}
                 />
                 <Canvas
                   config={activeConfig}
                   tokens={tokens}
                   activeBreakpoint={activeBreakpoint}
+                  viewportWidth={viewportWidth}
                   gridKey={resolveGridKey(activeBreakpoint, activeConfig.grid)}
                   selectedSlot={selectedSlot}
                   onSlotSelect={setSelectedSlot}

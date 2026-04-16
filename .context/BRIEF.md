@@ -140,6 +140,18 @@ Each theme references a **template** (ordered position grid with block assignmen
 
 **Slot types (WP-020):** Layout Maker supports container slots (hold other slots via `nested-slots`) and leaf slots (hold blocks via `.slot-inner`). The theme-page-layout uses `content` as a container for `theme-blocks`. Studio's Slot Assignments panel reads this structure from the layout row — container slots show info cards; leaf slots show block controls.
 
+**Breakpoint system (Layout Maker → Studio → Portal):**
+
+Layout Maker defines responsive layouts with 3 canonical breakpoints (desktop 1440px, tablet 768px, mobile 375px) + device presets (10 widths from 360–1920px). The pipeline:
+
+1. **Layout Maker** (`tools/layout-maker/`) — YAML config with `config.grid[bp].columns` (grid structure per BP), `config.grid[bp].slots[name]` (per-BP visual overrides for padding, gap, align, borders, background). HTML is static; CSS media queries drive responsive behavior. Drawer mode for sidebars on tablet/mobile. Device presets allow previewing at specific device widths (iPad Pro, Galaxy, etc.) while the grid config resolves to the nearest canonical BP.
+2. **Export** (`runtime/routes/export.ts`) — `buildSlotConfig()` resolves tokens → px/hex, outputs `slot_config: { [slotName]: { ...base, breakpoints: { tablet: {...}, mobile: {...} } } }` as JSON.
+3. **Studio** — imports JSON, saves to DB. TODO: consume `breakpoints` in slot_config, show in UI.
+4. **Portal** — renders theme pages with layout HTML+CSS. TODO: generate media queries from `slot_config.breakpoints` at render time.
+
+Per-BP fields: padding-*, gap, align, max-width, min-height, margin-top, border-*, background.
+Global fields (never per-BP): position, sticky, z-index, nested-slots, allowed-block-types.
+
 **Resource Sidebar access tiers (ADR-005 V2):**
 - 🔓 Public: Live Demo, Documentation, Changelog, FAQ
 - 🔒 Licensed: Theme Download, Child Theme, PSD Files, Support Ticket

@@ -1,4 +1,63 @@
-# Layout Maker — CSS Rules
+# Layout Maker
+
+## Breakpoint System
+
+### Canonical breakpoints (types.ts)
+- `desktop` — 1440px (base, no media query)
+- `tablet` — 768px
+- `mobile` — 375px
+
+### Device presets (types.ts)
+10 common device widths (360–1920px) grouped by canonical breakpoint. Presets change the canvas viewport width without changing which grid config is active — the grid config resolves to the nearest canonical BP via `resolveGridKey()`.
+
+### Keyboard shortcuts (App.tsx)
+- `Ctrl+1/2/3` — switch to desktop/tablet/mobile
+- `Ctrl+[/]` — cycle prev/next breakpoint
+
+### State model (App.tsx)
+- `activeBreakpoint: CanvasBreakpointId` — determines which `config.grid[bp]` is active
+- `viewportWidth: number` — actual canvas pixel width (may differ from canonical when using device presets)
+
+When user clicks a breakpoint button: both update to canonical values.
+When user picks a device preset: breakpoint = preset's BP, width = preset's width.
+
+### Per-breakpoint fields (PER_BP_SLOT_FIELDS)
+padding, padding-x, padding-top, padding-bottom, gap, align, max-width, min-height, margin-top, border-sides, border-width, border-color
+
+### Global fields (role-level, never per-BP)
+position (top/bottom), sticky, z-index, nested-slots, allowed-block-types
+
+### Inspector write logic
+- Desktop (base BP): writes to `config.slots[name]`
+- Other BPs: writes to `config.grid[bp].slots[name]` (per-BP override)
+- Reset: deletes per-BP override key, falls back to base
+
+### Export JSON shape (runtime/routes/export.ts)
+```json
+{
+  "slot_config": {
+    "content": {
+      "gap": "16px",
+      "breakpoints": {
+        "tablet": { "max-width": "100%" },
+        "mobile": { "gap": "12px" }
+      }
+    }
+  }
+}
+```
+
+### CSS generation (runtime/lib/css-generator.ts)
+- Sorts breakpoints by min-width descending (desktop first)
+- Desktop rules = default (no media query)
+- Each smaller BP generates `@media (max-width: Npx)` with grid changes, slot var overrides, sidebar visibility
+
+### HTML is static
+One HTML for all breakpoints. CSS media queries drive show/hide (sidebars → drawers), grid column changes, and slot variable overrides.
+
+---
+
+## CSS Rules
 
 ## Architecture
 - Test blocks render in sandboxed iframes (`allow-scripts allow-same-origin`)

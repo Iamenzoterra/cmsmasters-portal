@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState } from 'react'
 import { SLOT_DEFINITIONS } from '@cmsmasters/db/slots'
 import type { LayoutConfig, TokenMap, BlockData, SlotConfig, CanvasBreakpointId } from '../lib/types'
-import { CANVAS_BREAKPOINTS, resolveSlotConfig } from '../lib/types'
+import { resolveSlotConfig } from '../lib/types'
 import { resolveToken, hslTripletToHex } from '../lib/tokens'
 
 /** Resolve a background token or raw value to a canvas-usable hex color. */
@@ -99,6 +99,7 @@ interface Props {
   config: LayoutConfig
   tokens: TokenMap
   activeBreakpoint: CanvasBreakpointId
+  viewportWidth: number
   gridKey: string
   selectedSlot: string | null
   onSlotSelect: (name: string) => void
@@ -121,7 +122,7 @@ function getSlotType(name: string): string {
   return name
 }
 
-export function Canvas({ config, tokens, activeBreakpoint, gridKey, selectedSlot, onSlotSelect, changedSlots, blocks }: Props) {
+export function Canvas({ config, tokens, activeBreakpoint, viewportWidth, gridKey, selectedSlot, onSlotSelect, changedSlots, blocks }: Props) {
   const resolveSlot = (name: string): SlotConfig => resolveSlotConfig(name, gridKey, config)
   // Slots that are nested inside a container — omit from top-level renders since they draw inside the parent.
   const nestedChildNames = new Set<string>()
@@ -145,7 +146,6 @@ export function Canvas({ config, tokens, activeBreakpoint, gridKey, selectedSlot
   const isDrawerMode = grid.sidebars === 'drawer'
   const isSidebarsHidden = grid.sidebars === 'hidden'
   const hideSidebars = isDrawerMode || isSidebarsHidden
-  const breakpointWidth = CANVAS_BREAKPOINTS.find((b) => b.id === activeBreakpoint)!.width
   const columnGap = grid['column-gap'] ? resolveToken(grid['column-gap'], tokens) : '0px'
 
   // Separate slots by position (role lives on base slot — not per-bp)
@@ -189,14 +189,14 @@ export function Canvas({ config, tokens, activeBreakpoint, gridKey, selectedSlot
     function updateScale() {
       if (!scrollRef.current) return
       const available = scrollRef.current.clientWidth - 48 // padding
-      const newScale = available < breakpointWidth ? available / breakpointWidth : 1
+      const newScale = available < viewportWidth ? available / viewportWidth : 1
       setScale(newScale)
     }
 
     updateScale()
     window.addEventListener('resize', updateScale)
     return () => window.removeEventListener('resize', updateScale)
-  }, [breakpointWidth])
+  }, [viewportWidth])
 
   const layoutBgStyle = resolveBackgroundStyle(config.background, tokens)
 
@@ -206,7 +206,7 @@ export function Canvas({ config, tokens, activeBreakpoint, gridKey, selectedSlot
         className="lm-canvas-viewport"
         ref={viewportRef}
         style={{
-          width: `${breakpointWidth}px`,
+          width: `${viewportWidth}px`,
           transform: `scale(${scale})`,
           background: layoutBgStyle,
         }}
