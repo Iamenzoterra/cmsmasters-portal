@@ -386,6 +386,12 @@ export function App() {
       delete (updated.slots[parentName] as Record<string, unknown>)['nested-slots']
     } else {
       ;(updated.slots[parentName] as Record<string, unknown>)['nested-slots'] = children
+      // Nested children must not be grid columns — remove from all breakpoints
+      for (const child of children) {
+        for (const grid of Object.values(updated.grid)) {
+          delete grid.columns[child]
+        }
+      }
     }
     try {
       const saved = await api.updateLayout(activeId, updated)
@@ -417,6 +423,10 @@ export function App() {
     updated.slots[childName] = defaults
     const existing = (updated.slots[parentName]['nested-slots'] as string[] | undefined) ?? []
     updated.slots[parentName]['nested-slots'] = [...existing, childName]
+    // Nested children must not be grid columns
+    for (const grid of Object.values(updated.grid)) {
+      delete grid.columns[childName]
+    }
     try {
       const saved = await api.updateLayout(activeId, updated)
       setActiveConfig(saved)

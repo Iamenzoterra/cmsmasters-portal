@@ -123,8 +123,17 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
     out.push('')
   }
 
+  // Collect nested children — these render inside their parent, not as grid columns
+  const nestedChildren = new Set<string>()
+  for (const s of Object.values(config.slots)) {
+    const nl = s['nested-slots']
+    if (Array.isArray(nl)) nl.forEach((c: string) => nestedChildren.add(c))
+  }
+
   // ── Default grid ──
-  const defaultCols = Object.values(defaultGrid.columns).join(' ')
+  const defaultCols = Object.entries(defaultGrid.columns)
+    .filter(([name]) => !nestedChildren.has(name))
+    .map(([, w]) => w).join(' ')
   const defaultGap = defaultGrid['column-gap']
     ? resolveValue(defaultGrid['column-gap'], tokens)
     : '0'
@@ -340,8 +349,10 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
       out.push('')
     }
 
-    // Grid columns
-    const cols = Object.values(grid.columns).join(' ')
+    // Grid columns (skip nested children — they render inside their parent)
+    const cols = Object.entries(grid.columns)
+      .filter(([name]) => !nestedChildren.has(name))
+      .map(([, w]) => w).join(' ')
     const gap = grid['column-gap']
       ? resolveValue(grid['column-gap'], tokens)
       : '0'

@@ -71,11 +71,19 @@ export function generateHTML(config: LayoutConfig): string {
     out.push('')
   }
 
+  // Collect nested children — these render inside their parent, not as grid columns
+  const nestedChildren = new Set<string>()
+  for (const s of Object.values(slots)) {
+    const nl = s['nested-slots']
+    if (Array.isArray(nl)) nl.forEach((c) => nestedChildren.add(c))
+  }
+
   // Grid frame
   out.push('<div class="layout-frame">')
   out.push('  <div class="layout-grid">')
 
   for (const name of desktopColumns) {
+    if (nestedChildren.has(name)) continue
     const tag = getTag(name)
     const slot = slots[name] ?? {}
     const inner = renderSlotInner(slot)
