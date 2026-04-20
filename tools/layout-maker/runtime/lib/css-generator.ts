@@ -245,88 +245,23 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
     out.push('')
   }
 
-  // ── Drawer base CSS (always visible, off-screen by default) ──
+  // ── Drawer base CSS ──
+  // All drawer visuals (panel, backdrop, trigger, close) live in the portal
+  // shell: packages/ui/src/portal/portal-shell.css. Layouts should never
+  // emit drawer styling inline — one vocabulary across all layouts, all
+  // themes, and the Layout Maker canvas preview.
+  //
+  // Per-layout knobs that the shell can't know in advance (drawer-width
+  // per BP, which side is drawer-enabled) are still written as CSS var
+  // overrides in the responsive @media blocks below.
   if (hasDrawers) {
-    const firstDrawerBp = bps.find(([, g]) => g.sidebars === 'drawer')
-    const defaultDrawerWidth = firstDrawerBp?.[1]['drawer-width'] ?? '280px'
-
-    out.push('/* ── Drawer ── */')
-    out.push('.layout-drawer {')
-    out.push('  position: fixed;')
-    out.push('  top: 0;')
-    out.push('  left: 0;')
-    out.push('  height: 100vh;')
-    out.push(`  width: ${defaultDrawerWidth};`)
-    out.push('  background: white;')
-    out.push('  z-index: 1000;')
-    out.push('  transform: translateX(-100%);')
-    out.push('  transition: transform 0.3s ease;')
-    out.push('  overflow-y: auto;')
-    out.push('}')
+    out.push('/* Drawer visuals: packages/ui/src/portal/portal-shell.css */')
     out.push('')
-    out.push('.layout-drawer--right {')
-    out.push('  right: 0;')
-    out.push('  left: auto;')
-    out.push('  transform: translateX(100%);')
-    out.push('}')
-    out.push('')
-    out.push('.layout-drawer.open {')
-    out.push('  transform: translateX(0);')
-    out.push('}')
-    out.push('')
-    out.push('.layout-drawer-backdrop {')
-    out.push('  position: fixed;')
-    out.push('  inset: 0;')
-    out.push('  background: rgba(0, 0, 0, 0.4);')
-    out.push('  z-index: 999;')
-    out.push('  opacity: 0;')
-    out.push('  pointer-events: none;')
-    out.push('  transition: opacity 0.3s ease;')
-    out.push('}')
-    out.push('')
-    out.push('.layout-drawer-backdrop.open {')
-    out.push('  opacity: 1;')
-    out.push('  pointer-events: auto;')
-    out.push('}')
-    out.push('')
-    out.push('.drawer-close {')
-    out.push('  position: absolute;')
-    out.push('  top: 8px;')
-    out.push('  right: 8px;')
-    out.push('  background: none;')
-    out.push('  border: none;')
-    out.push('  font-size: 24px;')
-    out.push('  cursor: pointer;')
-    out.push('  padding: 4px 8px;')
-    out.push('}')
-    out.push('')
-    out.push('.drawer-trigger {')
-    out.push('  display: none;')
-    out.push('  position: fixed;')
-    out.push('  top: 50%;')
-    out.push('  transform: translateY(-50%);')
-    out.push('  z-index: 998;')
-    out.push('  background: white;')
-    out.push('  border: 1px solid #ddd;')
-    out.push('  padding: 8px;')
-    out.push('  cursor: pointer;')
-    out.push('  border-radius: 4px;')
-    out.push('}')
-    out.push('')
-
-    if (needLeftDrawer) {
-      out.push('.drawer-trigger--left {')
-      out.push('  left: 8px;')
-      out.push('}')
-      out.push('')
-    }
-
-    if (needRightDrawer) {
-      out.push('.drawer-trigger--right {')
-      out.push('  right: 8px;')
-      out.push('}')
-      out.push('')
-    }
+    // Silence "needLeftDrawer / needRightDrawer not used" — they are kept
+    // computed so future per-layout overrides (e.g. per-side drawer-width
+    // at a specific BP) can branch on them without re-walking the grid.
+    void needLeftDrawer
+    void needRightDrawer
   }
 
   // ── Responsive breakpoints ──
@@ -421,22 +356,16 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
       for (const r of orderRules) out.push(r)
     }
 
-    // Show drawer triggers (grid-level OR per-slot drawer)
+    // Drawer per-BP overrides. Trigger visibility + panel base styles come
+    // from portal-shell.css; here we only write the per-layout knobs.
     const hasDrawerAtBp = grid.sidebars === 'drawer' ||
       Object.values(grid.slots ?? {}).some((s) => s.visibility === 'drawer')
 
-    if (hasDrawerAtBp) {
+    if (hasDrawerAtBp && grid['drawer-width']) {
       out.push('')
-      out.push('  .drawer-trigger {')
-      out.push('    display: block;')
+      out.push('  .drawer-panel {')
+      out.push(`    width: ${grid['drawer-width']};`)
       out.push('  }')
-
-      if (grid['drawer-width']) {
-        out.push('')
-        out.push('  .layout-drawer {')
-        out.push(`    width: ${grid['drawer-width']};`)
-        out.push('  }')
-      }
     }
 
     // Per-bp slot inner var overrides

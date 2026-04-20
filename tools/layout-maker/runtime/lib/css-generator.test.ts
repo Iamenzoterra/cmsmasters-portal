@@ -132,3 +132,45 @@ describe('css-generator: grid-template-columns at responsive BPs', () => {
     expect(tablet).toMatch(/grid-template-columns:\s*1fr 1fr 1fr\s*;/)
   })
 })
+
+describe('css-generator: drawer CSS ownership', () => {
+  // PARITY-LOG contract: drawer visuals live in packages/ui/src/portal/portal-shell.css.
+  // The generator must NOT emit drawer panel / backdrop / trigger / close styles —
+  // one vocabulary across all layouts, Portal, and LM canvas.
+
+  const layoutWithDrawer = () => threeColLayout({ tabletSidebars: 'drawer' })
+
+  it('does not emit .layout-drawer or .layout-drawer-backdrop rules', () => {
+    const css = generateCSS(layoutWithDrawer(), tokens)
+    expect(css).not.toMatch(/\.layout-drawer\s*\{/)
+    expect(css).not.toMatch(/\.layout-drawer-backdrop/)
+  })
+
+  it('does not emit a .drawer-trigger base rule (no display/position/background)', () => {
+    const css = generateCSS(layoutWithDrawer(), tokens)
+    // The shell owns the trigger. Any emitted .drawer-trigger block is a regression.
+    expect(css).not.toMatch(/\.drawer-trigger\s*\{[^}]*position:/s)
+    expect(css).not.toMatch(/\.drawer-trigger\s*\{[^}]*background:/s)
+    expect(css).not.toMatch(/\.drawer-trigger--left\s*\{\s*left:/)
+    expect(css).not.toMatch(/\.drawer-trigger--right\s*\{\s*right:/)
+  })
+
+  it('does not emit a .drawer-close rule', () => {
+    const css = generateCSS(layoutWithDrawer(), tokens)
+    expect(css).not.toMatch(/\.drawer-close\s*\{/)
+  })
+
+  it('may emit a per-BP drawer-panel width override (per-layout knob)', () => {
+    const config = layoutWithDrawer()
+    config.grid.tablet['drawer-width'] = '360px'
+    const css = generateCSS(config, tokens)
+    const tablet = tabletBlock(css)
+    expect(tablet).toMatch(/\.drawer-panel\s*\{[^}]*width:\s*360px/s)
+  })
+
+  it('does not emit any drawer panel width when per-layout knob is absent', () => {
+    const css = generateCSS(layoutWithDrawer(), tokens)
+    const tablet = tabletBlock(css)
+    expect(tablet).not.toMatch(/\.drawer-panel\s*\{/)
+  })
+})

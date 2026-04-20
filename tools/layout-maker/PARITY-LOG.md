@@ -105,6 +105,15 @@ trashcan.
    still in the flow. Until then, every drawer layout silently mis-sizes its
    remaining slots.
 
+3. **Portal shell is shared, not duplicated.** Chrome-level UI (drawer,
+   future overlays, scroll behaviors) must live in
+   `packages/ui/src/portal/portal-shell.css` with values driven by
+   `--*` tokens. Neither `css-generator.ts` nor the LM canvas are allowed
+   to reimplement these visuals — each duplication becomes a divergence.
+   Every shell rule must be reachable by exactly one class name from
+   exactly one file. Contract-level defense: `css-generator.test.ts`
+   ownership tests that assert no drawer visuals leak into generated CSS.
+
 ---
 
 ## Review cadence

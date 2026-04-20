@@ -1,0 +1,356 @@
+/* Portal Shell — drawer system
+ *
+ * One visual vocabulary for drawers across the entire portal (all layouts,
+ * all themes, all pages) and across the Layout Maker canvas preview.
+ *
+ * Consumers:
+ *  - apps/portal/app/globals.css (via @import)
+ *  - tools/layout-maker/src/main.tsx (via ?raw or direct import)
+ *
+ * Per-layout knobs live in layout YAML / slot_config:
+ *   grid.{bp}.drawer-width, drawer-trigger, drawer-position
+ *   slot.visibility = 'drawer' picks which sidebar opens into the drawer
+ *
+ * All values here are design tokens — to change the look, edit --drawer-*
+ * in the :root block below (or, eventually, the corresponding Figma
+ * variable in "Portal DS — CMSMasters"). Do not hardcode pixels/colors in
+ * rules that consume them.
+ */
+
+:root {
+  /* ─────── Drawer panel ─────── */
+  --drawer-panel-width: 400px;
+  --drawer-panel-width-mobile: 300px;
+  --drawer-panel-max-width: 88%;
+  --drawer-panel-bg: var(--bg-surface);
+  --drawer-panel-shadow-left:  14px 0 40px -12px hsl(var(--brand-deep-blue-2) / 0.30);
+  --drawer-panel-shadow-right: -14px 0 40px -12px hsl(var(--brand-deep-blue-2) / 0.30);
+  --drawer-enter-duration: 420ms;
+  --drawer-enter-easing: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* ─────── Backdrop ─────── */
+  --drawer-backdrop-color: var(--brand-deep-blue-2);
+  --drawer-backdrop-alpha: 0.45;
+  --drawer-backdrop-blur: 3px;
+  --drawer-backdrop-duration: 320ms;
+
+  /* ─────── Peek trigger (default) ─────── */
+  --drawer-trigger-width: 46px;
+  --drawer-trigger-padding: 18px 10px;
+  --drawer-trigger-radius: 14px;
+  --drawer-trigger-peek: 6px;            /* how far it tucks into the bezel */
+  --drawer-trigger-hover-slide: 4px;     /* how far it slides on hover */
+  --drawer-trigger-duration: 320ms;
+  --drawer-trigger-bg-left:  linear-gradient(135deg, hsl(var(--brand-the-sky)),    hsl(var(--brand-cyan)));
+  --drawer-trigger-bg-right: linear-gradient(135deg, hsl(var(--brand-deep-blue)),  hsl(var(--brand-deep-blue-2)));
+  --drawer-trigger-shadow-left:   8px 4px 18px -6px hsl(var(--brand-deep-blue-2) / 0.55);
+  --drawer-trigger-shadow-right: -8px 4px 18px -6px hsl(var(--brand-deep-blue-2) / 0.55);
+  --drawer-trigger-shadow-left-hover:   12px 8px 24px -6px hsl(var(--brand-deep-blue-2) / 0.55);
+  --drawer-trigger-shadow-right-hover: -12px 8px 24px -6px hsl(var(--brand-deep-blue-2) / 0.55);
+  --drawer-trigger-label-size: 11px;
+  --drawer-trigger-label-letter-spacing: 2px;
+  --drawer-trigger-icon-wrap: 26px;
+  --drawer-trigger-icon: 13px;
+  --drawer-trigger-fg: hsl(var(--brand-white));
+  --drawer-trigger-icon-wrap-bg: hsl(var(--brand-white) / 0.2);
+
+  /* ─────── Hamburger trigger (variant) ─────── */
+  --drawer-hamburger-size: 44px;
+  --drawer-hamburger-radius: var(--rounded-full);
+  --drawer-hamburger-bg: hsl(var(--bg-surface));
+  --drawer-hamburger-bar-width: 18px;
+  --drawer-hamburger-bar-height: 2px;
+  --drawer-hamburger-bar-gap: 4px;
+  --drawer-hamburger-bar-color: hsl(var(--text-primary));
+  --drawer-hamburger-shadow: var(--shadow-md);
+
+  /* ─────── Drawer head (close + title) ─────── */
+  --drawer-head-padding: 18px 20px 14px;
+  --drawer-head-border: hsl(var(--border-default));
+  --drawer-head-bg: var(--bg-surface);
+  --drawer-head-eyebrow-size: 11px;
+  --drawer-head-eyebrow-color: hsl(var(--text-muted));
+  --drawer-head-title-size: 16px;
+  --drawer-head-title-weight: 600;
+  --drawer-head-title-color: hsl(var(--text-brand));
+
+  /* ─────── Close button ─────── */
+  --drawer-close-size: 34px;
+  --drawer-close-bg: hsl(var(--bg-page));
+  --drawer-close-bg-hover: hsl(var(--border-default));
+  --drawer-close-fg: hsl(var(--text-primary));
+  --drawer-close-icon-size: 14px;
+  --drawer-close-rotate-on-hover: 90deg;
+  --drawer-close-duration: 220ms;
+
+  /* ─────── Body ─────── */
+  --drawer-body-padding: 16px;
+
+  /* ─────── Z-indices (portal shell scope) ─────── */
+  --drawer-z-trigger: 40;
+  --drawer-z-backdrop: 50;
+  --drawer-z-panel: 60;
+}
+
+/* ──────────────── Structure ──────────────── */
+
+/* The drawer layer wraps backdrop + panels and sits on top of the layout
+ * when any panel is open. pointer-events are off by default so a closed
+ * drawer never blocks the page. */
+.drawer-layer {
+  position: fixed;
+  inset: 0;
+  z-index: var(--drawer-z-backdrop);
+  pointer-events: none;
+}
+
+.drawer-backdrop {
+  position: absolute;
+  inset: 0;
+  background: hsl(var(--drawer-backdrop-color) / var(--drawer-backdrop-alpha));
+  backdrop-filter: blur(var(--drawer-backdrop-blur));
+  -webkit-backdrop-filter: blur(var(--drawer-backdrop-blur));
+  opacity: 0;
+  transition: opacity var(--drawer-backdrop-duration) var(--drawer-enter-easing);
+  pointer-events: none;
+}
+
+.drawer-panel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: var(--drawer-z-panel);
+  width: var(--drawer-panel-width);
+  max-width: var(--drawer-panel-max-width);
+  background: var(--drawer-panel-bg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform var(--drawer-enter-duration) var(--drawer-enter-easing);
+  pointer-events: auto;
+}
+
+.drawer-panel--left {
+  left: 0;
+  transform: translateX(-100%);
+  box-shadow: var(--drawer-panel-shadow-left);
+}
+
+.drawer-panel--right {
+  right: 0;
+  transform: translateX(100%);
+  box-shadow: var(--drawer-panel-shadow-right);
+}
+
+/* Open state — the layer gets .is-open (JS toggles); the panel to open
+ * gets .is-active. This lets a shared layer host both sides. */
+.drawer-layer.is-open {
+  pointer-events: auto;
+}
+
+.drawer-layer.is-open .drawer-backdrop {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.drawer-layer.is-open .drawer-panel.is-active {
+  transform: translateX(0);
+}
+
+/* ──────────────── Head ──────────────── */
+
+.drawer-head {
+  display: flex;
+  align-items: center;
+  padding: var(--drawer-head-padding);
+  border-bottom: 1px solid var(--drawer-head-border);
+  background: var(--drawer-head-bg);
+  flex-shrink: 0;
+  gap: var(--spacing-md);
+}
+
+.drawer-head__meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.drawer-head__eyebrow {
+  display: block;
+  font-size: var(--drawer-head-eyebrow-size);
+  color: var(--drawer-head-eyebrow-color);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: 2px;
+}
+
+.drawer-head__title {
+  font-size: var(--drawer-head-title-size);
+  font-weight: var(--drawer-head-title-weight);
+  color: var(--drawer-head-title-color);
+  margin: 0;
+}
+
+/* ──────────────── Close button ──────────────── */
+
+.drawer-close {
+  width: var(--drawer-close-size);
+  height: var(--drawer-close-size);
+  border-radius: var(--rounded-full);
+  border: none;
+  background: var(--drawer-close-bg);
+  color: var(--drawer-close-fg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background var(--drawer-close-duration) ease,
+    transform  var(--drawer-close-duration) ease;
+}
+
+.drawer-close:hover {
+  background: var(--drawer-close-bg-hover);
+  transform: rotate(var(--drawer-close-rotate-on-hover));
+}
+
+.drawer-close svg {
+  width: var(--drawer-close-icon-size);
+  height: var(--drawer-close-icon-size);
+}
+
+/* ──────────────── Body ──────────────── */
+
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--drawer-body-padding);
+}
+
+/* ──────────────── Triggers ──────────────── */
+
+.drawer-trigger {
+  position: fixed;
+  top: 50%;
+  z-index: var(--drawer-z-trigger);
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--drawer-trigger-fg);
+  transition:
+    transform  var(--drawer-trigger-duration) var(--drawer-enter-easing),
+    box-shadow var(--drawer-trigger-duration) var(--drawer-enter-easing),
+    opacity    180ms ease-out;
+}
+
+/* Peek variant — vertical pill that tucks behind the viewport edge */
+.drawer-trigger--peek {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: var(--drawer-trigger-padding);
+  width: var(--drawer-trigger-width);
+}
+
+.drawer-trigger--peek .drawer-trigger__label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: var(--drawer-trigger-label-size);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--drawer-trigger-label-letter-spacing);
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.drawer-trigger--peek .drawer-trigger__icon-wrap {
+  width: var(--drawer-trigger-icon-wrap);
+  height: var(--drawer-trigger-icon-wrap);
+  border-radius: var(--rounded-full);
+  background: var(--drawer-trigger-icon-wrap-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.drawer-trigger--peek .drawer-trigger__icon-wrap svg {
+  width: var(--drawer-trigger-icon);
+  height: var(--drawer-trigger-icon);
+}
+
+.drawer-trigger--peek.drawer-trigger--left {
+  left: 0;
+  border-radius: 0 var(--drawer-trigger-radius) var(--drawer-trigger-radius) 0;
+  background: var(--drawer-trigger-bg-left);
+  transform: translate(calc(var(--drawer-trigger-peek) * -1), -50%);
+  box-shadow: var(--drawer-trigger-shadow-left);
+}
+
+.drawer-trigger--peek.drawer-trigger--left:hover {
+  transform: translate(var(--drawer-trigger-hover-slide), -50%);
+  box-shadow: var(--drawer-trigger-shadow-left-hover);
+}
+
+.drawer-trigger--peek.drawer-trigger--right {
+  right: 0;
+  border-radius: var(--drawer-trigger-radius) 0 0 var(--drawer-trigger-radius);
+  background: var(--drawer-trigger-bg-right);
+  transform: translate(var(--drawer-trigger-peek), -50%);
+  box-shadow: var(--drawer-trigger-shadow-right);
+}
+
+.drawer-trigger--peek.drawer-trigger--right:hover {
+  transform: translate(calc(var(--drawer-trigger-hover-slide) * -1), -50%);
+  box-shadow: var(--drawer-trigger-shadow-right-hover);
+}
+
+/* Hamburger variant — a circular button with three-bar icon */
+.drawer-trigger--hamburger {
+  width: var(--drawer-hamburger-size);
+  height: var(--drawer-hamburger-size);
+  border-radius: var(--drawer-hamburger-radius);
+  background: var(--drawer-hamburger-bg);
+  box-shadow: var(--drawer-hamburger-shadow);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-50%);
+}
+
+.drawer-trigger--hamburger.drawer-trigger--left  { left: var(--spacing-md); }
+.drawer-trigger--hamburger.drawer-trigger--right { right: var(--spacing-md); }
+
+.drawer-trigger--hamburger .drawer-hamburger-icon {
+  width: var(--drawer-hamburger-bar-width);
+  display: flex;
+  flex-direction: column;
+  gap: var(--drawer-hamburger-bar-gap);
+}
+
+.drawer-trigger--hamburger .drawer-hamburger-icon span {
+  display: block;
+  width: 100%;
+  height: var(--drawer-hamburger-bar-height);
+  background: var(--drawer-hamburger-bar-color);
+  border-radius: var(--rounded-xs);
+}
+
+/* When any drawer is open, hide the triggers so they don't fight the panel. */
+.drawer-layer.is-open ~ .drawer-trigger,
+body.drawer-is-open .drawer-trigger {
+  opacity: 0;
+  pointer-events: none;
+}
+
+body.drawer-is-open .drawer-trigger--peek.drawer-trigger--left  { transform: translate(-40px, -50%); }
+body.drawer-is-open .drawer-trigger--peek.drawer-trigger--right { transform: translate( 40px, -50%); }
+
+/* ──────────────── Responsive ──────────────── */
+
+@media (max-width: 480px) {
+  .drawer-panel {
+    width: var(--drawer-panel-width-mobile);
+  }
+}

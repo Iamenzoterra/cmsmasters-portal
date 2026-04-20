@@ -531,69 +531,9 @@ body {
 }
 
 /* ── Drawer System ───────────────────────────────────────────── */
-.lm-drawer-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: var(--lm-z-drawer-bg);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--lm-transition-drawer);
-}
-
-.lm-drawer-backdrop--open { opacity: 1; pointer-events: auto; }
-
-.lm-drawer {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  z-index: var(--lm-z-drawer);
-  background: var(--lm-bg-canvas-page);
-  box-shadow: 4px 0 16px rgba(0,0,0,0.3);
-  transition: transform var(--lm-transition-drawer);
-  overflow-y: auto;
-}
-
-.lm-drawer--left { left: 0; transform: translateX(-100%); }
-.lm-drawer--left.lm-drawer--open { transform: translateX(0); }
-.lm-drawer--right { right: 0; transform: translateX(100%); box-shadow: -4px 0 16px rgba(0,0,0,0.3); }
-.lm-drawer--right.lm-drawer--open { transform: translateX(0); }
-
-.lm-drawer-trigger {
-  position: absolute;
-  z-index: var(--lm-z-hover);
-  top: var(--lm-sp-6);
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.06);
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 3px;
-  cursor: pointer;
-  transition: background var(--lm-transition-fast);
-}
-
-.lm-drawer-trigger:hover { background: rgba(0, 0, 0, 0.10); }
-.lm-drawer-trigger--left { left: var(--lm-sp-6); }
-.lm-drawer-trigger--right { right: var(--lm-sp-6); }
-
-.lm-hamburger-icon {
-  width: 16px;
-  height: 12px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.lm-hamburger-icon span {
-  display: block;
-  width: 100%;
-  height: 2px;
-  background: rgba(0, 0, 0, 0.55);
-  border-radius: 1px;
-}
+/* Drawer visuals (panel, backdrop, trigger, close button) live in
+ * packages/ui/src/portal/portal-shell.css — one vocabulary shared with
+ * the real Portal render. DrawerPreview.tsx emits the shell class names. */
 
 /* ── Hidden sidebars indicator ──────────────────────────────── */
 .lm-hidden-sidebars {

@@ -263,6 +263,94 @@ function SidebarModeControl({ config, activeBreakpoint, gridKey, onBatchUpdateSl
   )
 }
 
+function DrawerSettingsControl({ config, activeBreakpoint, gridKey, onUpdateGridProp }: {
+  config: LayoutConfig
+  activeBreakpoint: string
+  gridKey: string
+  onUpdateGridProp: Props['onUpdateGridProp']
+}) {
+  // Only render when the active BP actually uses drawers. Respects both
+  // legacy grid-level `sidebars: drawer` and per-slot `visibility: drawer`.
+  const grid = config.grid[gridKey]
+  if (!grid) return null
+
+  const perSlotDrawer = Object.values(grid.slots ?? {}).some((s) => s.visibility === 'drawer')
+  const gridLevelDrawer = grid.sidebars === 'drawer'
+  if (!perSlotDrawer && !gridLevelDrawer) return null
+
+  const [widthDraft, setWidthDraft] = useState((grid['drawer-width'] ?? '').replace(/px$/, ''))
+
+  // Keep draft in sync when user switches BP.
+  useEffect(() => {
+    setWidthDraft((grid['drawer-width'] ?? '').replace(/px$/, ''))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gridKey, grid['drawer-width']])
+
+  const trigger = grid['drawer-trigger'] ?? 'peek'
+  const position = grid['drawer-position'] ?? 'both'
+
+  return (
+    <div className="lm-inspector__section lm-inspector__info">
+      <div className="lm-inspector__row">
+        <span className="lm-inspector__label">Drawer at {activeBreakpoint}</span>
+      </div>
+
+      {/* Trigger variant */}
+      <div className="lm-inspector__row" style={{ marginTop: '6px' }}>
+        <span className="lm-inspector__label">Trigger</span>
+      </div>
+      <div className="lm-align-group">
+        {(['peek', 'hamburger', 'tab'] as const).map((opt) => (
+          <button
+            key={opt}
+            className={`lm-align-btn${trigger === opt ? ' lm-align-btn--active' : ''}`}
+            onClick={() => onUpdateGridProp(gridKey, 'drawer-trigger', opt)}
+          >
+            {opt}
+          </button>
+        ))}
+      </div>
+
+      {/* Position */}
+      <div className="lm-inspector__row" style={{ marginTop: '8px' }}>
+        <span className="lm-inspector__label">Side</span>
+      </div>
+      <div className="lm-align-group">
+        {(['left', 'right', 'both'] as const).map((opt) => (
+          <button
+            key={opt}
+            className={`lm-align-btn${position === opt ? ' lm-align-btn--active' : ''}`}
+            onClick={() => onUpdateGridProp(gridKey, 'drawer-position', opt)}
+          >
+            {opt}
+          </button>
+        ))}
+      </div>
+
+      {/* Panel width */}
+      <div className="lm-inspector__row" style={{ marginTop: '8px' }}>
+        <span className="lm-inspector__label">Panel width</span>
+      </div>
+      <div className="lm-width-control">
+        <input
+          className="lm-input"
+          type="number"
+          min="200"
+          max="800"
+          placeholder="400"
+          value={widthDraft}
+          onChange={(e) => setWidthDraft(e.target.value)}
+          onBlur={() => {
+            const v = widthDraft.trim()
+            onUpdateGridProp(gridKey, 'drawer-width', v ? `${v}px` : undefined)
+          }}
+        />
+        <span className="lm-inspector__unit">px</span>
+      </div>
+    </div>
+  )
+}
+
 function ColumnWidthControl({ selectedSlot, gridKey, columnWidth, isFullWidth, widthDraft, setWidthDraft, onUpdateColumnWidth }: {
   selectedSlot: string
   gridKey: string
@@ -402,6 +490,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
         </div>
         <div className="lm-inspector__body">
           <SidebarModeControl config={config} activeBreakpoint={activeBreakpoint} gridKey={gridKey} onBatchUpdateSlotConfig={onBatchUpdateSlotConfig} />
+          <DrawerSettingsControl config={config} activeBreakpoint={activeBreakpoint} gridKey={gridKey} onUpdateGridProp={onUpdateGridProp} />
           <div className="lm-inspector__section">
             <div className="lm-inspector__section-title">Layout defaults</div>
             <div className="lm-inspector__row">
@@ -1142,6 +1231,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
 
         {/* Sidebar mode — reuse shared control */}
         <SidebarModeControl config={config} activeBreakpoint={activeBreakpoint} gridKey={gridKey} onBatchUpdateSlotConfig={onBatchUpdateSlotConfig} />
+        <DrawerSettingsControl config={config} activeBreakpoint={activeBreakpoint} gridKey={gridKey} onUpdateGridProp={onUpdateGridProp} />
 
         {/* Test blocks */}
         {blockCount > 0 && (
