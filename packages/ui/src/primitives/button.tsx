@@ -175,6 +175,22 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       ...style,
     };
 
+    // When asChild, Slot requires exactly one React element child. A `{loading && <svg/>}`
+    // sibling would emit `false` alongside children and make Slot throw Children.only.
+    // Spinner is only meaningful on a real <button> anyway.
+    if (asChild) {
+      return (
+        <Comp
+          className={cn(buttonVariants({ variant, roundness, className }))}
+          ref={ref}
+          style={tokenStyle}
+          {...props}
+        >
+          {children}
+        </Comp>
+      );
+    }
+
     return (
       <Comp
         className={cn(buttonVariants({ variant, roundness, className }))}
