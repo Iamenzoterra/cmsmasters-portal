@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useUser } from '@cmsmasters/auth'
 import { getUserLicenses } from '@cmsmasters/db'
 import { Button } from '@cmsmasters/ui'
@@ -130,18 +130,47 @@ export function MyThemes() {
               fontSize: 'var(--text-xs-font-size)',
               color: 'hsl(var(--text-muted))',
               marginTop: 'var(--spacing-xs)',
+              marginBottom: 'var(--spacing-md)',
             }}
           >
             Add your first theme by entering a ThemeForest purchase code or registering an Envato
             Elements theme.
           </p>
+          <Button
+            variant="primary"
+            size="default"
+            onClick={() => navigate('/licenses')}
+          >
+            Add your first theme
+          </Button>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-sm)' }}>
-          {licenses.map(license => (
-            <ThemeCard key={license.id} license={license} />
-          ))}
-        </div>
+        <>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              marginBottom: 'var(--spacing-sm)',
+            }}
+          >
+            <Link
+              to="/licenses"
+              style={{
+                fontSize: 'var(--text-sm-font-size)',
+                fontWeight: 'var(--font-weight-medium)',
+                color: 'hsl(var(--text-link))',
+                textDecoration: 'none',
+              }}
+            >
+              + Add another theme
+            </Link>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-sm)' }}>
+            {licenses.map(license => (
+              <ThemeCard key={license.id} license={license} />
+            ))}
+          </div>
+        </>
       )}
 
       {/* Bottom panels — 2-column grid */}

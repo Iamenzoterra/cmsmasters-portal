@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 const navItems = [
   { to: '/', label: 'My Themes', end: true },
   { to: '/account', label: 'My Account' },
+  { to: '/licenses', label: 'Licenses' },
   { to: '/support', label: 'Support' },
   { to: '/downloads', label: 'Downloads' },
 ]

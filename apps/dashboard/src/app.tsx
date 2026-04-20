@@ -11,6 +11,7 @@ import { NotFound } from './pages/not-found'
 // Lazy routes from day 1 (lesson from Studio 841KB bundle)
 const MyThemes = lazy(() => import('./pages/my-themes').then(m => ({ default: m.MyThemes })))
 const MyAccount = lazy(() => import('./pages/my-account').then(m => ({ default: m.MyAccount })))
+const Licenses = lazy(() => import('./pages/licenses').then(m => ({ default: m.Licenses })))
 const Support = lazy(() => import('./pages/support').then(m => ({ default: m.Support })))
 const Downloads = lazy(() => import('./pages/downloads').then(m => ({ default: m.Downloads })))
 
@@ -48,6 +49,7 @@ export function App() {
       >
         <Route index element={<MyThemes />} />
         <Route path="/account" element={<MyAccount />} />
+        <Route path="/licenses" element={<Licenses />} />
         <Route path="/support" element={<Support />} />
         <Route path="/downloads" element={<Downloads />} />
       </Route>
