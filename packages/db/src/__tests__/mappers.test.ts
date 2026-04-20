@@ -18,6 +18,7 @@ const sparseRow: Theme = {
   id: 'sparse-uuid',
   slug: 'sparse-theme',
   status: 'draft',
+  has_portal_page: false,
   meta: { name: 'Sparse' },
   template_id: null,
   block_fills: [],
@@ -68,6 +69,7 @@ const filledRow: Theme = {
   id: 'filled-uuid',
   slug: 'growth-hive',
   status: 'published',
+  has_portal_page: true,
   meta: {
     name: 'Growth Hive',
     tagline: 'A modern business theme',
