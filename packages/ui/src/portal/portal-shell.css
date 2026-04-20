@@ -94,6 +94,16 @@
 
 /* ──────────────── Structure ──────────────── */
 
+/* Drawer shell wraps EVERY drawer-related element (triggers + layer +
+ * panels). Default: hidden. The per-layout CSS (from css-generator)
+ * flips it to `display: contents` at the specific breakpoints that
+ * actually use drawers — so drawer markup can live in the exported
+ * HTML once, without any JS or DOM branching, and still stay invisible
+ * on breakpoints that don't need it. */
+.drawer-shell {
+  display: none;
+}
+
 /* The drawer layer wraps backdrop + panels and sits on top of the layout
  * when any panel is open. pointer-events are off by default so a closed
  * drawer never blocks the page. */

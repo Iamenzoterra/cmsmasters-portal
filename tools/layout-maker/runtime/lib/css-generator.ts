@@ -337,7 +337,11 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
 
     if (hiddenSlots.length > 0) {
       out.push('')
-      const selectors = hiddenSlots.map((n) => `  [data-slot="${n}"]`).join(',\n')
+      // Scope to .layout-grid > so ONLY the in-grid copy is hidden. The
+      // drawer-shell keeps a second copy of the sidebar slot inside
+      // `.drawer-panel > .drawer-body[data-slot="X"]`; that copy must
+      // stay visible at drawer BPs.
+      const selectors = hiddenSlots.map((n) => `  .layout-grid > [data-slot="${n}"]`).join(',\n')
       out.push(`${selectors} {`)
       out.push('    display: none;')
       out.push('  }')
@@ -357,15 +361,24 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
     }
 
     // Drawer per-BP overrides. Trigger visibility + panel base styles come
-    // from portal-shell.css; here we only write the per-layout knobs.
+    // from portal-shell.css; here we only:
+    //   1. turn on .drawer-shell (default display:none in shell)
+    //   2. write per-layout knobs (drawer-width)
     const hasDrawerAtBp = grid.sidebars === 'drawer' ||
       Object.values(grid.slots ?? {}).some((s) => s.visibility === 'drawer')
 
-    if (hasDrawerAtBp && grid['drawer-width']) {
+    if (hasDrawerAtBp) {
       out.push('')
-      out.push('  .drawer-panel {')
-      out.push(`    width: ${grid['drawer-width']};`)
+      out.push('  .drawer-shell {')
+      out.push('    display: contents;')
       out.push('  }')
+
+      if (grid['drawer-width']) {
+        out.push('')
+        out.push('  .drawer-panel {')
+        out.push(`    width: ${grid['drawer-width']};`)
+        out.push('  }')
+      }
     }
 
     // Per-bp slot inner var overrides

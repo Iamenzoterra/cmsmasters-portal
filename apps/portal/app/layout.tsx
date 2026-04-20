@@ -20,6 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={manrope.variable}>
         {children}
         <Script src="/assets/animate-utils.js" strategy="afterInteractive" />
+        <Script src="/assets/portal-shell.js" strategy="afterInteractive" />
       </body>
     </html>
   )
