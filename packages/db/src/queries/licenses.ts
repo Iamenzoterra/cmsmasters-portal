@@ -4,7 +4,7 @@ import type { License, LicenseInsert } from '../types'
 export async function getUserLicenses(client: SupabaseClient, userId: string) {
   const { data, error } = await client
     .from('licenses')
-    .select('*, themes!licenses_theme_id_fkey(id, slug, meta, status)')
+    .select('*, themes!licenses_theme_id_fkey(id, slug, meta, status, has_portal_page)')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
   if (error) throw error
@@ -17,7 +17,7 @@ export async function getAllLicenses(
 ) {
   let query = client
     .from('licenses')
-    .select('*, profiles!licenses_user_id_fkey(id, email, full_name), themes!licenses_theme_id_fkey(id, slug, meta)', { count: 'exact' })
+    .select('*, profiles!licenses_user_id_fkey(id, email, full_name), themes!licenses_theme_id_fkey(id, slug, meta, has_portal_page)', { count: 'exact' })
     .order('created_at', { ascending: false })
 
   if (options?.limit) query = query.limit(options.limit)

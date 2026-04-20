@@ -6,6 +6,49 @@ export interface ThemeDetail {
   value: string
 }
 
+// ── Envato item (raw shape returned by /v3/market/author/sale#item) ──
+// Stored verbatim in licenses.envato_item at verify time. Keep the field
+// names aligned with Envato so themes.meta can mirror the shape 1:1 without
+// a translation layer. Fields marked optional because Envato omits them for
+// non-premium items or legacy catalog entries.
+
+export interface EnvatoItemPreview {
+  icon_url?: string
+  thumbnail_url?: string
+  landscape_url?: string
+}
+
+export interface EnvatoItemAttribute {
+  name: string
+  value: string | string[] | null
+  label?: string
+}
+
+export interface EnvatoItem {
+  id: number
+  name: string
+  url: string
+  site?: string
+  classification?: string
+  classification_url?: string
+  price_cents?: number
+  number_of_sales?: number
+  author_username?: string
+  author_url?: string
+  summary?: string
+  description?: string
+  published_at?: string
+  trending?: boolean
+  previews?: {
+    icon_with_landscape_preview?: EnvatoItemPreview
+    icon_with_thumbnail_preview?: EnvatoItemPreview
+    live_site?: { url?: string }
+    [key: string]: EnvatoItemPreview | { url?: string } | undefined
+  }
+  attributes?: EnvatoItemAttribute[]
+  tags?: string[]
+}
+
 // ── Theme meta (stored in themes.meta jsonb) ──
 
 export interface ThemeMeta {
@@ -160,6 +203,7 @@ export type Database = {
           id: string
           slug: string
           status: ThemeStatus
+          has_portal_page: boolean
           meta: ThemeMeta
           template_id: string | null
           block_fills: ThemeBlockFill[]
@@ -172,6 +216,7 @@ export type Database = {
           id?: string
           slug: string
           status?: ThemeStatus
+          has_portal_page?: boolean
           meta: ThemeMeta
           template_id?: string | null
           block_fills?: ThemeBlockFill[]
@@ -184,6 +229,7 @@ export type Database = {
           id?: string
           slug?: string
           status?: ThemeStatus
+          has_portal_page?: boolean
           meta?: ThemeMeta
           template_id?: string | null
           block_fills?: ThemeBlockFill[]
@@ -317,6 +363,7 @@ export type Database = {
           verified_at: string | null
           support_until: string | null
           envato_item_id: string | null
+          envato_item: EnvatoItem | null
           created_at: string
         }
         Insert: {
@@ -328,6 +375,7 @@ export type Database = {
           verified_at?: string | null
           support_until?: string | null
           envato_item_id?: string | null
+          envato_item?: EnvatoItem | null
           created_at?: string
         }
         Update: {
@@ -339,6 +387,7 @@ export type Database = {
           verified_at?: string | null
           support_until?: string | null
           envato_item_id?: string | null
+          envato_item?: EnvatoItem | null
         }
         Relationships: []
       }

@@ -1,6 +1,8 @@
 import type { ThemeMeta } from '@cmsmasters/db'
 import { Button, Badge } from '@cmsmasters/ui'
 
+const PORTAL_URL = import.meta.env.VITE_PORTAL_URL || 'https://portal.cmsmasters.studio'
+
 export interface LicenseWithTheme {
   id: string
   purchase_code: string | null
@@ -12,6 +14,7 @@ export interface LicenseWithTheme {
     slug: string
     meta: ThemeMeta
     status: string
+    has_portal_page: boolean
   } | null
 }
 
@@ -39,16 +42,44 @@ function getSupportStatus(supportUntil: string | null) {
   }
 }
 
-function getAction(license: LicenseWithTheme) {
-  const themeforestUrl = license.themes?.meta?.themeforest_url ?? 'https://themeforest.net'
+interface Action {
+  label: string
+  variant: 'primary' | 'outline'
+  href: string
+  external: boolean
+}
 
+function getAction(license: LicenseWithTheme): Action {
+  const theme = license.themes
+  const themeforestUrl = theme?.meta?.themeforest_url ?? 'https://themeforest.net'
+
+  // "New" theme: has a portal page that's published → link to the portal.
+  if (
+    theme?.has_portal_page &&
+    theme.status === 'published' &&
+    theme.slug
+  ) {
+    return {
+      label: 'Open theme page',
+      variant: 'primary',
+      href: `${PORTAL_URL}/themes/${theme.slug}`,
+      external: false,
+    }
+  }
+
+  // Legacy or unpromoted theme: fall back to ThemeForest.
   if (!license.purchase_code) {
-    return { label: 'Buy license on ThemeForest', variant: 'outline' as const, href: themeforestUrl }
+    return {
+      label: 'Buy license on ThemeForest',
+      variant: 'outline',
+      href: themeforestUrl,
+      external: true,
+    }
   }
   if (license.support_until && new Date(license.support_until) > new Date()) {
-    return { label: 'Extend support', variant: 'primary' as const, href: themeforestUrl }
+    return { label: 'Extend support', variant: 'primary', href: themeforestUrl, external: true }
   }
-  return { label: 'Renew support', variant: 'primary' as const, href: themeforestUrl }
+  return { label: 'Renew support', variant: 'primary', href: themeforestUrl, external: true }
 }
 
 interface ThemeCardProps {
@@ -58,6 +89,7 @@ interface ThemeCardProps {
 export function ThemeCard({ license }: ThemeCardProps) {
   const theme = license.themes
   const themeName = theme?.meta?.name ?? 'Unknown Theme'
+  const thumbnailUrl = theme?.meta?.thumbnail_url ?? theme?.meta?.icon_url ?? null
   const initial = themeName.charAt(0).toUpperCase()
   const isRegular = !!license.purchase_code
   const supportStatus = getSupportStatus(license.support_until)
@@ -75,24 +107,39 @@ export function ThemeCard({ license }: ThemeCardProps) {
         gap: 'var(--spacing-md)',
       }}
     >
-      {/* Thumbnail placeholder */}
-      <div
-        style={{
-          width: '80px',
-          height: '80px',
-          flexShrink: 0,
-          borderRadius: 'var(--rounded-lg)',
-          backgroundColor: 'hsl(var(--secondary))',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 'var(--text-lg-font-size)',
-          fontWeight: 'var(--font-weight-semibold)',
-          color: 'hsl(var(--text-secondary))',
-        }}
-      >
-        {initial}
-      </div>
+      {/* Thumbnail (Envato preview or letter fallback) */}
+      {thumbnailUrl ? (
+        <img
+          src={thumbnailUrl}
+          alt={themeName}
+          style={{
+            width: '80px',
+            height: '80px',
+            flexShrink: 0,
+            borderRadius: 'var(--rounded-lg)',
+            objectFit: 'cover',
+            backgroundColor: 'hsl(var(--secondary))',
+          }}
+        />
+      ) : (
+        <div
+          style={{
+            width: '80px',
+            height: '80px',
+            flexShrink: 0,
+            borderRadius: 'var(--rounded-lg)',
+            backgroundColor: 'hsl(var(--secondary))',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 'var(--text-lg-font-size)',
+            fontWeight: 'var(--font-weight-semibold)',
+            color: 'hsl(var(--text-secondary))',
+          }}
+        >
+          {initial}
+        </div>
+      )}
 
       {/* Info block */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1px' }}>
@@ -170,7 +217,12 @@ export function ThemeCard({ license }: ThemeCardProps) {
         }}
       >
         <Button variant={action.variant} size="sm" asChild>
-          <a href={action.href} target="_blank" rel="noopener noreferrer">
+          <a
+            href={action.href}
+            {...(action.external
+              ? { target: '_blank', rel: 'noopener noreferrer' }
+              : {})}
+          >
             {action.label}
           </a>
         </Button>

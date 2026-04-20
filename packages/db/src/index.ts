@@ -17,6 +17,9 @@ export type {
   LicenseType,
   ThemeMeta,
   ThemeSEO,
+  EnvatoItem,
+  EnvatoItemPreview,
+  EnvatoItemAttribute,
   BlockHooks,
   BlockMetadata,
   TemplatePosition,
@@ -82,6 +85,13 @@ export type {
 
 export { themeRowToFormData, formDataToThemeInsert } from './mappers'
 export { getThemes, getThemeBySlug, upsertTheme } from './queries/themes'
+export {
+  envatoItemToMeta,
+  slugifyEnvatoItem,
+  pickEnvatoThumbnail,
+  pickEnvatoIcon,
+  pickCompatiblePlugins,
+} from './queries/envato'
 export { getProfile, updateProfile } from './queries/profiles'
 export { logAction } from './queries/audit'
 

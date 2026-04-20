@@ -70,6 +70,7 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'packages/db/src/queries/staff-roles.ts',
       'packages/db/src/queries/activity.ts',
       'packages/db/src/queries/licenses.ts',
+      'packages/db/src/queries/envato.ts',
       'packages/db/src/__tests__/mappers.test.ts',
       'packages/db/src/__tests__/phase2-smoke.test.ts',
     ],
