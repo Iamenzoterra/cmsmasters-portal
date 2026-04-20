@@ -79,25 +79,53 @@ function setOrDelete(obj: Record<string, unknown>, key: string, value: string | 
   }
 }
 
+/** Per-slot overrides on the base grid are invalid — base lives in `config.slots`.
+ *  Strip them defensively before every PUT (cleans up legacy data from the
+ *  pre-fix behavior that wrote to `grid.desktop.slots`). */
+function stripBaseGridSlotOverrides(config: LayoutConfig): void {
+  const baseKey = 'desktop'
+  const baseGrid = config.grid[baseKey]
+  if (!baseGrid?.slots) return
+  delete baseGrid.slots
+}
+
+/** Ensure `grid[bpId]` exists; clone from the closest resolved source and set its min-width. */
+function ensureGridEntry(config: LayoutConfig, bpId: CanvasBreakpointId): void {
+  if (config.grid[bpId]) return
+  const resolvedKey = resolveGridKey(bpId, config.grid)
+  const source = config.grid[resolvedKey]
+  if (!source) return
+  const bpWidth = CANVAS_BREAKPOINTS.find((b) => b.id === bpId)?.width
+  config.grid[bpId] = {
+    ...structuredClone(source),
+    'min-width': bpWidth ? `${bpWidth}px` : source['min-width'],
+  }
+}
+
 function applySlotConfigUpdate(
   config: LayoutConfig,
   slotName: string,
   key: string,
   value: string | number | undefined,
   writeToBase: boolean,
-  targetGridKey?: string,
+  breakpointId?: CanvasBreakpointId,
 ): void {
   if (writeToBase) {
     if (!config.slots[slotName]) config.slots[slotName] = {}
     setOrDelete(config.slots[slotName] as Record<string, unknown>, key, value)
     return
   }
-  if (!targetGridKey) return
-  const grid = config.grid[targetGridKey]
+  if (!breakpointId) return
+  ensureGridEntry(config, breakpointId)
+  const grid = config.grid[breakpointId]
   if (!grid) return
   if (!grid.slots) grid.slots = {}
   if (!grid.slots[slotName]) grid.slots[slotName] = {}
   setOrDelete(grid.slots[slotName] as Record<string, unknown>, key, value)
+  // Per-slot visibility:drawer requires grid-level drawer-trigger (see config-schema rule 6)
+  if (key === 'visibility' && value === 'drawer' && !grid['drawer-trigger']) {
+    grid['drawer-trigger'] = 'hamburger'
+  }
   if (value === undefined) {
     if (Object.keys(grid.slots[slotName]!).length === 0) delete grid.slots[slotName]
     if (Object.keys(grid.slots).length === 0) delete grid.slots
@@ -334,6 +362,7 @@ export function App() {
     }
 
     try {
+      stripBaseGridSlotOverrides(updated)
       const saved = await api.updateLayout(activeId, updated)
       setActiveConfig(saved)
       prevConfigRef.current = saved
@@ -347,21 +376,47 @@ export function App() {
     slotName: string,
     key: string,
     value: string | number | undefined,
-    targetGridKey?: string,
+    _targetGridKey?: string,
     breakpointId?: CanvasBreakpointId,
   ) => {
     if (!activeConfig || !activeId) return
 
     const updated = structuredClone(activeConfig)
     const writeToBase = !breakpointId || breakpointId === 'desktop'
-    applySlotConfigUpdate(updated, slotName, key, value, writeToBase, targetGridKey)
+    applySlotConfigUpdate(updated, slotName, key, value, writeToBase, breakpointId)
 
     try {
+      stripBaseGridSlotOverrides(updated)
       const saved = await api.updateLayout(activeId, updated)
       setActiveConfig(saved)
       prevConfigRef.current = saved
-      const scope = writeToBase ? 'base' : targetGridKey
+      const scope = writeToBase ? 'base' : breakpointId
       showToast(`${slotName}.${key} updated (${scope})`)
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Failed to update layout')
+    }
+  }, [activeConfig, activeId, showToast])
+
+  /** Apply the same slot-field update to many slots in a single PUT (avoids N racing requests). */
+  const handleBatchUpdateSlotConfig = useCallback(async (
+    slotNames: string[],
+    key: string,
+    value: string | number | undefined,
+    breakpointId?: CanvasBreakpointId,
+  ) => {
+    if (!activeConfig || !activeId || slotNames.length === 0) return
+    const updated = structuredClone(activeConfig)
+    const writeToBase = !breakpointId || breakpointId === 'desktop'
+    for (const name of slotNames) {
+      applySlotConfigUpdate(updated, name, key, value, writeToBase, breakpointId)
+    }
+    try {
+      stripBaseGridSlotOverrides(updated)
+      const saved = await api.updateLayout(activeId, updated)
+      setActiveConfig(saved)
+      prevConfigRef.current = saved
+      const scope = writeToBase ? 'base' : breakpointId
+      showToast(`${slotNames.length} slots.${key} updated (${scope})`)
     } catch (e) {
       showToast(e instanceof Error ? e.message : 'Failed to update layout')
     }
@@ -393,6 +448,7 @@ export function App() {
     }
 
     try {
+      stripBaseGridSlotOverrides(updated)
       const saved = await api.updateLayout(activeId, updated)
       setActiveConfig(saved)
       prevConfigRef.current = saved
@@ -411,6 +467,7 @@ export function App() {
     }
 
     try {
+      stripBaseGridSlotOverrides(updated)
       const saved = await api.updateLayout(activeId, updated)
       setActiveConfig(saved)
       prevConfigRef.current = saved
@@ -437,6 +494,7 @@ export function App() {
       }
     }
     try {
+      stripBaseGridSlotOverrides(updated)
       const saved = await api.updateLayout(activeId, updated)
       setActiveConfig(saved)
       prevConfigRef.current = saved
@@ -471,6 +529,7 @@ export function App() {
       delete grid.columns[childName]
     }
     try {
+      stripBaseGridSlotOverrides(updated)
       const saved = await api.updateLayout(activeId, updated)
       setActiveConfig(saved)
       prevConfigRef.current = saved
@@ -510,6 +569,7 @@ export function App() {
     }
 
     try {
+      stripBaseGridSlotOverrides(updated)
       const saved = await api.updateLayout(activeId, updated)
       setActiveConfig(saved)
       prevConfigRef.current = saved
@@ -542,6 +602,7 @@ export function App() {
       }
     }
     try {
+      stripBaseGridSlotOverrides(updated)
       const saved = await api.updateLayout(activeId, updated)
       setActiveConfig(saved)
       prevConfigRef.current = saved
@@ -557,6 +618,7 @@ export function App() {
     if (value === undefined) delete updated[key]
     else updated[key] = value
     try {
+      stripBaseGridSlotOverrides(updated as unknown as LayoutConfig)
       const saved = await api.updateLayout(activeId, updated as unknown as LayoutConfig)
       setActiveConfig(saved)
       prevConfigRef.current = saved
@@ -632,6 +694,7 @@ export function App() {
           blockWarnings={blockWarnings}
           onToggleSlot={handleToggleSlot}
           onUpdateSlotConfig={handleUpdateSlotConfig}
+          onBatchUpdateSlotConfig={handleBatchUpdateSlotConfig}
           onUpdateSlotRole={handleUpdateSlotRole}
           onUpdateColumnWidth={handleUpdateColumnWidth}
           onUpdateGridProp={handleUpdateGridProp}

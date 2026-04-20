@@ -611,6 +611,21 @@ body {
   border: 1px dashed hsla(0, 0%, 50%, 0.3);
   border-radius: 3px;
   padding: 2px 8px;
+  cursor: pointer;
+  transition: background 0.1s ease, border-color 0.1s ease, color 0.1s ease;
+}
+
+.lm-hidden-sidebars__badge:hover {
+  background: hsla(0, 0%, 50%, 0.18);
+  border-color: hsla(0, 0%, 50%, 0.5);
+  color: var(--lm-text);
+}
+
+.lm-hidden-sidebars__badge--active {
+  background: var(--lm-bg-selected, hsla(214, 90%, 50%, 0.15));
+  border-color: var(--lm-border-focus);
+  border-style: solid;
+  color: var(--lm-text);
 }
 
 /* ── Inspector (stub for Phase 3) ────────────────────────────── */

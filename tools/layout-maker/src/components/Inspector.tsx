@@ -26,6 +26,7 @@ interface Props {
   blockWarnings: ScopingWarning[]
   onToggleSlot: (slotName: string, enabled: boolean) => void
   onUpdateSlotConfig: (slotName: string, key: string, value: string | number | undefined, targetGridKey?: string, breakpointId?: CanvasBreakpointId) => void
+  onBatchUpdateSlotConfig: (slotNames: string[], key: string, value: string | number | undefined, breakpointId?: CanvasBreakpointId) => void
   onUpdateSlotRole: (slotName: string, updates: Record<string, unknown>) => void
   onUpdateColumnWidth: (slotName: string, breakpointKey: string, width: string) => void
   onUpdateGridProp: (breakpointKey: string, key: string, value: string | undefined) => void
@@ -218,11 +219,11 @@ function computeUsableWidth(
   return null
 }
 
-function SidebarModeControl({ config, activeBreakpoint, gridKey, onUpdateSlotConfig }: {
+function SidebarModeControl({ config, activeBreakpoint, gridKey, onBatchUpdateSlotConfig }: {
   config: LayoutConfig
   activeBreakpoint: string
   gridKey: string
-  onUpdateSlotConfig: Props['onUpdateSlotConfig']
+  onBatchUpdateSlotConfig: Props['onBatchUpdateSlotConfig']
 }) {
   const isDesktop = activeBreakpoint === 'desktop'
   const sidebarNames = Object.keys(config.slots).filter((n) => n.includes('sidebar'))
@@ -251,9 +252,7 @@ function SidebarModeControl({ config, activeBreakpoint, gridKey, onUpdateSlotCon
             key={opt.label}
             className={`lm-align-btn${currentMode === opt.value ? ' lm-align-btn--active' : ''}`}
             onClick={() => {
-              for (const name of sidebarNames) {
-                onUpdateSlotConfig(name, 'visibility', opt.value, gridKey, activeBreakpoint as CanvasBreakpointId)
-              }
+              onBatchUpdateSlotConfig(sidebarNames, 'visibility', opt.value, activeBreakpoint as CanvasBreakpointId)
             }}
           >
             {opt.label}
@@ -379,7 +378,7 @@ function AddSlotButton({ config, tokens, onCreateTopLevelSlot }: {
   )
 }
 
-export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tokens, onShowToast, blockWarnings, onToggleSlot, onUpdateSlotConfig, onUpdateSlotRole, onUpdateColumnWidth, onUpdateGridProp, onUpdateLayoutProp, onUpdateNestedSlots, onCreateNestedSlot, onCreateTopLevelSlot, onSelectSlot }: Props) {
+export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tokens, onShowToast, blockWarnings, onToggleSlot, onUpdateSlotConfig, onBatchUpdateSlotConfig, onUpdateSlotRole, onUpdateColumnWidth, onUpdateGridProp, onUpdateLayoutProp, onUpdateNestedSlots, onCreateNestedSlot, onCreateTopLevelSlot, onSelectSlot }: Props) {
   if (!config || !tokens) {
     return (
       <div className="lm-inspector" data-active-bp={activeBreakpoint}>
@@ -402,7 +401,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
           <AddSlotButton config={config} tokens={tokens} onCreateTopLevelSlot={onCreateTopLevelSlot} />
         </div>
         <div className="lm-inspector__body">
-          <SidebarModeControl config={config} activeBreakpoint={activeBreakpoint} gridKey={gridKey} onUpdateSlotConfig={onUpdateSlotConfig} />
+          <SidebarModeControl config={config} activeBreakpoint={activeBreakpoint} gridKey={gridKey} onBatchUpdateSlotConfig={onBatchUpdateSlotConfig} />
           <div className="lm-inspector__section">
             <div className="lm-inspector__section-title">Layout defaults</div>
             <div className="lm-inspector__row">
@@ -1142,7 +1141,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
         </div>
 
         {/* Sidebar mode — reuse shared control */}
-        <SidebarModeControl config={config} activeBreakpoint={activeBreakpoint} gridKey={gridKey} onUpdateSlotConfig={onUpdateSlotConfig} />
+        <SidebarModeControl config={config} activeBreakpoint={activeBreakpoint} gridKey={gridKey} onBatchUpdateSlotConfig={onBatchUpdateSlotConfig} />
 
         {/* Test blocks */}
         {blockCount > 0 && (

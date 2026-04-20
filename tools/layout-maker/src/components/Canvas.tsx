@@ -143,9 +143,18 @@ export function Canvas({ config, tokens, activeBreakpoint, viewportWidth, gridKe
   const grid = config.grid[gridKey]
   if (!grid) return <div className="lm-empty">No grid config for "{gridKey}"</div>
 
-  const isDrawerMode = grid.sidebars === 'drawer'
-  const isSidebarsHidden = grid.sidebars === 'hidden'
-  const hideSidebars = isDrawerMode || isSidebarsHidden
+  // Per-slot visibility is a per-BP override — it only applies on non-base BPs.
+  // On desktop (base), any per-slot override is stale legacy data and must be ignored.
+  const isBaseBp = activeBreakpoint === 'desktop'
+  const effectiveVisibility = (name: string): 'visible' | 'hidden' | 'drawer' => {
+    if (!isBaseBp) {
+      const perSlot = grid.slots?.[name]?.visibility
+      if (perSlot) return perSlot
+    }
+    if (name.includes('sidebar') && grid.sidebars) return grid.sidebars
+    return 'visible'
+  }
+
   const columnGap = grid['column-gap'] ? resolveToken(grid['column-gap'], tokens) : '0px'
 
   // Separate slots by position (role lives on base slot — not per-bp)
@@ -156,12 +165,10 @@ export function Canvas({ config, tokens, activeBreakpoint, viewportWidth, gridKe
     .filter(([, s]) => s.position === 'bottom')
     .map(([name]) => [name, resolveSlot(name)] as const)
 
-  // In drawer/hidden mode, exclude sidebar columns from the grid.
-  // Also exclude slots that are nested inside another slot (they render inside the parent zone).
-  const visibleColumns = (hideSidebars
-    ? Object.entries(grid.columns).filter(([name]) => !name.includes('sidebar'))
-    : Object.entries(grid.columns)
-  ).filter(([name]) => !nestedChildNames.has(name))
+  // Exclude slots that are hidden, in drawer, or nested inside another slot.
+  const visibleColumns = Object.entries(grid.columns)
+    .filter(([name]) => !nestedChildNames.has(name))
+    .filter(([name]) => effectiveVisibility(name) === 'visible')
 
   // Fluid outer + inner max-width → minmax(maxW, 1fr) so the slot claims
   // at least its inner max-width from neighboring fluid tracks.
@@ -173,16 +180,15 @@ export function Canvas({ config, tokens, activeBreakpoint, viewportWidth, gridKe
     return w
   }).join(' ')
 
-  // Sidebar slots for drawer mode — check config.slots, not grid.columns
-  // (tablet/mobile grids don't include sidebar columns)
-  const drawerSlots = isDrawerMode
-    ? Object.keys(config.slots).filter((name) => name.includes('sidebar'))
-    : []
-
-  // Hidden sidebars — show muted indicators in canvas
-  const hiddenSidebarSlots = isSidebarsHidden
-    ? Object.keys(config.slots).filter((name) => name.includes('sidebar'))
-    : []
+  // Slots rendered as drawers at this BP (per-slot OR grid-level).
+  const drawerSlots = Object.keys(config.slots).filter(
+    (name) => effectiveVisibility(name) === 'drawer',
+  )
+  // Slots explicitly hidden at this BP — show muted indicators.
+  const hiddenSidebarSlots = Object.keys(config.slots).filter(
+    (name) => effectiveVisibility(name) === 'hidden',
+  )
+  const isDrawerMode = drawerSlots.length > 0
 
   // Scale canvas to fit available space
   useEffect(() => {
@@ -297,11 +303,19 @@ export function Canvas({ config, tokens, activeBreakpoint, viewportWidth, gridKe
           />
         )}
 
-        {/* Hidden sidebars indicator */}
+        {/* Hidden sidebars indicator — clickable to select + reset */}
         {hiddenSidebarSlots.length > 0 && (
           <div className="lm-hidden-sidebars">
             {hiddenSidebarSlots.map((name) => (
-              <span key={name} className="lm-hidden-sidebars__badge">{name} (hidden)</span>
+              <button
+                key={name}
+                type="button"
+                className={`lm-hidden-sidebars__badge${name === selectedSlot ? ' lm-hidden-sidebars__badge--active' : ''}`}
+                onClick={() => onSlotSelect(name)}
+                title={`Select ${name}`}
+              >
+                {name} (hidden)
+              </button>
             ))}
           </div>
         )}

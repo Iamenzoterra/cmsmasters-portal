@@ -10,9 +10,21 @@ grid:
       content: 1fr
       sidebar-right: 1fr
     column-gap: '0'
+  tablet:
+    min-width: 768px
+    columns:
+      sidebar-left: 1fr
+      content: 1fr
+      sidebar-right: 1fr
+    column-gap: '0'
+    drawer-trigger: hamburger
     slots:
       content:
         padding-top: '--spacing-xl'
+      sidebar-right:
+        visibility: drawer
+      sidebar-left:
+        visibility: drawer
 slots:
   header:
     position: top
