@@ -736,33 +736,39 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
               slot as a drawer. Only shown for sidebar slots (others never
               become a drawer). Base/role-level — one label across all BPs. */}
           {selectedSlot.includes('sidebar') && (
-            <div className="lm-inspector__row lm-inspector__row--col" style={{ marginTop: 'var(--lm-sp-4)' }}>
-              <span className="lm-inspector__label">Drawer trigger</span>
-              <input
-                type="text"
-                className="lm-width-input__field"
-                style={{ width: '100%' }}
-                placeholder={selectedSlot.includes('left') ? 'Menu' : 'Details'}
-                value={(baseSlot['drawer-trigger-label'] as string | undefined) ?? ''}
-                onChange={(e) => {
-                  const v = e.target.value.trim()
-                  onUpdateSlotRole(selectedSlot, { 'drawer-trigger-label': v || undefined })
-                }}
-              />
-              <select
-                className="lm-spacing-select lm-spacing-select--inline"
-                value={(baseSlot['drawer-trigger-icon'] as string | undefined) ?? ''}
-                onChange={(e) => {
-                  const v = e.target.value
-                  onUpdateSlotRole(selectedSlot, { 'drawer-trigger-icon': v || undefined })
-                }}
-              >
-                <option value="">Icon: chevron (default)</option>
-                {DRAWER_ICONS.map((icon) => (
-                  <option key={icon.name} value={icon.name}>{icon.label}</option>
-                ))}
-              </select>
-            </div>
+            <>
+              <div className="lm-inspector__row">
+                <span className="lm-inspector__label">Trigger label</span>
+                <input
+                  type="text"
+                  className="lm-width-input__field"
+                  style={{ flex: 1, minWidth: 0 }}
+                  placeholder={selectedSlot.includes('left') ? 'Menu' : 'Details'}
+                  value={(baseSlot['drawer-trigger-label'] as string | undefined) ?? ''}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    onUpdateSlotRole(selectedSlot, { 'drawer-trigger-label': v.trim() || undefined })
+                  }}
+                />
+              </div>
+              <div className="lm-inspector__row">
+                <span className="lm-inspector__label">Trigger icon</span>
+                <select
+                  className="lm-spacing-select lm-spacing-select--inline"
+                  style={{ flex: 1, minWidth: 0 }}
+                  value={(baseSlot['drawer-trigger-icon'] as string | undefined) ?? ''}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    onUpdateSlotRole(selectedSlot, { 'drawer-trigger-icon': v || undefined })
+                  }}
+                >
+                  <option value="">chevron (default)</option>
+                  {DRAWER_ICONS.map((icon) => (
+                    <option key={icon.name} value={icon.name}>{icon.label}</option>
+                  ))}
+                </select>
+              </div>
+            </>
           )}
 
           {isFullWidth && (
