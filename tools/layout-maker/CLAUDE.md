@@ -1,5 +1,63 @@
 # Layout Maker
 
+## Parity with Portal (non-negotiable)
+
+**North star:** LM, the config (YAML / `slot_config`), the exported CSS, and
+the Portal render speak **one language**. If the Inspector shows "Content
+align: Center" or "Gap: XL", that semantic must travel intact through
+`import → config → css-generator → Portal DOM`, and the Portal must honor it.
+When it doesn't, LM is **lying** — and that's never acceptable. Fix the
+faucet, not the puddle.
+
+### The parity log
+
+`tools/layout-maker/PARITY-LOG.md` is the single source of truth for every
+observed case where LM diverged from Portal. Every agent working in this tool
+MUST:
+
+1. **Before proposing a change** that touches the Inspector, `css-generator`,
+   `html-parser`, Portal's slot-config CSS injector, or the config schema —
+   read the open section of `PARITY-LOG.md`. A nearby open entry often
+   explains why the code looks the way it does.
+2. **When the user reports a divergence** (Inspector/Canvas shows X, Portal
+   renders Y) — add an entry using the template at the top of the log BEFORE
+   debugging. Filling in "where the lie lives" is half the diagnosis.
+3. **When closing an entry** — do not just delete it. Move it to the Fixed
+   section with the commit sha AND add a contract-level test so the same
+   class of lie can't recur. Acceptable contracts:
+   - `css-generator.test.ts` — assert the generated CSS contains/omits exact
+     selectors and properties for a given config.
+   - `Inspector.test.tsx` — assert the UI exposes / hides fields based on
+     slot shape (e.g. container vs leaf).
+   - Schema validation in `config-schema.ts` — reject illegal field
+     combinations at load time.
+4. **When several entries share a root cause** — add a bullet to the
+   "Systemic themes" section of the log with the planned umbrella fix.
+
+### Where lies typically hide
+
+- **Inspector exposes a field that the generator silently drops.** Most
+  common on container slots (those with `nested-slots`) — the generator
+  correctly skips inner rules for them, but the Inspector still shows inner
+  params and writes them to YAML.
+- **Generator emits CSS that Portal's DOM structure can't honor.** E.g.
+  `[data-slot="X"] > .slot-inner { ... }` rule exists, but Portal wraps
+  that slot differently.
+- **Responsive changes update one concern but not its partner.** E.g.
+  sidebars go `display: none` at tablet, but `grid-template-columns` still
+  defines their tracks, so the remaining slot is constrained to its
+  original fraction of the viewport.
+- **`slot_config` sent to Portal differs from the YAML in LM.** Export
+  shape transforms (per-BP folding, key renaming) can lose fields.
+
+### The flow in one line
+
+See a divergence → log it → root-cause it → fix it → lock the fix with a
+contract test → move the entry to Fixed. If you skip the contract, the lie
+comes back.
+
+---
+
 ## Breakpoint System
 
 ### Canonical breakpoints (types.ts)

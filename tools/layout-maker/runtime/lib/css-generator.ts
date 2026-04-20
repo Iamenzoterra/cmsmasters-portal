@@ -361,9 +361,31 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
       out.push('')
     }
 
-    // Grid columns (skip nested children — they render inside their parent)
+    // Per-slot visibility: per-slot override wins, then grid-level sidebars fallback.
+    // Computed BEFORE grid-template-columns so we can drop the tracks of hidden/drawered
+    // slots — otherwise `display: none` on a child still leaves its 1fr track in the grid
+    // and the remaining content shrinks to its original column width.
+    const hiddenSlots: string[] = []
+    for (const slotName of Object.keys(config.slots)) {
+      const perSlotVis = grid.slots?.[slotName]?.visibility
+      let effectiveVis: string | undefined
+      if (perSlotVis) {
+        effectiveVis = perSlotVis
+      } else if (sidebarSlots.includes(slotName) && grid.sidebars) {
+        effectiveVis = grid.sidebars
+      }
+      if (effectiveVis === 'hidden' || effectiveVis === 'drawer') {
+        hiddenSlots.push(slotName)
+      }
+    }
+    const hiddenSet = new Set(hiddenSlots)
+
+    // Grid columns: skip nested children (rendered inside their parent) AND slots
+    // that are hidden/drawered at this breakpoint (so the remaining columns
+    // divide the full width).
     const cols = Object.entries(grid.columns)
       .filter(([name]) => !nestedChildren.has(name))
+      .filter(([name]) => !hiddenSet.has(name))
       .map(([, w]) => w).join(' ')
     const gap = grid['column-gap']
       ? resolveValue(grid['column-gap'], tokens)
@@ -378,20 +400,6 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
     }
     out.push('  }')
 
-    // Per-slot visibility: per-slot override wins, then grid-level sidebars fallback
-    const hiddenSlots: string[] = []
-    for (const slotName of Object.keys(config.slots)) {
-      const perSlotVis = grid.slots?.[slotName]?.visibility
-      let effectiveVis: string | undefined
-      if (perSlotVis) {
-        effectiveVis = perSlotVis
-      } else if (sidebarSlots.includes(slotName) && grid.sidebars) {
-        effectiveVis = grid.sidebars
-      }
-      if (effectiveVis === 'hidden' || effectiveVis === 'drawer') {
-        hiddenSlots.push(slotName)
-      }
-    }
     if (hiddenSlots.length > 0) {
       out.push('')
       const selectors = hiddenSlots.map((n) => `  [data-slot="${n}"]`).join(',\n')
