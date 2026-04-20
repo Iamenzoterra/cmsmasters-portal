@@ -102,6 +102,10 @@ export interface SlotConfig {
   order?: number
   'nested-slots'?: string[]
   'allowed-block-types'?: string[]
+  /** Label on the drawer trigger button (sidebar slots only, role-level). */
+  'drawer-trigger-label'?: string
+  /** Icon name from packages/ui/src/portal/drawer-icons.ts (sidebar slots only, role-level). */
+  'drawer-trigger-icon'?: string
 }
 
 export interface LayoutConfig {

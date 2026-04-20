@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { LayoutConfig, TokenMap, BreakpointGrid } from '../lib/types'
 import { resolveToken } from '../lib/tokens'
+import { getDrawerIcon } from '../../../../packages/ui/src/portal/drawer-icons'
 
 interface Props {
   config: LayoutConfig
@@ -31,13 +32,24 @@ export function DrawerPreview({ config, tokens, grid, drawerSlots }: Props) {
   const toggle = (side: 'left' | 'right') => setOpenSide(openSide === side ? null : side)
   const close = () => setOpenSide(null)
 
+  // Per-slot trigger metadata (label + icon). Falls back to first slot's
+  // config on each side; if multiple sidebar slots share a side, they also
+  // share a trigger — editing the first one drives the button.
+  const leftTriggerSlot = leftSlots[0] ? config.slots[leftSlots[0]] : undefined
+  const rightTriggerSlot = rightSlots[0] ? config.slots[rightSlots[0]] : undefined
+  const leftLabel = leftTriggerSlot?.['drawer-trigger-label'] ?? 'Menu'
+  const rightLabel = rightTriggerSlot?.['drawer-trigger-label'] ?? 'Details'
+  const leftIcon = leftTriggerSlot?.['drawer-trigger-icon']
+  const rightIcon = rightTriggerSlot?.['drawer-trigger-icon']
+
   return (
     <>
       {showLeft && (
         <TriggerButton
           variant={triggerVariant}
           side="left"
-          label="Open left"
+          label={leftLabel}
+          iconName={leftIcon}
           onClick={() => toggle('left')}
           hidden={openSide !== null}
         />
@@ -46,7 +58,8 @@ export function DrawerPreview({ config, tokens, grid, drawerSlots }: Props) {
         <TriggerButton
           variant={triggerVariant}
           side="right"
-          label="Open right"
+          label={rightLabel}
+          iconName={rightIcon}
           onClick={() => toggle('right')}
           hidden={openSide !== null}
         />
@@ -87,12 +100,14 @@ function TriggerButton({
   variant,
   side,
   label,
+  iconName,
   onClick,
   hidden,
 }: {
   variant: TriggerVariant
   side: 'left' | 'right'
   label: string
+  iconName?: string
   onClick: () => void
   hidden: boolean
 }) {
@@ -101,13 +116,14 @@ function TriggerButton({
   const renderVariant = variant === 'tab' ? 'peek' : variant
   const cls = `drawer-trigger drawer-trigger--${renderVariant} drawer-trigger--${side}${hidden ? ' drawer-trigger--is-hidden' : ''}`
   const style = hidden ? { opacity: 0, pointerEvents: 'none' as const } : undefined
+  const icon = getDrawerIcon(iconName)
 
   if (renderVariant === 'hamburger') {
     return (
       <button type="button" className={cls} onClick={onClick} aria-label={label} style={style}>
-        <span className="drawer-hamburger-icon" aria-hidden="true">
-          <span /><span /><span />
-        </span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" width="18" height="18">
+          <path d={icon.d} />
+        </svg>
       </button>
     )
   }
@@ -116,10 +132,10 @@ function TriggerButton({
     <button type="button" className={cls} onClick={onClick} aria-label={label} style={style}>
       <span className="drawer-trigger__icon-wrap" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d={side === 'left' ? 'M9 5l7 7-7 7' : 'M15 5l-7 7 7 7'} />
+          <path d={icon.d} />
         </svg>
       </span>
-      <span className="drawer-trigger__label">{side === 'left' ? 'Menu' : 'Details'}</span>
+      <span className="drawer-trigger__label">{label}</span>
     </button>
   )
 }

@@ -8,6 +8,7 @@ import { SlotToggles } from './SlotToggles'
 import { SlotReference } from './SlotReference'
 import { TokenReference } from './TokenReference'
 import { CreateSlotModal } from './CreateSlotModal'
+import { DRAWER_ICONS } from '../../../../packages/ui/src/portal/drawer-icons'
 
 const GLOBAL_SLOT_NAMES_SET: Set<string> = new Set(SLOT_DEFINITIONS.map(s => s.name))
 
@@ -730,6 +731,39 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
               </div>
             )
           })()}
+
+          {/* Drawer trigger — label + icon for the button that opens this
+              slot as a drawer. Only shown for sidebar slots (others never
+              become a drawer). Base/role-level — one label across all BPs. */}
+          {selectedSlot.includes('sidebar') && (
+            <div className="lm-inspector__row lm-inspector__row--col" style={{ marginTop: 'var(--lm-sp-4)' }}>
+              <span className="lm-inspector__label">Drawer trigger</span>
+              <input
+                type="text"
+                className="lm-width-input__field"
+                style={{ width: '100%' }}
+                placeholder={selectedSlot.includes('left') ? 'Menu' : 'Details'}
+                value={(baseSlot['drawer-trigger-label'] as string | undefined) ?? ''}
+                onChange={(e) => {
+                  const v = e.target.value.trim()
+                  onUpdateSlotRole(selectedSlot, { 'drawer-trigger-label': v || undefined })
+                }}
+              />
+              <select
+                className="lm-spacing-select lm-spacing-select--inline"
+                value={(baseSlot['drawer-trigger-icon'] as string | undefined) ?? ''}
+                onChange={(e) => {
+                  const v = e.target.value
+                  onUpdateSlotRole(selectedSlot, { 'drawer-trigger-icon': v || undefined })
+                }}
+              >
+                <option value="">Icon: chevron (default)</option>
+                {DRAWER_ICONS.map((icon) => (
+                  <option key={icon.name} value={icon.name}>{icon.label}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {isFullWidth && (
             <div className="lm-inspector__locked-note">Full width — locked by position</div>

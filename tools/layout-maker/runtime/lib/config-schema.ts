@@ -82,6 +82,10 @@ const slotSchema = z
     order: z.number().int().min(0).max(99).optional(),
     'nested-slots': z.array(z.string().min(1)).optional(),
     'allowed-block-types': z.array(z.enum(['theme-block', 'element', 'header', 'footer', 'sidebar'])).optional(),
+    /** Label shown on the drawer trigger button (e.g. "Theme details"). Role-level, not per-BP. */
+    'drawer-trigger-label': z.string().min(1).max(40).optional(),
+    /** Icon name from packages/ui/src/portal/drawer-icons.ts registry. Role-level, not per-BP. */
+    'drawer-trigger-icon': z.string().regex(/^[a-z][a-z0-9-]*$/, 'Must be a drawer icon name from the registry').optional(),
   })
   .strict() // Rejects unknown keys — catches "width" in slots
 
