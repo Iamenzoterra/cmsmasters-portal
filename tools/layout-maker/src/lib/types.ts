@@ -71,9 +71,9 @@ export interface BreakpointGrid {
   'column-gap'?: string
   'max-width'?: string
   center?: boolean
-  sidebars?: 'drawer' | 'hidden'
+  sidebars?: 'drawer' | 'hidden' | 'push'
   'drawer-width'?: string
-  'drawer-trigger'?: 'hamburger' | 'tab'
+  'drawer-trigger'?: 'peek' | 'hamburger' | 'tab' | 'fab'
   'drawer-position'?: 'left' | 'right' | 'both'
   /** Per-breakpoint partial slot overrides (WP-style inheritance) */
   slots?: Record<string, Partial<SlotConfig>>
@@ -97,7 +97,7 @@ export interface SlotConfig {
   'border-width'?: string
   'border-color'?: string
   /** Per-BP slot visibility: visible (default), hidden, or drawer */
-  visibility?: 'visible' | 'hidden' | 'drawer'
+  visibility?: 'visible' | 'hidden' | 'drawer' | 'push'
   /** Per-BP CSS order for responsive stacking (lower = first) */
   order?: number
   'nested-slots'?: string[]
@@ -222,7 +222,7 @@ export interface ExportPayload {
     'border-sides'?: string
     'border-width'?: string
     'border-color'?: string
-    visibility?: 'visible' | 'hidden' | 'drawer'
+    visibility?: 'visible' | 'hidden' | 'drawer' | 'push'
     order?: number
     'nested-slots'?: string[]
     'allowed-block-types'?: string[]
@@ -236,7 +236,7 @@ export interface ExportPayload {
       'border-sides'?: string
       'border-width'?: string
       'border-color'?: string
-      visibility?: 'visible' | 'hidden' | 'drawer'
+      visibility?: 'visible' | 'hidden' | 'drawer' | 'push'
       order?: number
     }>
   }>

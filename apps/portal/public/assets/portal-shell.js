@@ -27,6 +27,22 @@
   if (document.__portalShellInit) return
   document.__portalShellInit = true
 
+  // Mirror the drawer-shell's mode onto body so shell CSS rules that
+  // depend on "push" (.layout-frame content translate) can fire. The
+  // layout HTML declares the mode via data-drawer-mode="push"; we lift
+  // it to body on load so CSS selectors can use a single global hook.
+  function syncMode() {
+    const shell = document.querySelector('.drawer-shell')
+    const mode = shell ? shell.getAttribute('data-drawer-mode') : null
+    document.body.classList.toggle('drawer-mode-push', mode === 'push')
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', syncMode)
+  } else {
+    syncMode()
+  }
+
   function openDrawer(side) {
     closeDrawer() // ensure the other side isn't left open
     document.body.classList.add('drawer-is-open', 'drawer-is-open-' + side)

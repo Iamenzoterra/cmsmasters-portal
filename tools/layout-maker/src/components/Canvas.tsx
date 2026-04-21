@@ -146,7 +146,7 @@ export function Canvas({ config, tokens, activeBreakpoint, viewportWidth, gridKe
   // Per-slot visibility is a per-BP override — it only applies on non-base BPs.
   // On desktop (base), any per-slot override is stale legacy data and must be ignored.
   const isBaseBp = activeBreakpoint === 'desktop'
-  const effectiveVisibility = (name: string): 'visible' | 'hidden' | 'drawer' => {
+  const effectiveVisibility = (name: string): 'visible' | 'hidden' | 'drawer' | 'push' => {
     if (!isBaseBp) {
       const perSlot = grid.slots?.[name]?.visibility
       if (perSlot) return perSlot
@@ -181,9 +181,12 @@ export function Canvas({ config, tokens, activeBreakpoint, viewportWidth, gridKe
   }).join(' ')
 
   // Slots rendered as drawers at this BP (per-slot OR grid-level).
-  const drawerSlots = Object.keys(config.slots).filter(
-    (name) => effectiveVisibility(name) === 'drawer',
-  )
+  // Drawer + push both render as off-canvas sidebars at this BP —
+  // DrawerPreview treats them the same (trigger + backdrop + panel).
+  const drawerSlots = Object.keys(config.slots).filter((name) => {
+    const v = effectiveVisibility(name)
+    return v === 'drawer' || v === 'push'
+  })
   // Slots explicitly hidden at this BP — show muted indicators.
   const hiddenSidebarSlots = Object.keys(config.slots).filter(
     (name) => effectiveVisibility(name) === 'hidden',

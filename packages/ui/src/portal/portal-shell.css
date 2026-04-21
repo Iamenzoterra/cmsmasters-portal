@@ -74,6 +74,30 @@
   --drawer-hamburger-bar-color: hsl(var(--text-primary));
   --drawer-hamburger-shadow: var(--shadow-md);
 
+  /* ─────── FAB trigger (mobile variant) ─────── */
+  /* Floating action button — circle with an icon, anchored at the
+   * bottom corner of the viewport. More native on phones. Values
+   * here are provisional defaults; the final visual will come from
+   * the user's mobile mockup. */
+  --drawer-fab-size: 56px;
+  --drawer-fab-radius: var(--rounded-full);
+  --drawer-fab-bg: hsl(var(--brand-deep-blue));
+  --drawer-fab-fg: hsl(var(--brand-white));
+  --drawer-fab-icon-size: 24px;
+  --drawer-fab-bottom: 20px;
+  --drawer-fab-inline: 20px;
+  --drawer-fab-shadow: 0 8px 20px -6px hsl(var(--brand-deep-blue-2) / 0.45);
+  --drawer-fab-duration: 220ms;
+
+  /* ─────── Push sidebar mode (mobile variant) ─────── */
+  /* The sidebar sits fixed at its side; opening the drawer
+   * translates the MAIN CONTENT by the panel width instead of
+   * overlaying it. Feels native on mobile (no modal, no backdrop
+   * darkening). Currently uses the same panel tokens as drawer;
+   * the mode switch lives in css-generator per slot visibility. */
+  --drawer-push-content-duration: 320ms;
+  --drawer-push-content-easing: var(--drawer-enter-easing);
+
   /* ─────── Drawer head (close + title) ─────── */
   --drawer-head-padding: 18px 20px 14px;
   --drawer-head-border: hsl(var(--border-default));
@@ -249,6 +273,59 @@ body.drawer-is-open-right { --drawer-open-right: 0; }
 .drawer-trigger--peek.drawer-trigger--right:hover {
   transform: translate(0, -50%);
   box-shadow: var(--drawer-trigger-shadow-right-hover);
+}
+
+/* FAB variant — floating action button anchored to a bottom corner
+ * of the viewport. Replaces peek/hamburger on mobile where a
+ * circular tap target at the thumb zone reads as native. Visible
+ * design (bg, shadow, icon size) is fully token-driven; shape is
+ * fixed here. Provisional — will be refined when the user delivers
+ * the mobile mockup. */
+.drawer-trigger--fab {
+  top: auto;
+  bottom: var(--drawer-fab-bottom);
+  width: var(--drawer-fab-size);
+  height: var(--drawer-fab-size);
+  border-radius: var(--drawer-fab-radius);
+  background: var(--drawer-trigger-bg, var(--drawer-fab-bg));
+  color: var(--drawer-fab-fg);
+  box-shadow: var(--drawer-fab-shadow);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transform: none;
+  transition:
+    transform  var(--drawer-fab-duration) var(--drawer-enter-easing),
+    box-shadow var(--drawer-fab-duration) var(--drawer-enter-easing),
+    opacity    180ms ease-out;
+}
+
+.drawer-trigger--fab.drawer-trigger--left  { left:  var(--drawer-fab-inline); right: auto; }
+.drawer-trigger--fab.drawer-trigger--right { right: var(--drawer-fab-inline); left:  auto; }
+
+.drawer-trigger--fab:hover {
+  transform: scale(1.05);
+}
+
+.drawer-trigger--fab svg {
+  width: var(--drawer-fab-icon-size);
+  height: var(--drawer-fab-icon-size);
+}
+
+/* Push mode — the sidebar is fixed at its edge and the MAIN content
+ * translates out of the way when opened. CSS from the layout's
+ * css-generator @media block sets the panel position; these
+ * rules handle the "content push" half of the effect. */
+body.drawer-mode-push.drawer-is-open-left  .layout-frame {
+  transform: translateX(var(--drawer-panel-width));
+}
+body.drawer-mode-push.drawer-is-open-right .layout-frame {
+  transform: translateX(calc(-1 * var(--drawer-panel-width)));
+}
+body.drawer-mode-push .layout-frame {
+  transition: transform var(--drawer-push-content-duration) var(--drawer-push-content-easing);
+  will-change: transform;
 }
 
 /* Hamburger variant — a circular button with three-bar icon */

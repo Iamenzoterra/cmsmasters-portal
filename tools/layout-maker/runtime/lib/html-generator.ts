@@ -17,28 +17,34 @@ function renderSlotInner(slot: { 'nested-slots'?: string[] }): string {
   return ''
 }
 
-/** Decide which sides need a drawer trigger. Considers both grid-level
- *  `sidebars: drawer` and per-slot `visibility: drawer` overrides so
- *  the two mechanisms stay interchangeable. Also resolves WHICH sidebar
- *  slot owns each side so we can pull its per-slot label + icon. */
+/** Decide which sides need a drawer trigger, plus which "mode" is
+ *  used anywhere in the layout (drawer overlay or push). Considers
+ *  both grid-level `sidebars` and per-slot `visibility` overrides so
+ *  the two mechanisms stay interchangeable. */
 function resolveDrawerSides(
   config: LayoutConfig,
-): { leftSidebar?: string; rightSidebar?: string } {
+): { leftSidebar?: string; rightSidebar?: string; usesPush: boolean } {
   const sidebarNames = Object.keys(config.slots).filter((n) => n.includes('sidebar'))
   const defaultLeft = sidebarNames.find((n) => n.includes('left'))
   const defaultRight = sidebarNames.find((n) => n.includes('right'))
 
   let leftActive = false
   let rightActive = false
+  let usesPush = false
+
+  const isOffCanvasMode = (v: string | undefined): v is 'drawer' | 'push' =>
+    v === 'drawer' || v === 'push'
 
   for (const grid of Object.values(config.grid)) {
-    if (grid.sidebars === 'drawer') {
+    if (isOffCanvasMode(grid.sidebars)) {
+      if (grid.sidebars === 'push') usesPush = true
       const pos = grid['drawer-position'] ?? 'both'
       if (pos === 'left' || pos === 'both') leftActive = true
       if (pos === 'right' || pos === 'both') rightActive = true
     }
     for (const [slotName, override] of Object.entries(grid.slots ?? {})) {
-      if (override.visibility !== 'drawer') continue
+      if (!isOffCanvasMode(override.visibility)) continue
+      if (override.visibility === 'push') usesPush = true
       if (slotName.includes('left')) leftActive = true
       else if (slotName.includes('right')) rightActive = true
     }
@@ -47,7 +53,22 @@ function resolveDrawerSides(
   return {
     leftSidebar: leftActive ? defaultLeft : undefined,
     rightSidebar: rightActive ? defaultRight : undefined,
+    usesPush,
   }
+}
+
+/** Collect every trigger variant the layout uses across all BPs,
+ *  so the HTML button carries the class for each and css-generator's
+ *  per-BP @media blocks can hide the ones that aren't active here. */
+function collectTriggerVariants(config: LayoutConfig): Set<string> {
+  const variants = new Set<string>()
+  for (const grid of Object.values(config.grid)) {
+    const v = grid['drawer-trigger']
+    if (!v) continue
+    variants.add(v)
+  }
+  if (variants.size === 0) variants.add('peek')
+  return variants
 }
 
 /** Render a trigger button for one side. Label + icon + color come
@@ -55,7 +76,8 @@ function resolveDrawerSides(
  *  drawer-trigger-color. Color is applied as an inline CSS custom prop
  *  (--drawer-trigger-bg) that the shell's `background: var(--drawer-trigger-bg,
  *  var(--drawer-trigger-bg-{side}))` reads — per-slot wins, default
- *  falls through. */
+ *  falls through. Variant classes stamp every variant the layout uses
+ *  across all BPs; layout CSS hides the ones not active at a given BP. */
 function renderTrigger(
   side: 'left' | 'right',
   slot: {
@@ -63,6 +85,7 @@ function renderTrigger(
     'drawer-trigger-icon'?: string
     'drawer-trigger-color'?: string
   },
+  variants: Set<string>,
 ): string[] {
   const out: string[] = []
   const label = slot['drawer-trigger-label'] || (side === 'left' ? 'Menu' : 'Details')
@@ -72,8 +95,10 @@ function renderTrigger(
     ? ` style="--drawer-trigger-bg: hsl(var(${color}))"`
     : ''
 
+  const variantClasses = Array.from(variants).map((v) => `drawer-trigger--${v}`).join(' ')
+
   out.push(
-    `  <button type="button" class="drawer-trigger drawer-trigger--peek drawer-trigger--${side}" data-drawer-open="${side}" aria-label="${escapeAttr(label)}"${styleAttr}>`,
+    `  <button type="button" class="drawer-trigger ${variantClasses} drawer-trigger--${side}" data-drawer-open="${side}" aria-label="${escapeAttr(label)}"${styleAttr}>`,
   )
   out.push('    <span class="drawer-trigger__icon-wrap" aria-hidden="true">')
   out.push(
@@ -97,7 +122,7 @@ function escapeHTML(s: string): string {
 export function generateHTML(config: LayoutConfig): string {
   const out: string[] = []
   const slots = config.slots
-  const { leftSidebar, rightSidebar } = resolveDrawerSides(config)
+  const { leftSidebar, rightSidebar, usesPush } = resolveDrawerSides(config)
   const hasDrawers = Boolean(leftSidebar) || Boolean(rightSidebar)
 
   // Categorize slots by position
@@ -168,13 +193,15 @@ export function generateHTML(config: LayoutConfig): string {
   // responsive BP via layout CSS + shell tokens. No duplicate slot
   // content, no drawer panels here.
   if (hasDrawers) {
-    out.push('<div class="drawer-shell">')
+    const modeAttr = usesPush ? ' data-drawer-mode="push"' : ''
+    out.push(`<div class="drawer-shell"${modeAttr}>`)
 
+    const variants = collectTriggerVariants(config)
     if (leftSidebar) {
-      out.push(...renderTrigger('left', slots[leftSidebar] ?? {}))
+      out.push(...renderTrigger('left', slots[leftSidebar] ?? {}, variants))
     }
     if (rightSidebar) {
-      out.push(...renderTrigger('right', slots[rightSidebar] ?? {}))
+      out.push(...renderTrigger('right', slots[rightSidebar] ?? {}, variants))
     }
 
     out.push('  <div class="drawer-layer">')

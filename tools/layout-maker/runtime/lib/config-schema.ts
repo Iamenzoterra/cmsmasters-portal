@@ -39,7 +39,7 @@ const slotSchemaPartial = z
     'border-sides': z.string().regex(/^(top|right|bottom|left)(,(top|right|bottom|left))*$/).optional(),
     'border-width': z.string().regex(/^\d+px$/).optional(),
     'border-color': z.string().regex(/^--border[\w-]*$/).optional(),
-    visibility: z.enum(['visible', 'hidden', 'drawer']).optional(),
+    visibility: z.enum(['visible', 'hidden', 'drawer', 'push']).optional(),
     order: z.number().int().min(0).max(99).optional(),
   })
   .strict()
@@ -50,9 +50,9 @@ const breakpointSchema = z.object({
   'column-gap': spacingToken.default('0'),
   'max-width': z.string().regex(/^\d+px$/).optional(),
   center: z.boolean().optional(),
-  sidebars: z.enum(['drawer', 'hidden']).optional(),
+  sidebars: z.enum(['drawer', 'hidden', 'push']).optional(),
   'drawer-width': z.string().regex(/^\d+px$/).optional(),
-  'drawer-trigger': z.enum(['peek', 'hamburger', 'tab']).optional(),
+  'drawer-trigger': z.enum(['peek', 'hamburger', 'tab', 'fab']).optional(),
   'drawer-position': z.enum(['left', 'right', 'both']).optional(),
   /** Per-breakpoint partial slot overrides (WP-style inheritance). */
   slots: z.record(z.string(), slotSchemaPartial).optional(),
@@ -78,7 +78,7 @@ const slotSchema = z
     'border-sides': z.string().regex(/^(top|right|bottom|left)(,(top|right|bottom|left))*$/).optional(),
     'border-width': z.string().regex(/^\d+px$/).optional(),
     'border-color': z.string().regex(/^--border[\w-]*$/).optional(),
-    visibility: z.enum(['visible', 'hidden', 'drawer']).optional(),
+    visibility: z.enum(['visible', 'hidden', 'drawer', 'push']).optional(),
     order: z.number().int().min(0).max(99).optional(),
     'nested-slots': z.array(z.string().min(1)).optional(),
     'allowed-block-types': z.array(z.enum(['theme-block', 'element', 'header', 'footer', 'sidebar'])).optional(),

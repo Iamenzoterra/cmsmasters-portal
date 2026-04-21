@@ -119,6 +119,39 @@ describe('html-generator: drawer shell', () => {
     expect(html).not.toMatch(/drawer-trigger--right[^>]*style="/)
   })
 
+  it('stamps every trigger variant used across BPs on the button', () => {
+    const config = base(true)
+    // tablet uses peek (default from helper), mobile uses fab
+    config.grid.mobile = {
+      'min-width': '375px',
+      columns: { 'sidebar-left': '1fr', content: '1fr', 'sidebar-right': '1fr' },
+      'column-gap': '0',
+      sidebars: 'drawer',
+      'drawer-trigger': 'fab',
+    }
+    const html = generateHTML(config)
+    // Both variant classes are present; per-BP CSS will hide the wrong one.
+    expect(html).toMatch(/class="drawer-trigger drawer-trigger--peek drawer-trigger--fab drawer-trigger--left"/)
+  })
+
+  it('sets data-drawer-mode="push" on the shell when any BP uses push', () => {
+    const config = base(false)
+    config.grid.mobile = {
+      'min-width': '375px',
+      columns: { 'sidebar-left': '1fr', content: '1fr', 'sidebar-right': '1fr' },
+      'column-gap': '0',
+      sidebars: 'push',
+    }
+    const html = generateHTML(config)
+    expect(html).toMatch(/<div class="drawer-shell" data-drawer-mode="push">/)
+  })
+
+  it('omits data-drawer-mode when only drawer (no push) is used', () => {
+    const html = generateHTML(base(true))
+    expect(html).toMatch(/<div class="drawer-shell">/)
+    expect(html).not.toMatch(/data-drawer-mode/)
+  })
+
   it('emits only the side that is marked drawer (per-slot visibility override)', () => {
     const config = base(false)
     config.grid.tablet.slots = { 'sidebar-left': { visibility: 'drawer' } }

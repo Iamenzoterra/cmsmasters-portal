@@ -309,6 +309,7 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
     //              relies on a unique `document.querySelector` still hits.
     const hiddenSlots: string[] = []
     const drawerSlots: string[] = []
+    const pushSlots: string[] = []
     for (const slotName of Object.keys(config.slots)) {
       const perSlotVis = grid.slots?.[slotName]?.visibility
       let effectiveVis: string | undefined
@@ -319,8 +320,11 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
       }
       if (effectiveVis === 'hidden') hiddenSlots.push(slotName)
       else if (effectiveVis === 'drawer') drawerSlots.push(slotName)
+      else if (effectiveVis === 'push') pushSlots.push(slotName)
     }
-    const hiddenSet = new Set([...hiddenSlots, ...drawerSlots])
+    // Both drawer and push take the slot out of the grid layout — grid
+    // tracks collapse to content-only, sidebar is fixed-positioned.
+    const hiddenSet = new Set([...hiddenSlots, ...drawerSlots, ...pushSlots])
 
     // Grid columns: skip nested children (rendered inside their parent) AND slots
     // that are hidden/drawered at this breakpoint (so the remaining columns
@@ -376,6 +380,28 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
       out.push('  }')
     }
 
+    // Push-mode sidebars — sit flush at their edge, always visible in
+    // place. Opening them translates the MAIN .layout-frame (handled in
+    // shell via body.drawer-mode-push). z-index below content so the
+    // page appears to "slide over" the sidebar rather than the sidebar
+    // overlaying the page.
+    for (const slotName of pushSlots) {
+      const side = slotName.includes('right') ? 'right' : 'left'
+      out.push('')
+      out.push(`  .layout-grid > [data-slot="${slotName}"] {`)
+      out.push('    position: fixed;')
+      out.push('    top: 0;')
+      out.push('    bottom: 0;')
+      out.push(`    ${side}: 0;`)
+      // One step below the panel z-index so content slides on top.
+      out.push('    z-index: calc(var(--drawer-z-panel) - 10);')
+      out.push('    width: var(--drawer-panel-width);')
+      out.push('    max-width: var(--drawer-panel-max-width);')
+      out.push('    background: var(--drawer-panel-bg);')
+      out.push('    overflow-y: auto;')
+      out.push('  }')
+    }
+
     // Per-slot CSS order for responsive stacking
     const orderRules: string[] = []
     for (const [slotName] of Object.entries(config.slots)) {
@@ -389,18 +415,36 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
       for (const r of orderRules) out.push(r)
     }
 
-    // Drawer per-BP overrides. Trigger visibility + panel base styles come
+    // Drawer per-BP overrides. Trigger look + panel base styles come
     // from portal-shell.css; here we only:
     //   1. turn on .drawer-shell (default display:none in shell)
-    //   2. write per-layout knobs (drawer-width)
-    const hasDrawerAtBp = grid.sidebars === 'drawer' ||
-      Object.values(grid.slots ?? {}).some((s) => s.visibility === 'drawer')
+    //   2. pick the trigger variant at this BP by hiding the others.
+    //      Markup carries every variant class the layout uses across
+    //      all BPs (peek, hamburger, fab); the @media block we're in
+    //      silences the ones NOT active here so only one variant's
+    //      styles reach the button.
+    //   3. write per-layout knobs (drawer-width).
+    const hasDrawerAtBp =
+      grid.sidebars === 'drawer' || grid.sidebars === 'push' ||
+      Object.values(grid.slots ?? {}).some(
+        (s) => s.visibility === 'drawer' || s.visibility === 'push',
+      )
 
     if (hasDrawerAtBp) {
       out.push('')
       out.push('  .drawer-shell {')
       out.push('    display: contents;')
       out.push('  }')
+
+      const variant = grid['drawer-trigger'] ?? 'peek'
+      const allVariants: Array<'peek' | 'hamburger' | 'tab' | 'fab'> =
+        ['peek', 'hamburger', 'tab', 'fab']
+      for (const v of allVariants) {
+        if (v === variant) continue
+        out.push(`  .drawer-trigger.drawer-trigger--${v}:not(.drawer-trigger--${variant}) {`)
+        out.push('    display: none;')
+        out.push('  }')
+      }
 
       if (grid['drawer-width']) {
         out.push('')

@@ -262,6 +262,7 @@ function SidebarModeControl({ config, activeBreakpoint, gridKey, onBatchUpdateSl
           { value: undefined, label: 'Visible' },
           { value: 'hidden', label: 'Hidden' },
           { value: 'drawer', label: 'Drawer' },
+          { value: 'push', label: 'Push' },
         ] as const).map((opt) => (
           <button
             key={opt.label}
@@ -315,7 +316,7 @@ function DrawerSettingsControl({ config, activeBreakpoint, gridKey, onUpdateGrid
         <span className="lm-inspector__label">Trigger</span>
       </div>
       <div className="lm-align-group">
-        {(['peek', 'hamburger', 'tab'] as const).map((opt) => (
+        {(['peek', 'hamburger', 'tab', 'fab'] as const).map((opt) => (
           <button
             key={opt}
             className={`lm-align-btn${trigger === opt ? ' lm-align-btn--active' : ''}`}
