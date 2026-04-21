@@ -380,11 +380,13 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
       out.push('  }')
     }
 
-    // Push-mode sidebars — sit flush at their edge, always visible in
-    // place. Opening them translates the MAIN .layout-frame (handled in
-    // shell via body.drawer-mode-push). z-index below content so the
-    // page appears to "slide over" the sidebar rather than the sidebar
-    // overlaying the page.
+    // Push-mode sidebars — always visible at their edge, BELOW the
+    // content frame (which carries its own bg-surface and z-index to
+    // cover them when closed). Opening shifts the content frame aside
+    // via margin (handled in shell via body.drawer-mode-push rules)
+    // to reveal the sidebar. No transform on the sidebar — it stays
+    // put, matching the reference mockup and giving a true "push"
+    // feel instead of drawer overlay.
     for (const slotName of pushSlots) {
       const side = slotName.includes('right') ? 'right' : 'left'
       out.push('')
@@ -393,8 +395,7 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
       out.push('    top: 0;')
       out.push('    bottom: 0;')
       out.push(`    ${side}: 0;`)
-      // One step below the panel z-index so content slides on top.
-      out.push('    z-index: calc(var(--drawer-z-panel) - 10);')
+      out.push('    z-index: var(--drawer-z-push-sidebar);')
       out.push('    width: var(--drawer-panel-width);')
       out.push('    max-width: var(--drawer-panel-max-width);')
       out.push('    background: var(--drawer-panel-bg);')

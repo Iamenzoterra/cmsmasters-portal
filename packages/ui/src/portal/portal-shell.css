@@ -132,7 +132,14 @@
   /* Above sticky headers (~999) so the drawer covers them at tablet.
    * Trigger sits above layout chrome, backdrop above everything, panel
    * above the backdrop. Raise in lockstep if any future shell element
-   * needs to stack between them. */
+   * needs to stack between them.
+   *
+   * Push mode uses its own pair: the sidebar sits BELOW the content
+   * frame (covered by it when closed, revealed when open), and the
+   * FAB trigger (drawer-z-trigger) stacks above the frame so it
+   * stays clickable as a close affordance. */
+  --drawer-z-push-sidebar: 1;
+  --drawer-z-push-frame:   10;
   --drawer-z-trigger:  1050;
   --drawer-z-backdrop: 1100;
   --drawer-z-panel:    1200;
@@ -355,7 +362,12 @@ body.drawer-is-open-right { --drawer-open-right: 0; }
 
 /* Vertical label reads bottom-to-top. Hidden by default (0 opacity);
  * fades in on armed with a small delay so the height transition
- * begins before text appears. */
+ * begins before text appears.
+ *
+ * Padding note: writing-mode: vertical-rl remaps padding-block to
+ * the horizontal axis, which is NOT what we want. Use physical
+ * padding-top/bottom so the spacing stays at the visual top and
+ * bottom of the pill regardless of writing-mode / rotate. */
 .drawer-trigger--fab .drawer-trigger__label {
   writing-mode: vertical-rl;
   transform: rotate(180deg);
@@ -365,7 +377,8 @@ body.drawer-is-open-right { --drawer-open-right: 0; }
   text-transform: uppercase;
   white-space: nowrap;
   opacity: 0;
-  padding-block: var(--drawer-fab-label-padding-block);
+  padding-top: var(--drawer-fab-label-padding-block);
+  padding-bottom: var(--drawer-fab-label-padding-block);
   transition: opacity 220ms ease 160ms;
 }
 
@@ -391,20 +404,46 @@ body.drawer-is-open-right { --drawer-open-right: 0; }
 }
 
 /* Push mode — the sidebar is fixed at its edge and the MAIN content
- * translates out of the way when opened. FAB triggers ride along
- * with the content (same transform) so they stay pinned to the
- * visible corner rather than hanging over the sidebar. */
-body.drawer-mode-push.drawer-is-open-left  .layout-frame,
+ * slides to reveal it. Reference behavior: sidebar never moves, it's
+ * always at its edge; content layer is ABOVE sidebar (z-index + own
+ * background) and shifts aside on open.
+ *
+ * Why margin, not transform: transform on .layout-frame would make
+ * it the containing block for position:fixed descendants (the
+ * sidebar is fixed and nested inside layout-frame), dragging the
+ * sidebar along with content — which is drawer behavior, not push.
+ * Margin doesn't establish a containing block for fixed, so the
+ * sidebar stays put while layout-frame slides.
+ *
+ * The layout-frame gains `position: relative; z-index: push-frame;
+ * background: surface` so it stacks above the sidebar (same as the
+ * reference's content-layer z-index: 20 vs drawer z-index: 10) and
+ * covers it when closed, reveals it when open.
+ *
+ * FAB triggers are position:fixed in the viewport (not inside
+ * layout-frame), so they use transform to ride along with content
+ * — the close affordance stays pinned to the visible content
+ * corner instead of hanging over the revealed sidebar. */
+body.drawer-mode-push .layout-frame {
+  position: relative;
+  z-index: var(--drawer-z-push-frame);
+  background: var(--drawer-panel-bg);
+  transition: margin var(--drawer-push-content-duration) var(--drawer-push-content-easing);
+  will-change: margin;
+}
+body.drawer-mode-push.drawer-is-open-left .layout-frame {
+  margin-left: var(--drawer-panel-width);
+  margin-right: calc(-1 * var(--drawer-panel-width));
+}
+body.drawer-mode-push.drawer-is-open-right .layout-frame {
+  margin-right: var(--drawer-panel-width);
+  margin-left: calc(-1 * var(--drawer-panel-width));
+}
 body.drawer-mode-push.drawer-is-open-left  .drawer-trigger--fab.drawer-trigger--left {
   transform: translateX(var(--drawer-panel-width));
 }
-body.drawer-mode-push.drawer-is-open-right .layout-frame,
 body.drawer-mode-push.drawer-is-open-right .drawer-trigger--fab.drawer-trigger--right {
   transform: translateX(calc(-1 * var(--drawer-panel-width)));
-}
-body.drawer-mode-push .layout-frame {
-  transition: transform var(--drawer-push-content-duration) var(--drawer-push-content-easing);
-  will-change: transform;
 }
 
 /* Hamburger variant — a circular button with three-bar icon */
