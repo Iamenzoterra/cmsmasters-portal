@@ -85,8 +85,10 @@ describe('css-generator: grid-template-columns at responsive BPs', () => {
 
     expect(tablet).toMatch(/grid-template-columns:\s*1fr\s*;/)
     expect(tablet).not.toMatch(/grid-template-columns:\s*1fr 1fr 1fr\s*;/)
-    expect(tablet).toMatch(/\[data-slot="sidebar-left"\][^{]*\{[^}]*display: none/s)
-    expect(tablet).toMatch(/\[data-slot="sidebar-right"\][^{]*\{[^}]*display: none/s)
+    // Drawered sidebars don't get display:none — they transform into the
+    // drawer panel at this BP. They just shouldn't reserve a grid track.
+    expect(tablet).toMatch(/\.layout-grid > \[data-slot="sidebar-left"\][^{]*\{[^}]*position:\s*fixed/s)
+    expect(tablet).toMatch(/\.layout-grid > \[data-slot="sidebar-right"\][^{]*\{[^}]*position:\s*fixed/s)
   })
 
   it('drops tracks for grid-level hidden sidebars', () => {
@@ -135,8 +137,10 @@ describe('css-generator: grid-template-columns at responsive BPs', () => {
 
 describe('css-generator: drawer CSS ownership', () => {
   // PARITY-LOG contract: drawer visuals live in packages/ui/src/portal/portal-shell.css.
-  // The generator must NOT emit drawer panel / backdrop / trigger / close styles —
-  // one vocabulary across all layouts, Portal, and LM canvas.
+  // The generator must NOT emit drawer-trigger / drawer-backdrop / close
+  // styles. It DOES emit the per-BP panel rules on [data-drawer-side]
+  // (the in-grid sidebar element) so the single DOM copy of the sidebar
+  // becomes the drawer panel without any duplication.
 
   const layoutWithDrawer = () => threeColLayout({ tabletSidebars: 'drawer' })
 
@@ -146,18 +150,62 @@ describe('css-generator: drawer CSS ownership', () => {
     expect(css).not.toMatch(/\.layout-drawer-backdrop/)
   })
 
-  it('does not emit a .drawer-trigger base rule (no display/position/background)', () => {
+  it('does not emit trigger / backdrop / close styles (shell owns them)', () => {
     const css = generateCSS(layoutWithDrawer(), tokens)
-    // The shell owns the trigger. Any emitted .drawer-trigger block is a regression.
     expect(css).not.toMatch(/\.drawer-trigger\s*\{[^}]*position:/s)
     expect(css).not.toMatch(/\.drawer-trigger\s*\{[^}]*background:/s)
     expect(css).not.toMatch(/\.drawer-trigger--left\s*\{\s*left:/)
     expect(css).not.toMatch(/\.drawer-trigger--right\s*\{\s*right:/)
+    expect(css).not.toMatch(/\.drawer-backdrop\s*\{/)
+    expect(css).not.toMatch(/\.drawer-close\s*\{/)
   })
 
-  it('does not emit a .drawer-close rule', () => {
+  it('emits per-BP panel rules on the grid sidebar with shell tokens', () => {
     const css = generateCSS(layoutWithDrawer(), tokens)
-    expect(css).not.toMatch(/\.drawer-close\s*\{/)
+    const tablet = tabletBlock(css)
+    // Each drawered sidebar gets a position:fixed rule referencing shell tokens.
+    expect(tablet).toMatch(
+      /\.layout-grid > \[data-slot="sidebar-left"\][\s\S]*?position:\s*fixed/,
+    )
+    expect(tablet).toMatch(/transform:\s*translateX\(-100%\)/)
+    expect(tablet).toMatch(/width:\s*var\(--drawer-panel-width\)/)
+    expect(tablet).toMatch(/background:\s*var\(--drawer-panel-bg\)/)
+    expect(tablet).toMatch(/box-shadow:\s*var\(--drawer-panel-shadow-left\)/)
+    expect(tablet).toMatch(/transition:\s*transform\s+var\(--drawer-enter-duration\)/)
+  })
+
+  it('emits right-side panel with translateX(100%) and right:0', () => {
+    const css = generateCSS(layoutWithDrawer(), tokens)
+    const tablet = tabletBlock(css)
+    const rightBlock = tablet.match(
+      /\.layout-grid > \[data-slot="sidebar-right"\]\s*\{[^}]*\}/s,
+    )
+    expect(rightBlock).not.toBeNull()
+    expect(rightBlock![0]).toMatch(/right:\s*0/)
+    expect(rightBlock![0]).toMatch(/transform:\s*translateX\(100%\)/)
+    expect(rightBlock![0]).toMatch(/box-shadow:\s*var\(--drawer-panel-shadow-right\)/)
+  })
+
+  it('does NOT emit display:none on drawered sidebars (they transform into panels)', () => {
+    const css = generateCSS(layoutWithDrawer(), tokens)
+    const tablet = tabletBlock(css)
+    // A drawered sidebar must not also be display:none — that would
+    // cancel the panel rule and the drawer would never appear.
+    const leftDisplayNone = tablet.match(
+      /\.layout-grid > \[data-slot="sidebar-left"\][^{]*\{\s*display:\s*none/,
+    )
+    expect(leftDisplayNone).toBeNull()
+  })
+
+  it('hides grid sidebars that are marked visibility:hidden (not drawered)', () => {
+    const css = generateCSS(
+      threeColLayout({ tabletPerSlotVisibility: { 'sidebar-left': 'hidden' } }),
+      tokens,
+    )
+    const tablet = tabletBlock(css)
+    expect(tablet).toMatch(
+      /\.layout-grid > \[data-slot="sidebar-left"\]\s*\{\s*display:\s*none/,
+    )
   })
 
   it('may emit a per-BP drawer-panel width override (per-layout knob)', () => {
@@ -166,11 +214,5 @@ describe('css-generator: drawer CSS ownership', () => {
     const css = generateCSS(config, tokens)
     const tablet = tabletBlock(css)
     expect(tablet).toMatch(/\.drawer-panel\s*\{[^}]*width:\s*360px/s)
-  })
-
-  it('does not emit any drawer panel width when per-layout knob is absent', () => {
-    const css = generateCSS(layoutWithDrawer(), tokens)
-    const tablet = tabletBlock(css)
-    expect(tablet).not.toMatch(/\.drawer-panel\s*\{/)
   })
 })

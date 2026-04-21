@@ -73,6 +73,19 @@ _(no other open entries — add as they surface)_
 
 ## Fixed
 
+### [tablet] Drawer sidebars render unstyled (blocks missing content + wrong colors)
+
+- **Layout / scope:** any drawer layout using blocks with scoped JS (e.g. `sidebar-pricing`)
+- **Breakpoint:** drawer BPs (tablet / mobile)
+- **Slot:** drawered sidebars (`sidebar-left`, `sidebar-right`)
+- **LM claims:** opening the drawer shows the sidebar with its blocks fully styled.
+- **Portal rendered (before fix):** drawer opened with mostly blank cards — pricing card empty, "This theme is perfect for" missing its bullet list, tag pills in wrong (non-active) colors.
+- **Where the lie lived:** **html-generator**. It emitted TWO DOM copies of each drawered sidebar (`<aside data-slot="X">` in the grid + `<div data-slot="X">` inside `.drawer-panel > .drawer-body`) and let the Portal resolver fill both. But block scripts use `document.querySelector('.block-X')` (singular) — they initialize ONLY the first instance found in DOM. The grid copy got initialized (fine at desktop), the drawer copy never did. The `.reveal → .visible` transition was never triggered, the discount `priceRow--has-discount` class never added, etc. Same root cause broke the active-tag color and the perfect-for list items.
+- **Fix:** Keep exactly ONE DOM copy of each sidebar. The same `<aside data-slot="X">` lives in the grid at desktop; at drawer BPs the layout CSS turns THAT element into a drawer panel (`position: fixed`, `transform: translateX(-100%)`, shell-token width/bg/shadow). The `drawer-shell` now contains only triggers + backdrop. Opening a drawer is a body class (`drawer-is-open-{side}`) that the shell CSS gates the `translateX(0)` on. Block JS runs against the one instance it finds — which is the same element whether it's a grid column or a drawer panel. `portal-shell.js` rewritten to toggle body classes; `DrawerPreview` (LM canvas) mirrors the same body classes plus a canvas-only panel visualizer (`.lm-drawer-canvas-panel`) using the same `--drawer-*` tokens.
+- **Ancillary fix:** drawer z-index tokens raised from `40/50/60` to `1050/1100/1200` so the panel covers the sticky header (`z-index: 999`).
+- **Status:** `fixed <this commit>`
+- **Contract/test:** `html-generator.test.ts` — "keeps exactly one DOM copy of each sidebar (no data-slot duplication)" + 9 other cases enforcing the new shell vocabulary. `css-generator.test.ts` — "does NOT emit display:none on drawered sidebars" and "emits per-BP panel rules on the grid sidebar with shell tokens".
+
 ### [tablet] `grid-template-columns: 1fr 1fr 1fr` kept even when sidebars go to drawer
 
 - **Layout / scope:** `layouts/2132.yaml` / `theme`

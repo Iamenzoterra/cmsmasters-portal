@@ -293,11 +293,12 @@ export function Canvas({ config, tokens, activeBreakpoint, viewportWidth, gridKe
           />
         ))}
 
-        {/* Drawer triggers + panels for tablet/mobile */}
+        {/* Drawer triggers + backdrop for tablet/mobile. The drawered
+            sidebars themselves live in the grid and become panels via
+            shell CSS when body.drawer-is-open-{side} is set. */}
         {isDrawerMode && (
           <DrawerPreview
             config={config}
-            tokens={tokens}
             grid={grid}
             drawerSlots={drawerSlots}
           />

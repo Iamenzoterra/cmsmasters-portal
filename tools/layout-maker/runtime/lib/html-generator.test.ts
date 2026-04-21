@@ -33,81 +33,83 @@ function base(drawerAtTablet: boolean): LayoutConfig {
 }
 
 describe('html-generator: drawer shell', () => {
-  // PARITY-LOG contract: drawer markup in the exported HTML speaks the
-  // shell vocabulary (packages/ui/src/portal/portal-shell.css) — no
-  // legacy .layout-drawer / .layout-drawer-backdrop / inline script.
+  // PARITY-LOG contract: the drawer shell emits ONLY triggers + backdrop.
+  // Each sidebar keeps exactly one DOM copy (stamped with
+  // data-drawer-side) that css-generator turns into a drawer panel at
+  // the drawer BP. No duplicate content — so block JS that does
+  // `document.querySelector('.block-X')` still hits the one instance.
 
   it('emits no drawer-shell when layout has no drawer BP', () => {
     const html = generateHTML(base(false))
     expect(html).not.toMatch(/class="drawer-shell"/)
     expect(html).not.toMatch(/class="drawer-layer"/)
     expect(html).not.toMatch(/class="drawer-trigger/)
+    expect(html).not.toMatch(/data-drawer-side/)
   })
 
-  it('wraps drawer markup in a single .drawer-shell container', () => {
+  it('wraps trigger + backdrop in exactly one .drawer-shell', () => {
     const html = generateHTML(base(true))
-    const occurrences = html.match(/class="drawer-shell"/g) ?? []
-    expect(occurrences.length).toBe(1)
+    const shells = html.match(/class="drawer-shell"/g) ?? []
+    expect(shells.length).toBe(1)
+    expect(html).toMatch(/class="drawer-layer"/)
+    expect(html).toMatch(/class="drawer-backdrop" data-drawer-close/)
   })
 
-  it('uses shell class names — no .layout-drawer or inline script', () => {
+  it('uses shell class names — no .layout-drawer, no inline script, no drawer-panel wrappers', () => {
     const html = generateHTML(base(true))
     expect(html).not.toMatch(/class="layout-drawer/)
     expect(html).not.toMatch(/<script/)
-    expect(html).toMatch(/class="drawer-layer"/)
-    expect(html).toMatch(/class="drawer-backdrop"/)
-    expect(html).toMatch(/class="drawer-panel drawer-panel--left"/)
-    expect(html).toMatch(/class="drawer-panel drawer-panel--right"/)
+    expect(html).not.toMatch(/class="drawer-panel/)
+    expect(html).not.toMatch(/class="drawer-body/)
+    expect(html).not.toMatch(/class="drawer-head/)
   })
 
-  it('emits data-drawer-open on trigger and data-drawer-close on backdrop/close', () => {
+  it('emits data-drawer-open on each side trigger and data-drawer-close on backdrop', () => {
     const html = generateHTML(base(true))
     expect(html).toMatch(/data-drawer-open="left"/)
     expect(html).toMatch(/data-drawer-open="right"/)
     expect(html).toMatch(/data-drawer-close/)
   })
 
-  it('uses the slot-level drawer-trigger-label in trigger button and panel title', () => {
+  it('stamps data-drawer-side on the grid sidebar that becomes a drawer', () => {
+    const html = generateHTML(base(true))
+    expect(html).toMatch(/<aside data-slot="sidebar-left" data-drawer-side="left">/)
+    expect(html).toMatch(/<aside data-slot="sidebar-right" data-drawer-side="right">/)
+  })
+
+  it('keeps exactly one DOM copy of each sidebar (no data-slot duplication)', () => {
+    const html = generateHTML(base(true))
+    const leftMatches = html.match(/data-slot="sidebar-left"/g) ?? []
+    const rightMatches = html.match(/data-slot="sidebar-right"/g) ?? []
+    expect(leftMatches.length).toBe(1)
+    expect(rightMatches.length).toBe(1)
+  })
+
+  it('uses the slot-level drawer-trigger-label on the trigger button', () => {
     const config = base(true)
     config.slots['sidebar-right']['drawer-trigger-label'] = 'Theme details'
     const html = generateHTML(config)
-    // Right-side trigger label
-    expect(html).toMatch(/drawer-trigger--right[\s\S]{0,200}Theme details/)
-    // Right-side panel title
-    expect(html).toMatch(/drawer-panel--right[\s\S]{0,600}Theme details/)
+    expect(html).toMatch(/drawer-trigger--right[\s\S]{0,300}Theme details/)
   })
 
   it('uses the icon from the registry based on drawer-trigger-icon', () => {
     const config = base(true)
     config.slots['sidebar-right']['drawer-trigger-icon'] = 'details'
     const html = generateHTML(config)
-    // The "details" icon path starts with "M14 2H6..."
     expect(html).toMatch(/drawer-trigger--right[\s\S]{0,400}d="M14 2H6/)
   })
 
   it('falls back to chevron when drawer-trigger-icon is unset', () => {
     const html = generateHTML(base(true))
-    // chevron-right path
     expect(html).toMatch(/d="M9 5l7 7-7 7"/)
-  })
-
-  it('keeps the grid copy of each sidebar (data-slot) alongside the drawer panel copy', () => {
-    const html = generateHTML(base(true))
-    // One grid copy inside .layout-grid
-    expect(html).toMatch(/<aside data-slot="sidebar-left"><\/aside>/)
-    // Plus one drawer-body copy with the same slot name — Portal resolver fills both
-    expect(html).toMatch(/class="drawer-body" data-slot="sidebar-left"/)
-    const leftMatches = html.match(/data-slot="sidebar-left"/g) ?? []
-    expect(leftMatches.length).toBe(2)
   })
 
   it('emits only the side that is marked drawer (per-slot visibility override)', () => {
     const config = base(false)
     config.grid.tablet.slots = { 'sidebar-left': { visibility: 'drawer' } }
-    // sidebar-right has no drawer → no right panel/trigger
     const html = generateHTML(config)
-    expect(html).toMatch(/drawer-panel--left/)
-    expect(html).not.toMatch(/drawer-panel--right/)
+    expect(html).toMatch(/data-drawer-side="left"/)
+    expect(html).not.toMatch(/data-drawer-side="right"/)
     expect(html).toMatch(/data-drawer-open="left"/)
     expect(html).not.toMatch(/data-drawer-open="right"/)
   })

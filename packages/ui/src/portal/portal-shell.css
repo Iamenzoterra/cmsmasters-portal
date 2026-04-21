@@ -87,9 +87,13 @@
   --drawer-body-padding: 16px;
 
   /* ─────── Z-indices (portal shell scope) ─────── */
-  --drawer-z-trigger: 40;
-  --drawer-z-backdrop: 50;
-  --drawer-z-panel: 60;
+  /* Above sticky headers (~999) so the drawer covers them at tablet.
+   * Trigger sits above layout chrome, backdrop above everything, panel
+   * above the backdrop. Raise in lockstep if any future shell element
+   * needs to stack between them. */
+  --drawer-z-trigger:  1050;
+  --drawer-z-backdrop: 1100;
+  --drawer-z-panel:    1200;
 }
 
 /* ──────────────── Structure ──────────────── */
@@ -125,35 +129,6 @@
   pointer-events: none;
 }
 
-.drawer-panel {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  z-index: var(--drawer-z-panel);
-  width: var(--drawer-panel-width);
-  max-width: var(--drawer-panel-max-width);
-  background: var(--drawer-panel-bg);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  transition: transform var(--drawer-enter-duration) var(--drawer-enter-easing);
-  pointer-events: auto;
-}
-
-.drawer-panel--left {
-  left: 0;
-  transform: translateX(-100%);
-  box-shadow: var(--drawer-panel-shadow-left);
-}
-
-.drawer-panel--right {
-  right: 0;
-  transform: translateX(100%);
-  box-shadow: var(--drawer-panel-shadow-right);
-}
-
-/* Open state — the layer gets .is-open (JS toggles); the panel to open
- * gets .is-active. This lets a shared layer host both sides. */
 .drawer-layer.is-open {
   pointer-events: auto;
 }
@@ -163,80 +138,27 @@
   pointer-events: auto;
 }
 
-.drawer-layer.is-open .drawer-panel.is-active {
-  transform: translateX(0);
-}
+/* ──────────────── Sidebar → drawer panel ──────────────── */
+/* A drawered sidebar is NOT a separate DOM node — the same grid
+ * column that holds the sidebar at desktop becomes the drawer panel
+ * at tablet/mobile. The layout CSS (from css-generator) wraps the
+ * base panel rules in the layout's own @media (max-width: Xpx) block,
+ * so the same design tokens drive every layout while each layout
+ * keeps control of WHEN the drawer kicks in.
+ *
+ * Shell owns:
+ *   - the tokens (colors, shadows, timings, panel width)
+ *   - the open-state rule (body class → translateX(0))
+ * Layout CSS owns:
+ *   - the base panel rule inside its @media (position, transform,
+ *     width, bg, shadow, transition, z-index, overflow) — all
+ *     referencing --drawer-* tokens.
+ *
+ * One DOM copy → block JS initializes once → every block keeps its
+ * styles whether it's rendered in-grid or as a drawer panel. */
 
-/* ──────────────── Head ──────────────── */
-
-.drawer-head {
-  display: flex;
-  align-items: center;
-  padding: var(--drawer-head-padding);
-  border-bottom: 1px solid var(--drawer-head-border);
-  background: var(--drawer-head-bg);
-  flex-shrink: 0;
-  gap: var(--spacing-md);
-}
-
-.drawer-head__meta {
-  flex: 1;
-  min-width: 0;
-}
-
-.drawer-head__eyebrow {
-  display: block;
-  font-size: var(--drawer-head-eyebrow-size);
-  color: var(--drawer-head-eyebrow-color);
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  font-weight: var(--font-weight-semibold);
-  margin-bottom: 2px;
-}
-
-.drawer-head__title {
-  font-size: var(--drawer-head-title-size);
-  font-weight: var(--drawer-head-title-weight);
-  color: var(--drawer-head-title-color);
-  margin: 0;
-}
-
-/* ──────────────── Close button ──────────────── */
-
-.drawer-close {
-  width: var(--drawer-close-size);
-  height: var(--drawer-close-size);
-  border-radius: var(--rounded-full);
-  border: none;
-  background: var(--drawer-close-bg);
-  color: var(--drawer-close-fg);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition:
-    background var(--drawer-close-duration) ease,
-    transform  var(--drawer-close-duration) ease;
-}
-
-.drawer-close:hover {
-  background: var(--drawer-close-bg-hover);
-  transform: rotate(var(--drawer-close-rotate-on-hover));
-}
-
-.drawer-close svg {
-  width: var(--drawer-close-icon-size);
-  height: var(--drawer-close-icon-size);
-}
-
-/* ──────────────── Body ──────────────── */
-
-.drawer-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: var(--drawer-body-padding);
-}
+body.drawer-is-open-left  [data-drawer-side="left"]  { transform: translateX(0); }
+body.drawer-is-open-right [data-drawer-side="right"] { transform: translateX(0); }
 
 /* ──────────────── Triggers ──────────────── */
 

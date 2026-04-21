@@ -531,9 +531,42 @@ body {
 }
 
 /* ── Drawer System ───────────────────────────────────────────── */
-/* Drawer visuals (panel, backdrop, trigger, close button) live in
+/* Drawer visuals (backdrop, trigger, panel tokens) live in
  * packages/ui/src/portal/portal-shell.css — one vocabulary shared with
- * the real Portal render. DrawerPreview.tsx emits the shell class names. */
+ * the real Portal render. DrawerPreview.tsx emits the shell class names.
+ *
+ * The real Portal turns the in-grid sidebar into the drawer panel at
+ * drawer BPs. The LM canvas renders sidebars as placeholder zones, so
+ * DrawerPreview adds .lm-drawer-canvas-panel elements — rendered with
+ * the SAME --drawer-* tokens — to preview the panel's size and slide
+ * direction. Canvas-only; does not ship to Portal. */
+
+.lm-drawer-canvas-panel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: var(--drawer-z-panel);
+  width: var(--drawer-panel-width);
+  max-width: var(--drawer-panel-max-width);
+  background: var(--drawer-panel-bg);
+  transition: transform var(--drawer-enter-duration) var(--drawer-enter-easing);
+  pointer-events: auto;
+}
+
+.lm-drawer-canvas-panel--left {
+  left: 0;
+  transform: translateX(-100%);
+  box-shadow: var(--drawer-panel-shadow-left);
+}
+
+.lm-drawer-canvas-panel--right {
+  right: 0;
+  transform: translateX(100%);
+  box-shadow: var(--drawer-panel-shadow-right);
+}
+
+body.drawer-is-open-left  .lm-drawer-canvas-panel--left  { transform: translateX(0); }
+body.drawer-is-open-right .lm-drawer-canvas-panel--right { transform: translateX(0); }
 
 /* ── Hidden sidebars indicator ──────────────────────────────── */
 .lm-hidden-sidebars {

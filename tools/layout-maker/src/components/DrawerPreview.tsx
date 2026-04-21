@@ -1,25 +1,24 @@
-import { useState } from 'react'
-import type { LayoutConfig, TokenMap, BreakpointGrid } from '../lib/types'
-import { resolveToken } from '../lib/tokens'
+import { useEffect, useState } from 'react'
+import type { LayoutConfig, BreakpointGrid } from '../lib/types'
 import { getDrawerIcon } from '../../../../packages/ui/src/portal/drawer-icons'
 
 interface Props {
   config: LayoutConfig
-  tokens: TokenMap
   grid: BreakpointGrid
   drawerSlots: string[]
 }
 
 type TriggerVariant = 'peek' | 'hamburger' | 'tab'
 
-// Shared with Portal via packages/ui/src/portal/portal-shell.css. Class names
-// and open-state convention (.is-open on the layer, .is-active on the panel)
-// must match exactly — the whole point of this component is that Canvas and
-// the real Portal render speak the same drawer language.
-export function DrawerPreview({ config, tokens, grid, drawerSlots }: Props) {
+// Shared with Portal via packages/ui/src/portal/portal-shell.css. The shell
+// contract: one DOM copy of each sidebar lives in the grid. At drawer BPs
+// the layout CSS turns that same node into a fixed off-canvas panel via
+// [data-drawer-side="left"|"right"]. This preview mirrors Portal's
+// portal-shell.js state: toggling body.drawer-is-open(-left|-right).
+// LM canvas and the real Portal speak the same open-state vocabulary.
+export function DrawerPreview({ config, grid, drawerSlots }: Props) {
   const [openSide, setOpenSide] = useState<'left' | 'right' | null>(null)
 
-  const drawerWidth = grid['drawer-width'] ?? '400px'
   const triggerVariant = (grid['drawer-trigger'] as TriggerVariant | undefined) ?? 'peek'
   const drawerPosition = grid['drawer-position'] ?? 'both'
 
@@ -32,9 +31,28 @@ export function DrawerPreview({ config, tokens, grid, drawerSlots }: Props) {
   const toggle = (side: 'left' | 'right') => setOpenSide(openSide === side ? null : side)
   const close = () => setOpenSide(null)
 
-  // Per-slot trigger metadata (label + icon). Falls back to first slot's
-  // config on each side; if multiple sidebar slots share a side, they also
-  // share a trigger — editing the first one drives the button.
+  // Mirror portal-shell.js state onto body — the same rules the real Portal
+  // uses (body.drawer-is-open-left → [data-drawer-side="left"] translateX(0))
+  // then drive the canvas. No separate drawer-panel markup.
+  useEffect(() => {
+    const body = document.body
+    body.classList.toggle('drawer-is-open', openSide !== null)
+    body.classList.toggle('drawer-is-open-left', openSide === 'left')
+    body.classList.toggle('drawer-is-open-right', openSide === 'right')
+    return () => {
+      body.classList.remove('drawer-is-open', 'drawer-is-open-left', 'drawer-is-open-right')
+    }
+  }, [openSide])
+
+  // Esc closes, matching Portal behavior.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  })
+
   const leftTriggerSlot = leftSlots[0] ? config.slots[leftSlots[0]] : undefined
   const rightTriggerSlot = rightSlots[0] ? config.slots[rightSlots[0]] : undefined
   const leftLabel = leftTriggerSlot?.['drawer-trigger-label'] ?? 'Menu'
@@ -67,28 +85,23 @@ export function DrawerPreview({ config, tokens, grid, drawerSlots }: Props) {
 
       <div className={`drawer-layer${openSide ? ' is-open' : ''}`}>
         <div className="drawer-backdrop" onClick={close} />
-
+        {/* Canvas-only visualizer. Real Portal uses the grid sidebar itself
+            (stamped with data-drawer-side) as the panel; the canvas renders
+            sidebars as placeholder zones, so we draw a representative panel
+            rect here to show size + direction. Content is intentionally
+            minimal — this is a preview of the SHELL, not block rendering. */}
         {showLeft && (
-          <DrawerPanel
-            side="left"
-            slots={leftSlots}
-            config={config}
-            tokens={tokens}
-            width={drawerWidth}
-            isActive={openSide === 'left'}
-            onClose={close}
+          <div
+            className="lm-drawer-canvas-panel lm-drawer-canvas-panel--left"
+            data-drawer-side="left"
+            aria-hidden={openSide !== 'left'}
           />
         )}
-
         {showRight && (
-          <DrawerPanel
-            side="right"
-            slots={rightSlots}
-            config={config}
-            tokens={tokens}
-            width={drawerWidth}
-            isActive={openSide === 'right'}
-            onClose={close}
+          <div
+            className="lm-drawer-canvas-panel lm-drawer-canvas-panel--right"
+            data-drawer-side="right"
+            aria-hidden={openSide !== 'right'}
           />
         )}
       </div>
@@ -111,10 +124,8 @@ function TriggerButton({
   onClick: () => void
   hidden: boolean
 }) {
-  // "tab" is an alias for peek (same visual) until a distinct tab variant
-  // design exists — keeps the enum value meaningful without dead CSS.
   const renderVariant = variant === 'tab' ? 'peek' : variant
-  const cls = `drawer-trigger drawer-trigger--${renderVariant} drawer-trigger--${side}${hidden ? ' drawer-trigger--is-hidden' : ''}`
+  const cls = `drawer-trigger drawer-trigger--${renderVariant} drawer-trigger--${side}`
   const style = hidden ? { opacity: 0, pointerEvents: 'none' as const } : undefined
   const icon = getDrawerIcon(iconName)
 
@@ -137,62 +148,5 @@ function TriggerButton({
       </span>
       <span className="drawer-trigger__label">{label}</span>
     </button>
-  )
-}
-
-function DrawerPanel({
-  side,
-  slots,
-  config,
-  tokens,
-  width,
-  isActive,
-  onClose,
-}: {
-  side: 'left' | 'right'
-  slots: string[]
-  config: LayoutConfig
-  tokens: TokenMap
-  width: string
-  isActive: boolean
-  onClose: () => void
-}) {
-  return (
-    <aside
-      className={`drawer-panel drawer-panel--${side}${isActive ? ' is-active' : ''}`}
-      style={{ width }}
-      role="dialog"
-      aria-modal="true"
-      aria-hidden={!isActive}
-    >
-      <div className="drawer-head">
-        <div className="drawer-head__meta">
-          <span className="drawer-head__eyebrow">{side === 'left' ? 'Menu' : 'Details'}</span>
-          <h3 className="drawer-head__title">{slots.join(' · ')}</h3>
-        </div>
-        <button type="button" className="drawer-close" onClick={onClose} aria-label="Close">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <path d="M18 6 6 18M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-
-      <div className="drawer-body">
-        {slots.map((name) => {
-          const sc = config.slots[name] ?? {}
-          const padding = sc.padding ? resolveToken(sc.padding, tokens) : undefined
-          return (
-            <div
-              key={name}
-              className="lm-slot-zone"
-              data-slot-type={`sidebar-${side}`}
-              style={{ minHeight: sc['min-height'] ?? '200px', padding }}
-            >
-              <span className="lm-slot-zone__name">{name}</span>
-            </div>
-          )
-        })}
-      </div>
-    </aside>
   )
 }

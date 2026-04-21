@@ -17,38 +17,43 @@ function renderSlotInner(slot: { 'nested-slots'?: string[] }): string {
   return ''
 }
 
-/** Decide which sides need a drawer trigger + panel. Considers both
- *  grid-level `sidebars: drawer` and per-slot `visibility: drawer`
- *  overrides so the two mechanisms stay interchangeable. */
+/** Decide which sides need a drawer trigger. Considers both grid-level
+ *  `sidebars: drawer` and per-slot `visibility: drawer` overrides so
+ *  the two mechanisms stay interchangeable. Also resolves WHICH sidebar
+ *  slot owns each side so we can pull its per-slot label + icon. */
 function resolveDrawerSides(
   config: LayoutConfig,
-): { needLeft: boolean; needRight: boolean } {
-  let needLeft = false
-  let needRight = false
+): { leftSidebar?: string; rightSidebar?: string } {
+  const sidebarNames = Object.keys(config.slots).filter((n) => n.includes('sidebar'))
+  const defaultLeft = sidebarNames.find((n) => n.includes('left'))
+  const defaultRight = sidebarNames.find((n) => n.includes('right'))
+
+  let leftActive = false
+  let rightActive = false
 
   for (const grid of Object.values(config.grid)) {
-    // Grid-level: sidebars=drawer + drawer-position picks sides
     if (grid.sidebars === 'drawer') {
       const pos = grid['drawer-position'] ?? 'both'
-      if (pos === 'left' || pos === 'both') needLeft = true
-      if (pos === 'right' || pos === 'both') needRight = true
+      if (pos === 'left' || pos === 'both') leftActive = true
+      if (pos === 'right' || pos === 'both') rightActive = true
     }
-    // Per-slot: any sidebar slot with visibility:drawer
     for (const [slotName, override] of Object.entries(grid.slots ?? {})) {
       if (override.visibility !== 'drawer') continue
-      if (slotName.includes('left')) needLeft = true
-      else if (slotName.includes('right')) needRight = true
+      if (slotName.includes('left')) leftActive = true
+      else if (slotName.includes('right')) rightActive = true
     }
   }
 
-  return { needLeft, needRight }
+  return {
+    leftSidebar: leftActive ? defaultLeft : undefined,
+    rightSidebar: rightActive ? defaultRight : undefined,
+  }
 }
 
 /** Render a trigger button for one side. Label + icon come from the
  *  slot's role-level drawer-trigger-label / drawer-trigger-icon. */
 function renderTrigger(
   side: 'left' | 'right',
-  sidebarName: string,
   slot: { 'drawer-trigger-label'?: string; 'drawer-trigger-icon'?: string },
 ): string[] {
   const out: string[] = []
@@ -56,7 +61,7 @@ function renderTrigger(
   const icon = getDrawerIcon(slot['drawer-trigger-icon'])
 
   out.push(
-    `  <button type="button" class="drawer-trigger drawer-trigger--peek drawer-trigger--${side}" data-drawer-open="${side}" data-drawer-for="${sidebarName}" aria-label="${escapeAttr(label)}">`,
+    `  <button type="button" class="drawer-trigger drawer-trigger--peek drawer-trigger--${side}" data-drawer-open="${side}" aria-label="${escapeAttr(label)}">`,
   )
   out.push('    <span class="drawer-trigger__icon-wrap" aria-hidden="true">')
   out.push(
@@ -65,37 +70,6 @@ function renderTrigger(
   out.push('    </span>')
   out.push(`    <span class="drawer-trigger__label">${escapeHTML(label)}</span>`)
   out.push('  </button>')
-  return out
-}
-
-/** Render the drawer panel for one side. The body has data-slot=X so
- *  the Portal resolver fills it with the same sidebar content the grid
- *  copy gets — two DOM copies, one visible per BP. */
-function renderPanel(
-  side: 'left' | 'right',
-  sidebarName: string,
-  slot: { 'drawer-trigger-label'?: string },
-): string[] {
-  const title = slot['drawer-trigger-label'] || (side === 'left' ? 'Menu' : 'Details')
-  const out: string[] = []
-  out.push(
-    `    <aside class="drawer-panel drawer-panel--${side}" role="dialog" aria-modal="true" aria-label="${escapeAttr(title)}">`,
-  )
-  out.push('      <div class="drawer-head">')
-  out.push('        <div class="drawer-head__meta">')
-  out.push(`          <span class="drawer-head__eyebrow">${escapeHTML(side === 'left' ? 'Menu' : 'Details')}</span>`)
-  out.push(`          <h3 class="drawer-head__title">${escapeHTML(title)}</h3>`)
-  out.push('        </div>')
-  out.push(
-    '        <button type="button" class="drawer-close" data-drawer-close aria-label="Close">',
-  )
-  out.push(
-    '          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
-  )
-  out.push('        </button>')
-  out.push('      </div>')
-  out.push(`      <div class="drawer-body" data-slot="${sidebarName}"></div>`)
-  out.push('    </aside>')
   return out
 }
 
@@ -111,9 +85,8 @@ function escapeHTML(s: string): string {
 export function generateHTML(config: LayoutConfig): string {
   const out: string[] = []
   const slots = config.slots
-
-  const { needLeft, needRight } = resolveDrawerSides(config)
-  const hasDrawers = needLeft || needRight
+  const { leftSidebar, rightSidebar } = resolveDrawerSides(config)
+  const hasDrawers = Boolean(leftSidebar) || Boolean(rightSidebar)
 
   // Categorize slots by position
   const topSlots = Object.entries(slots).filter(([, s]) => s.position === 'top')
@@ -124,6 +97,13 @@ export function generateHTML(config: LayoutConfig): string {
     (a, b) => parseInt(b[1]['min-width'], 10) - parseInt(a[1]['min-width'], 10),
   )[0]
   const desktopColumns = Object.keys(desktopBp[1].columns)
+
+  // Drawered sidebar → which side. Used to stamp data-drawer-side on the
+  // grid element so shell CSS and layout CSS can target it without
+  // duplicating the node. One DOM copy per sidebar, period.
+  const drawerSideBySlot = new Map<string, 'left' | 'right'>()
+  if (leftSidebar) drawerSideBySlot.set(leftSidebar, 'left')
+  if (rightSidebar) drawerSideBySlot.set(rightSidebar, 'right')
 
   // Comment header
   out.push(`<!-- Layout: ${config.name} | Scope: ${config.scope} -->`)
@@ -154,7 +134,9 @@ export function generateHTML(config: LayoutConfig): string {
     const tag = getTag(name)
     const slot = slots[name] ?? {}
     const inner = renderSlotInner(slot)
-    out.push(`    <${tag} data-slot="${name}">${inner}</${tag}>`)
+    const drawerSide = drawerSideBySlot.get(name)
+    const drawerAttr = drawerSide ? ` data-drawer-side="${drawerSide}"` : ''
+    out.push(`    <${tag} data-slot="${name}"${drawerAttr}>${inner}</${tag}>`)
   }
 
   out.push('  </div>')
@@ -169,33 +151,22 @@ export function generateHTML(config: LayoutConfig): string {
     out.push('')
   }
 
-  // Drawer shell — wraps all drawer-related markup. Hidden by default
-  // via packages/ui/src/portal/portal-shell.css; per-layout CSS opts it
-  // in at the specific responsive BPs that use drawers.
+  // Drawer shell — ONLY triggers + backdrop. The sidebars themselves
+  // live in the grid (one DOM copy) and become drawer panels at the
+  // responsive BP via layout CSS + shell tokens. No duplicate slot
+  // content, no drawer panels here.
   if (hasDrawers) {
-    const sidebarNames = Object.keys(slots).filter((n) => n.includes('sidebar'))
-    const leftSidebar = sidebarNames.find((n) => n.includes('left')) ?? sidebarNames[0]
-    const rightSidebar = sidebarNames.find((n) => n.includes('right')) ?? sidebarNames.at(-1)
-
     out.push('<div class="drawer-shell">')
 
-    if (needLeft && leftSidebar) {
-      out.push(...renderTrigger('left', leftSidebar, slots[leftSidebar] ?? {}))
+    if (leftSidebar) {
+      out.push(...renderTrigger('left', slots[leftSidebar] ?? {}))
     }
-    if (needRight && rightSidebar) {
-      out.push(...renderTrigger('right', rightSidebar, slots[rightSidebar] ?? {}))
+    if (rightSidebar) {
+      out.push(...renderTrigger('right', slots[rightSidebar] ?? {}))
     }
 
     out.push('  <div class="drawer-layer">')
     out.push('    <div class="drawer-backdrop" data-drawer-close></div>')
-
-    if (needLeft && leftSidebar) {
-      out.push(...renderPanel('left', leftSidebar, slots[leftSidebar] ?? {}))
-    }
-    if (needRight && rightSidebar) {
-      out.push(...renderPanel('right', rightSidebar, slots[rightSidebar] ?? {}))
-    }
-
     out.push('  </div>')
     out.push('</div>')
     out.push('')

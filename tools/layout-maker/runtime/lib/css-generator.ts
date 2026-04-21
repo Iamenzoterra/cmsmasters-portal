@@ -300,7 +300,15 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
     // Computed BEFORE grid-template-columns so we can drop the tracks of hidden/drawered
     // slots — otherwise `display: none` on a child still leaves its 1fr track in the grid
     // and the remaining content shrinks to its original column width.
+    //
+    // Hidden vs drawered are handled differently downstream:
+    //   - hidden:  `display: none` on the grid child (fully removed from render)
+    //   - drawer:  position:fixed off-canvas panel that slides in via body
+    //              class — the SAME DOM node that was a grid column, now a
+    //              drawer panel. No duplicate content, so block JS that
+    //              relies on a unique `document.querySelector` still hits.
     const hiddenSlots: string[] = []
+    const drawerSlots: string[] = []
     for (const slotName of Object.keys(config.slots)) {
       const perSlotVis = grid.slots?.[slotName]?.visibility
       let effectiveVis: string | undefined
@@ -309,11 +317,10 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
       } else if (sidebarSlots.includes(slotName) && grid.sidebars) {
         effectiveVis = grid.sidebars
       }
-      if (effectiveVis === 'hidden' || effectiveVis === 'drawer') {
-        hiddenSlots.push(slotName)
-      }
+      if (effectiveVis === 'hidden') hiddenSlots.push(slotName)
+      else if (effectiveVis === 'drawer') drawerSlots.push(slotName)
     }
-    const hiddenSet = new Set(hiddenSlots)
+    const hiddenSet = new Set([...hiddenSlots, ...drawerSlots])
 
     // Grid columns: skip nested children (rendered inside their parent) AND slots
     // that are hidden/drawered at this breakpoint (so the remaining columns
@@ -337,13 +344,32 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
 
     if (hiddenSlots.length > 0) {
       out.push('')
-      // Scope to .layout-grid > so ONLY the in-grid copy is hidden. The
-      // drawer-shell keeps a second copy of the sidebar slot inside
-      // `.drawer-panel > .drawer-body[data-slot="X"]`; that copy must
-      // stay visible at drawer BPs.
       const selectors = hiddenSlots.map((n) => `  .layout-grid > [data-slot="${n}"]`).join(',\n')
       out.push(`${selectors} {`)
       out.push('    display: none;')
+      out.push('  }')
+    }
+
+    // Drawered sidebars — turn the in-grid <aside> into an off-canvas
+    // drawer panel at this BP. Same DOM node that lived as a grid column
+    // at desktop; CSS position:fixed pulls it out of grid flow and slides
+    // it in when portal-shell.js sets `body.drawer-is-open-{side}`.
+    for (const slotName of drawerSlots) {
+      const side = slotName.includes('right') ? 'right' : 'left'
+      out.push('')
+      out.push(`  .layout-grid > [data-slot="${slotName}"] {`)
+      out.push('    position: fixed;')
+      out.push('    top: 0;')
+      out.push('    bottom: 0;')
+      out.push(`    ${side}: 0;`)
+      out.push('    z-index: var(--drawer-z-panel);')
+      out.push('    width: var(--drawer-panel-width);')
+      out.push('    max-width: var(--drawer-panel-max-width);')
+      out.push('    background: var(--drawer-panel-bg);')
+      out.push(`    box-shadow: var(--drawer-panel-shadow-${side});`)
+      out.push(`    transform: translateX(${side === 'left' ? '-100%' : '100%'});`)
+      out.push('    transition: transform var(--drawer-enter-duration) var(--drawer-enter-easing);')
+      out.push('    overflow-y: auto;')
       out.push('  }')
     }
 
