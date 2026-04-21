@@ -75,28 +75,36 @@
   --drawer-hamburger-shadow: var(--shadow-md);
 
   /* ─────── FAB trigger (mobile variant) ─────── */
-  /* Floating action button — circle with an icon, anchored at the
-   * bottom corner of the viewport. More native on phones. Values
-   * here are provisional defaults; the final visual will come from
-   * the user's mobile mockup. */
-  --drawer-fab-size: 56px;
-  --drawer-fab-radius: var(--rounded-full);
+  /* Corner trigger — a 44×44 circle at the bottom corner of the
+   * viewport that GROWS DOWNWARD into a vertical pill on the first
+   * tap (the "armed" state). Chevron points away from the edge
+   * when resting; rotates toward the edge when armed. On the
+   * second tap (or after --drawer-fab-arm-timeout ms), the drawer
+   * opens and the trigger slides along with the pushed content
+   * so it stays anchored to the visible corner. iOS-style easing. */
+  --drawer-fab-size: 44px;
+  --drawer-fab-radius: 22px;
   --drawer-fab-bg: hsl(var(--brand-deep-blue));
   --drawer-fab-fg: hsl(var(--brand-white));
-  --drawer-fab-icon-size: 24px;
-  --drawer-fab-bottom: 20px;
-  --drawer-fab-inline: 20px;
+  --drawer-fab-bottom: 28px;
+  --drawer-fab-inline: 18px;
   --drawer-fab-shadow: 0 8px 20px -6px hsl(var(--brand-deep-blue-2) / 0.45);
-  --drawer-fab-duration: 220ms;
+  --drawer-fab-chev-size: 14px;
+  --drawer-fab-label-size: 11px;
+  --drawer-fab-label-letter-spacing: 2px;
+  --drawer-fab-label-padding-block: 24px;
+  /* ms the armed state waits before auto-opening the drawer.
+   * Set via portal-shell.js; exposed as a token so the value is
+   * editable in one place. */
+  --drawer-fab-arm-timeout: 2000ms;
 
   /* ─────── Push sidebar mode (mobile variant) ─────── */
   /* The sidebar sits fixed at its side; opening the drawer
    * translates the MAIN CONTENT by the panel width instead of
-   * overlaying it. Feels native on mobile (no modal, no backdrop
-   * darkening). Currently uses the same panel tokens as drawer;
-   * the mode switch lives in css-generator per slot visibility. */
-  --drawer-push-content-duration: 320ms;
-  --drawer-push-content-easing: var(--drawer-enter-easing);
+   * overlaying it. iOS-style timing (520ms, cubic-bezier(0.32,
+   * 0.72, 0, 1)) reads native on touch devices. */
+  --drawer-push-content-duration: 520ms;
+  --drawer-push-content-easing: cubic-bezier(0.32, 0.72, 0, 1);
 
   /* ─────── Drawer head (close + title) ─────── */
   --drawer-head-padding: 18px 20px 14px;
@@ -275,12 +283,19 @@ body.drawer-is-open-right { --drawer-open-right: 0; }
   box-shadow: var(--drawer-trigger-shadow-right-hover);
 }
 
-/* FAB variant — floating action button anchored to a bottom corner
- * of the viewport. Replaces peek/hamburger on mobile where a
- * circular tap target at the thumb zone reads as native. Visible
- * design (bg, shadow, icon size) is fully token-driven; shape is
- * fixed here. Provisional — will be refined when the user delivers
- * the mobile mockup. */
+/* FAB variant — corner trigger that "arms" before opening.
+ *
+ * Three states:
+ *   rest  — 44×44 circle, chevron points AWAY from the edge.
+ *   armed — grows DOWN into a vertical pill, chevron flips to point
+ *           TOWARD the edge, label fades in reading bottom-to-top.
+ *           Reached by clicking rest OR auto-disarmed from open.
+ *   open  — drawer open; trigger slides along with pushed content
+ *           so it stays anchored to the visible corner.
+ *
+ * Portal-shell.js drives the state transitions; CSS here is purely
+ * presentational. All dimensions come from --drawer-fab-* tokens. */
+
 .drawer-trigger--fab {
   top: auto;
   bottom: var(--drawer-fab-bottom);
@@ -290,37 +305,101 @@ body.drawer-is-open-right { --drawer-open-right: 0; }
   background: var(--drawer-trigger-bg, var(--drawer-fab-bg));
   color: var(--drawer-fab-fg);
   box-shadow: var(--drawer-fab-shadow);
-  display: inline-flex;
+  display: flex;
+  flex-direction: column-reverse;
   align-items: center;
-  justify-content: center;
+  overflow: hidden;
   padding: 0;
   transform: none;
   transition:
-    transform  var(--drawer-fab-duration) var(--drawer-enter-easing),
-    box-shadow var(--drawer-fab-duration) var(--drawer-enter-easing),
-    opacity    180ms ease-out;
+    transform  var(--drawer-push-content-duration) var(--drawer-push-content-easing),
+    height     380ms var(--drawer-push-content-easing),
+    opacity    240ms ease;
 }
 
 .drawer-trigger--fab.drawer-trigger--left  { left:  var(--drawer-fab-inline); right: auto; }
 .drawer-trigger--fab.drawer-trigger--right { right: var(--drawer-fab-inline); left:  auto; }
 
-.drawer-trigger--fab:hover {
-  transform: scale(1.05);
+/* Chevron — the bottom 44×44 region; a child of the trigger that
+ * collapses when armed (height 0 → the pill shrinks to just the
+ * label). SVG stroke color inherits from trigger fg. */
+.drawer-trigger--fab .drawer-trigger__icon-wrap {
+  width: var(--drawer-fab-size);
+  height: var(--drawer-fab-size);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0;
+  background: transparent;
+  transition:
+    transform 380ms var(--drawer-push-content-easing),
+    height    380ms var(--drawer-push-content-easing),
+    margin    380ms var(--drawer-push-content-easing),
+    opacity   240ms ease;
 }
 
-.drawer-trigger--fab svg {
-  width: var(--drawer-fab-icon-size);
-  height: var(--drawer-fab-icon-size);
+.drawer-trigger--fab .drawer-trigger__icon-wrap svg {
+  width: var(--drawer-fab-chev-size);
+  height: var(--drawer-fab-chev-size);
+}
+
+/* Resting chevron points AWAY from the edge. Default SVG in
+ * html-generator is the "chevron-right" icon (d = "M9 5l7 7-7 7"),
+ * which by itself points right. For the left trigger we leave it
+ * as is — it points right, away from the left edge. For the right
+ * trigger we rotate 180° so it points left, away from the right
+ * edge. In armed state both rotate by 180° to point AT the edge. */
+.drawer-trigger--fab.drawer-trigger--left  .drawer-trigger__icon-wrap { transform: rotate(0deg); }
+.drawer-trigger--fab.drawer-trigger--right .drawer-trigger__icon-wrap { transform: rotate(180deg); }
+
+/* Vertical label reads bottom-to-top. Hidden by default (0 opacity);
+ * fades in on armed with a small delay so the height transition
+ * begins before text appears. */
+.drawer-trigger--fab .drawer-trigger__label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: var(--drawer-fab-label-size);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--drawer-fab-label-letter-spacing);
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0;
+  padding-block: var(--drawer-fab-label-padding-block);
+  transition: opacity 220ms ease 160ms;
+}
+
+/* Armed — chevron shrinks + fades, label appears, pill grows. The
+ * height:auto is fine because the container is flex-column-reverse
+ * and the icon-wrap zeroes out, so the label defines height. */
+.drawer-trigger--fab.drawer-trigger--is-armed {
+  height: auto;
+}
+
+.drawer-trigger--fab.drawer-trigger--is-armed .drawer-trigger__icon-wrap {
+  height: 0;
+  margin: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.drawer-trigger--fab.drawer-trigger--is-armed.drawer-trigger--left  .drawer-trigger__icon-wrap { transform: rotate(180deg); }
+.drawer-trigger--fab.drawer-trigger--is-armed.drawer-trigger--right .drawer-trigger__icon-wrap { transform: rotate(0deg); }
+
+.drawer-trigger--fab.drawer-trigger--is-armed .drawer-trigger__label {
+  opacity: 1;
 }
 
 /* Push mode — the sidebar is fixed at its edge and the MAIN content
- * translates out of the way when opened. CSS from the layout's
- * css-generator @media block sets the panel position; these
- * rules handle the "content push" half of the effect. */
-body.drawer-mode-push.drawer-is-open-left  .layout-frame {
+ * translates out of the way when opened. FAB triggers ride along
+ * with the content (same transform) so they stay pinned to the
+ * visible corner rather than hanging over the sidebar. */
+body.drawer-mode-push.drawer-is-open-left  .layout-frame,
+body.drawer-mode-push.drawer-is-open-left  .drawer-trigger--fab.drawer-trigger--left {
   transform: translateX(var(--drawer-panel-width));
 }
-body.drawer-mode-push.drawer-is-open-right .layout-frame {
+body.drawer-mode-push.drawer-is-open-right .layout-frame,
+body.drawer-mode-push.drawer-is-open-right .drawer-trigger--fab.drawer-trigger--right {
   transform: translateX(calc(-1 * var(--drawer-panel-width)));
 }
 body.drawer-mode-push .layout-frame {
@@ -359,15 +438,28 @@ body.drawer-mode-push .layout-frame {
   border-radius: var(--rounded-xs);
 }
 
-/* When any drawer is open, hide the triggers so they don't fight the panel. */
-.drawer-layer.is-open ~ .drawer-trigger,
-body.drawer-is-open .drawer-trigger {
+/* When any drawer is open: hide peek / hamburger triggers so they
+ * don't fight the panel. FAB triggers in push mode stay visible —
+ * they ride along with the pushed content (handled above in the
+ * .drawer-mode-push rules) and act as the close affordance. */
+body.drawer-is-open .drawer-trigger--peek,
+body.drawer-is-open .drawer-trigger--hamburger {
   opacity: 0;
   pointer-events: none;
 }
 
 body.drawer-is-open .drawer-trigger--peek.drawer-trigger--left  { transform: translate(-40px, -50%); }
 body.drawer-is-open .drawer-trigger--peek.drawer-trigger--right { transform: translate( 40px, -50%); }
+
+/* FAB, when the OTHER side is open — fade it away (we can't open
+ * two drawers at once, but the inactive-side button shouldn't sit
+ * next to the open drawer). */
+body.drawer-is-open-left  .drawer-trigger--fab.drawer-trigger--right,
+body.drawer-is-open-right .drawer-trigger--fab.drawer-trigger--left {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.8);
+}
 
 /* ──────────────── Responsive ──────────────── */
 
