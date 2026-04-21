@@ -325,8 +325,15 @@ describe('css-generator: push mode is per-BP, not global', () => {
     )
     expect(sidebarLeft).not.toBeNull()
     expect(sidebarLeft![0]).toMatch(/width:\s*var\(--drawer-push-width\)/)
-    expect(sidebarLeft![0]).not.toMatch(/transform:/)
-    expect(sidebarLeft![0]).not.toMatch(/box-shadow:/)
+    // Push sidebar emits explicit transform:none / box-shadow:none /
+    // max-width:none / transition:none to OVERRIDE drawer rules that
+    // cascade in from a wider BP's @media block (e.g. tablet drawer
+    // would otherwise leak translateX + shadow + max-width clamp into
+    // mobile push). The values must be the reset, not real motion.
+    expect(sidebarLeft![0]).toMatch(/transform:\s*none/)
+    expect(sidebarLeft![0]).toMatch(/box-shadow:\s*none/)
+    expect(sidebarLeft![0]).toMatch(/max-width:\s*none/)
+    expect(sidebarLeft![0]).toMatch(/transition:\s*none/)
   })
 
   it('drawer@tablet + push@mobile — each BP gets its own mode rules', () => {

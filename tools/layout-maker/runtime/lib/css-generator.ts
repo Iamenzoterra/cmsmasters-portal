@@ -408,6 +408,14 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
         out.push('    width: var(--drawer-push-width);')
         out.push('    background: var(--drawer-panel-bg);')
         out.push('    overflow-y: auto;')
+        // Reset drawer-mode props that cascade in from a wider BP's
+        // @media block. Without these, e.g. tablet's drawer transform
+        // and box-shadow leak into mobile push and the sidebar still
+        // sits off-screen with a panel shadow.
+        out.push('    transform: none;')
+        out.push('    transition: none;')
+        out.push('    box-shadow: none;')
+        out.push('    max-width: none;')
         out.push('  }')
       }
 
@@ -490,6 +498,13 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
       // a plain `.drawer-trigger--{v} { display: none }` — no
       // `:not()` juggling needed, since buttons don't share variant
       // classes anymore.
+      //
+      // The active variant ALSO gets an explicit `display: revert` —
+      // larger-BP @media blocks cascade down (tablet @media at 1439px
+      // also fires at mobile 375px) and may have hidden the active
+      // variant. revert restores the variant's shell rule (display:
+      // flex / inline-flex), winning by source order over the
+      // ancestor-BP's hide.
       const variant = grid['drawer-trigger'] ?? 'peek'
       const allVariants: Array<'peek' | 'hamburger' | 'tab' | 'fab'> =
         ['peek', 'hamburger', 'tab', 'fab']
@@ -499,6 +514,9 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
         out.push('    display: none;')
         out.push('  }')
       }
+      out.push(`  .drawer-trigger--${variant} {`)
+      out.push('    display: revert;')
+      out.push('  }')
 
       if (grid['drawer-width']) {
         out.push('')
