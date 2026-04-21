@@ -221,11 +221,15 @@ body.drawer-is-open-right { --drawer-open-right: 0; }
     opacity    180ms ease-out;
 }
 
-/* Peek variant — vertical pill whose "dead" end extends past the
- * viewport edge. Visible width at rest = --drawer-trigger-width;
+/* Peek / Tab variant — vertical pill whose "dead" end extends past
+ * the viewport edge. Visible width at rest = --drawer-trigger-width;
  * hover translates by the extension so the anchor edge stays flush
- * with the viewport corner and the whole pill comes into view. */
-.drawer-trigger--peek {
+ * with the viewport corner and the whole pill comes into view.
+ *
+ * `tab` is an alias of `peek` (same visual). The Inspector exposes
+ * both names so the user can pick whichever reads natural in the
+ * dropdown; rules use `:is()` to apply to both. */
+:is(.drawer-trigger--peek, .drawer-trigger--tab) {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -234,7 +238,7 @@ body.drawer-is-open-right { --drawer-open-right: 0; }
   width: calc(var(--drawer-trigger-width) + var(--drawer-trigger-extension));
 }
 
-.drawer-trigger--peek .drawer-trigger__label {
+:is(.drawer-trigger--peek, .drawer-trigger--tab) .drawer-trigger__label {
   writing-mode: vertical-rl;
   transform: rotate(180deg);
   font-size: var(--drawer-trigger-label-size);
@@ -244,7 +248,7 @@ body.drawer-is-open-right { --drawer-open-right: 0; }
   line-height: 1;
 }
 
-.drawer-trigger--peek .drawer-trigger__icon-wrap {
+:is(.drawer-trigger--peek, .drawer-trigger--tab) .drawer-trigger__icon-wrap {
   width: var(--drawer-trigger-icon-wrap);
   height: var(--drawer-trigger-icon-wrap);
   border-radius: var(--rounded-full);
@@ -255,12 +259,12 @@ body.drawer-is-open-right { --drawer-open-right: 0; }
   flex-shrink: 0;
 }
 
-.drawer-trigger--peek .drawer-trigger__icon-wrap svg {
+:is(.drawer-trigger--peek, .drawer-trigger--tab) .drawer-trigger__icon-wrap svg {
   width: var(--drawer-trigger-icon);
   height: var(--drawer-trigger-icon);
 }
 
-.drawer-trigger--peek.drawer-trigger--left {
+:is(.drawer-trigger--peek, .drawer-trigger--tab).drawer-trigger--left {
   left: 0;
   padding-left: calc(var(--drawer-trigger-padding-inline) + var(--drawer-trigger-extension));
   padding-right: var(--drawer-trigger-padding-inline);
@@ -270,12 +274,12 @@ body.drawer-is-open-right { --drawer-open-right: 0; }
   box-shadow: var(--drawer-trigger-shadow-left);
 }
 
-.drawer-trigger--peek.drawer-trigger--left:hover {
+:is(.drawer-trigger--peek, .drawer-trigger--tab).drawer-trigger--left:hover {
   transform: translate(0, -50%);
   box-shadow: var(--drawer-trigger-shadow-left-hover);
 }
 
-.drawer-trigger--peek.drawer-trigger--right {
+:is(.drawer-trigger--peek, .drawer-trigger--tab).drawer-trigger--right {
   right: 0;
   padding-left: var(--drawer-trigger-padding-inline);
   padding-right: calc(var(--drawer-trigger-padding-inline) + var(--drawer-trigger-extension));
@@ -285,7 +289,7 @@ body.drawer-is-open-right { --drawer-open-right: 0; }
   box-shadow: var(--drawer-trigger-shadow-right);
 }
 
-.drawer-trigger--peek.drawer-trigger--right:hover {
+:is(.drawer-trigger--peek, .drawer-trigger--tab).drawer-trigger--right:hover {
   transform: translate(0, -50%);
   box-shadow: var(--drawer-trigger-shadow-right-hover);
 }
@@ -460,14 +464,14 @@ body.drawer-armed-right .drawer-trigger--fab.drawer-trigger--right .drawer-trigg
  * don't fight the panel. FAB triggers in push mode stay visible —
  * they ride along with the pushed content (handled above in the
  * .drawer-mode-push rules) and act as the close affordance. */
-body.drawer-is-open .drawer-trigger--peek,
+body.drawer-is-open :is(.drawer-trigger--peek, .drawer-trigger--tab),
 body.drawer-is-open .drawer-trigger--hamburger {
   opacity: 0;
   pointer-events: none;
 }
 
-body.drawer-is-open .drawer-trigger--peek.drawer-trigger--left  { transform: translate(-40px, -50%); }
-body.drawer-is-open .drawer-trigger--peek.drawer-trigger--right { transform: translate( 40px, -50%); }
+body.drawer-is-open :is(.drawer-trigger--peek, .drawer-trigger--tab).drawer-trigger--left  { transform: translate(-40px, -50%); }
+body.drawer-is-open :is(.drawer-trigger--peek, .drawer-trigger--tab).drawer-trigger--right { transform: translate( 40px, -50%); }
 
 /* FAB, when the OTHER side is open — fade it away (we can't open
  * two drawers at once, but the inactive-side button shouldn't sit
