@@ -380,13 +380,11 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
       out.push('  }')
     }
 
-    // Push-mode sidebars — always visible at their edge, BELOW the
-    // content frame (which carries its own bg-surface and z-index to
-    // cover them when closed). Opening shifts the content frame aside
-    // via margin (handled in shell via body.drawer-mode-push rules)
-    // to reveal the sidebar. No transform on the sidebar — it stays
-    // put, matching the reference mockup and giving a true "push"
-    // feel instead of drawer overlay.
+    // Push-mode sidebars — sit flush at their edge with their own
+    // background, layered BENEATH the content frame. When closed,
+    // the layout-frame (z-index 2) covers them; when open, the
+    // frame margin-slides off to reveal them. No shadow, no
+    // backdrop — it's two layers sliding past each other.
     for (const slotName of pushSlots) {
       const side = slotName.includes('right') ? 'right' : 'left'
       out.push('')

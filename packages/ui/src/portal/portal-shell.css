@@ -131,15 +131,14 @@
   /* ─────── Z-indices (portal shell scope) ─────── */
   /* Above sticky headers (~999) so the drawer covers them at tablet.
    * Trigger sits above layout chrome, backdrop above everything, panel
-   * above the backdrop. Raise in lockstep if any future shell element
-   * needs to stack between them.
+   * above the backdrop.
    *
-   * Push mode uses its own pair: the sidebar sits BELOW the content
-   * frame (covered by it when closed, revealed when open), and the
-   * FAB trigger (drawer-z-trigger) stacks above the frame so it
-   * stays clickable as a close affordance. */
+   * Push mode uses two small numbers so the content frame (layer 2)
+   * covers the sidebar (layer 1) when the drawer is closed. When the
+   * frame margin-slides aside, the sidebar is revealed. No shadow, no
+   * backdrop — just two layers sliding past each other. */
   --drawer-z-push-sidebar: 1;
-  --drawer-z-push-frame:   10;
+  --drawer-z-push-frame:   2;
   --drawer-z-trigger:  1050;
   --drawer-z-backdrop: 1100;
   --drawer-z-panel:    1200;
@@ -403,22 +402,22 @@ body.drawer-is-open-right { --drawer-open-right: 0; }
   opacity: 1;
 }
 
-/* Push mode — the sidebar is fixed at its edge and the MAIN content
- * slides to reveal it. Reference behavior: sidebar never moves, it's
- * always at its edge; content layer is ABOVE sidebar (z-index + own
- * background) and shifts aside on open.
+/* Push mode — the sidebar sits flush at its edge (fixed, own bg)
+ * and the MAIN content simply margin-slides to reveal it. No
+ * backdrop darkening, no panel shadow, no stacking gymnastics.
  *
  * Why margin, not transform: transform on .layout-frame would make
  * it the containing block for position:fixed descendants (the
  * sidebar is fixed and nested inside layout-frame), dragging the
  * sidebar along with content — which is drawer behavior, not push.
  * Margin doesn't establish a containing block for fixed, so the
- * sidebar stays put while layout-frame slides.
+ * sidebar stays put while layout-frame slides off-screen.
  *
- * The layout-frame gains `position: relative; z-index: push-frame;
- * background: surface` so it stacks above the sidebar (same as the
- * reference's content-layer z-index: 20 vs drawer z-index: 10) and
- * covers it when closed, reveals it when open.
+ * The sidebar's own background provides the visual — layout-frame
+ * also has a background so they don't smear into each other while
+ * content slides across. No z-index needed; content physically
+ * goes off-screen (margin equals panel width) so there's no
+ * overlap to stack.
  *
  * FAB triggers are position:fixed in the viewport (not inside
  * layout-frame), so they use transform to ride along with content
@@ -444,6 +443,15 @@ body.drawer-mode-push.drawer-is-open-left  .drawer-trigger--fab.drawer-trigger--
 }
 body.drawer-mode-push.drawer-is-open-right .drawer-trigger--fab.drawer-trigger--right {
   transform: translateX(calc(-1 * var(--drawer-panel-width)));
+}
+
+/* Backdrop is a drawer-mode affordance — a dim/blur layer behind
+ * the overlay. Push doesn't overlay anything (content slides off
+ * entirely) so the backdrop has no visual job here. Killing it
+ * also removes the "shadow-like" tint the reporter was reading as
+ * a shadow on the panel. */
+body.drawer-mode-push .drawer-backdrop {
+  display: none;
 }
 
 /* Hamburger variant — a circular button with three-bar icon */
