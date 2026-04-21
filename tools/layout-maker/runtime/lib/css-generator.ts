@@ -380,24 +380,73 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
       out.push('  }')
     }
 
-    // Push-mode sidebars — sit flush at their edge with their own
-    // background, layered BENEATH the content frame. When closed,
-    // the layout-frame (z-index 2) covers them; when open, the
-    // frame margin-slides off to reveal them. No shadow, no
-    // backdrop — it's two layers sliding past each other.
-    for (const slotName of pushSlots) {
-      const side = slotName.includes('right') ? 'right' : 'left'
+    // Push mode — emitted AT THIS BP ONLY, inside this @media block.
+    // Shell has zero global push rules outside tokens, so tablet
+    // drawer and mobile push stay fully independent: the same
+    // body.drawer-is-open-{side} class is interpreted per-BP by the
+    // rules below, not by any global shell selector.
+    //
+    //   1. Push sidebar is fixed at its edge, full push-width, layered
+    //      BENEATH the layout-frame (which is the "screen" that slides)
+    //   2. .layout-frame gets position:relative + z-index + bg (so it
+    //      covers the sidebar when closed) + margin transition
+    //   3. body.drawer-is-open-{side} .layout-frame margin-inline —
+    //      the screen slides off-screen, revealing the sidebar
+    //   4. FAB trigger rides along via transform (it's fixed in the
+    //      viewport, so it's not dragged by the frame's margin)
+    //   5. .drawer-backdrop { display: none } — push has no overlay
+    if (pushSlots.length > 0) {
+      for (const slotName of pushSlots) {
+        const side = slotName.includes('right') ? 'right' : 'left'
+        out.push('')
+        out.push(`  .layout-grid > [data-slot="${slotName}"] {`)
+        out.push('    position: fixed;')
+        out.push('    top: 0;')
+        out.push('    bottom: 0;')
+        out.push(`    ${side}: 0;`)
+        out.push('    z-index: var(--drawer-z-push-sidebar);')
+        out.push('    width: var(--drawer-push-width);')
+        out.push('    background: var(--drawer-panel-bg);')
+        out.push('    overflow-y: auto;')
+        out.push('  }')
+      }
+
       out.push('')
-      out.push(`  .layout-grid > [data-slot="${slotName}"] {`)
-      out.push('    position: fixed;')
-      out.push('    top: 0;')
-      out.push('    bottom: 0;')
-      out.push(`    ${side}: 0;`)
-      out.push('    z-index: var(--drawer-z-push-sidebar);')
-      out.push('    width: var(--drawer-panel-width);')
-      out.push('    max-width: var(--drawer-panel-max-width);')
+      out.push('  .layout-frame {')
+      out.push('    position: relative;')
+      out.push('    z-index: var(--drawer-z-push-frame);')
       out.push('    background: var(--drawer-panel-bg);')
-      out.push('    overflow-y: auto;')
+      out.push('    transition: margin var(--drawer-push-content-duration) var(--drawer-push-content-easing);')
+      out.push('    will-change: margin;')
+      out.push('  }')
+
+      const pushLeft = pushSlots.some((n) => n.includes('left'))
+      const pushRight = pushSlots.some((n) => n.includes('right'))
+
+      if (pushLeft) {
+        out.push('')
+        out.push('  body.drawer-is-open-left .layout-frame {')
+        out.push('    margin-left: var(--drawer-push-width);')
+        out.push('    margin-right: calc(-1 * var(--drawer-push-width));')
+        out.push('  }')
+        out.push('  body.drawer-is-open-left .drawer-trigger--fab.drawer-trigger--left {')
+        out.push('    transform: translateX(var(--drawer-push-width));')
+        out.push('  }')
+      }
+      if (pushRight) {
+        out.push('')
+        out.push('  body.drawer-is-open-right .layout-frame {')
+        out.push('    margin-right: var(--drawer-push-width);')
+        out.push('    margin-left: calc(-1 * var(--drawer-push-width));')
+        out.push('  }')
+        out.push('  body.drawer-is-open-right .drawer-trigger--fab.drawer-trigger--right {')
+        out.push('    transform: translateX(calc(-1 * var(--drawer-push-width)));')
+        out.push('  }')
+      }
+
+      out.push('')
+      out.push('  .drawer-backdrop {')
+      out.push('    display: none;')
       out.push('  }')
     }
 

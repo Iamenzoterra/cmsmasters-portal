@@ -25,11 +25,6 @@ export function DrawerPreview({ config, grid, drawerSlots }: Props) {
   const triggerVariant = (grid['drawer-trigger'] as TriggerVariant | undefined) ?? 'peek'
   const drawerPosition = grid['drawer-position'] ?? 'both'
 
-  // Push mode when any drawered slot at this BP is push OR grid-level sidebars=push.
-  const isPushMode =
-    grid.sidebars === 'push' ||
-    Object.values(grid.slots ?? {}).some((s) => s.visibility === 'push')
-
   const leftSlots = drawerSlots.filter((s) => s.includes('left'))
   const rightSlots = drawerSlots.filter((s) => s.includes('right'))
 
@@ -82,21 +77,22 @@ export function DrawerPreview({ config, grid, drawerSlots }: Props) {
   }, [])
 
   // Mirror state onto body — same CSS hooks the real Portal's shell.js uses.
+  // Mode (drawer/push) is a per-BP concern in real Portal; in the canvas
+  // we just toggle the open-state classes and let the canvas-only panel
+  // visualizer show the sidebar sliding in.
   useEffect(() => {
     const body = document.body
     body.classList.toggle('drawer-is-open', openSide !== null)
     body.classList.toggle('drawer-is-open-left', openSide === 'left')
     body.classList.toggle('drawer-is-open-right', openSide === 'right')
-    body.classList.toggle('drawer-mode-push', isPushMode)
     return () => {
       body.classList.remove(
         'drawer-is-open',
         'drawer-is-open-left',
         'drawer-is-open-right',
-        'drawer-mode-push',
       )
     }
-  }, [openSide, isPushMode])
+  }, [openSide])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

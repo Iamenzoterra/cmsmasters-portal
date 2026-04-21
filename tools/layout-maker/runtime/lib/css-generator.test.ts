@@ -10,8 +10,8 @@ const tokens: TokenMap = {
 
 function threeColLayout(
   overrides: Partial<{
-    tabletSidebars: 'drawer' | 'hidden'
-    tabletPerSlotVisibility: Record<string, 'hidden' | 'drawer'>
+    tabletSidebars: 'drawer' | 'hidden' | 'push'
+    tabletPerSlotVisibility: Record<string, 'hidden' | 'drawer' | 'push'>
   }> = {},
 ): LayoutConfig {
   const base: LayoutConfig = {
@@ -215,5 +215,92 @@ describe('css-generator: drawer CSS ownership', () => {
     const css = generateCSS(config, tokens)
     const tablet = tabletBlock(css)
     expect(tablet).toMatch(/\.drawer-panel\s*\{[^}]*width:\s*360px/s)
+  })
+})
+
+describe('css-generator: push mode is per-BP, not global', () => {
+  // PARITY-LOG contract: tablet drawer and mobile push must stay
+  // independent. Push-specific rules (frame margin/bg/z-index,
+  // backdrop-hide, FAB translate) live ONLY inside the @media block
+  // of the BP that uses push — never outside. This keeps tablet
+  // drawer overlay working unchanged when mobile switches to push.
+
+  const pushLayout = () => threeColLayout({ tabletSidebars: 'push' })
+
+  it('emits push rules only inside the @media block, not globally', () => {
+    const css = generateCSS(pushLayout(), tokens)
+    const mediaStart = css.indexOf('@media (max-width: 1439px)')
+    const outside = css.slice(0, mediaStart)
+
+    // No push-specific selectors should appear outside any @media.
+    expect(outside).not.toMatch(/body\.drawer-is-open-left\s+\.layout-frame/)
+    expect(outside).not.toMatch(/body\.drawer-is-open-right\s+\.layout-frame/)
+    expect(outside).not.toMatch(/\.drawer-backdrop\s*\{\s*display:\s*none/)
+  })
+
+  it('emits frame + margin + backdrop-hide + FAB transform inside the @media', () => {
+    const css = generateCSS(pushLayout(), tokens)
+    const tablet = tabletBlock(css)
+
+    expect(tablet).toMatch(/\.layout-frame\s*\{[^}]*position:\s*relative/s)
+    expect(tablet).toMatch(/\.layout-frame\s*\{[^}]*z-index:\s*var\(--drawer-z-push-frame\)/s)
+    expect(tablet).toMatch(/\.layout-frame\s*\{[^}]*transition:\s*margin/s)
+
+    expect(tablet).toMatch(
+      /body\.drawer-is-open-left\s+\.layout-frame\s*\{[^}]*margin-left:\s*var\(--drawer-push-width\)/s,
+    )
+    expect(tablet).toMatch(
+      /body\.drawer-is-open-left\s+\.drawer-trigger--fab\.drawer-trigger--left\s*\{[^}]*transform:\s*translateX\(var\(--drawer-push-width\)\)/s,
+    )
+
+    expect(tablet).toMatch(/\.drawer-backdrop\s*\{\s*display:\s*none/)
+  })
+
+  it('push sidebar uses --drawer-push-width, not --drawer-panel-width', () => {
+    const css = generateCSS(pushLayout(), tokens)
+    const tablet = tabletBlock(css)
+    const sidebarLeft = tablet.match(
+      /\.layout-grid > \[data-slot="sidebar-left"\]\s*\{[^}]*\}/s,
+    )
+    expect(sidebarLeft).not.toBeNull()
+    expect(sidebarLeft![0]).toMatch(/width:\s*var\(--drawer-push-width\)/)
+    expect(sidebarLeft![0]).not.toMatch(/transform:/)
+    expect(sidebarLeft![0]).not.toMatch(/box-shadow:/)
+  })
+
+  it('drawer@tablet + push@mobile — each BP gets its own mode rules', () => {
+    const config = threeColLayout({ tabletSidebars: 'drawer' })
+    config.grid.mobile = {
+      'min-width': '375px',
+      columns: { 'sidebar-left': '1fr', content: '1fr', 'sidebar-right': '1fr' },
+      'column-gap': '0',
+      sidebars: 'push',
+      'drawer-trigger': 'fab',
+    }
+    const css = generateCSS(config, tokens)
+
+    // Tablet block: drawer (transform on sidebar, no frame margin, no backdrop-hide).
+    const tablet = tabletBlock(css)
+    expect(tablet).toMatch(/transform:\s*translateX\(calc\(var\(--drawer-open-left/)
+    expect(tablet).not.toMatch(/\.drawer-backdrop\s*\{\s*display:\s*none/)
+    expect(tablet).not.toMatch(/body\.drawer-is-open-left\s+\.layout-frame/)
+
+    // Mobile block: push (backdrop-hide, frame margin, no transform on sidebar).
+    const mobileStart = css.indexOf('@media (max-width: 767px)')
+    expect(mobileStart).toBeGreaterThan(-1)
+    const mobileEnd = (() => {
+      let depth = 0
+      for (let i = mobileStart; i < css.length; i++) {
+        if (css[i] === '{') depth++
+        else if (css[i] === '}') {
+          depth--
+          if (depth === 0) return i + 1
+        }
+      }
+      return css.length
+    })()
+    const mobile = css.slice(mobileStart, mobileEnd)
+    expect(mobile).toMatch(/\.drawer-backdrop\s*\{\s*display:\s*none/)
+    expect(mobile).toMatch(/body\.drawer-is-open-left\s+\.layout-frame[^}]*margin-left/s)
   })
 })

@@ -99,10 +99,11 @@
   --drawer-fab-arm-timeout: 2000ms;
 
   /* ─────── Push sidebar mode (mobile variant) ─────── */
-  /* The sidebar sits fixed at its side; opening the drawer
-   * translates the MAIN CONTENT by the panel width instead of
-   * overlaying it. iOS-style timing (520ms, cubic-bezier(0.32,
-   * 0.72, 0, 1)) reads native on touch devices. */
+  /* True push: the content frame slides ENTIRELY off the viewport
+   * (not just by drawer-panel-width) to reveal a full-viewport-width
+   * sidebar behind it. Matches the native mobile drawer pattern on
+   * iOS/Android. iOS-style timing for 60fps margin transitions. */
+  --drawer-push-width: 100%;
   --drawer-push-content-duration: 520ms;
   --drawer-push-content-easing: cubic-bezier(0.32, 0.72, 0, 1);
 
@@ -402,57 +403,17 @@ body.drawer-is-open-right { --drawer-open-right: 0; }
   opacity: 1;
 }
 
-/* Push mode — the sidebar sits flush at its edge (fixed, own bg)
- * and the MAIN content simply margin-slides to reveal it. No
- * backdrop darkening, no panel shadow, no stacking gymnastics.
+/* Push mode — intentionally has NO globally-applied rules in the
+ * shell. Push is a per-BP concern: at a BP that uses push, the
+ * layout CSS (emitted by css-generator inside its @media block)
+ * turns on the backdrop-hide + content-frame margin/bg/z-index +
+ * FAB transform. This keeps tablet drawer and mobile push truly
+ * independent — the same body.drawer-is-open-{side} state class
+ * is interpreted per-BP, not globally.
  *
- * Why margin, not transform: transform on .layout-frame would make
- * it the containing block for position:fixed descendants (the
- * sidebar is fixed and nested inside layout-frame), dragging the
- * sidebar along with content — which is drawer behavior, not push.
- * Margin doesn't establish a containing block for fixed, so the
- * sidebar stays put while layout-frame slides off-screen.
- *
- * The sidebar's own background provides the visual — layout-frame
- * also has a background so they don't smear into each other while
- * content slides across. No z-index needed; content physically
- * goes off-screen (margin equals panel width) so there's no
- * overlap to stack.
- *
- * FAB triggers are position:fixed in the viewport (not inside
- * layout-frame), so they use transform to ride along with content
- * — the close affordance stays pinned to the visible content
- * corner instead of hanging over the revealed sidebar. */
-body.drawer-mode-push .layout-frame {
-  position: relative;
-  z-index: var(--drawer-z-push-frame);
-  background: var(--drawer-panel-bg);
-  transition: margin var(--drawer-push-content-duration) var(--drawer-push-content-easing);
-  will-change: margin;
-}
-body.drawer-mode-push.drawer-is-open-left .layout-frame {
-  margin-left: var(--drawer-panel-width);
-  margin-right: calc(-1 * var(--drawer-panel-width));
-}
-body.drawer-mode-push.drawer-is-open-right .layout-frame {
-  margin-right: var(--drawer-panel-width);
-  margin-left: calc(-1 * var(--drawer-panel-width));
-}
-body.drawer-mode-push.drawer-is-open-left  .drawer-trigger--fab.drawer-trigger--left {
-  transform: translateX(var(--drawer-panel-width));
-}
-body.drawer-mode-push.drawer-is-open-right .drawer-trigger--fab.drawer-trigger--right {
-  transform: translateX(calc(-1 * var(--drawer-panel-width)));
-}
-
-/* Backdrop is a drawer-mode affordance — a dim/blur layer behind
- * the overlay. Push doesn't overlay anything (content slides off
- * entirely) so the backdrop has no visual job here. Killing it
- * also removes the "shadow-like" tint the reporter was reading as
- * a shadow on the panel. */
-body.drawer-mode-push .drawer-backdrop {
-  display: none;
-}
+ * Shell still owns the tokens (widths, z-indices, timings) and
+ * the variant-specific trigger styles (peek / hamburger / fab).
+ * Those are presentational and don't depend on mode. */
 
 /* Hamburger variant — a circular button with three-bar icon */
 .drawer-trigger--hamburger {

@@ -1,14 +1,17 @@
 /* Portal shell — drawer open/close controller.
  *
  * Single global handler for every drawer in the portal. Toggles body
- * classes that the shell CSS watches:
+ * classes that the shell CSS + layout CSS watch:
  *
  *   body.drawer-is-open          — any drawer open (hides peek/hamburger)
- *   body.drawer-is-open-left     — left sidebar slid in
- *   body.drawer-is-open-right    — right sidebar slid in
- *   body.drawer-mode-push        — any BP uses push mode (.layout-frame
- *                                   translates instead of overlay)
- *   .drawer-layer.is-open        — backdrop visible
+ *   body.drawer-is-open-left     — left sidebar active
+ *   body.drawer-is-open-right    — right sidebar active
+ *   .drawer-layer.is-open        — backdrop visible (drawer mode only)
+ *
+ * Mode (drawer overlay vs. push content aside) is a per-BP concern.
+ * Layout CSS emits mode-specific rules inside its @media block and
+ * reads the above body classes; this script doesn't know or care
+ * which mode is active at the current viewport.
  *
  * FAB triggers have a two-step open flow — the first click "arms"
  * the trigger (chevron flips, label appears); a second click or a
@@ -29,20 +32,10 @@
   const ARMED_CLASS = 'drawer-trigger--is-armed'
   const armTimers = { left: null, right: null }
 
-  // Mirror the drawer-shell's data-drawer-mode onto body so shell CSS
-  // rules that depend on "push" (.layout-frame content translate) can
-  // fire. Read once on load; re-running is harmless.
-  function syncMode() {
-    const shell = document.querySelector('.drawer-shell')
-    const mode = shell ? shell.getAttribute('data-drawer-mode') : null
-    document.body.classList.toggle('drawer-mode-push', mode === 'push')
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', syncMode)
-  } else {
-    syncMode()
-  }
+  // Drawer mode (overlay vs push) is now a pure per-BP concern —
+  // layout CSS emits the mode-specific rules inside its @media
+  // block. No body.drawer-mode-* mirror needed here; this script
+  // only tracks open/close state and the FAB arm/close flow.
 
   function getTrigger(side) {
     return document.querySelector('.drawer-trigger--' + side)

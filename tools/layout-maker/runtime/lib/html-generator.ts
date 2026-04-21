@@ -17,34 +17,32 @@ function renderSlotInner(slot: { 'nested-slots'?: string[] }): string {
   return ''
 }
 
-/** Decide which sides need a drawer trigger, plus which "mode" is
- *  used anywhere in the layout (drawer overlay or push). Considers
- *  both grid-level `sidebars` and per-slot `visibility` overrides so
- *  the two mechanisms stay interchangeable. */
+/** Decide which sides need a drawer trigger. Considers both
+ *  grid-level `sidebars` and per-slot `visibility` overrides so
+ *  the two mechanisms stay interchangeable. Mode (drawer vs push)
+ *  isn't tracked here — it's a per-BP concern picked up by
+ *  css-generator inside each @media block. */
 function resolveDrawerSides(
   config: LayoutConfig,
-): { leftSidebar?: string; rightSidebar?: string; usesPush: boolean } {
+): { leftSidebar?: string; rightSidebar?: string } {
   const sidebarNames = Object.keys(config.slots).filter((n) => n.includes('sidebar'))
   const defaultLeft = sidebarNames.find((n) => n.includes('left'))
   const defaultRight = sidebarNames.find((n) => n.includes('right'))
 
   let leftActive = false
   let rightActive = false
-  let usesPush = false
 
   const isOffCanvasMode = (v: string | undefined): v is 'drawer' | 'push' =>
     v === 'drawer' || v === 'push'
 
   for (const grid of Object.values(config.grid)) {
     if (isOffCanvasMode(grid.sidebars)) {
-      if (grid.sidebars === 'push') usesPush = true
       const pos = grid['drawer-position'] ?? 'both'
       if (pos === 'left' || pos === 'both') leftActive = true
       if (pos === 'right' || pos === 'both') rightActive = true
     }
     for (const [slotName, override] of Object.entries(grid.slots ?? {})) {
       if (!isOffCanvasMode(override.visibility)) continue
-      if (override.visibility === 'push') usesPush = true
       if (slotName.includes('left')) leftActive = true
       else if (slotName.includes('right')) rightActive = true
     }
@@ -53,7 +51,6 @@ function resolveDrawerSides(
   return {
     leftSidebar: leftActive ? defaultLeft : undefined,
     rightSidebar: rightActive ? defaultRight : undefined,
-    usesPush,
   }
 }
 
@@ -122,7 +119,7 @@ function escapeHTML(s: string): string {
 export function generateHTML(config: LayoutConfig): string {
   const out: string[] = []
   const slots = config.slots
-  const { leftSidebar, rightSidebar, usesPush } = resolveDrawerSides(config)
+  const { leftSidebar, rightSidebar } = resolveDrawerSides(config)
   const hasDrawers = Boolean(leftSidebar) || Boolean(rightSidebar)
 
   // Categorize slots by position
@@ -193,8 +190,7 @@ export function generateHTML(config: LayoutConfig): string {
   // responsive BP via layout CSS + shell tokens. No duplicate slot
   // content, no drawer panels here.
   if (hasDrawers) {
-    const modeAttr = usesPush ? ' data-drawer-mode="push"' : ''
-    out.push(`<div class="drawer-shell"${modeAttr}>`)
+    out.push('<div class="drawer-shell">')
 
     const variants = collectTriggerVariants(config)
     if (leftSidebar) {

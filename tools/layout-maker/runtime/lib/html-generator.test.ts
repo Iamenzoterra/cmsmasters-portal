@@ -134,22 +134,23 @@ describe('html-generator: drawer shell', () => {
     expect(html).toMatch(/class="drawer-trigger drawer-trigger--peek drawer-trigger--fab drawer-trigger--left"/)
   })
 
-  it('sets data-drawer-mode="push" on the shell when any BP uses push', () => {
-    const config = base(false)
-    config.grid.mobile = {
+  it('never emits data-drawer-mode — mode is a per-BP CSS concern', () => {
+    // Both a drawer-only layout and a push-using layout must emit the
+    // shell without any mode marker. Keeping mode out of HTML means a
+    // layout can freely mix drawer@tablet + push@mobile without any
+    // state leaking globally.
+    const drawerOnly = base(true)
+    const withPush = base(false)
+    withPush.grid.mobile = {
       'min-width': '375px',
       columns: { 'sidebar-left': '1fr', content: '1fr', 'sidebar-right': '1fr' },
       'column-gap': '0',
       sidebars: 'push',
     }
-    const html = generateHTML(config)
-    expect(html).toMatch(/<div class="drawer-shell" data-drawer-mode="push">/)
-  })
-
-  it('omits data-drawer-mode when only drawer (no push) is used', () => {
-    const html = generateHTML(base(true))
-    expect(html).toMatch(/<div class="drawer-shell">/)
-    expect(html).not.toMatch(/data-drawer-mode/)
+    expect(generateHTML(drawerOnly)).toMatch(/<div class="drawer-shell">/)
+    expect(generateHTML(drawerOnly)).not.toMatch(/data-drawer-mode/)
+    expect(generateHTML(withPush)).toMatch(/<div class="drawer-shell">/)
+    expect(generateHTML(withPush)).not.toMatch(/data-drawer-mode/)
   })
 
   it('emits only the side that is marked drawer (per-slot visibility override)', () => {
