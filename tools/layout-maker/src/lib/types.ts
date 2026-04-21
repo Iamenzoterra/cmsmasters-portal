@@ -106,6 +106,8 @@ export interface SlotConfig {
   'drawer-trigger-label'?: string
   /** Icon name from packages/ui/src/portal/drawer-icons.ts (sidebar slots only, role-level). */
   'drawer-trigger-icon'?: string
+  /** Color-token ref (e.g. --brand-the-sky) for the drawer trigger button bg. */
+  'drawer-trigger-color'?: string
 }
 
 export interface LayoutConfig {

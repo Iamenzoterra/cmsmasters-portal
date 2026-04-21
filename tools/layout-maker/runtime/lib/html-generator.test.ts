@@ -104,6 +104,21 @@ describe('html-generator: drawer shell', () => {
     expect(html).toMatch(/d="M9 5l7 7-7 7"/)
   })
 
+  it('emits inline --drawer-trigger-bg style when drawer-trigger-color is set', () => {
+    const config = base(true)
+    config.slots['sidebar-left']['drawer-trigger-color'] = '--brand-mare'
+    const html = generateHTML(config)
+    expect(html).toMatch(/drawer-trigger--left[^>]*style="--drawer-trigger-bg: hsl\(var\(--brand-mare\)\)"/)
+  })
+
+  it('omits inline style when drawer-trigger-color is unset (shell default wins)', () => {
+    const html = generateHTML(base(true))
+    // No style attr on the trigger — shell's --drawer-trigger-bg-{side}
+    // fallback provides the color.
+    expect(html).not.toMatch(/drawer-trigger--left[^>]*style="/)
+    expect(html).not.toMatch(/drawer-trigger--right[^>]*style="/)
+  })
+
   it('emits only the side that is marked drawer (per-slot visibility override)', () => {
     const config = base(false)
     config.grid.tablet.slots = { 'sidebar-left': { visibility: 'drawer' } }

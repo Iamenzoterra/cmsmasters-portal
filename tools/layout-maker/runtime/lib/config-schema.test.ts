@@ -71,6 +71,22 @@ describe('config-schema: drawer-trigger-label / drawer-trigger-icon', () => {
     }
   })
 
+  it('accepts a valid --brand-* color token for drawer-trigger-color', () => {
+    const res = configSchema.safeParse(
+      minimalConfig({ 'drawer-trigger-color': '--brand-the-sky' }),
+    )
+    expect(res.success).toBe(true)
+  })
+
+  it('rejects a drawer-trigger-color that is not a CSS custom prop', () => {
+    for (const bad of ['brand-the-sky', '#ff0000', 'red', 'hsl(0 0% 100%)', '-not-double-dash']) {
+      const res = configSchema.safeParse(
+        minimalConfig({ 'drawer-trigger-color': bad }),
+      )
+      expect(res.success, `bad value "${bad}" should be rejected`).toBe(false)
+    }
+  })
+
   it('rejects per-BP overrides of drawer-trigger-label/icon (role-level only)', () => {
     const config = minimalConfig()
     // @ts-expect-error: intentional — grid.tablet is being added for this test

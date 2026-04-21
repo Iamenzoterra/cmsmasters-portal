@@ -52,6 +52,20 @@ function getBorderTokens(tokens: TokenMap): Array<{ name: string; hsl: string }>
     .map((name) => ({ name, hsl: `hsl(${tokens.all[name]})` }))
 }
 
+/** Brand / accent color tokens suitable for filling a drawer trigger button.
+ *  Filters to --brand-* primitives and skips neutral greys (triplet matches
+ *  "0 0% X%") which would look muddy on the trigger. */
+function getBrandColorTokens(tokens: TokenMap): Array<{ name: string; hsl: string }> {
+  return Object.keys(tokens.all)
+    .filter((t) => t.startsWith('--brand-'))
+    .filter((t) => {
+      const v = tokens.all[t]
+      // Drop pure whites/blacks/greys — not usable as a trigger background.
+      return !/^0 0%/.test(v) && !/0 0% (0|100|95|87|62|46|33|23|9|5)%/.test(v)
+    })
+    .map((name) => ({ name, hsl: `hsl(${tokens.all[name]})` }))
+}
+
 /** Shared custom dropdown with color swatches. */
 function ColorTokenSelect({ options, value, onChange, placeholder }: {
   options: Array<{ value: string; label: string; hex: string }>
@@ -767,6 +781,25 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
                     <option key={icon.name} value={icon.name}>{icon.label}</option>
                   ))}
                 </select>
+              </div>
+              <div className="lm-inspector__row lm-inspector__row--col">
+                <span className="lm-inspector__label">Trigger color</span>
+                {(() => {
+                  const brandTokens = getBrandColorTokens(tokens)
+                  const options = brandTokens.map((t) => ({
+                    value: t.name,
+                    label: t.name.replace('--brand-', ''),
+                    hex: hslTripletToHex(tokens.all[t.name]) ?? t.hsl,
+                  }))
+                  return (
+                    <ColorTokenSelect
+                      options={options}
+                      value={baseSlot['drawer-trigger-color']}
+                      onChange={(v) => onUpdateSlotRole(selectedSlot, { 'drawer-trigger-color': v })}
+                      placeholder={selectedSlot.includes('left') ? 'the-sky (default)' : 'deep-blue (default)'}
+                    />
+                  )
+                })()}
               </div>
             </>
           )}

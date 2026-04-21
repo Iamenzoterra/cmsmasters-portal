@@ -59,6 +59,8 @@ export function DrawerPreview({ config, grid, drawerSlots }: Props) {
   const rightLabel = rightTriggerSlot?.['drawer-trigger-label'] ?? 'Details'
   const leftIcon = leftTriggerSlot?.['drawer-trigger-icon']
   const rightIcon = rightTriggerSlot?.['drawer-trigger-icon']
+  const leftColor = leftTriggerSlot?.['drawer-trigger-color']
+  const rightColor = rightTriggerSlot?.['drawer-trigger-color']
 
   return (
     <>
@@ -68,6 +70,7 @@ export function DrawerPreview({ config, grid, drawerSlots }: Props) {
           side="left"
           label={leftLabel}
           iconName={leftIcon}
+          colorToken={leftColor}
           onClick={() => toggle('left')}
           hidden={openSide !== null}
         />
@@ -78,6 +81,7 @@ export function DrawerPreview({ config, grid, drawerSlots }: Props) {
           side="right"
           label={rightLabel}
           iconName={rightIcon}
+          colorToken={rightColor}
           onClick={() => toggle('right')}
           hidden={openSide !== null}
         />
@@ -114,6 +118,7 @@ function TriggerButton({
   side,
   label,
   iconName,
+  colorToken,
   onClick,
   hidden,
 }: {
@@ -121,12 +126,23 @@ function TriggerButton({
   side: 'left' | 'right'
   label: string
   iconName?: string
+  colorToken?: string
   onClick: () => void
   hidden: boolean
 }) {
   const renderVariant = variant === 'tab' ? 'peek' : variant
   const cls = `drawer-trigger drawer-trigger--${renderVariant} drawer-trigger--${side}`
-  const style = hidden ? { opacity: 0, pointerEvents: 'none' as const } : undefined
+  const baseStyle: Record<string, string | number> = {}
+  if (hidden) {
+    baseStyle.opacity = 0
+    baseStyle.pointerEvents = 'none'
+  }
+  if (colorToken) {
+    // Matches the inline style html-generator emits for Portal — shell CSS
+    // reads `var(--drawer-trigger-bg, <default>)` so per-slot wins.
+    (baseStyle as Record<string, string>)['--drawer-trigger-bg'] = `hsl(var(${colorToken}))`
+  }
+  const style = Object.keys(baseStyle).length > 0 ? baseStyle : undefined
   const icon = getDrawerIcon(iconName)
 
   if (renderVariant === 'hamburger') {

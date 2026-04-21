@@ -86,6 +86,10 @@ const slotSchema = z
     'drawer-trigger-label': z.string().min(1).max(40).optional(),
     /** Icon name from packages/ui/src/portal/drawer-icons.ts registry. Role-level, not per-BP. */
     'drawer-trigger-icon': z.string().regex(/^[a-z][a-z0-9-]*$/, 'Must be a drawer icon name from the registry').optional(),
+    /** Background color token ref for the drawer trigger button (e.g. "--brand-the-sky").
+     *  Role-level, not per-BP. Applied as `--drawer-trigger-bg: hsl(var(--ref))` inline
+     *  on the button; shell falls back to --drawer-trigger-bg-{side} default. */
+    'drawer-trigger-color': z.string().regex(/^--[\w-]+$/, 'Must be a CSS custom property reference starting with --').optional(),
   })
   .strict() // Rejects unknown keys — catches "width" in slots
 

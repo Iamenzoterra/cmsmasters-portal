@@ -50,18 +50,30 @@ function resolveDrawerSides(
   }
 }
 
-/** Render a trigger button for one side. Label + icon come from the
- *  slot's role-level drawer-trigger-label / drawer-trigger-icon. */
+/** Render a trigger button for one side. Label + icon + color come
+ *  from the slot's role-level drawer-trigger-label / drawer-trigger-icon /
+ *  drawer-trigger-color. Color is applied as an inline CSS custom prop
+ *  (--drawer-trigger-bg) that the shell's `background: var(--drawer-trigger-bg,
+ *  var(--drawer-trigger-bg-{side}))` reads — per-slot wins, default
+ *  falls through. */
 function renderTrigger(
   side: 'left' | 'right',
-  slot: { 'drawer-trigger-label'?: string; 'drawer-trigger-icon'?: string },
+  slot: {
+    'drawer-trigger-label'?: string
+    'drawer-trigger-icon'?: string
+    'drawer-trigger-color'?: string
+  },
 ): string[] {
   const out: string[] = []
   const label = slot['drawer-trigger-label'] || (side === 'left' ? 'Menu' : 'Details')
   const icon = getDrawerIcon(slot['drawer-trigger-icon'])
+  const color = slot['drawer-trigger-color']
+  const styleAttr = color
+    ? ` style="--drawer-trigger-bg: hsl(var(${color}))"`
+    : ''
 
   out.push(
-    `  <button type="button" class="drawer-trigger drawer-trigger--peek drawer-trigger--${side}" data-drawer-open="${side}" aria-label="${escapeAttr(label)}">`,
+    `  <button type="button" class="drawer-trigger drawer-trigger--peek drawer-trigger--${side}" data-drawer-open="${side}" aria-label="${escapeAttr(label)}"${styleAttr}>`,
   )
   out.push('    <span class="drawer-trigger__icon-wrap" aria-hidden="true">')
   out.push(

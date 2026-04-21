@@ -35,14 +35,24 @@
   --drawer-backdrop-duration: 320ms;
 
   /* ─────── Peek trigger (default) ─────── */
+  /* Anchor model: the trigger is wider than its visible area by
+   * --drawer-trigger-extension, and that extra width is always
+   * tucked past the viewport edge (off-screen). Hover slides by
+   * exactly the extension so the anchor edge stays flush with the
+   * viewport — no gap appears between trigger and edge. Default
+   * reveal width = --drawer-trigger-width; hover reveal width =
+   * width + extension. */
   --drawer-trigger-width: 46px;
-  --drawer-trigger-padding: 18px 10px;
+  --drawer-trigger-extension: 12px;
+  --drawer-trigger-padding-block: 18px;
+  --drawer-trigger-padding-inline: 10px;
   --drawer-trigger-radius: 14px;
-  --drawer-trigger-peek: 6px;            /* how far it tucks into the bezel */
-  --drawer-trigger-hover-slide: 4px;     /* how far it slides on hover */
   --drawer-trigger-duration: 320ms;
-  --drawer-trigger-bg-left:  linear-gradient(135deg, hsl(var(--brand-the-sky)),    hsl(var(--brand-cyan)));
-  --drawer-trigger-bg-right: linear-gradient(135deg, hsl(var(--brand-deep-blue)),  hsl(var(--brand-deep-blue-2)));
+  /* Solid defaults (no gradient). Per-slot override via inline
+   * style="--drawer-trigger-bg: hsl(var(--brand-XYZ))" on the
+   * button sets the actual color — shell falls back to these. */
+  --drawer-trigger-bg-left:  hsl(var(--brand-the-sky));
+  --drawer-trigger-bg-right: hsl(var(--brand-deep-blue));
   --drawer-trigger-shadow-left:   8px 4px 18px -6px hsl(var(--brand-deep-blue-2) / 0.55);
   --drawer-trigger-shadow-right: -8px 4px 18px -6px hsl(var(--brand-deep-blue-2) / 0.55);
   --drawer-trigger-shadow-left-hover:   12px 8px 24px -6px hsl(var(--brand-deep-blue-2) / 0.55);
@@ -172,14 +182,17 @@ body.drawer-is-open-right { --drawer-open-right: 0; }
     opacity    180ms ease-out;
 }
 
-/* Peek variant — vertical pill that tucks behind the viewport edge */
+/* Peek variant — vertical pill whose "dead" end extends past the
+ * viewport edge. Visible width at rest = --drawer-trigger-width;
+ * hover translates by the extension so the anchor edge stays flush
+ * with the viewport corner and the whole pill comes into view. */
 .drawer-trigger--peek {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  padding: var(--drawer-trigger-padding);
-  width: var(--drawer-trigger-width);
+  padding-block: var(--drawer-trigger-padding-block);
+  width: calc(var(--drawer-trigger-width) + var(--drawer-trigger-extension));
 }
 
 .drawer-trigger--peek .drawer-trigger__label {
@@ -210,27 +223,31 @@ body.drawer-is-open-right { --drawer-open-right: 0; }
 
 .drawer-trigger--peek.drawer-trigger--left {
   left: 0;
+  padding-left: calc(var(--drawer-trigger-padding-inline) + var(--drawer-trigger-extension));
+  padding-right: var(--drawer-trigger-padding-inline);
   border-radius: 0 var(--drawer-trigger-radius) var(--drawer-trigger-radius) 0;
-  background: var(--drawer-trigger-bg-left);
-  transform: translate(calc(var(--drawer-trigger-peek) * -1), -50%);
+  background: var(--drawer-trigger-bg, var(--drawer-trigger-bg-left));
+  transform: translate(calc(var(--drawer-trigger-extension) * -1), -50%);
   box-shadow: var(--drawer-trigger-shadow-left);
 }
 
 .drawer-trigger--peek.drawer-trigger--left:hover {
-  transform: translate(var(--drawer-trigger-hover-slide), -50%);
+  transform: translate(0, -50%);
   box-shadow: var(--drawer-trigger-shadow-left-hover);
 }
 
 .drawer-trigger--peek.drawer-trigger--right {
   right: 0;
+  padding-left: var(--drawer-trigger-padding-inline);
+  padding-right: calc(var(--drawer-trigger-padding-inline) + var(--drawer-trigger-extension));
   border-radius: var(--drawer-trigger-radius) 0 0 var(--drawer-trigger-radius);
-  background: var(--drawer-trigger-bg-right);
-  transform: translate(var(--drawer-trigger-peek), -50%);
+  background: var(--drawer-trigger-bg, var(--drawer-trigger-bg-right));
+  transform: translate(var(--drawer-trigger-extension), -50%);
   box-shadow: var(--drawer-trigger-shadow-right);
 }
 
 .drawer-trigger--peek.drawer-trigger--right:hover {
-  transform: translate(calc(var(--drawer-trigger-hover-slide) * -1), -50%);
+  transform: translate(0, -50%);
   box-shadow: var(--drawer-trigger-shadow-right-hover);
 }
 
