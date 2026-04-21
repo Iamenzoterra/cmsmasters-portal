@@ -218,6 +218,67 @@ describe('css-generator: drawer CSS ownership', () => {
   })
 })
 
+describe('css-generator: trigger variant is per-BP', () => {
+  // PARITY-LOG contract: a layout that uses different trigger variants
+  // across BPs (e.g. tab @ tablet + fab @ mobile) must hide the inactive
+  // variant at each BP via a plain `.drawer-trigger--{v} { display: none }`.
+  // html-generator emits one button per variant × side (single variant
+  // class each), so a plain selector is enough — no `:not()` juggling.
+
+  function crossBpLayout(): LayoutConfig {
+    const config = threeColLayout({ tabletSidebars: 'drawer' })
+    config.grid.tablet['drawer-trigger'] = 'tab'
+    config.grid.mobile = {
+      'min-width': '375px',
+      columns: { 'sidebar-left': '1fr', content: '1fr', 'sidebar-right': '1fr' },
+      'column-gap': '0',
+      sidebars: 'drawer',
+      'drawer-trigger': 'fab',
+    }
+    return config
+  }
+
+  it('at tablet @media hides every variant except the active one (tab)', () => {
+    const css = generateCSS(crossBpLayout(), tokens)
+    const tablet = tabletBlock(css)
+    expect(tablet).toMatch(/\.drawer-trigger--peek\s*\{\s*display:\s*none/)
+    expect(tablet).toMatch(/\.drawer-trigger--hamburger\s*\{\s*display:\s*none/)
+    expect(tablet).toMatch(/\.drawer-trigger--fab\s*\{\s*display:\s*none/)
+    expect(tablet).not.toMatch(/\.drawer-trigger--tab\s*\{\s*display:\s*none/)
+  })
+
+  it('at mobile @media hides every variant except the active one (fab)', () => {
+    const css = generateCSS(crossBpLayout(), tokens)
+    const mobileStart = css.indexOf('@media (max-width: 767px)')
+    expect(mobileStart).toBeGreaterThan(-1)
+    let depth = 0
+    let end = css.length
+    for (let i = mobileStart; i < css.length; i++) {
+      if (css[i] === '{') depth++
+      else if (css[i] === '}') {
+        depth--
+        if (depth === 0) {
+          end = i + 1
+          break
+        }
+      }
+    }
+    const mobile = css.slice(mobileStart, end)
+    expect(mobile).toMatch(/\.drawer-trigger--peek\s*\{\s*display:\s*none/)
+    expect(mobile).toMatch(/\.drawer-trigger--hamburger\s*\{\s*display:\s*none/)
+    expect(mobile).toMatch(/\.drawer-trigger--tab\s*\{\s*display:\s*none/)
+    expect(mobile).not.toMatch(/\.drawer-trigger--fab\s*\{\s*display:\s*none/)
+  })
+
+  it('uses plain selectors, not :not() compounds, to hide variants', () => {
+    const css = generateCSS(crossBpLayout(), tokens)
+    // The older :not()-based hide rule was unrecoverable when buttons
+    // carried multiple variant classes; single-variant-per-button
+    // means the plain selector is enough.
+    expect(css).not.toMatch(/\.drawer-trigger--\w+:not\(\.drawer-trigger--/)
+  })
+})
+
 describe('css-generator: push mode is per-BP, not global', () => {
   // PARITY-LOG contract: tablet drawer and mobile push must stay
   // independent. Push-specific rules (frame margin/bg/z-index,

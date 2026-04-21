@@ -15,8 +15,8 @@ type TriggerVariant = 'peek' | 'hamburger' | 'tab' | 'fab'
 // BPs the layout CSS turns that same node into a fixed off-canvas panel
 // via [data-drawer-side]. This preview mirrors Portal's portal-shell.js
 // state: toggling body.drawer-is-open(-left|-right) and, for FAB, the
-// trigger's .drawer-trigger--is-armed class. LM canvas and the real Portal
-// speak the same open-state vocabulary.
+// body.drawer-armed-{side} class. LM canvas and the real Portal speak
+// the same open-state vocabulary.
 export function DrawerPreview({ config, grid, drawerSlots }: Props) {
   const [openSide, setOpenSide] = useState<'left' | 'right' | null>(null)
   const [armedSide, setArmedSide] = useState<'left' | 'right' | null>(null)
@@ -79,20 +79,25 @@ export function DrawerPreview({ config, grid, drawerSlots }: Props) {
   // Mirror state onto body — same CSS hooks the real Portal's shell.js uses.
   // Mode (drawer/push) is a per-BP concern in real Portal; in the canvas
   // we just toggle the open-state classes and let the canvas-only panel
-  // visualizer show the sidebar sliding in.
+  // visualizer show the sidebar sliding in. Armed state (FAB-only) also
+  // lives on body, matching Portal.
   useEffect(() => {
     const body = document.body
     body.classList.toggle('drawer-is-open', openSide !== null)
     body.classList.toggle('drawer-is-open-left', openSide === 'left')
     body.classList.toggle('drawer-is-open-right', openSide === 'right')
+    body.classList.toggle('drawer-armed-left', armedSide === 'left')
+    body.classList.toggle('drawer-armed-right', armedSide === 'right')
     return () => {
       body.classList.remove(
         'drawer-is-open',
         'drawer-is-open-left',
         'drawer-is-open-right',
+        'drawer-armed-left',
+        'drawer-armed-right',
       )
     }
-  }, [openSide])
+  }, [openSide, armedSide])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -120,7 +125,6 @@ export function DrawerPreview({ config, grid, drawerSlots }: Props) {
           label={leftLabel}
           iconName={leftIcon}
           colorToken={leftColor}
-          armed={armedSide === 'left'}
           onClick={() => handleTrigger('left')}
         />
       )}
@@ -131,7 +135,6 @@ export function DrawerPreview({ config, grid, drawerSlots }: Props) {
           label={rightLabel}
           iconName={rightIcon}
           colorToken={rightColor}
-          armed={armedSide === 'right'}
           onClick={() => handleTrigger('right')}
         />
       )}
@@ -167,7 +170,6 @@ function TriggerButton({
   label,
   iconName,
   colorToken,
-  armed,
   onClick,
 }: {
   variant: TriggerVariant
@@ -175,7 +177,6 @@ function TriggerButton({
   label: string
   iconName?: string
   colorToken?: string
-  armed: boolean
   onClick: () => void
 }) {
   const renderVariant = variant === 'tab' ? 'peek' : variant
@@ -183,10 +184,7 @@ function TriggerButton({
     'drawer-trigger',
     `drawer-trigger--${renderVariant}`,
     `drawer-trigger--${side}`,
-    armed ? 'drawer-trigger--is-armed' : '',
-  ]
-    .filter(Boolean)
-    .join(' ')
+  ].join(' ')
 
   const style: Record<string, string> = {}
   if (colorToken) {

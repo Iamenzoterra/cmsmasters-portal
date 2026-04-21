@@ -16,7 +16,11 @@
  * FAB triggers have a two-step open flow — the first click "arms"
  * the trigger (chevron flips, label appears); a second click or a
  * --drawer-fab-arm-timeout-ms wait opens the drawer. The armed
- * state is a class on the trigger element (.drawer-trigger--is-armed).
+ * state is a body class (`body.drawer-armed-{side}`) so it stays
+ * viewport-independent — one layout can render multiple variant
+ * buttons per side (one per variant used across BPs), only one
+ * visible per BP via @media display:none, and the armed rule can
+ * fire on whichever one is live.
  *
  * Idempotent: listeners are attached once at document level so
  * drawers inserted via client-side route transitions still work.
@@ -29,21 +33,22 @@
   if (document.__portalShellInit) return
   document.__portalShellInit = true
 
-  const ARMED_CLASS = 'drawer-trigger--is-armed'
   const armTimers = { left: null, right: null }
 
-  // Drawer mode (overlay vs push) is now a pure per-BP concern —
-  // layout CSS emits the mode-specific rules inside its @media
-  // block. No body.drawer-mode-* mirror needed here; this script
-  // only tracks open/close state and the FAB arm/close flow.
-
-  function getTrigger(side) {
-    return document.querySelector('.drawer-trigger--' + side)
-  }
+  // Drawer mode (overlay vs push) and trigger variant are per-BP
+  // concerns — layout CSS emits the mode/variant-specific rules
+  // inside its @media block. No body.drawer-mode-* mirror needed;
+  // this script only tracks open/close state and the FAB arm flow.
+  //
+  // Armed state lives on body (body.drawer-armed-{side}) rather
+  // than on the trigger element, because a layout can render
+  // multiple variant buttons per side (one per variant used across
+  // BPs) — only one is visible at the active viewport via @media
+  // display:none. A body-level flag avoids the controller having
+  // to guess which of those buttons is currently clickable.
 
   function clearArm(side) {
-    const t = getTrigger(side)
-    if (t) t.classList.remove(ARMED_CLASS)
+    document.body.classList.remove('drawer-armed-' + side)
     if (armTimers[side]) {
       clearTimeout(armTimers[side])
       armTimers[side] = null
@@ -53,6 +58,10 @@
   function clearBothArms() {
     clearArm('left')
     clearArm('right')
+  }
+
+  function isArmed(side) {
+    return document.body.classList.contains('drawer-armed-' + side)
   }
 
   function openDrawer(side) {
@@ -108,18 +117,17 @@
       return
     }
 
-    // FAB path.
-    if (btn.classList.contains(ARMED_CLASS)) {
+    // FAB path — arm via body class first, then open on second
+    // click or after the timeout.
+    if (isArmed(side)) {
       openDrawer(side)
       return
     }
 
-    // Not armed yet — arm it, disarm the other side, start the
-    // auto-open timer.
     const other = side === 'left' ? 'right' : 'left'
     clearArm(other)
     closeDrawer()
-    btn.classList.add(ARMED_CLASS)
+    document.body.classList.add('drawer-armed-' + side)
     armTimers[side] = setTimeout(() => openDrawer(side), getArmTimeout())
   }
 

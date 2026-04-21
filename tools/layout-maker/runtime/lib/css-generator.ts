@@ -484,12 +484,18 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
       out.push('    display: contents;')
       out.push('  }')
 
+      // Each variant renders as its OWN button (one variant class
+      // per button — see html-generator.ts:renderTrigger). At this
+      // BP we hide every variant's button except the active one via
+      // a plain `.drawer-trigger--{v} { display: none }` — no
+      // `:not()` juggling needed, since buttons don't share variant
+      // classes anymore.
       const variant = grid['drawer-trigger'] ?? 'peek'
       const allVariants: Array<'peek' | 'hamburger' | 'tab' | 'fab'> =
         ['peek', 'hamburger', 'tab', 'fab']
       for (const v of allVariants) {
         if (v === variant) continue
-        out.push(`  .drawer-trigger.drawer-trigger--${v}:not(.drawer-trigger--${variant}) {`)
+        out.push(`  .drawer-trigger--${v} {`)
         out.push('    display: none;')
         out.push('  }')
       }

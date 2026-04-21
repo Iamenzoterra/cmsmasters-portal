@@ -382,24 +382,34 @@ body.drawer-is-open-right { --drawer-open-right: 0; }
   transition: opacity 220ms ease 160ms;
 }
 
-/* Armed — chevron shrinks + fades, label appears, pill grows. The
- * height:auto is fine because the container is flex-column-reverse
- * and the icon-wrap zeroes out, so the label defines height. */
-.drawer-trigger--fab.drawer-trigger--is-armed {
+/* Armed — chevron shrinks + fades, label appears, pill grows.
+ *
+ * Armed state is keyed off body.drawer-armed-{side} (set by
+ * portal-shell.js) rather than a class on the trigger element.
+ * A layout can render multiple variant buttons per side (one per
+ * variant used across BPs) — only one visible per BP via @media
+ * display:none. A body-level flag lets the armed rule fire on
+ * whichever button is currently live, without the script knowing
+ * which. The `.drawer-trigger--fab` class scoping makes sure peek /
+ * hamburger / tab buttons stay inert under the same body class. */
+body.drawer-armed-left  .drawer-trigger--fab.drawer-trigger--left,
+body.drawer-armed-right .drawer-trigger--fab.drawer-trigger--right {
   height: auto;
 }
 
-.drawer-trigger--fab.drawer-trigger--is-armed .drawer-trigger__icon-wrap {
+body.drawer-armed-left  .drawer-trigger--fab.drawer-trigger--left  .drawer-trigger__icon-wrap,
+body.drawer-armed-right .drawer-trigger--fab.drawer-trigger--right .drawer-trigger__icon-wrap {
   height: 0;
   margin: 0;
   opacity: 0;
   overflow: hidden;
 }
 
-.drawer-trigger--fab.drawer-trigger--is-armed.drawer-trigger--left  .drawer-trigger__icon-wrap { transform: rotate(180deg); }
-.drawer-trigger--fab.drawer-trigger--is-armed.drawer-trigger--right .drawer-trigger__icon-wrap { transform: rotate(0deg); }
+body.drawer-armed-left  .drawer-trigger--fab.drawer-trigger--left  .drawer-trigger__icon-wrap { transform: rotate(180deg); }
+body.drawer-armed-right .drawer-trigger--fab.drawer-trigger--right .drawer-trigger__icon-wrap { transform: rotate(0deg); }
 
-.drawer-trigger--fab.drawer-trigger--is-armed .drawer-trigger__label {
+body.drawer-armed-left  .drawer-trigger--fab.drawer-trigger--left  .drawer-trigger__label,
+body.drawer-armed-right .drawer-trigger--fab.drawer-trigger--right .drawer-trigger__label {
   opacity: 1;
 }
 

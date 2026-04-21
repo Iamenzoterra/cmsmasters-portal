@@ -54,35 +54,39 @@ function resolveDrawerSides(
   }
 }
 
-/** Collect every trigger variant the layout uses across all BPs,
- *  so the HTML button carries the class for each and css-generator's
- *  per-BP @media blocks can hide the ones that aren't active here. */
-function collectTriggerVariants(config: LayoutConfig): Set<string> {
-  const variants = new Set<string>()
+/** Collect every trigger variant the layout uses across all BPs.
+ *  Order is stable (first occurrence) to keep rendered output
+ *  deterministic across runs. Falls back to ['peek'] if no BP
+ *  declares a variant. */
+function collectTriggerVariants(config: LayoutConfig): string[] {
+  const seen = new Set<string>()
+  const order: string[] = []
   for (const grid of Object.values(config.grid)) {
     const v = grid['drawer-trigger']
-    if (!v) continue
-    variants.add(v)
+    if (!v || seen.has(v)) continue
+    seen.add(v)
+    order.push(v)
   }
-  if (variants.size === 0) variants.add('peek')
-  return variants
+  if (order.length === 0) order.push('peek')
+  return order
 }
 
-/** Render a trigger button for one side. Label + icon + color come
- *  from the slot's role-level drawer-trigger-label / drawer-trigger-icon /
- *  drawer-trigger-color. Color is applied as an inline CSS custom prop
- *  (--drawer-trigger-bg) that the shell's `background: var(--drawer-trigger-bg,
- *  var(--drawer-trigger-bg-{side}))` reads — per-slot wins, default
- *  falls through. Variant classes stamp every variant the layout uses
- *  across all BPs; layout CSS hides the ones not active at a given BP. */
+/** Render one trigger button for a specific variant × side. Each
+ *  button carries EXACTLY ONE variant class so shell's variant
+ *  rules (`.drawer-trigger--peek` / `--hamburger` / `--fab`) can't
+ *  conflict at equal specificity. At each responsive BP, css-generator
+ *  hides non-active variants via `.drawer-trigger--{v} { display: none }`,
+ *  leaving one button visible and clickable per side. Label + icon +
+ *  color come from the slot's role-level fields and apply identically
+ *  to every variant button for that side. */
 function renderTrigger(
   side: 'left' | 'right',
+  variant: string,
   slot: {
     'drawer-trigger-label'?: string
     'drawer-trigger-icon'?: string
     'drawer-trigger-color'?: string
   },
-  variants: Set<string>,
 ): string[] {
   const out: string[] = []
   const label = slot['drawer-trigger-label'] || (side === 'left' ? 'Menu' : 'Details')
@@ -92,10 +96,8 @@ function renderTrigger(
     ? ` style="--drawer-trigger-bg: hsl(var(${color}))"`
     : ''
 
-  const variantClasses = Array.from(variants).map((v) => `drawer-trigger--${v}`).join(' ')
-
   out.push(
-    `  <button type="button" class="drawer-trigger ${variantClasses} drawer-trigger--${side}" data-drawer-open="${side}" aria-label="${escapeAttr(label)}"${styleAttr}>`,
+    `  <button type="button" class="drawer-trigger drawer-trigger--${variant} drawer-trigger--${side}" data-drawer-open="${side}" aria-label="${escapeAttr(label)}"${styleAttr}>`,
   )
   out.push('    <span class="drawer-trigger__icon-wrap" aria-hidden="true">')
   out.push(
@@ -192,12 +194,16 @@ export function generateHTML(config: LayoutConfig): string {
   if (hasDrawers) {
     out.push('<div class="drawer-shell">')
 
+    // One button per variant per side. Each carries a single variant
+    // class; css-generator at each @media hides the non-active variants.
     const variants = collectTriggerVariants(config)
-    if (leftSidebar) {
-      out.push(...renderTrigger('left', slots[leftSidebar] ?? {}, variants))
-    }
-    if (rightSidebar) {
-      out.push(...renderTrigger('right', slots[rightSidebar] ?? {}, variants))
+    for (const variant of variants) {
+      if (leftSidebar) {
+        out.push(...renderTrigger('left', variant, slots[leftSidebar] ?? {}))
+      }
+      if (rightSidebar) {
+        out.push(...renderTrigger('right', variant, slots[rightSidebar] ?? {}))
+      }
     }
 
     out.push('  <div class="drawer-layer">')

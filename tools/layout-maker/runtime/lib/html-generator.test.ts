@@ -119,7 +119,7 @@ describe('html-generator: drawer shell', () => {
     expect(html).not.toMatch(/drawer-trigger--right[^>]*style="/)
   })
 
-  it('stamps every trigger variant used across BPs on the button', () => {
+  it('emits one button per (variant × side) — each with exactly ONE variant class', () => {
     const config = base(true)
     // tablet uses peek (default from helper), mobile uses fab
     config.grid.mobile = {
@@ -130,8 +130,33 @@ describe('html-generator: drawer shell', () => {
       'drawer-trigger': 'fab',
     }
     const html = generateHTML(config)
-    // Both variant classes are present; per-BP CSS will hide the wrong one.
-    expect(html).toMatch(/class="drawer-trigger drawer-trigger--peek drawer-trigger--fab drawer-trigger--left"/)
+
+    // Two distinct variants × two sides = 4 buttons.
+    const peekLeft = html.match(/class="drawer-trigger drawer-trigger--peek drawer-trigger--left"/g) ?? []
+    const peekRight = html.match(/class="drawer-trigger drawer-trigger--peek drawer-trigger--right"/g) ?? []
+    const fabLeft = html.match(/class="drawer-trigger drawer-trigger--fab drawer-trigger--left"/g) ?? []
+    const fabRight = html.match(/class="drawer-trigger drawer-trigger--fab drawer-trigger--right"/g) ?? []
+
+    expect(peekLeft.length).toBe(1)
+    expect(peekRight.length).toBe(1)
+    expect(fabLeft.length).toBe(1)
+    expect(fabRight.length).toBe(1)
+
+    // No button carries more than one variant class (the whole point).
+    expect(html).not.toMatch(/drawer-trigger--peek[^"]*drawer-trigger--fab/)
+    expect(html).not.toMatch(/drawer-trigger--fab[^"]*drawer-trigger--peek/)
+  })
+
+  it('emits exactly one button per side when only one variant is used', () => {
+    const config = base(true) // tablet: default 'peek' variant, no mobile declared
+    const html = generateHTML(config)
+    const peekLeft = html.match(/class="drawer-trigger drawer-trigger--peek drawer-trigger--left"/g) ?? []
+    const peekRight = html.match(/class="drawer-trigger drawer-trigger--peek drawer-trigger--right"/g) ?? []
+    expect(peekLeft.length).toBe(1)
+    expect(peekRight.length).toBe(1)
+    expect(html).not.toMatch(/drawer-trigger--hamburger/)
+    expect(html).not.toMatch(/drawer-trigger--fab/)
+    expect(html).not.toMatch(/drawer-trigger--tab/)
   })
 
   it('never emits data-drawer-mode — mode is a per-BP CSS concern', () => {

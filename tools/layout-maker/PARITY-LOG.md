@@ -67,11 +67,25 @@ fix is in the generator, the Inspector, the schema, or the Portal.
   - `css-generator.test.ts`: given a slot with `nested-slots`, assert no `[data-slot="X"] > .slot-inner` rule is emitted AND no inner vars (`--sl-X-mw`, `--sl-X-al`, `--sl-X-px`, `--sl-X-pt`, `--sl-X-pb`) are emitted.
   - `Inspector.test.tsx`: when the selected slot has `nested-slots`, the inner-params controls (align / max-width / padding / gap) must not render.
 
-_(no other open entries — add as they surface)_
-
 ---
 
 ## Fixed
+
+### [tablet] Trigger variant stamps as FAB even when YAML says TAB
+
+- **Layout / scope:** `layouts/2132.yaml` (tablet `drawer-trigger: tab`, mobile `drawer-trigger: fab`) / `theme`
+- **Breakpoint:** tablet (generally: any BP whose variant wasn't the "last" one declared across the layout)
+- **Slot:** drawer trigger buttons inside `.drawer-shell`
+- **Field:** `grid.{bp}.drawer-trigger`
+- **LM claims:** Inspector showed the trigger variant per BP — tablet row "tab", mobile row "fab".
+- **LM canvas:** already correct — DrawerPreview stamps only the currently active variant class per the selected BP.
+- **Portal rendered (before fix):** tablet showed the FAB (corner circle), not the vertical peek/tab pill the YAML asked for.
+- **Where the lie lived:** **html-generator + css-generator**. html-generator stamped EVERY variant class used across all BPs on a SINGLE button (`drawer-trigger--tab drawer-trigger--fab drawer-trigger--left`). Shell defined `.drawer-trigger--peek/hamburger/fab` rules at equal specificity; with both `--fab` and `--tab` on the same button, source order in `portal-shell.css` picked fab as the winner. css-generator's per-BP `:not()`-based hide rule couldn't recover — when the button carried both classes, `:not(.drawer-trigger--tab)` was false and the rule never hid the fab styles.
+- **Fix:** ONE button per (variant × side) — each button carries exactly ONE variant class. css-generator at each @media emits a plain `.drawer-trigger--{v} { display: none }` for the non-active variants; the active variant's button stays visible and clickable. Armed state (FAB-only) moved from a trigger class (`.drawer-trigger--is-armed`) to a body class (`body.drawer-armed-{side}`) so the controller doesn't have to guess which variant button is currently live at the active viewport.
+- **Status:** `fixed <this commit>`
+- **Contract/test:**
+  - `html-generator.test.ts` — "emits one button per (variant × side) — each with exactly ONE variant class" + "emits exactly one button per side when only one variant is used"
+  - `css-generator.test.ts` (new `trigger variant is per-BP` describe) — each @media hides non-active variants via plain selector; no `:not()` compounds remain anywhere in the output.
 
 ### [tablet] Drawer sidebars render unstyled (blocks missing content + wrong colors)
 
