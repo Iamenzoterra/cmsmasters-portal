@@ -285,14 +285,17 @@ function DrawerSettingsControl({ config, activeBreakpoint, gridKey, onUpdateGrid
   gridKey: string
   onUpdateGridProp: Props['onUpdateGridProp']
 }) {
-  // Only render when the active BP actually uses drawers. Respects both
-  // legacy grid-level `sidebars: drawer` and per-slot `visibility: drawer`.
+  // Only render when the active BP uses an off-canvas sidebar mode
+  // (drawer overlay or push). Both need a trigger button — so both
+  // need the Inspector controls (variant / side / width). Respects
+  // grid-level `sidebars` AND per-slot `visibility` overrides.
   const grid = config.grid[gridKey]
   if (!grid) return null
 
-  const perSlotDrawer = Object.values(grid.slots ?? {}).some((s) => s.visibility === 'drawer')
-  const gridLevelDrawer = grid.sidebars === 'drawer'
-  if (!perSlotDrawer && !gridLevelDrawer) return null
+  const isOffCanvas = (v: string | undefined) => v === 'drawer' || v === 'push'
+  const perSlotOffCanvas = Object.values(grid.slots ?? {}).some((s) => isOffCanvas(s.visibility))
+  const gridLevelOffCanvas = isOffCanvas(grid.sidebars)
+  if (!perSlotOffCanvas && !gridLevelOffCanvas) return null
 
   const [widthDraft, setWidthDraft] = useState((grid['drawer-width'] ?? '').replace(/px$/, ''))
 
