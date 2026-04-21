@@ -22,7 +22,7 @@
   --drawer-panel-width: 400px;
   --drawer-panel-width-mobile: 300px;
   --drawer-panel-max-width: 88%;
-  --drawer-panel-bg: var(--bg-surface);
+  --drawer-panel-bg: hsl(var(--bg-surface));
   --drawer-panel-shadow-left:  14px 0 40px -12px hsl(var(--brand-deep-blue-2) / 0.30);
   --drawer-panel-shadow-right: -14px 0 40px -12px hsl(var(--brand-deep-blue-2) / 0.30);
   --drawer-enter-duration: 420ms;
@@ -146,19 +146,15 @@
  * so the same design tokens drive every layout while each layout
  * keeps control of WHEN the drawer kicks in.
  *
- * Shell owns:
- *   - the tokens (colors, shadows, timings, panel width)
- *   - the open-state rule (body class → translateX(0))
- * Layout CSS owns:
- *   - the base panel rule inside its @media (position, transform,
- *     width, bg, shadow, transition, z-index, overflow) — all
- *     referencing --drawer-* tokens.
- *
- * One DOM copy → block JS initializes once → every block keeps its
- * styles whether it's rendered in-grid or as a drawer panel. */
+ * Open state is driven by CSS custom properties set on body — NOT by
+ * a second transform rule. Two transform rules with equal specificity
+ * would race; a variable always resolves to one value. Layout CSS
+ * reads `translateX(var(--drawer-open-left, -100%))`; this block
+ * flips the variable to 0 when the body carries the open class, and
+ * the panel slides in. No !important, no specificity wars. */
 
-body.drawer-is-open-left  [data-drawer-side="left"]  { transform: translateX(0); }
-body.drawer-is-open-right [data-drawer-side="right"] { transform: translateX(0); }
+body.drawer-is-open-left  { --drawer-open-left:  0; }
+body.drawer-is-open-right { --drawer-open-right: 0; }
 
 /* ──────────────── Triggers ──────────────── */
 

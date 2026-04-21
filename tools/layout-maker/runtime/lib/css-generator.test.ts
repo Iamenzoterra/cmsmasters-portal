@@ -163,18 +163,19 @@ describe('css-generator: drawer CSS ownership', () => {
   it('emits per-BP panel rules on the grid sidebar with shell tokens', () => {
     const css = generateCSS(layoutWithDrawer(), tokens)
     const tablet = tabletBlock(css)
-    // Each drawered sidebar gets a position:fixed rule referencing shell tokens.
     expect(tablet).toMatch(
       /\.layout-grid > \[data-slot="sidebar-left"\][\s\S]*?position:\s*fixed/,
     )
-    expect(tablet).toMatch(/transform:\s*translateX\(-100%\)/)
+    // Transform reads from a shell-owned custom prop — body class toggles
+    // it from 1 (closed → -100%) to 0 (open → 0%). No specificity race.
+    expect(tablet).toMatch(/transform:\s*translateX\(calc\(var\(--drawer-open-left,\s*1\)\s*\*\s*-100%\)\)/)
     expect(tablet).toMatch(/width:\s*var\(--drawer-panel-width\)/)
     expect(tablet).toMatch(/background:\s*var\(--drawer-panel-bg\)/)
     expect(tablet).toMatch(/box-shadow:\s*var\(--drawer-panel-shadow-left\)/)
     expect(tablet).toMatch(/transition:\s*transform\s+var\(--drawer-enter-duration\)/)
   })
 
-  it('emits right-side panel with translateX(100%) and right:0', () => {
+  it('emits right-side panel with translateX read from --drawer-open-right', () => {
     const css = generateCSS(layoutWithDrawer(), tokens)
     const tablet = tabletBlock(css)
     const rightBlock = tablet.match(
@@ -182,7 +183,7 @@ describe('css-generator: drawer CSS ownership', () => {
     )
     expect(rightBlock).not.toBeNull()
     expect(rightBlock![0]).toMatch(/right:\s*0/)
-    expect(rightBlock![0]).toMatch(/transform:\s*translateX\(100%\)/)
+    expect(rightBlock![0]).toMatch(/transform:\s*translateX\(calc\(var\(--drawer-open-right,\s*1\)\s*\*\s*100%\)\)/)
     expect(rightBlock![0]).toMatch(/box-shadow:\s*var\(--drawer-panel-shadow-right\)/)
   })
 

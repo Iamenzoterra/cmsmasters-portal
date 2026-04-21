@@ -555,18 +555,15 @@ body {
 
 .lm-drawer-canvas-panel--left {
   left: 0;
-  transform: translateX(-100%);
+  transform: translateX(calc(var(--drawer-open-left, 1) * -100%));
   box-shadow: var(--drawer-panel-shadow-left);
 }
 
 .lm-drawer-canvas-panel--right {
   right: 0;
-  transform: translateX(100%);
+  transform: translateX(calc(var(--drawer-open-right, 1) * 100%));
   box-shadow: var(--drawer-panel-shadow-right);
 }
-
-body.drawer-is-open-left  .lm-drawer-canvas-panel--left  { transform: translateX(0); }
-body.drawer-is-open-right .lm-drawer-canvas-panel--right { transform: translateX(0); }
 
 /* ── Hidden sidebars indicator ──────────────────────────────── */
 .lm-hidden-sidebars {

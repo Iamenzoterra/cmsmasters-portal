@@ -352,10 +352,13 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
 
     // Drawered sidebars — turn the in-grid <aside> into an off-canvas
     // drawer panel at this BP. Same DOM node that lived as a grid column
-    // at desktop; CSS position:fixed pulls it out of grid flow and slides
-    // it in when portal-shell.js sets `body.drawer-is-open-{side}`.
+    // at desktop; CSS position:fixed pulls it out of grid flow. The
+    // translate value reads from a shell-owned custom property that
+    // portal-shell.js toggles via body class — no specificity race
+    // between a closed-state rule and an open-state rule.
     for (const slotName of drawerSlots) {
       const side = slotName.includes('right') ? 'right' : 'left'
+      const closed = side === 'left' ? '-100%' : '100%'
       out.push('')
       out.push(`  .layout-grid > [data-slot="${slotName}"] {`)
       out.push('    position: fixed;')
@@ -367,7 +370,7 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
       out.push('    max-width: var(--drawer-panel-max-width);')
       out.push('    background: var(--drawer-panel-bg);')
       out.push(`    box-shadow: var(--drawer-panel-shadow-${side});`)
-      out.push(`    transform: translateX(${side === 'left' ? '-100%' : '100%'});`)
+      out.push(`    transform: translateX(calc(var(--drawer-open-${side}, 1) * ${closed}));`)
       out.push('    transition: transform var(--drawer-enter-duration) var(--drawer-enter-easing);')
       out.push('    overflow-y: auto;')
       out.push('  }')
