@@ -119,13 +119,65 @@
     }
   }
 
-  // ───────── Trigger clicks (all variants — one tap open) ─────────
+  // ───────── Trigger clicks (peek/hamburger/tab: one-tap; FAB: armed-then-open) ─────────
   //
-  // Peek/tab/hamburger/fab all treated the same way: click opens the
-  // drawer on the declared side; clicking the same-side trigger while
-  // open closes it. No arm-then-open two-step — a single tap is the
-  // expected behavior on mobile, and prevents the FAB from growing
-  // into a pill (the "trigger resizes" complaint).
+  // Non-FAB variants open on a single tap (standard desktop / tablet
+  // behavior).
+  //
+  // FAB uses a two-step flow for mobile ergonomics: first tap ARMS
+  // the trigger — the label text (e.g. "theme details") animates in
+  // beside the circle so the user can confirm what they're about to
+  // open. Second tap (or a 2s auto-timeout) opens the drawer. The
+  // armed state is CSS-only on `body.drawer-armed-{side}` and does
+  // NOT grow the circle; the label floats NEXT to it.
+  var armTimers = { left: null, right: null }
+
+  function clearArm(side) {
+    document.body.classList.remove('drawer-armed-' + side)
+    if (armTimers[side]) { clearTimeout(armTimers[side]); armTimers[side] = null }
+  }
+  function clearBothArms() { clearArm('left'); clearArm('right') }
+  function isArmed(side) { return document.body.classList.contains('drawer-armed-' + side) }
+  function getArmTimeout() {
+    var raw = getComputedStyle(document.documentElement)
+      .getPropertyValue('--drawer-fab-arm-timeout').trim()
+    var n = parseFloat(raw)
+    return Number.isFinite(n) ? n : 2000
+  }
+  function isFab(btn) { return btn.classList.contains('drawer-trigger--fab') }
+
+  function handleTriggerClick(btn, side) {
+    // Close same-side if already open
+    if (document.body.classList.contains('drawer-is-open-' + side)) {
+      closeDrawer()
+      clearBothArms()
+      return
+    }
+    // Non-FAB: direct open
+    if (!isFab(btn)) {
+      clearBothArms()
+      openDrawer(side)
+      return
+    }
+    // FAB already armed on this side → open
+    if (isArmed(side)) {
+      clearBothArms()
+      openDrawer(side)
+      return
+    }
+    // Arm: clear other-side arm, show label, schedule auto-open
+    var other = side === 'left' ? 'right' : 'left'
+    clearArm(other)
+    document.body.classList.add('drawer-armed-' + side)
+    armTimers[side] = setTimeout(function () {
+      armTimers[side] = null
+      if (isArmed(side)) {
+        clearArm(side)
+        openDrawer(side)
+      }
+    }, getArmTimeout())
+  }
+
   document.addEventListener('click', function (e) {
     var target = e.target
     if (!(target instanceof Element)) return
@@ -134,7 +186,7 @@
     if (opener) {
       var side = opener.getAttribute('data-drawer-open')
       if (side === 'left' || side === 'right') {
-        toggleDrawer(side)
+        handleTriggerClick(opener, side)
         e.preventDefault()
       }
       return
@@ -143,13 +195,18 @@
     var closer = target.closest('[data-drawer-close], .drawer-backdrop')
     if (closer) {
       closeDrawer()
+      clearBothArms()
       e.preventDefault()
+      return
     }
+
+    // Click anywhere else while armed → cancel arm.
+    if (armTimers.left || armTimers.right) clearBothArms()
   })
 
   // ───────── Keyboard ─────────
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') closeDrawer()
+    if (e.key === 'Escape') { closeDrawer(); clearBothArms() }
   })
 
   // ───────── Swipe-to-close (pointer events, with velocity) ─────────

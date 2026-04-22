@@ -457,26 +457,37 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
       out.push('    overflow: hidden;')
       out.push('  }')
 
-      // Focus mode: everything except the drawer fades out when
-      // body.drawer-is-open. Opacity transition for a graceful fade,
-      // visibility for event-propagation cleanliness.
+      // Focus mode: everything except the drawer fades + hides when
+      // body.drawer-is-open.
       //
-      // Rest-state transition kept so closing also fades (not snaps).
+      // CRITICAL: opacity:0 is NOT overridable by a descendant's
+      // opacity:1 (opacity is applied to the stacking-context subtree
+      // atomically). visibility IS overridable. The sidebar sits
+      // INSIDE .layout-frame, so we:
+      //   - apply BOTH opacity:0 + visibility:hidden to non-sidebar
+      //     [data-slot] elements directly
+      //   - apply ONLY visibility:hidden to .layout-frame (cascades to
+      //     content etc., sidebar opts out via explicit visibility:
+      //     visible); adding opacity:0 here would kill the sidebar too
+      //
+      // Rest-state transitions ensure closing fades smoothly.
       out.push('')
-      out.push('  [data-slot]:not([data-drawer-side]),')
-      out.push('  .layout-frame {')
+      out.push('  [data-slot]:not([data-drawer-side]) {')
       out.push('    transition:')
       out.push('      opacity var(--drawer-push-content-duration) var(--drawer-push-content-easing),')
       out.push('      visibility 0s linear 0s;')
       out.push('  }')
-      out.push('  body.drawer-is-open [data-slot]:not([data-drawer-side]),')
-      out.push('  body.drawer-is-open .layout-frame {')
+      out.push('  body.drawer-is-open [data-slot]:not([data-drawer-side]) {')
       out.push('    opacity: 0;')
       out.push('    visibility: hidden;')
       out.push('    pointer-events: none;')
       out.push('    transition:')
       out.push('      opacity var(--drawer-push-content-duration) var(--drawer-push-content-easing),')
       out.push('      visibility 0s linear var(--drawer-push-content-duration);')
+      out.push('  }')
+      out.push('  body.drawer-is-open .layout-frame {')
+      out.push('    visibility: hidden;')
+      out.push('    pointer-events: none;')
       out.push('  }')
 
       out.push('')
