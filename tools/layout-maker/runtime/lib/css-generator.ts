@@ -570,30 +570,36 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
       out.push('    display: contents;')
       out.push('  }')
 
-      // Each variant renders as its OWN button (one variant class
-      // per button — see html-generator.ts:renderTrigger). At this
-      // BP we hide every variant's button except the active one via
-      // a plain `.drawer-trigger--{v} { display: none }` — no
-      // `:not()` juggling needed, since buttons don't share variant
-      // classes anymore.
+      // Hide non-active variants via visibility + pointer-events;
+      // NEVER via `display`. Earlier iterations used display:none to
+      // hide + display:revert to un-hide at a narrower @media, but
+      // `revert` rolls the property back to the UA default
+      // (`inline-block` for <button>) — which CLOBBERS shell's
+      // `display: flex` on the FAB. Result: flex-direction:
+      // column-reverse stops working, label stacks below the
+      // chevron instead of above it in armed-state pill.
       //
-      // The active variant ALSO gets an explicit `display: revert` —
-      // larger-BP @media blocks cascade down (tablet @media at 1439px
-      // also fires at mobile 375px) and may have hidden the active
-      // variant. revert restores the variant's shell rule (display:
-      // flex / inline-flex), winning by source order over the
-      // ancestor-BP's hide.
+      // visibility:hidden removes the non-active variant from
+      // rendering AND hit-testing (with pointer-events:none belt-
+      // and-suspenders) without touching the `display` cascade —
+      // so shell's per-variant display rules stay intact at every
+      // BP. No `revert` needed.
       const variant = grid['drawer-trigger'] ?? 'peek'
       const allVariants: Array<'peek' | 'hamburger' | 'tab' | 'fab'> =
         ['peek', 'hamburger', 'tab', 'fab']
       for (const v of allVariants) {
         if (v === variant) continue
         out.push(`  .drawer-trigger--${v} {`)
-        out.push('    display: none;')
+        out.push('    visibility: hidden;')
+        out.push('    pointer-events: none;')
         out.push('  }')
       }
+      // Active variant: restore visibility explicitly so a wider-BP
+      // @media that set visibility:hidden on this variant doesn't
+      // cascade down.
       out.push(`  .drawer-trigger--${variant} {`)
-      out.push('    display: revert;')
+      out.push('    visibility: visible;')
+      out.push('    pointer-events: auto;')
       out.push('  }')
 
       // YAML drawer-width sets the panel width for this BP. If unset

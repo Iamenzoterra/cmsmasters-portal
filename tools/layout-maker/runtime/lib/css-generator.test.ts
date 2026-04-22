@@ -226,9 +226,12 @@ describe('css-generator: drawer CSS ownership', () => {
 describe('css-generator: trigger variant is per-BP', () => {
   // PARITY-LOG contract: a layout that uses different trigger variants
   // across BPs (e.g. tab @ tablet + fab @ mobile) must hide the inactive
-  // variant at each BP via a plain `.drawer-trigger--{v} { display: none }`.
-  // html-generator emits one button per variant × side (single variant
-  // class each), so a plain selector is enough — no `:not()` juggling.
+  // variant at each BP — via `visibility: hidden + pointer-events: none`
+  // so shell's per-variant `display` (flex for peek/tab/fab,
+  // inline-flex for hamburger) stays intact. Earlier iteration used
+  // `display: none` / `display: revert`, but revert rolls display
+  // back to UA default <button> = inline-block and clobbers flex —
+  // broke column-reverse stacking on the FAB armed pill.
 
   function crossBpLayout(): LayoutConfig {
     const config = threeColLayout({ tabletSidebars: 'drawer' })
@@ -246,10 +249,12 @@ describe('css-generator: trigger variant is per-BP', () => {
   it('at tablet @media hides every variant except the active one (tab)', () => {
     const css = generateCSS(crossBpLayout(), tokens)
     const tablet = tabletBlock(css)
-    expect(tablet).toMatch(/\.drawer-trigger--peek\s*\{\s*display:\s*none/)
-    expect(tablet).toMatch(/\.drawer-trigger--hamburger\s*\{\s*display:\s*none/)
-    expect(tablet).toMatch(/\.drawer-trigger--fab\s*\{\s*display:\s*none/)
-    expect(tablet).not.toMatch(/\.drawer-trigger--tab\s*\{\s*display:\s*none/)
+    expect(tablet).toMatch(/\.drawer-trigger--peek\s*\{\s*visibility:\s*hidden/)
+    expect(tablet).toMatch(/\.drawer-trigger--hamburger\s*\{\s*visibility:\s*hidden/)
+    expect(tablet).toMatch(/\.drawer-trigger--fab\s*\{\s*visibility:\s*hidden/)
+    expect(tablet).toMatch(/\.drawer-trigger--tab\s*\{\s*visibility:\s*visible/)
+    // Never touch display — shell's per-variant flex / inline-flex wins.
+    expect(tablet).not.toMatch(/\.drawer-trigger--[a-z]+\s*\{\s*display:/)
   })
 
   it('at mobile @media hides every variant except the active one (fab)', () => {
@@ -269,10 +274,11 @@ describe('css-generator: trigger variant is per-BP', () => {
       }
     }
     const mobile = css.slice(mobileStart, end)
-    expect(mobile).toMatch(/\.drawer-trigger--peek\s*\{\s*display:\s*none/)
-    expect(mobile).toMatch(/\.drawer-trigger--hamburger\s*\{\s*display:\s*none/)
-    expect(mobile).toMatch(/\.drawer-trigger--tab\s*\{\s*display:\s*none/)
-    expect(mobile).not.toMatch(/\.drawer-trigger--fab\s*\{\s*display:\s*none/)
+    expect(mobile).toMatch(/\.drawer-trigger--peek\s*\{\s*visibility:\s*hidden/)
+    expect(mobile).toMatch(/\.drawer-trigger--hamburger\s*\{\s*visibility:\s*hidden/)
+    expect(mobile).toMatch(/\.drawer-trigger--tab\s*\{\s*visibility:\s*hidden/)
+    expect(mobile).toMatch(/\.drawer-trigger--fab\s*\{\s*visibility:\s*visible/)
+    expect(mobile).not.toMatch(/\.drawer-trigger--[a-z]+\s*\{\s*display:/)
   })
 
   it('uses plain selectors, not :not() compounds, to hide variants', () => {

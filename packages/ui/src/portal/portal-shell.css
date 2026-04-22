@@ -336,14 +336,21 @@ body.drawer-is-open-right { --drawer-open-right: 0; }
 .drawer-trigger--fab.drawer-trigger--left  { left:  var(--drawer-fab-inline); right: auto; }
 .drawer-trigger--fab.drawer-trigger--right { right: var(--drawer-fab-inline); left:  auto; }
 
+/* Icon-wrap uses GRID so the two sprites (chev + close) naturally
+ * stack in the same cell with perfect centering — no position:
+ * absolute drift. The earlier abs-positioned sprites with no inset
+ * had a bug: when the FAB grew into a pill in armed state, the
+ * sprites floated to some non-centered position inside the bigger
+ * FAB frame (absolute children find the nearest positioned
+ * ancestor, not necessarily icon-wrap itself, if stacking context
+ * rules shifted). Grid-area:1/1 pins both sprites to the same
+ * cell, independent of the FAB outer height. */
 .drawer-trigger--fab .drawer-trigger__icon-wrap {
   width: var(--drawer-fab-size);
   height: var(--drawer-fab-size);
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
+  display: grid;
+  place-items: center;
   background: transparent;
   transition:
     height  380ms var(--drawer-push-content-easing),
@@ -351,15 +358,14 @@ body.drawer-is-open-right { --drawer-open-right: 0; }
     opacity 240ms ease;
 }
 
-/* Both sprites overlap via absolute position; opacity picks which
- * is visible. Explicit stroke/fill here too — iOS Safari sometimes
- * fails to inherit stroke=currentColor from parent <svg> onto the
- * <path>. Triple defense: inline <svg>/<path> attrs + this CSS +
+/* Explicit stroke/fill here too — iOS Safari sometimes fails to
+ * inherit stroke=currentColor from parent <svg> onto the <path>.
+ * Triple defense: inline <svg>/<path> attrs + this CSS +
  * currentColor resolution from the FAB's `color`. */
 .drawer-trigger--fab .drawer-trigger__icon {
+  grid-area: 1 / 1;
   width: var(--drawer-fab-chev-size);
   height: var(--drawer-fab-chev-size);
-  position: absolute;
   stroke: currentColor;
   fill: none;
   transition: opacity 220ms ease;

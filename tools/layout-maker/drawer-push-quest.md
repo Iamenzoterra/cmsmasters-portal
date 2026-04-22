@@ -855,6 +855,149 @@ f8b2bf65 fix(portal): drawer-layer never traps pointer events, only backdrop doe
 
 ---
 
-_Кінець літопису (поки що). Після deploy + re-export — тестувати
-на реальному iPhone всі три пункти §21. Якщо chevron все ще
-невидимий — взяти Safari Web Inspector для debug на пристрої._
+---
+
+## 23. Спроба 14 — armed pill повернуто, chev/X swap working
+
+Користувач після §21: "шеврон є, хрестик є, але зник армед трансформ
+з текстом. він потрібен, він критичний". Повернув armed-pill
+grow-down + label reveal. Chev та X swap залишилися.
+
+Коміт: `f4f6e4bc fix(portal): restore armed-state pill + label`.
+
+**Неочікувана регресія**: користувач після deploy: "коли шеврон
+видно - нема армед, коли є армед, не видно шеврон. свайп не працює".
+Тобто в armed'і chev НЕВИДИМИЙ. В мене було:
+`body.drawer-armed .icon-wrap { height: 0; opacity: 0 }` — collapse.
+Але це ж так в reference mockup. Користувач не хотів colapse chev'а.
+
+## 24. Спроба 15 — chev зберігається в armed + swipe з armed
+
+Прибрав правило icon-wrap collapse в armed. icon-wrap 44×44 залишається.
+Label фейдиться зверху через column-reverse flex.
+Swipe handler тепер тракує pointer також в armed state (dx>40
+cancels arm).
+
+Коміт: `42450332 fix(portal): chevron stays visible in armed + swipe
+from any state`.
+
+**ПОВНА РЕГРЕСІЯ**: користувач: "на колі немає шеврона зато є
+тепер біля текста де його не має бути. крестика теж немає. свайп
+як не працював так і не працює".
+
+## 25. Спроба 16 — ROOT CAUSE нарешті знайдено
+
+### 25.1 Playwright діагностика — що насправді на live
+
+Запит computed style на FAB:
+```
+display: "block"          ← ???
+flexDirection: "column-reverse"
+alignItems: "center"
+overflow: "hidden"
+height: "161.25px"
+```
+
+**FAB's `display` резолвився у `block`, не `flex`.** Шелл має
+`display: flex` на `.drawer-trigger--fab`. Але щось override'ило.
+
+### 25.2 Винуватець — `display: revert` в генераторі
+
+Генератор у своєму @media емітив:
+
+```ts
+// Hide non-active variants
+out.push(`.drawer-trigger--${v} { display: none; }`)
+// Un-hide active variant
+out.push(`.drawer-trigger--${variant} { display: revert; }`)
+```
+
+Логіка була: wider-BP @media (tablet) ховає fab через display:none.
+Narrow-BP @media (mobile) робить revert щоб FAB знов видимий.
+
+**Але `display: revert` скидає до UA default** — для `<button>`
+це `inline-block` (не `flex`). Отже:
+- Shell's `display: flex` на FAB — ігнорується через revert
+- FAB стає inline-block (CSS computed: block)
+- `flex-direction: column-reverse` інертний (не flex element)
+- Children stack в DOM order:
+  - `icon-wrap` (перший у DOM) — TOP
+  - `label` (другий у DOM) — BOTTOM
+- Column-reverse never fires: замість label-top/chev-bottom, реально
+  chev-top/label-bottom. Тобто chev ЗВЕРХУ, label ЗНИЗУ. "Біля
+  тексту" в сприйнятті користувача.
+
+### 25.3 Додатково: sprites абсолютно позиціоновані без inset
+
+`.drawer-trigger__icon { position: absolute; /* no inset */ }` —
+sprite'и стакуються в top-left icon-wrap'а, не по центру. Візуально
+вистрілюються в "нічогу" залежно від flow.
+
+### 25.4 Фікс (цей коміт)
+
+**(A) Генератор: visibility замість display.**
+Замість display:none / display:revert, використовує
+visibility:hidden + pointer-events:none (для non-active варіантів),
+visibility:visible + pointer-events:auto (для active). НІКОЛИ не
+зачіпає `display` — shell'ова per-variant `display: flex` /
+`inline-flex` завжди у силі.
+
+**(B) Shell CSS: sprites через grid stack.**
+`.drawer-trigger__icon-wrap { display: grid; place-items: center }`.
+`.drawer-trigger__icon { grid-area: 1/1 }`. Обидва спрайти в одній
+grid cell — стакуються по центру, незалежно від розміру FAB'а.
+Прибрано `position: absolute` на спрайтах.
+
+**(C) Тести оновлено:**
+`css-generator.test.ts:trigger variant is per-BP` — assertions
+на visibility:hidden/visible, `not.toMatch(display:)`.
+
+---
+
+## 26. Summary: ВСІ commits у цьому quest-і
+
+```
+4dc7354d refactor(portal,layout-maker): push drawer focus architecture
+8558a9fd fix(portal): sidebar visibility + armed FAB label beside circle
+6c2d6f9a revert(portal): restore approved FAB trigger design
+c10dc7f6 fix(portal): Vaul scroll lock + pointer swipe, keep 300px push width
+e93a96d7 refactor(layout-maker): drawer width driven by YAML, not code
+3ffae6e8 docs(layout-maker): drawer-push-quest chronicle — attempts 8-11
+6068ee68 feat(layout-maker): select drawered sidebar + drawer-width inheritance
+595e61e8 fix(portal): sidebar pointer-events:auto so touch scroll + swipe work
+bd42ab21 fix(portal): chevron invisible on iOS Safari — duplicate SVG attrs
+c3378288 fix(portal): hide .drawer-layer in push mode so events reach sidebar
+f8b2bf65 fix(portal): drawer-layer never traps pointer events, only backdrop does
+c659c67e fix(portal): chevron↔X swap, no FAB resize, one-tap open, iOS CSS
+f4f6e4bc fix(portal): restore armed-state pill + label
+42450332 fix(portal): chevron stays visible in armed + swipe from any state
+[this]   fix(portal): display:revert breaks FAB flex → visibility-only hide + grid-stack sprites
+```
+
+## 27. Хибні гіпотези та що з них навчилися
+
+| Гіпотеза / спроба | Чому НЕ спрацювало | Урок |
+|---|---|---|
+| Body-margin push | Stacking: sidebar trapped inside .layout-frame context | Stacking context is tricky with fixed children |
+| In-flow z-index cover | Header rendered OUTSIDE .layout-frame — не могли доотягти | Pattern only works if all visible content in one wrapper |
+| Opacity:0 на .layout-frame | Opacity cascades unreversibly — sidebar невидимий | `opacity:0` НЕ перебивне descendant'ом; `visibility:hidden` — так |
+| Push-width 100% | Блоки дизайнилися на ~300px колонку | YAML-driven width з inheritance |
+| `pointer-events: auto` на sidebar | Drawer-layer з z:1100 + pointer-events:auto перекривав ВСЕ | Shell's .drawer-layer was absorbing events before anything |
+| Stroke-width 2→2.5→3 | iOS Safari не каскадить SVG attrs з svg на path | Duplicate на path, plus CSS stroke fallback |
+| `display: revert` для un-hide | Revert скидає на UA default inline-block, breaks flex | Use `visibility` для hide/show, НЕ display |
+| Sprites position:absolute | Без inset дрейфують коли batch grows | Grid stack with grid-area:1/1 — clean |
+
+## 28. Ключовий принцип (вивчено болем)
+
+**Кожну зміну у generator CSS = треба re-export layout. Кожну
+зміну у shell CSS / portal-shell.js = треба Portal redeploy.**
+При атаках не припускати, що попередній фікс вже live — завжди
+VERIFY through Playwright: live DOM + live CSS + computed styles.
+Запитання `document.elementFromPoint()` викриває hit-test blockers.
+Computed style reveals cascade wins.
+
+---
+
+_Кінець літопису на цій ітерації. Якщо цей раз fix — залишай
+квест для майбутнього референсу. Якщо не — розширюй §25-27
+новими хибними гіпотезами._
