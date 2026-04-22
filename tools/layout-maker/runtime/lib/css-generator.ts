@@ -453,11 +453,16 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
         // at max-width: 1439px also fires at mobile).
         out.push('    box-shadow: none;')
         out.push('    max-width: none;')
-        // Sidebar is NEVER hidden by the focus rules below — opacity
-        // and visibility explicitly set so an ancestor's hidden rule
-        // doesn't cascade in.
+        // Sidebar is NEVER hidden by the focus rules below — opacity,
+        // visibility, and pointer-events explicitly set so ancestors'
+        // focus-mode rules (visibility:hidden + pointer-events:none
+        // on .layout-frame) don't cascade in. Without explicit
+        // pointer-events:auto here, touch events on the sidebar
+        // bubble into an unscrollable ancestor and iOS Safari treats
+        // the whole panel as non-interactive — no scroll, no swipe.
         out.push('    opacity: 1;')
         out.push('    visibility: visible;')
+        out.push('    pointer-events: auto;')
         out.push('  }')
       }
 
