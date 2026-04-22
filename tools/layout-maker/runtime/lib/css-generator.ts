@@ -440,15 +440,11 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
         out.push('  }')
       }
 
-      // Pin push-width to the mobile panel width (≈300px). 100% full-
-      // viewport flattens block content because sidebar blocks are
-      // designed for a ~300px column; going wider loses their
-      // intended layout. Layout CSS overrides any legacy shell value
-      // so this lands without needing Portal redeploy.
+      // Sidebar width is driven by the YAML `grid[bp].drawer-width`
+      // field (see Inspector → Drawer settings). We emit it into
+      // --drawer-push-width a bit further down; here we only fix the
+      // overflow-x so a full-width panel doesn't spawn a scrollbar.
       out.push('')
-      out.push('  :root {')
-      out.push('    --drawer-push-width: var(--drawer-panel-width-mobile);')
-      out.push('  }')
       out.push('  html {')
       out.push('    overflow-x: hidden;')
       out.push('  }')
@@ -560,10 +556,18 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
       out.push('    display: revert;')
       out.push('  }')
 
+      // YAML grid[bp].drawer-width sets the panel width for THIS
+      // breakpoint — applies to drawer mode (panel) AND push mode
+      // (sidebar) via the two shell tokens. Only one mode is active
+      // per BP so writing both is safe. Dropping the legacy
+      // `.drawer-panel { width }` emission — shell doesn't use a
+      // separate `.drawer-panel` element anymore, sidebars ARE the
+      // panels, and they read `--drawer-panel-width` / `--drawer-push-width`.
       if (grid['drawer-width']) {
         out.push('')
-        out.push('  .drawer-panel {')
-        out.push(`    width: ${grid['drawer-width']};`)
+        out.push('  :root {')
+        out.push(`    --drawer-panel-width: ${grid['drawer-width']};`)
+        out.push(`    --drawer-push-width: ${grid['drawer-width']};`)
         out.push('  }')
       }
     }

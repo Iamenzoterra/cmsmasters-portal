@@ -209,12 +209,17 @@ describe('css-generator: drawer CSS ownership', () => {
     )
   })
 
-  it('may emit a per-BP drawer-panel width override (per-layout knob)', () => {
+  it('emits per-BP panel width into the shell tokens (--drawer-panel-width / --drawer-push-width)', () => {
+    // Sidebars ARE the panels now (no separate .drawer-panel element),
+    // so the YAML knob drives the tokens that the sidebar rules consume.
+    // Writing BOTH tokens is safe — only one mode fires per BP.
     const config = layoutWithDrawer()
     config.grid.tablet['drawer-width'] = '360px'
     const css = generateCSS(config, tokens)
     const tablet = tabletBlock(css)
-    expect(tablet).toMatch(/\.drawer-panel\s*\{[^}]*width:\s*360px/s)
+    expect(tablet).toMatch(/:root\s*\{[^}]*--drawer-panel-width:\s*360px/s)
+    expect(tablet).toMatch(/:root\s*\{[^}]*--drawer-push-width:\s*360px/s)
+    expect(tablet).not.toMatch(/\.drawer-panel\s*\{[^}]*width:\s*360px/s)
   })
 })
 
@@ -286,7 +291,12 @@ describe('css-generator: push mode is per-BP, not global', () => {
   // of the BP that uses push — never outside. This keeps tablet
   // drawer overlay working unchanged when mobile switches to push.
 
-  const pushLayout = () => threeColLayout({ tabletSidebars: 'push' })
+  const pushLayout = () => {
+    const layout = threeColLayout({ tabletSidebars: 'push' })
+    // YAML-driven width — user sets this in the LM Inspector per BP
+    layout.grid.tablet['drawer-width'] = '320px'
+    return layout
+  }
 
   it('emits push rules only inside the @media block, not globally', () => {
     const css = generateCSS(pushLayout(), tokens)
@@ -316,9 +326,11 @@ describe('css-generator: push mode is per-BP, not global', () => {
       /body\.drawer-is-open\s+\[data-slot\]:not\(\[data-drawer-side\]\)[^}]*pointer-events:\s*none/s,
     )
 
-    // Push-width pinned via layout :root override so shell default
-    // of 100% (still live on non-deployed Portal) can't dominate.
-    expect(tablet).toMatch(/:root\s*\{[^}]*--drawer-push-width:\s*var\(--drawer-panel-width-mobile\)/s)
+    // Push-width comes from YAML grid[bp].drawer-width — user
+    // controls the sidebar panel width from the LM Inspector, no
+    // hardcoded value in code. Test fixture sets it to 320px.
+    expect(tablet).toMatch(/:root\s*\{[^}]*--drawer-push-width:\s*320px/s)
+    expect(tablet).toMatch(/:root\s*\{[^}]*--drawer-panel-width:\s*320px/s)
     // html overflow-x guard remains for negative-margin cascades (and
     // as insurance for horizontal drag gestures).
     expect(tablet).toMatch(/\bhtml\s*\{[^}]*overflow-x:\s*hidden/s)
