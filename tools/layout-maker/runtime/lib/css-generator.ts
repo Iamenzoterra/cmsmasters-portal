@@ -242,12 +242,17 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
   out.push('}')
   out.push('')
 
-  // Generic slot-inner base rule
+  // Generic slot-inner base rule.
+  // container-type: inline-size + container-name: slot expose each leaf
+  // slot's inline width to @container rules inside block CSS, enabling
+  // per-slot responsive variants without JS (WP-024 / ADR-025).
   out.push('[data-slot] > .slot-inner {')
   out.push('  display: flex;')
   out.push('  flex-direction: column;')
   out.push('  width: 100%;')
   out.push('  flex: 1 0 auto;')
+  out.push('  container-type: inline-size;')
+  out.push('  container-name: slot;')
   out.push('}')
   out.push('')
 

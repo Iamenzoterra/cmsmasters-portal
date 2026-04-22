@@ -1,0 +1,19 @@
+/* tokens.responsive.css
+ *
+ * Hand-maintained responsive rhythm tokens (clamp-based fluid scales).
+ * Decoupled from tokens.css — Figma sync does NOT touch this file.
+ *
+ * Populated minimally as a scaffold in WP-024. Real token values are
+ * hand-tuned in WP-029 (Responsive Tokens Population) once WP-025/026
+ * generate real-world demand signals from block authoring.
+ *
+ * See ADR-025 (Responsive Blocks) and WP-024 (Responsive Blocks — Foundation).
+ */
+
+:root {
+  /* Section-level vertical rhythm — scales 1.5rem → 6rem between 375px and 1440px. */
+  --space-section: clamp(1.5rem, 4vw, 6rem);
+
+  /* Display / heading sizes that scale with viewport. */
+  --text-display: clamp(1.75rem, 3.5vw, 4rem);
+}

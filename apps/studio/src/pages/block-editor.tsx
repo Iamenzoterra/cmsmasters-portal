@@ -18,6 +18,7 @@ import { DeleteConfirmModal } from '../components/delete-confirm-modal'
 import { BlockImportPanel } from '../components/block-import-panel'
 import { ThumbnailUpload } from '../components/thumbnail-upload'
 import tokensCSS from '../../../../packages/ui/src/theme/tokens.css?raw'
+import tokensResponsiveCSS from '../../../../packages/ui/src/theme/tokens.responsive.css?raw'
 import portalBlocksCSS from '../../../../packages/ui/src/portal/portal-blocks.css?raw'
 
 const inputStyle: React.CSSProperties = {
@@ -363,7 +364,7 @@ export function BlockEditor() {
     const js = form.getValues('js') ?? ''
     const scriptTag = js.trim() ? `\n<script type="module">\n${js}\n</script>` : ''
     const blob = new Blob([
-      `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8" />\n  <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n  <title>${name}</title>\n  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />\n  <style>*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; } body { font-family: 'Manrope', system-ui, sans-serif; }\n${tokensCSS}\n${portalBlocksCSS}</style>\n</head>\n<body>\n${code}${scriptTag}\n</body>\n</html>`
+      `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8" />\n  <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n  <title>${name}</title>\n  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />\n  <style>*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; } body { font-family: 'Manrope', system-ui, sans-serif; }\n${tokensCSS}\n${tokensResponsiveCSS}\n${portalBlocksCSS}</style>\n</head>\n<body>\n${code}${scriptTag}\n</body>\n</html>`
     ], { type: 'text/html' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -520,6 +521,7 @@ export function BlockEditor() {
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Manrope', system-ui, sans-serif; background: hsl(20 23% 97%); display: flex; justify-content: center; padding-top: 300px; padding-bottom: 100px; min-height: 100vh; }
     ${tokensCSS}
+    ${tokensResponsiveCSS}
     ${portalBlocksCSS}
   </style>
 </head>

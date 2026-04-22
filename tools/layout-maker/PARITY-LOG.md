@@ -71,6 +71,23 @@ fix is in the generator, the Inspector, the schema, or the Portal.
 
 ## Fixed
 
+### [all-bp] Slot container-type enables per-slot responsive variants (WP-024 / ADR-025)
+
+- **Layout / scope:** all layouts / all scopes — generic `.slot-inner` rule
+- **Breakpoint:** all
+- **Slot:** every leaf slot (container slots unaffected)
+- **Field:** `container-type` + `container-name` on the generic `[data-slot] > .slot-inner` rule
+- **LM claims:** N/A — this is an additive contract, not a lie
+- **Portal renders:** N/A — see below
+- **Context:** WP-024 infrastructure phase. ADR-025 establishes that responsive blocks author `@container slot (max-width: …)` rules in their own CSS; for those rules to evaluate, each leaf slot must expose a containment context via `container-type: inline-size`. The `container-name: slot` makes the containment explicit so block CSS can write `@container slot (…)` unambiguously.
+- **Where the lie COULD have lived (pre-emptive):** without this, `@container slot (…)` rules in block CSS would silently have no effect — the Inspector and Canvas would say nothing, but Portal would render the base-variant DOM forever regardless of slot width. Adding this declaration is non-destructive (size containment on the block axis only — does NOT affect layout without `@container` queries).
+- **Fix:** Added `container-type: inline-size` and `container-name: slot` to the generic `[data-slot] > .slot-inner` rule in `css-generator.ts` (line 246). Container slots remain unaffected — they don't hold `.slot-inner`.
+- **Status:** `fixed <this commit>`
+- **Contract/test:** `css-generator.test.ts` "WP-024: slot container-type (ADR-025)" describe block — two tests:
+  1. generic rule emits both properties alongside the five pre-existing declarations
+  2. container-slot outer rules do NOT emit container-type / container-name
+- **Related:** ADR-025 (Responsive Blocks), WP-024 (Responsive Blocks — Foundation), `packages/ui/src/theme/tokens.responsive.css` (this phase), `apps/portal/app/_components/block-renderer.tsx` variant wrappers (Phase 3).
+
 ### [mobile] Push architecture rework — one-tap FAB, scroll lock, swipe close
 
 - **Layout / scope:** `layouts/2132.yaml` (mobile `sidebars: push`, `drawer-trigger: fab`) / `theme`

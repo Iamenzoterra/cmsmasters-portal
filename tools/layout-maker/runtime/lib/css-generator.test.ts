@@ -408,3 +408,41 @@ describe('css-generator: push mode is per-BP, not global', () => {
     expect(mobile).toMatch(/body\.drawer-is-open\s+\[data-slot\]:not\(\[data-drawer-side\]\)[^}]*opacity:\s*0/s)
   })
 })
+
+// Extract the first CSS rule body for a given selector.
+// Top-level only — stops at the first unmatched `}` so it won't walk into
+// nested rules.
+function extractRule(css: string, selector: string): string {
+  const idx = css.indexOf(selector)
+  if (idx < 0) return ''
+  const open = css.indexOf('{', idx)
+  const close = css.indexOf('}', open)
+  return css.slice(open + 1, close)
+}
+
+describe('WP-024: slot container-type (ADR-025)', () => {
+  it('emits container-type + container-name on the generic .slot-inner rule', () => {
+    const css = generateCSS(threeColLayout(), tokens)
+    const generic = extractRule(css, '[data-slot] > .slot-inner')
+    expect(generic).toContain('container-type: inline-size')
+    expect(generic).toContain('container-name: slot')
+    // Sanity: the five pre-existing declarations still present.
+    expect(generic).toContain('display: flex')
+    expect(generic).toContain('flex-direction: column')
+    expect(generic).toContain('width: 100%')
+    expect(generic).toContain('flex: 1 0 auto')
+  })
+
+  it('does NOT emit container-type on container-slot outer rules', () => {
+    // Container slots (nested-slots) hold <div data-slot="child"> directly,
+    // not .slot-inner — so the generic selector doesn't match them, and the
+    // per-slot loop `continue`s on them. Assert no outer `[data-slot="X"]`
+    // rule contains container-type / container-name.
+    const css = generateCSS(threeColLayout(), tokens)
+    const outerContainerRules = css.match(/\[data-slot="[^"]+"\]\s*\{[^}]*\}/g) ?? []
+    for (const rule of outerContainerRules) {
+      expect(rule).not.toContain('container-type')
+      expect(rule).not.toContain('container-name')
+    }
+  })
+})

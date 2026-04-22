@@ -18,6 +18,7 @@ import { DrawerPreview } from './DrawerPreview'
 import { SlotOverlay } from './SlotOverlay'
 // Portal assets for iframe injection (same pattern as Studio's block-preview.tsx)
 import tokensCSS from '../../../../packages/ui/src/theme/tokens.css?raw'
+import tokensResponsiveCSS from '../../../../packages/ui/src/theme/tokens.responsive.css?raw'
 import portalBlocksCSS from '../../../../packages/ui/src/portal/portal-blocks.css?raw'
 import animateUtilsJS from '../../../../packages/ui/src/portal/animate-utils.js?raw'
 
@@ -36,6 +37,7 @@ function BlockFrame({ block }: { block: BlockData }) {
 @layer tokens, reset, shared, block;
 @layer tokens {
 ${tokensCSS}
+${tokensResponsiveCSS}
 }
 @layer reset {
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }

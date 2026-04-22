@@ -1,5 +1,6 @@
 /* Portal global styles */
 @import '../../../packages/ui/src/theme/tokens.css';
+@import '../../../packages/ui/src/theme/tokens.responsive.css';
 @import '../../../packages/ui/src/portal/portal-blocks.css';
 @import '../../../packages/ui/src/portal/portal-shell.css';
 
