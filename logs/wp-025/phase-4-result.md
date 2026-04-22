@@ -237,4 +237,4 @@ Phase 5's job is pure doc propagation — `.context/`, domain SKILL.md (Invarian
 
 ---
 
-**Final SHA:** `<embed after commit>`
+**Final SHA:** `fc8aa430a1f826a164f7981fcab3840f5421338a` (SHA-embed chore: `dea39521`)
