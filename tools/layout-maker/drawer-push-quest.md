@@ -998,6 +998,131 @@ Computed style reveals cascade wins.
 
 ---
 
-_Кінець літопису на цій ітерації. Якщо цей раз fix — залишай
-квест для майбутнього референсу. Якщо не — розширюй §25-27
-новими хибними гіпотезами._
+---
+
+## 29. ✅ FINAL STATE — RESOLVED (2026-04-22)
+
+Користувач: **"ура, фіксуємо як фінальний стейт"**. Після коміта
+`99cbc838` (hide chevron in armed) усі відкриті проблеми закриті.
+
+### 29.1 Що працює
+
+| Сценарій | Поведінка |
+|---|---|
+| Desktop rest | Peek/tab/hamburger trigger per BP config |
+| Mobile rest | FAB 44×44 circle, chevron visible, icon-wrap centered via grid |
+| Mobile tap FAB (arm) | Pill grows down, icon-wrap collapses (chev+close fade together), vertical label "Menu" / "Theme Details" reveals |
+| Mobile second tap / 2s timeout | Drawer opens, armed cleared, FAB back to 44×44 with X icon |
+| Mobile swipe on open drawer | Horizontal swipe >40px away from edge closes drawer |
+| Mobile swipe on armed FAB | Cancels arm |
+| Mobile tap X in opened FAB | Closes drawer |
+| Sidebar scroll | Touch pan-y + overscroll-behavior contain — sidebar owns its scroll |
+| Body scroll | Locked via Vaul pattern (position:fixed + top:-scrollY) when any drawer open |
+| Close → restore | Scroll position preserved (Vaul), armed/open classes cleared |
+| iOS chevron | Visible via triple defense: inline <path> attrs + CSS stroke + duplicated on <svg> |
+| Multi-layout pages | Header / theme / footer scopes share the same body.drawer-is-open vocabulary |
+
+### 29.2 Архітектурні рішення, що вижили
+
+1. **Focus architecture** (§11 + §20) — коли drawer відкритий,
+   non-sidebar `[data-slot]` фейдяться через opacity+visibility.
+   Killed stacking/z-index wars.
+
+2. **Drawer-layer pointer-events** (§20 + коміти c3378288 / f8b2bf65)
+   — layer ніколи не перехоплює події; backdrop (видимий тільки
+   в drawer mode) catches clicks sam. У push mode backdrop
+   display:none → layer повністю прозорий для hit-тесту.
+
+3. **Visibility vs display for variant hide** (§25) — shell-ові
+   `display: flex` на FAB виграють через БУДЬ-ЯКИЙ @media hide.
+   Hide виконується через `visibility: hidden + pointer-events:
+   none`, не через `display`.
+
+4. **Grid-stacked sprites** (§25) — chev + close розташовані в
+   одній grid cell (1/1) з `place-items: center`. Немає
+   absolute drift.
+
+5. **YAML-driven drawer-width** (§15 + inheritance §23) —
+   ніякого hardcode'а. Width успадковується desktop → tablet →
+   mobile.
+
+6. **Vaul scroll lock** — єдиний надійний на iOS Safari метод
+   заблокувати body scroll без втрати позиції.
+
+7. **Pointer-based swipe** з velocity + distance thresholds —
+   працює з будь-якого стану (open OR armed), closes або cancels
+   arm.
+
+### 29.3 Фінальний commit trail
+
+```
+4dc7354d refactor(portal,layout-maker): push drawer focus architecture
+8558a9fd fix(portal): sidebar visibility + armed FAB label beside circle
+6c2d6f9a revert(portal): restore approved FAB trigger design
+c10dc7f6 fix(portal): Vaul scroll lock + pointer swipe, keep 300px push width
+e93a96d7 refactor(layout-maker): drawer width driven by YAML, not code
+3ffae6e8 docs(layout-maker): drawer-push-quest chronicle — attempts 8-11
+6068ee68 feat(layout-maker): select drawered sidebar + drawer-width inheritance
+595e61e8 fix(portal): sidebar pointer-events:auto so touch scroll + swipe work
+bd42ab21 fix(portal): chevron invisible on iOS Safari — duplicate SVG attrs
+c3378288 fix(portal): hide .drawer-layer in push mode so events reach sidebar
+f8b2bf65 fix(portal): drawer-layer never traps pointer events, only backdrop does
+c659c67e fix(portal): chevron↔X swap, no FAB resize, one-tap open, iOS CSS
+f4f6e4bc fix(portal): restore armed-state pill + label
+42450332 fix(portal): chevron stays visible in armed + swipe from any state
+7beb8e6d fix(portal): display:revert breaks FAB flex → visibility-only + grid sprites
+99cbc838 fix(portal): hide chevron in armed state (collapse icon-wrap) — FINAL
+[this]   docs(layout-maker): mark drawer-push-quest RESOLVED §29
+```
+
+### 29.4 Головні уроки
+
+1. **VERIFY through Playwright, don't guess.** Computed styles,
+   `document.elementFromPoint()`, live CSS dumps. Кожна "я вже
+   виправив" гіпотеза — перевіряється на справжньому live state.
+
+2. **Generator CSS requires re-export. Shell CSS requires Portal
+   redeploy.** Два незалежних pipeline'и — завжди пам'ятати про
+   обидва.
+
+3. **Cascade pitfalls, ordered from worst:**
+   - `opacity: 0` cascades unreversibly — descendants can't opt out.
+   - `display: revert` rolls to UA default (often `inline-block`),
+     NOT to previous author rule. Never use для "un-hide".
+   - `display: none` hides without per-side-effect BUT requires
+     cascading un-hide logic.
+   - `visibility: hidden` — перебивне descendant'ом `visibility:
+     visible`, БЕЗ зачіпання `display`. Safest для "hide/show
+     одного з варіантів".
+
+4. **Positioning pitfalls:**
+   - `position: absolute` без inset дрейфує коли parent виростає.
+     Use grid stack or explicit inset+translate.
+   - `position: fixed` на elem всередині ancestor з transform
+     стає containing-block-child ancestor'а (не viewport).
+
+5. **Hit-test pitfalls:**
+   - Will-change, opacity, filter на ancestor створюють stacking
+     context → fixed descendants застряють у ньому.
+   - `pointer-events: auto` на invisible layer може перехоплювати
+     все (drawer-layer bug).
+   - `touch-action: pan-y` не блокує JS pointer events — тільки
+     native scroll.
+
+6. **iOS Safari SVG quirks:**
+   - `currentColor` на `<svg stroke="">` іноді не каскадить на
+     `<path>`. Дублюй атрибути.
+   - `fill="none"` на `<svg>` теж треба на `<path>`.
+   - Belt-and-suspenders: додати CSS `stroke: currentColor;
+     fill: none` на path теж.
+
+7. **User communication gotcha:** "коли є армед, не видно шеврон"
+   може бути 1) описом поточної поведінки як очікуваної, або
+   2) скаргою. Перечитати повільно. В сумніві — спитати.
+
+---
+
+_Літопис закрито 2026-04-22. Якщо в майбутньому щось зламається
+в drawer flow — сюди спочатку. Усі хибні гіпотези перелічені,
+діагностичні команди (Playwright probes) тут же. Не починати
+новий цикл стрільби навмання._
