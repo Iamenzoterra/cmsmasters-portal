@@ -276,17 +276,89 @@ export function sanitizeEmbedHTML(html: string): string {
 
 ---
 
-## Відкрита лінія досліджень
+## #4 — Reduce unused JavaScript 42 KiB (accepted as framework baseline)
 
-Якщо після deploy PageSpeed все ще показує:
+### Симптом
 
-- **Legacy JS** — root-cause-ити 3rd-party залежність з inline
-  `Array.prototype.at||(...)` полифилами (ймовірний донор — Supabase
-  JS SDK або щось суміжне). Методика: `grep -r 'prototype\.at||' node_modules/`.
-- **Інші "wasted bytes"** — запустити `next build` з
-  `ANALYZE=true` (після додавання `@next/bundle-analyzer`) для breakdown
-  shared chunks.
+Після деплою #1 follow-up та #3 картка залишилась:
 
-Нові записи (наступні прогони PageSpeed) — додавати новим розділом
-`## Audit — YYYY-MM-DD` з тою самою структурою
+- `chunks/87c73c54-*.js`: 54.2 KiB transferred, 21.7 KiB unused
+- `chunks/18-*.js`: 44.3 KiB transferred, 20.5 KiB unused
+- **Total First Load JS: ~98.5 KiB**
+
+### Розбір
+
+Peek перших байт кожного chunk-у (`head -c 500 chunk.js`):
+
+- **`87c73c54-*.js`** — містить `"https://react.dev/errors/"` →
+  **React core + React-DOM**.
+- **`18-*.js`** — містить `TemplateContext`, `useContext`, `jsx(Fragment)`
+  → **Next.js App Router runtime**.
+
+Тобто обидва chunk-и — **framework baseline**, не наш код.
+
+### Що перевіряли
+
+- **Client Components** в `/themes/[slug]` → **нема**. Page — pure Server
+  Component. Layout — SC з двома `<Script>`, які самі по собі компактні
+  wrapper-и.
+- **Supabase в client bundle** → **ні**. Використовується тільки в
+  server-only файлах (`page.tsx`, `blocks.ts`, `sitemap.ts`,
+  `global-elements.ts`).
+- **`next/script` vs raw `<script defer>`** → swap дав нульову delta
+  (Next вже оптимізує `<Script>` у тонку обгортку). Plus React 19 може
+  hoist raw `<script>` у `<head>` — зміна семантики. Залишили `<Script>`.
+
+### Рішення: accept, не копати далі
+
+~98 KiB First Load JS для Next.js 15 + React 19 — це **верхня третина**
+діапазону (типовий Next.js app: 200–400 KiB). "Reduce unused JavaScript"
+на такій платформі — **інформативна**, не блокуюча метрика. Вона каже
+"тут є framework code який на цій конкретній сторінці не викликається",
+що правда по визначенню runtime-а, що вантажиться на ВСІ сторінки.
+
+### Якщо колись захочеться цих 42 KiB
+
+Важелі за зростаючим blast radius:
+
+1. **Audit Client Components** — якщо `app/_components/` зростає, ревізія
+   `'use client'` помилок (випадково позначений SC як CC) може підрізати
+   shared chunk. Зараз — немає чого ревізувати.
+2. **`experimental.ppr`** (Partial Prerendering, Next 15) — розділяє
+   сторінку на static shell + dynamic islands, hydrate тільки islands.
+   Require-ить опрацювання route-per-route + тестів.
+3. **Preact swap** через `compat` — економить ~30–40 KiB на React, але
+   ламає деякі React 19 фічі (server components compat нестабільна).
+   Big migration, не варта для поточного Portal.
+4. **Astro для `/themes/[slug]`** — pure static HTML без React runtime.
+   Окремий мікросервіс / rewrite route — масштабна переробка.
+
+Жодне — не легкий next step. Acceptance: **98 KiB First Load — baseline
+для цього стека; PSI "Reduce unused JS" тут не чіпаємо, поки LCP/FCP
+залишаються зеленими.**
+
+---
+
+## Verification checklist (після деплою)
+
+- [ ] `POST {}` на `/api/revalidate` — чистить всі теги (themes,
+      layouts, blocks)
+- [ ] Відкрити `/themes/456456`, в DevTools перевірити:
+  - [ ] У `<main>` / `<aside>` нуль `<link>` / `<meta>` / `<title>`
+  - [ ] У Network — нема запиту до `fonts.googleapis.com` і до
+        `/themes/tokens.css`
+- [ ] Прогнати PageSpeed на тій самій URL (додати `?v=N` щоб оминути
+      PSI-кеш)
+  - [x] Картка **"Legacy JavaScript"** — fixed (deploy 2026-04-22)
+  - [x] Картка **"Network dependency tree"** — fixed (deploy 2026-04-22)
+  - [-] Картка **"Reduce unused JavaScript"** — accepted as framework
+        baseline, див. #4 вище
+
+---
+
+## Відкриті лінії досліджень
+
+Жодних відкритих на поточний момент. Якщо PSI колись знову підсвітить
+щось нове — додавати новим розділом `## Audit — YYYY-MM-DD` з тою самою
+структурою
 (симптом → корінь → зміни → caveat).
