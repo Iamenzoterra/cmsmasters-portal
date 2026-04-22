@@ -250,6 +250,6 @@ No new Phase 1 questions.
 
 ## Git
 
-- **Commit:** `{pending}` — `feat(pkg-block-forge-core): scaffold package + public types [WP-025 phase 1]`
+- **Commit:** `11d926d9` — `feat(pkg-block-forge-core): scaffold package + public types [WP-025 phase 1]`
 
 Final SHA embedded post-commit via follow-up `chore(logs)` per Phase 0 / WP-024 Phase 4 precedent.
