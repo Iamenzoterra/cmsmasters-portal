@@ -89,6 +89,18 @@ export interface BlockMetadata {
   [key: string]: unknown
 }
 
+// ── Block variants (stored in blocks.variants jsonb) ──
+// See ADR-025 and WP-024. Each variant is a standalone { html, css } payload;
+// Portal inlines all of them and @container CSS reveals the matching one at
+// the block's container width.
+
+export interface BlockVariant {
+  html: string
+  css: string
+}
+
+export type BlockVariants = Record<string, BlockVariant>
+
 // ── Template position ──
 
 export interface TemplatePosition {
@@ -253,6 +265,7 @@ export type Database = {
           sort_order: number
           hooks: BlockHooks
           metadata: BlockMetadata
+          variants: BlockVariants | null
           created_by: string | null
           created_at: string
           updated_at: string
@@ -270,6 +283,7 @@ export type Database = {
           sort_order?: number
           hooks?: BlockHooks
           metadata?: BlockMetadata
+          variants?: BlockVariants | null
           created_by?: string | null
           created_at?: string
           updated_at?: string
@@ -287,6 +301,7 @@ export type Database = {
           sort_order?: number
           hooks?: BlockHooks
           metadata?: BlockMetadata
+          variants?: BlockVariants | null
           created_by?: string | null
           updated_at?: string
         }

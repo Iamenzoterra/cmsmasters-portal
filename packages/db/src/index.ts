@@ -22,6 +22,8 @@ export type {
   EnvatoItemAttribute,
   BlockHooks,
   BlockMetadata,
+  BlockVariant,
+  BlockVariants,
   TemplatePosition,
   ThemeBlockFill,
   SlotConfig,
