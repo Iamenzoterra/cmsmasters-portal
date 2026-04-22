@@ -294,30 +294,44 @@ describe('css-generator: push mode is per-BP, not global', () => {
     const outside = css.slice(0, mediaStart)
 
     // No push-specific selectors should appear outside any @media.
-    expect(outside).not.toMatch(/body\.drawer-is-open-left\s+\.layout-frame/)
-    expect(outside).not.toMatch(/body\.drawer-is-open-right\s+\.layout-frame/)
+    expect(outside).not.toMatch(/body\.drawer-is-open\s+\[data-slot\]/)
     expect(outside).not.toMatch(/\.drawer-backdrop\s*\{\s*display:\s*none/)
   })
 
-  it('emits frame + margin + backdrop-hide + FAB transform inside the @media', () => {
+  it('hides everything non-sidebar when body.drawer-is-open (focus mode)', () => {
     const css = generateCSS(pushLayout(), tokens)
     const tablet = tabletBlock(css)
 
-    expect(tablet).toMatch(/\.layout-frame\s*\{[^}]*position:\s*relative/s)
-    expect(tablet).toMatch(/\.layout-frame\s*\{[^}]*z-index:\s*var\(--drawer-z-push-frame\)/s)
-    expect(tablet).toMatch(/\.layout-frame\s*\{[^}]*transition:\s*margin/s)
+    // Focus architecture: when the drawer opens, every non-sidebar
+    // [data-slot] AND the .layout-frame go opacity:0 + visibility:hidden
+    // + pointer-events:none. The drawer is the sole rendered,
+    // interactive element — no stacking / z-index conflict possible.
+    expect(tablet).toMatch(
+      /body\.drawer-is-open\s+\[data-slot\]:not\(\[data-drawer-side\]\)[^}]*opacity:\s*0/s,
+    )
+    expect(tablet).toMatch(
+      /body\.drawer-is-open\s+\[data-slot\]:not\(\[data-drawer-side\]\)[^}]*visibility:\s*hidden/s,
+    )
+    expect(tablet).toMatch(
+      /body\.drawer-is-open\s+\[data-slot\]:not\(\[data-drawer-side\]\)[^}]*pointer-events:\s*none/s,
+    )
 
-    expect(tablet).toMatch(
-      /body\.drawer-is-open-left\s+\.layout-frame\s*\{[^}]*margin-left:\s*var\(--drawer-push-width\)/s,
-    )
-    expect(tablet).toMatch(
-      /body\.drawer-is-open-left\s+\.drawer-trigger--fab\.drawer-trigger--left\s*\{[^}]*transform:\s*translateX\(var\(--drawer-push-width\)\)/s,
-    )
+    // Push-width pinned via layout :root override so shell default
+    // of 100% (still live on non-deployed Portal) can't dominate.
+    expect(tablet).toMatch(/:root\s*\{[^}]*--drawer-push-width:\s*var\(--drawer-panel-width-mobile\)/s)
+    // html overflow-x guard remains for negative-margin cascades (and
+    // as insurance for horizontal drag gestures).
+    expect(tablet).toMatch(/\bhtml\s*\{[^}]*overflow-x:\s*hidden/s)
+
+    // No in-flow stacking hack, no body margin push — focus mode
+    // retired both patterns.
+    expect(tablet).not.toMatch(/\[data-slot="content"\]\s*\{[^}]*z-index:\s*var\(--drawer-z-push-frame\)/s)
+    expect(tablet).not.toMatch(/body\.drawer-is-open-(left|right)\s*\{[^}]*margin-(left|right):\s*var\(--drawer-push-width\)/s)
 
     expect(tablet).toMatch(/\.drawer-backdrop\s*\{\s*display:\s*none/)
   })
 
-  it('push sidebar uses --drawer-push-width, not --drawer-panel-width', () => {
+  it('push sidebar is offscreen at rest via --drawer-open-{side}, always visible on open', () => {
     const css = generateCSS(pushLayout(), tokens)
     const tablet = tabletBlock(css)
     const sidebarLeft = tablet.match(
@@ -325,15 +339,19 @@ describe('css-generator: push mode is per-BP, not global', () => {
     )
     expect(sidebarLeft).not.toBeNull()
     expect(sidebarLeft![0]).toMatch(/width:\s*var\(--drawer-push-width\)/)
-    // Push sidebar emits explicit transform:none / box-shadow:none /
-    // max-width:none / transition:none to OVERRIDE drawer rules that
-    // cascade in from a wider BP's @media block (e.g. tablet drawer
-    // would otherwise leak translateX + shadow + max-width clamp into
-    // mobile push). The values must be the reset, not real motion.
-    expect(sidebarLeft![0]).toMatch(/transform:\s*none/)
+    // Offscreen at rest, onscreen when body.drawer-is-open-left sets
+    // --drawer-open-left to 0. Shared vocabulary with drawer mode.
+    expect(sidebarLeft![0]).toMatch(
+      /transform:\s*translateX\(calc\(var\(--drawer-open-left,\s*1\)\s*\*\s*-100%\)\)/,
+    )
+    expect(sidebarLeft![0]).toMatch(/transition:\s*transform\s+var\(--drawer-push-content-duration\)/)
+    // Cascade resets so wider BPs' drawer rules don't leak.
     expect(sidebarLeft![0]).toMatch(/box-shadow:\s*none/)
     expect(sidebarLeft![0]).toMatch(/max-width:\s*none/)
-    expect(sidebarLeft![0]).toMatch(/transition:\s*none/)
+    // Sidebar is EXEMPT from focus-mode hiding — explicit opacity:1
+    // + visibility:visible override any ancestor cascade.
+    expect(sidebarLeft![0]).toMatch(/opacity:\s*1/)
+    expect(sidebarLeft![0]).toMatch(/visibility:\s*visible/)
   })
 
   it('drawer@tablet + push@mobile — each BP gets its own mode rules', () => {
@@ -347,13 +365,13 @@ describe('css-generator: push mode is per-BP, not global', () => {
     }
     const css = generateCSS(config, tokens)
 
-    // Tablet block: drawer (transform on sidebar, no frame margin, no backdrop-hide).
+    // Tablet block: drawer (transform on sidebar, no focus-hide, no backdrop-hide).
     const tablet = tabletBlock(css)
     expect(tablet).toMatch(/transform:\s*translateX\(calc\(var\(--drawer-open-left/)
     expect(tablet).not.toMatch(/\.drawer-backdrop\s*\{\s*display:\s*none/)
-    expect(tablet).not.toMatch(/body\.drawer-is-open-left\s+\.layout-frame/)
+    expect(tablet).not.toMatch(/body\.drawer-is-open\s+\[data-slot\]/)
 
-    // Mobile block: push (backdrop-hide, frame margin, no transform on sidebar).
+    // Mobile block: push (backdrop-hide, focus-hide of non-sidebars).
     const mobileStart = css.indexOf('@media (max-width: 767px)')
     expect(mobileStart).toBeGreaterThan(-1)
     const mobileEnd = (() => {
@@ -369,6 +387,6 @@ describe('css-generator: push mode is per-BP, not global', () => {
     })()
     const mobile = css.slice(mobileStart, mobileEnd)
     expect(mobile).toMatch(/\.drawer-backdrop\s*\{\s*display:\s*none/)
-    expect(mobile).toMatch(/body\.drawer-is-open-left\s+\.layout-frame[^}]*margin-left/s)
+    expect(mobile).toMatch(/body\.drawer-is-open\s+\[data-slot\]:not\(\[data-drawer-side\]\)[^}]*opacity:\s*0/s)
   })
 })

@@ -75,6 +75,11 @@ export function ThemeEditor() {
 
   const { register, control, reset, formState: { errors, isDirty } } = form
 
+  // Slug is editable for new themes and drafts — locked once published so we
+  // don't break live portal URLs. Auto-seeded themes start as 'draft', so
+  // admins can clean up the ThemeForest-style slug before promoting.
+  const slugEditable = isNew || existingTheme?.status !== 'published'
+
   const { fields: detailFields, append: appendDetail, remove: removeDetail } = useFieldArray({
     control,
     name: 'meta.theme_details',
@@ -614,8 +619,8 @@ export function ThemeEditor() {
               <input
                 {...register('slug')}
                 className="w-full outline-none"
-                style={{ ...inputStyle, backgroundColor: isNew ? 'hsl(var(--input))' : 'hsl(var(--bg-surface-alt))' }}
-                readOnly={!isNew}
+                style={{ ...inputStyle, backgroundColor: slugEditable ? 'hsl(var(--input))' : 'hsl(var(--bg-surface-alt))' }}
+                readOnly={!slugEditable}
                 placeholder="auto-generated-slug"
               />
             </Field>

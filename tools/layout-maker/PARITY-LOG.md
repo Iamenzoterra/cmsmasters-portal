@@ -71,6 +71,50 @@ fix is in the generator, the Inspector, the schema, or the Portal.
 
 ## Fixed
 
+### [mobile] Push architecture rework — one-tap FAB, scroll lock, swipe close
+
+- **Layout / scope:** `layouts/2132.yaml` (mobile `sidebars: push`, `drawer-trigger: fab`) / `theme`
+- **Breakpoint:** mobile (375px)
+- **Symptoms:** (a) FAB trigger grew into a pill on first tap (two-step arm→open flow) instead of opening on one tap; (b) vertical swipes on the opened sidebar scrolled the page underneath instead of the sidebar; (c) horizontal swipe-to-close never fired because it was intercepted by scroll chaining or body overflow: hidden; (d) sidebar width read as full-viewport (100%) because the live shell's `--drawer-push-width` token still defaulted to 100% and hadn't Portal-redeployed yet.
+- **Where the lie lived:** **shell JS behavior + shell CSS scroll lock + token default**. Four issues in one system: (1) the FAB arm-then-open flow in `portal-shell.js` was specific to the standalone mockup's UX exploration, not what users expected; (2) `body.drawer-is-open { overflow: hidden }` is known-insufficient on iOS Safari (momentum / rubber-band bleed through, scroll position jumps); (3) the touch-based swipe handler didn't use velocity — only distance — so fast swipes often missed; (4) the shell's `--drawer-push-width` default of `100%` made push look like a modal overlay, not a push.
+- **Fixes:**
+  1. **One-tap FAB** — removed the armed-then-open flow and all `body.drawer-armed-{side}` CSS rules. Every trigger variant (peek, hamburger, tab, fab) now opens on click and toggles on same-side re-click. `portal-shell.js` simplified; LM canvas mirror updated to match.
+  2. **Vaul-style scroll lock** — replaced the CSS `body.drawer-is-open { overflow: hidden }` rule with JS-managed `body { position: fixed; top: -scrollY }` on open, restored with `window.scrollTo(saved)` on close. This is the only mechanism that actually stops iOS momentum and preserves scroll position through the open/close cycle.
+  3. **Pointer-based swipe with velocity** — replaced touchstart/end with pointerdown/up. Close when `|dx| > |dy|` AND (`|dx| > 25% of push-width` OR velocity `> 0.35 px/ms`). Matches Vaul's thresholds. Sidebar's `touch-action: pan-y` (from css-generator) keeps horizontal gestures un-captured so they reach the stage handler.
+  4. **Push-width override in layout CSS** — css-generator now emits `:root { --drawer-push-width: var(--drawer-panel-width-mobile) }` inside the push @media block. Layout CSS overrides shell default, so the ~300px fix lands on the next layout re-export without needing a Portal redeploy.
+- **Architecture decision (researched):** kept the body-margin push (as opposed to the Vaul `transform: translate3d` on a `.push-track` wrapper pattern) because sidebars are DOM-nested inside `.layout-frame > .layout-grid` and restructuring the DOM so sidebars could be siblings of a track wrapper would require html-generator changes that break block JS's single-instance `document.querySelector`. Body margin reaches the same visual outcome (fixed sidebar stays viewport-anchored because body margin doesn't create a containing block for `position: fixed`) with less DOM churn. Documented in the PARITY log so future work reconsidering the swap to transform-based animation has the context.
+- **Status:** `fixed <this commit>`
+- **Contract/test:** existing `css-generator.test.ts` "push sidebar is offscreen at rest via --drawer-open-{side}" covers the sidebar transform + width + cascade resets. No unit test for the JS controller — trust but verify via the live page at mobile viewport.
+
+### [mobile] Push sidebar paints ABOVE content at rest — sidebar covers header region
+
+- **Layout / scope:** `layouts/2132.yaml` (mobile `sidebars: push`) / `theme`
+- **Breakpoint:** mobile (any push BP)
+- **Slot:** `sidebar-right` / `sidebar-left` (any push sidebar)
+- **Field:** sidebar rest-state visibility
+- **LM claims:** Inspector + Canvas show content at rest on mobile; sidebar only appears when drawer is triggered.
+- **Portal rendered (before first fix):** sidebar painted above content in the theme region because `.layout-frame { position: relative; z-index: 2 }` created a stacking context containing the sidebar — positioned descendants always paint above non-positioned siblings in a stacking context.
+- **First fix (insufficient):** Moved the stacking context off `.layout-frame` and onto each in-flow slot (`.layout-grid > [data-slot="content"] { position: relative; z-index: 2; bg }`). This correctly layered content above sidebar WITHIN the theme area. But the sidebar is `position: fixed` + `width: 100%` = it fills the ENTIRE viewport, and the page header (rendered by the Next.js page template OUTSIDE `.layout-frame`) has no z-index or bg. Result: user saw sidebar content where the header should be.
+- **Second fix (final):** Keep the push sidebar OFFSCREEN at rest and slide it in on open. Matches the iOS pattern in `Mobile Drawer _standalone_.html`. The sidebar emits `transform: translateX(calc(var(--drawer-open-{side}, 1) * {closed}%))` — same `--drawer-open-{side}` variable drawer mode uses, flipped by `body.drawer-is-open-{side}`. At rest: sidebar fully off-canvas (clipped by `html { overflow-x: hidden }`). On open: sidebar slides to `translateX(0)` while body's `margin-inline` slides the rest of the page by `--drawer-push-width`. Also changed `--drawer-push-width` default from `100%` to `var(--drawer-panel-width-mobile)` (300px) so a sliver of content stays visible as a tap-to-close affordance, matching the reference.
+- **Where the lie lived:** **generator + shell token**. Full-viewport sidebar + in-flow stacking couldn't reach non-theme page chrome. Structural issue — sidebar must be invisible at rest, not "covered" by content.
+- **Status:** `fixed <this commit>`
+- **Contract/test:**
+  - `css-generator.test.ts` "emits body margin + html overflow-clip + backdrop-hide inside the @media" — asserts NO in-flow slot gets `z-index: var(--drawer-z-push-frame)` and `html { overflow-x: hidden }` is present.
+  - `css-generator.test.ts` "push sidebar is offscreen at rest via --drawer-open-{side}" — asserts the sidebar transform uses the shared `--drawer-open-{side}` formula and a transform transition is present.
+
+### [mobile] Push mode moves theme frame but not header
+
+- **Layout / scope:** `layouts/2132.yaml` (mobile `sidebars: push`) on the theme scope / header lives in the `header` scope
+- **Breakpoint:** mobile (any push BP)
+- **Slot:** `.layout-frame` (theme) vs `<header>` (header layout)
+- **Field:** push animation target
+- **LM claims:** canvas shows the whole page sliding aside on push.
+- **Portal rendered (before fix):** only the theme's `.layout-frame` got `margin-inline` when `body.drawer-is-open-right` fired. The header lived in a separate `layout-frame` (scope: header) that never received the margin, so the header stayed pinned while content slid. Visually: half the page moves, half stays — nothing like the iOS push-drawer pattern the user asked for.
+- **Where the lie lived:** **generator**. Push margin rules targeted `.layout-frame` — but there are multiple frames on every page (header, theme, footer). Each layout owns its own frame; generator for the theme layout couldn't reach the header frame.
+- **Fix:** Move push margin from `.layout-frame` to `body`. `body.drawer-is-open-{side} { margin-inline: ... }` shifts EVERY flow descendant (header + theme + footer alike, since they're all siblings under `<body>`). `position: fixed` sidebars stay anchored to the viewport because body's margin does NOT create a containing block for fixed descendants. Transition also moves to `body`.
+- **Status:** `fixed <this commit>`
+- **Contract/test:** `css-generator.test.ts` "emits body margin + in-flow stacking + ..." — asserts `body.drawer-is-open-left { margin-left: var(--drawer-push-width) }` and NOT `body.drawer-is-open-left .layout-frame { ... }`. The "drawer@tablet + push@mobile" test was also updated to check the new body-level selector per BP.
+
 ### [tablet] Trigger variant stamps as FAB even when YAML says TAB
 
 - **Layout / scope:** `layouts/2132.yaml` (tablet `drawer-trigger: tab`, mobile `drawer-trigger: fab`) / `theme`

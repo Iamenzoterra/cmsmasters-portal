@@ -101,7 +101,7 @@ function renderTrigger(
   )
   out.push('    <span class="drawer-trigger__icon-wrap" aria-hidden="true">')
   out.push(
-    `      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${icon.d}"/></svg>`,
+    `      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="${icon.d}"/></svg>`,
   )
   out.push('    </span>')
   out.push(`    <span class="drawer-trigger__label">${escapeHTML(label)}</span>`)

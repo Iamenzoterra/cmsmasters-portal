@@ -89,7 +89,7 @@ interface ThemeCardProps {
 export function ThemeCard({ license }: ThemeCardProps) {
   const theme = license.themes
   const themeName = theme?.meta?.name ?? 'Unknown Theme'
-  const thumbnailUrl = theme?.meta?.thumbnail_url ?? theme?.meta?.icon_url ?? null
+  const thumbnailUrl = theme?.meta?.icon_url ?? theme?.meta?.thumbnail_url ?? null
   const initial = themeName.charAt(0).toUpperCase()
   const isRegular = !!license.purchase_code
   const supportStatus = getSupportStatus(license.support_until)

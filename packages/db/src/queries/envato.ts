@@ -3,16 +3,17 @@ import type { EnvatoItem, ThemeMeta } from '../types'
 // ── Envato item → ThemeMeta mapper ──
 
 // Pull the best available thumbnail from Envato's preview map.
-// Preference order mirrors how Envato surfaces item art in their own UI:
-// landscape (highest-res) → thumbnail → icon fallback.
+// Prefer the item thumbnail (~290×218, roughly square) over the landscape
+// promo banner (~1376×500). Studio/admin list UIs render this in a small
+// square slot — the landscape banner blows up and loses focus on the theme art.
 export function pickEnvatoThumbnail(item: EnvatoItem): string | undefined {
   const p = item.previews
   if (!p) return undefined
   return (
-    p.icon_with_landscape_preview?.landscape_url ||
     p.icon_with_thumbnail_preview?.thumbnail_url ||
-    p.icon_with_landscape_preview?.icon_url ||
+    p.icon_with_landscape_preview?.landscape_url ||
     p.icon_with_thumbnail_preview?.icon_url ||
+    p.icon_with_landscape_preview?.icon_url ||
     undefined
   )
 }

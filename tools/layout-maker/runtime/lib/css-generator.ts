@@ -377,27 +377,43 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
       out.push(`    transform: translateX(calc(var(--drawer-open-${side}, 1) * ${closed}));`)
       out.push('    transition: transform var(--drawer-enter-duration) var(--drawer-enter-easing);')
       out.push('    overflow-y: auto;')
+      // Own the panel's scroll so vertical swipes scroll the
+      // panel contents, not the locked body. touch-action: pan-y
+      // keeps horizontal gestures uncaptured so the swipe-to-close
+      // listener in portal-shell.js can see them.
+      out.push('    overscroll-behavior: contain;')
+      out.push('    touch-action: pan-y;')
       out.push('  }')
     }
 
-    // Push mode — emitted AT THIS BP ONLY, inside this @media block.
-    // Shell has zero global push rules outside tokens, so tablet
-    // drawer and mobile push stay fully independent: the same
-    // body.drawer-is-open-{side} class is interpreted per-BP by the
-    // rules below, not by any global shell selector.
+    // Push mode — FOCUS architecture.
     //
-    //   1. Push sidebar is fixed at its edge, full push-width, layered
-    //      BENEATH the layout-frame (which is the "screen" that slides)
-    //   2. .layout-frame gets position:relative + z-index + bg (so it
-    //      covers the sidebar when closed) + margin transition
-    //   3. body.drawer-is-open-{side} .layout-frame margin-inline —
-    //      the screen slides off-screen, revealing the sidebar
-    //   4. FAB trigger rides along via transform (it's fixed in the
-    //      viewport, so it's not dragged by the frame's margin)
-    //   5. .drawer-backdrop { display: none } — push has no overlay
+    // When the drawer is open, EVERYTHING non-sidebar becomes
+    // invisible and inactive. The drawer is the only rendered,
+    // interactive element on screen. This sidesteps every stacking,
+    // z-index, and scroll-chain battle we've had: there is nothing
+    // left to compete with the panel, because everything else has
+    // opacity: 0 + visibility: hidden + pointer-events: none.
+    //
+    //   1. Sidebar is a fixed-width panel pinned to its edge,
+    //      OFFSCREEN at rest via `transform: translateX({closed}%)`,
+    //      slid onscreen when body.drawer-is-open-{side} flips the
+    //      shared `--drawer-open-{side}` var to 0.
+    //   2. On open, every [data-slot] OTHER THAN the sidebars fades
+    //      out (+ visibility:hidden so pointer events pass through).
+    //      .layout-frame hides too — it's the empty grid wrapper
+    //      that held the content column.
+    //   3. Body scroll is locked in portal-shell.js (Vaul pattern —
+    //      position:fixed + top:-scrollY). No body margin needed
+    //      since the hidden content doesn't need to "make room."
+    //   4. .drawer-backdrop { display: none } — push has no scrim.
+    //   5. `--drawer-push-width` pinned to the mobile panel width
+    //      (≈300px) via layout CSS override (shell default may still
+    //      be 100% until Portal redeploys).
     if (pushSlots.length > 0) {
       for (const slotName of pushSlots) {
         const side = slotName.includes('right') ? 'right' : 'left'
+        const closed = side === 'left' ? '-100%' : '100%'
         out.push('')
         out.push(`  .layout-grid > [data-slot="${slotName}"] {`)
         out.push('    position: fixed;')
@@ -408,49 +424,60 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
         out.push('    width: var(--drawer-push-width);')
         out.push('    background: var(--drawer-panel-bg);')
         out.push('    overflow-y: auto;')
-        // Reset drawer-mode props that cascade in from a wider BP's
-        // @media block. Without these, e.g. tablet's drawer transform
-        // and box-shadow leak into mobile push and the sidebar still
-        // sits off-screen with a panel shadow.
-        out.push('    transform: none;')
-        out.push('    transition: none;')
+        out.push('    overscroll-behavior: contain;')
+        out.push('    touch-action: pan-y;')
+        out.push(`    transform: translateX(calc(var(--drawer-open-${side}, 1) * ${closed}));`)
+        out.push('    transition: transform var(--drawer-push-content-duration) var(--drawer-push-content-easing);')
+        // Cascade resets from wider @media blocks (tablet drawer CSS
+        // at max-width: 1439px also fires at mobile).
         out.push('    box-shadow: none;')
         out.push('    max-width: none;')
+        // Sidebar is NEVER hidden by the focus rules below — opacity
+        // and visibility explicitly set so an ancestor's hidden rule
+        // doesn't cascade in.
+        out.push('    opacity: 1;')
+        out.push('    visibility: visible;')
         out.push('  }')
       }
 
+      // Layout-level push-width override — see header comment point 5.
       out.push('')
-      out.push('  .layout-frame {')
-      out.push('    position: relative;')
-      out.push('    z-index: var(--drawer-z-push-frame);')
-      out.push('    background: var(--drawer-panel-bg);')
-      out.push('    transition: margin var(--drawer-push-content-duration) var(--drawer-push-content-easing);')
-      out.push('    will-change: margin;')
+      out.push('  :root {')
+      out.push('    --drawer-push-width: var(--drawer-panel-width-mobile);')
+      out.push('  }')
+      out.push('  html {')
+      out.push('    overflow-x: hidden;')
+      out.push('  }')
+      // CSS-level scroll lock fallback. portal-shell.js also locks
+      // via Vaul pattern (position:fixed + top:-scrollY), but this
+      // rule catches the case where the deployed shell JS is stale.
+      // At least momentum scroll stops leaking through the hidden
+      // content.
+      out.push('  body.drawer-is-open {')
+      out.push('    overflow: hidden;')
       out.push('  }')
 
-      const pushLeft = pushSlots.some((n) => n.includes('left'))
-      const pushRight = pushSlots.some((n) => n.includes('right'))
-
-      if (pushLeft) {
-        out.push('')
-        out.push('  body.drawer-is-open-left .layout-frame {')
-        out.push('    margin-left: var(--drawer-push-width);')
-        out.push('    margin-right: calc(-1 * var(--drawer-push-width));')
-        out.push('  }')
-        out.push('  body.drawer-is-open-left .drawer-trigger--fab.drawer-trigger--left {')
-        out.push('    transform: translateX(var(--drawer-push-width));')
-        out.push('  }')
-      }
-      if (pushRight) {
-        out.push('')
-        out.push('  body.drawer-is-open-right .layout-frame {')
-        out.push('    margin-right: var(--drawer-push-width);')
-        out.push('    margin-left: calc(-1 * var(--drawer-push-width));')
-        out.push('  }')
-        out.push('  body.drawer-is-open-right .drawer-trigger--fab.drawer-trigger--right {')
-        out.push('    transform: translateX(calc(-1 * var(--drawer-push-width)));')
-        out.push('  }')
-      }
+      // Focus mode: everything except the drawer fades out when
+      // body.drawer-is-open. Opacity transition for a graceful fade,
+      // visibility for event-propagation cleanliness.
+      //
+      // Rest-state transition kept so closing also fades (not snaps).
+      out.push('')
+      out.push('  [data-slot]:not([data-drawer-side]),')
+      out.push('  .layout-frame {')
+      out.push('    transition:')
+      out.push('      opacity var(--drawer-push-content-duration) var(--drawer-push-content-easing),')
+      out.push('      visibility 0s linear 0s;')
+      out.push('  }')
+      out.push('  body.drawer-is-open [data-slot]:not([data-drawer-side]),')
+      out.push('  body.drawer-is-open .layout-frame {')
+      out.push('    opacity: 0;')
+      out.push('    visibility: hidden;')
+      out.push('    pointer-events: none;')
+      out.push('    transition:')
+      out.push('      opacity var(--drawer-push-content-duration) var(--drawer-push-content-easing),')
+      out.push('      visibility 0s linear var(--drawer-push-content-duration);')
+      out.push('  }')
 
       out.push('')
       out.push('  .drawer-backdrop {')

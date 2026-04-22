@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { LayoutConfig, BreakpointGrid } from '../lib/types'
 import { getDrawerIcon } from '../../../../packages/ui/src/portal/drawer-icons'
 
@@ -19,8 +19,6 @@ type TriggerVariant = 'peek' | 'hamburger' | 'tab' | 'fab'
 // the same open-state vocabulary.
 export function DrawerPreview({ config, grid, drawerSlots }: Props) {
   const [openSide, setOpenSide] = useState<'left' | 'right' | null>(null)
-  const [armedSide, setArmedSide] = useState<'left' | 'right' | null>(null)
-  const armTimerRef = useRef<number | null>(null)
 
   const triggerVariant = (grid['drawer-trigger'] as TriggerVariant | undefined) ?? 'peek'
   const drawerPosition = grid['drawer-position'] ?? 'both'
@@ -31,73 +29,28 @@ export function DrawerPreview({ config, grid, drawerSlots }: Props) {
   const showLeft = (drawerPosition === 'left' || drawerPosition === 'both') && leftSlots.length > 0
   const showRight = (drawerPosition === 'right' || drawerPosition === 'both') && rightSlots.length > 0
 
-  const clearArm = () => {
-    if (armTimerRef.current !== null) {
-      window.clearTimeout(armTimerRef.current)
-      armTimerRef.current = null
-    }
-    setArmedSide(null)
-  }
+  const close = () => setOpenSide(null)
 
-  const close = () => {
-    setOpenSide(null)
-    clearArm()
-  }
-
+  // Every trigger variant is one-tap open now — Portal shell mirrors
+  // this, so LM canvas stays in sync by tapping-to-toggle too.
   const handleTrigger = (side: 'left' | 'right') => {
-    if (openSide === side) {
-      close()
-      return
-    }
-    if (triggerVariant !== 'fab') {
-      clearArm()
-      setOpenSide(openSide === side ? null : side)
-      return
-    }
-    // FAB path — arm then open.
-    if (armedSide === side) {
-      clearArm()
-      setOpenSide(side)
-      return
-    }
-    clearArm()
-    setOpenSide(null)
-    setArmedSide(side)
-    armTimerRef.current = window.setTimeout(() => {
-      setArmedSide(null)
-      armTimerRef.current = null
-      setOpenSide(side)
-    }, 2000)
+    setOpenSide((current) => (current === side ? null : side))
   }
 
-  useEffect(() => {
-    return () => {
-      if (armTimerRef.current !== null) window.clearTimeout(armTimerRef.current)
-    }
-  }, [])
-
-  // Mirror state onto body — same CSS hooks the real Portal's shell.js uses.
-  // Mode (drawer/push) is a per-BP concern in real Portal; in the canvas
-  // we just toggle the open-state classes and let the canvas-only panel
-  // visualizer show the sidebar sliding in. Armed state (FAB-only) also
-  // lives on body, matching Portal.
+  // Mirror state onto body — same CSS hooks the real Portal shell.js uses.
   useEffect(() => {
     const body = document.body
     body.classList.toggle('drawer-is-open', openSide !== null)
     body.classList.toggle('drawer-is-open-left', openSide === 'left')
     body.classList.toggle('drawer-is-open-right', openSide === 'right')
-    body.classList.toggle('drawer-armed-left', armedSide === 'left')
-    body.classList.toggle('drawer-armed-right', armedSide === 'right')
     return () => {
       body.classList.remove(
         'drawer-is-open',
         'drawer-is-open-left',
         'drawer-is-open-right',
-        'drawer-armed-left',
-        'drawer-armed-right',
       )
     }
-  }, [openSide, armedSide])
+  }, [openSide])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
