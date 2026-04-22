@@ -126,13 +126,13 @@ Arch-test count unchanged (380 → 384 was Phase 4's delta; Phase 5 is 384 → 3
 - Phase 3: `b117a686` — `feat(portal): inline block variants in renderer + string helper [WP-024 phase 3]`
 - Phase 4: `e43533b9` — `feat(infra): slot container-type + tokens.responsive.css scaffold [WP-024 phase 4]`
 - Phase 4 log-SHA embed: `2a7948d6` — `chore(logs): embed phase-4 commit SHA in result log`
-- Phase 5: `{pending}` — `docs: WP-024 close — propagate variants + container-type contracts [WP-024 phase 5]`
+- Phase 5: `9df7b2c8` — `docs: WP-024 close — propagate variants + container-type contracts [WP-024 phase 5]`
 
 ---
 
 ## Git
 
-- **Commit (pending):** `docs: WP-024 close — propagate variants + container-type contracts [WP-024 phase 5]`
+- **Commit:** `9df7b2c8` — `docs: WP-024 close — propagate variants + container-type contracts [WP-024 phase 5]`
 - **Staged files:**
   - `.context/BRIEF.md`
   - `.context/CONVENTIONS.md`
@@ -145,4 +145,4 @@ Arch-test count unchanged (380 → 384 was Phase 4's delta; Phase 5 is 384 → 3
   - `logs/wp-024/phase-5-proposal.md` (new)
   - `logs/wp-024/phase-5-result.md` (new — this file)
 
-Final SHA embedded post-commit via the log-SHA-embed pattern if Brain requests; otherwise commit message tags the phase for log lookup.
+Final SHA embedded post-commit via follow-up `chore(logs)` per Phase 4 precedent (`2a7948d6`).
