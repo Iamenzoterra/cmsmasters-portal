@@ -227,8 +227,20 @@
     return Number.isFinite(n) ? n : window.innerWidth * 0.8
   }
 
+  // Track pointer when a drawer is open OR the FAB is armed. Armed
+  // state tracking lets a swipe cancel the pending auto-open when
+  // the user changes their mind after the first tap. Without this,
+  // users stuck in armed have no gesture to cancel — only wait 2s
+  // or tap elsewhere.
+  function trackableState() {
+    const b = document.body
+    return b.classList.contains('drawer-is-open') ||
+      b.classList.contains('drawer-armed-left') ||
+      b.classList.contains('drawer-armed-right')
+  }
+
   document.addEventListener('pointerdown', function (e) {
-    if (!document.body.classList.contains('drawer-is-open')) { pointer = null; return }
+    if (!trackableState()) { pointer = null; return }
     if (e.pointerType === 'mouse' && e.button !== 0) { pointer = null; return }
     pointer = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now() }
   }, { passive: true })
@@ -249,10 +261,17 @@
     if (!distanceOk && !velocityOk) return
 
     const body = document.body
+    // Open state — swipe AWAY from edge closes.
     if (body.classList.contains('drawer-is-open-left') && dx < 0) {
-      closeDrawer(); clearBothArms()
-    } else if (body.classList.contains('drawer-is-open-right') && dx > 0) {
-      closeDrawer(); clearBothArms()
+      closeDrawer(); clearBothArms(); return
+    }
+    if (body.classList.contains('drawer-is-open-right') && dx > 0) {
+      closeDrawer(); clearBothArms(); return
+    }
+    // Armed state — any qualifying horizontal swipe cancels the arm.
+    if (body.classList.contains('drawer-armed-left') ||
+        body.classList.contains('drawer-armed-right')) {
+      clearBothArms()
     }
   }, { passive: true })
 

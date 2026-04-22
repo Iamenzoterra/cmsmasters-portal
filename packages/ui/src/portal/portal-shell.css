@@ -401,19 +401,19 @@ body.drawer-is-open-right .drawer-trigger--fab.drawer-trigger--right .drawer-tri
   transition: opacity 220ms ease 160ms;
 }
 
-/* Armed — pill grows downward, icon-wrap collapses (both sprites
- * disappear with it), label reveals. Body class drawer-armed-{side}
- * is set by portal-shell.js on first tap. */
+/* Armed — pill grows downward, chevron STAYS visible at the bottom
+ * of the pill (icon-wrap keeps its 44×44 box), label reveals above
+ * the chev via column-reverse stacking.
+ *
+ * Earlier iteration collapsed icon-wrap to 0 height (matching the
+ * standalone mobile-drawer mockup), which hid the chevron entirely
+ * during armed. User asked to keep chev visible in armed state so
+ * the button never goes "blank" during the 2-step flow: tap once →
+ * chev + label both visible (pill), tap again or wait → drawer
+ * opens + chev swaps to X. */
 body.drawer-armed-left  .drawer-trigger--fab.drawer-trigger--left,
 body.drawer-armed-right .drawer-trigger--fab.drawer-trigger--right {
   height: auto;
-}
-body.drawer-armed-left  .drawer-trigger--fab.drawer-trigger--left  .drawer-trigger__icon-wrap,
-body.drawer-armed-right .drawer-trigger--fab.drawer-trigger--right .drawer-trigger__icon-wrap {
-  height: 0;
-  margin: 0;
-  opacity: 0;
-  overflow: hidden;
 }
 body.drawer-armed-left  .drawer-trigger--fab.drawer-trigger--left  .drawer-trigger__label,
 body.drawer-armed-right .drawer-trigger--fab.drawer-trigger--right .drawer-trigger__label {
