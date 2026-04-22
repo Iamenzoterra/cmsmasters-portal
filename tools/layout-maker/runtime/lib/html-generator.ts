@@ -101,7 +101,12 @@ function renderTrigger(
   )
   out.push('    <span class="drawer-trigger__icon-wrap" aria-hidden="true">')
   out.push(
-    `      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="${icon.d}"/></svg>`,
+    // Attributes duplicated on the <path> (not just the <svg>) so
+    // iOS Safari renders consistently. Older Safari versions don't
+    // always cascade fill="none" / stroke="currentColor" from the
+    // outer <svg> to a child <path> — chevron silently disappears
+    // on iPhone while Chrome / desktop Safari render fine.
+    `      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="${icon.d}" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   )
   out.push('    </span>')
   out.push(`    <span class="drawer-trigger__label">${escapeHTML(label)}</span>`)
