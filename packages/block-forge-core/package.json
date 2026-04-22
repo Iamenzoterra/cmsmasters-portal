@@ -1,0 +1,24 @@
+{
+  "name": "@cmsmasters/block-forge-core",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@cmsmasters/db": "*",
+    "postcss": "8.5.10",
+    "node-html-parser": "7.1.0"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.2",
+    "typescript": "^5.0.0"
+  }
+}

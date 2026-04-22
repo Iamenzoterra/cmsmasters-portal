@@ -188,6 +188,30 @@ export const DOMAINS: Record<string, DomainDefinition> = {
     known_gaps: [],
   },
 
+  'pkg-block-forge-core': {
+    name: 'Block Forge Core Engine',
+    slug: 'pkg-block-forge-core',
+    description: 'Framework-agnostic responsive block authoring — CSS analyzer, auto-rules, tweak emitter, variant composer, preview renderer. Pure functions.',
+    owned_files: [
+      'packages/block-forge-core/package.json',
+      'packages/block-forge-core/README.md',
+      'packages/block-forge-core/tsconfig.json',
+      'packages/block-forge-core/vitest.config.ts',
+      'packages/block-forge-core/src/index.ts',
+      'packages/block-forge-core/src/lib/types.ts',
+      'packages/block-forge-core/src/__tests__/smoke.test.ts',
+    ],
+    owned_tables: [],
+    owned_routes: [],
+    public_entrypoints: ['packages/block-forge-core/src/index.ts'],
+    allowed_imports_from: ['pkg-db'],
+    known_gaps: [
+      'important: heuristics never auto-apply — consumers MUST present suggestions for accept/tweak/reject per ADR-025',
+      'note: fixture blocks in src/__tests__/fixtures/ are frozen; never /content-pull into this folder',
+      'note: scaffold-only in Phase 1 — analyze/ rules/ compose/ trees + function exports land in Phases 2-4',
+    ],
+  },
+
   // ────────────────────────────────────────
   // APP DOMAINS
   // ────────────────────────────────────────
