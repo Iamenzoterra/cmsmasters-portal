@@ -1,0 +1,170 @@
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Manrope', system-ui, sans-serif;
+      background: hsl(var(--bg-page, 20 23% 97%));
+    }
+
+    .block-header-nav {
+      width: 100vw;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--spacing-md, 16px) 35px;
+      background: transparent;
+      transition: background-color 0.3s ease, border-color 0.3s ease;
+      position: sticky;
+      top: 0;
+      z-index: 9999;
+    }
+
+    .block-header-nav--scrolled {
+      background: hsl(var(--background, 0 0% 100%));
+      border-bottom: 1px solid hsl(var(--border-default, 30 19% 90%));
+    }
+
+    .block-header-nav__logo {
+      display: block;
+      flex-shrink: 0;
+    }
+
+    .block-header-nav__logo-full {
+      width: 112px;
+      height: 112px;
+      object-fit: contain;
+      display: block;
+      transition: width 0.3s ease, height 0.3s ease;
+    }
+
+    .block-header-nav--scrolled .block-header-nav__logo-full {
+      width: 75px;
+      height: 75px;
+    }
+
+    .block-header-nav__right {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-2xl);
+      flex-shrink: 0;
+    }
+
+    .block-header-nav__links {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-2xl, 32px);
+      list-style: none;
+    }
+
+    .block-header-nav__link {
+      color: hsl(var(--text-primary, 0 0% 9%));
+      font-size: var(--text-sm-font-size, 15px);
+      line-height: var(--text-sm-line-height, 20px);
+      text-decoration: none;
+      white-space: nowrap;
+      transition: color 0.15s ease;
+      cursor: pointer;
+    }
+
+    .block-header-nav__link:hover {
+      color: hsl(var(--text-link, 227 72% 51%));
+    }
+
+    .block-header-nav__actions {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm, 12px);
+    }
+
+    .block-header-nav__search {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm, 12px);
+      width: 280px;
+      height: 44px;
+      padding: 9px var(--spacing-md, 16px);
+      background: hsl(var(--bg-surface, 0 0% 100%));
+      border: 1px solid hsl(var(--border-default, 30 19% 90%));
+      border-radius: var(--rounded-full, 9999px);
+      box-shadow: -2px 3px 10px 0px hsl(var(--black-alpha-5, 0 0% 0% / 0.05));
+      cursor: text;
+    }
+
+    .block-header-nav__search-icon {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      color: hsl(var(--text-secondary, 0 0% 33%));
+    }
+
+    .block-header-nav__search-input {
+      border: none;
+      outline: none;
+      background: transparent;
+      color: hsl(var(--text-primary, 0 0% 9%));
+      font-family: inherit;
+      font-size: var(--text-base-font-size, 18px);
+      line-height: var(--text-base-line-height, 20px);
+      width: 100%;
+    }
+
+    .block-header-nav__search-input::placeholder {
+      color: hsl(var(--text-secondary, 0 0% 33%));
+    }
+
+    .block-header-nav__search-input::-webkit-search-cancel-button {
+      -webkit-appearance: none;
+    }
+
+    .block-header-nav__account {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--button-gap, 8px);
+      min-height: 36px;
+      padding: var(--button-padding-y-default, 8px) var(--button-padding-x-default, 16px);
+      background: transparent;
+      border: 1px solid hsl(var(--brand-deep-blue-2, 232 51% 15%));
+      border-radius: var(--button-radius-pill, 9999px);
+      color: hsl(var(--brand-deep-blue-2, 232 51% 15%));
+      font-family: inherit;
+      font-size: var(--text-sm-font-size, 15px);
+      line-height: var(--text-sm-line-height, 20px);
+      white-space: nowrap;
+      cursor: pointer;
+      transition: background-color 0.15s ease, transform 0.1s ease;
+    }
+
+    .block-header-nav__account:hover {
+      background: hsl(var(--brand-deep-blue-2, 232 51% 15%));
+      color: hsl(var(--text-inverse, 0 0% 100%));
+    }
+
+    .block-header-nav__account:active {
+      transform: scale(0.97);
+    }
+
+    .block-header-nav__account:focus-visible {
+      outline: 2px solid hsl(var(--border-focus, 227 72% 51%));
+      outline-offset: 2px;
+    }
+
+    .block-header-nav {
+      animation: header-slide-down 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    @keyframes header-slide-down {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .block-header-nav * {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
