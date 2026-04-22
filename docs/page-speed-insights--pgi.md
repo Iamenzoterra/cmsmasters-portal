@@ -75,17 +75,76 @@ Next.js SWC більше не транспілює `Array.at` / `Object.hasOwn` 
 `String.trimStart` тощо — всі ці методи нативно доступні в
 Baseline 2023. 11.5 KiB полифилів з SWC-шляху зникнуть.
 
+### Caveat (resolved — see Follow-up 2026-04-22)
+
+Початковий фікс (browserslist + target ES2022) не вбив wasted bytes —
+post-deploy PSI показав ті самі 11.5 KiB, а chunk hash не змінився
+(`18-2d765459f0cd2fba.js` до і після). Причина: полифили приходили
+**не зі SWC**, а з самого Next.js. Див. Follow-up нижче.
+
+---
+
+## #1 follow-up — Next.js власний polyfill-module
+
+### Root cause (після root-cause investigation)
+
+Next.js бандлить `node_modules/next/dist/build/polyfills/polyfill-module.js`
+(1.38 KiB source — `Array.prototype.at`, `Object.hasOwn`,
+`Object.fromEntries`, `Array.flat/flatMap`, `String.trim{Start,End}`,
+`Promise.finally`, `URL.canParse`) в **кожен** клієнтський build.
+Browserslist не впливає — модуль інжектиться через `app-globals.js`
+як relative import: `import '../build/polyfills/polyfill-module'`.
+
+`grep -rl 'Array.prototype.at||(Array.prototype.at' node_modules/` → один
+донор: `next/dist/build/polyfills/polyfill-module.js`.
+
+### Зміни
+
+**`apps/portal/polyfills-shim.js`** (новий файл) — мінімальний shim
+тільки з `URL.canParse` (єдиний метод з того списку, якого нема в
+Safari 16 / Chrome 108–119 / Firefox 108–114):
+
+```js
+if (typeof URL !== 'undefined' && !('canParse' in URL)) {
+  URL.canParse = function (url, base) {
+    try { return !!new URL(url, base) } catch (_) { return false }
+  }
+}
+```
+
+**`apps/portal/next.config.js`** — `NormalModuleReplacementPlugin` з
+regex на resolved disk path (alias на `'next/dist/build/…'` НЕ матчить
+relative import зсередини `app-globals.js` — тому regex):
+
+```js
+webpack: (config, { isServer, webpack }) => {
+  if (!isServer) {
+    config.plugins.push(
+      new webpack.NormalModuleReplacementPlugin(
+        /next[\\/]dist[\\/](esm[\\/])?build[\\/]polyfills[\\/]polyfill-module(\.js)?$/,
+        path.resolve(__dirname, './polyfills-shim.js'),
+      ),
+    )
+  }
+  return config
+}
+```
+
+### Verification (local build)
+
+- Chunk hash: `18-2d765459f0cd2fba.js` → `18-7960f85cf2c969f0.js` ✅
+- `grep 'Array.prototype.at=\|Object.hasOwn='` по всіх `.next/static/chunks/*.js` — **нуль матчів** ✅
+- `URL.canParse` присутній у `main-*.js` / `main-app-*.js` (shim дійшов у main chunk)
+
 ### Caveat
 
-У локальному build-і зараз ще видно 3 інстанси тих методів у тому ж
-chunk (по одному `Array.prototype.at`, `Object.hasOwn`, `Object.fromEntries`).
-Контекст навколо виглядає як **conditional inline polyfills**
-(`Array.prototype.at||(Array.prototype.at=function…)`) — тобто їх несе в
-бандл якась 3rd-party залежність (ймовірно Supabase SDK або суміжне).
-
-Browserslist не впливає на ці — вони записані в коді залежності as-is.
-Якщо post-deploy PageSpeed все ще лається — треба йти по графу
-залежностей і знаходити донора.
+- `URL.canParse` shim — обов'язковий: без нього Safari 16 users отримають
+  `TypeError`, якщо десь в deps з'явиться `URL.canParse(…)`. Якщо колись
+  піднімемо browserslist до Safari 17 / Chrome 120 — shim можна видалити
+  зовсім.
+- Alias через `config.resolve.alias` НЕ працює для relative import-ів з
+  `node_modules/next/dist/esm/client/app-globals.js`. Тільки
+  `NormalModuleReplacementPlugin` з regex по resolved path.
 
 ---
 
