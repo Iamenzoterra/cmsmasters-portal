@@ -70,6 +70,27 @@ function sortBreakpoints(
   )
 }
 
+/** Resolve a field through BP inheritance: current → wider BPs → base.
+ *  User sets drawer-width at desktop or tablet — mobile inherits it unless
+ *  mobile overrides explicitly. Always walks toward wider BPs so the
+ *  "default" is whatever the largest BP set. */
+function inheritGridField<K extends keyof LayoutConfig['grid'][string]>(
+  bpName: string,
+  sortedBps: [string, LayoutConfig['grid'][string]][],
+  field: K,
+): LayoutConfig['grid'][string][K] | undefined {
+  // sortedBps is desktop-first. Find current index, then look at current
+  // and all wider BPs in order.
+  const idx = sortedBps.findIndex(([n]) => n === bpName)
+  if (idx < 0) return undefined
+  // Check current BP, then widen (toward index 0).
+  for (let i = idx; i >= 0; i--) {
+    const value = sortedBps[i][1][field]
+    if (value !== undefined) return value
+  }
+  return undefined
+}
+
 // eslint-disable-next-line sonarjs/cognitive-complexity
 export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
   const out: string[] = []
@@ -556,18 +577,17 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
       out.push('    display: revert;')
       out.push('  }')
 
-      // YAML grid[bp].drawer-width sets the panel width for THIS
-      // breakpoint — applies to drawer mode (panel) AND push mode
-      // (sidebar) via the two shell tokens. Only one mode is active
-      // per BP so writing both is safe. Dropping the legacy
-      // `.drawer-panel { width }` emission — shell doesn't use a
-      // separate `.drawer-panel` element anymore, sidebars ARE the
-      // panels, and they read `--drawer-panel-width` / `--drawer-push-width`.
-      if (grid['drawer-width']) {
+      // YAML drawer-width sets the panel width for this BP. If unset
+      // here, inherit from the next wider BP (tablet → desktop). Only
+      // one mode is active per BP so writing both tokens is safe.
+      // Dropped the legacy `.drawer-panel { width }` emission —
+      // sidebars ARE the panels, they read the tokens directly.
+      const effectiveDrawerWidth = inheritGridField(bpName, bps, 'drawer-width')
+      if (effectiveDrawerWidth) {
         out.push('')
         out.push('  :root {')
-        out.push(`    --drawer-panel-width: ${grid['drawer-width']};`)
-        out.push(`    --drawer-push-width: ${grid['drawer-width']};`)
+        out.push(`    --drawer-panel-width: ${effectiveDrawerWidth};`)
+        out.push(`    --drawer-push-width: ${effectiveDrawerWidth};`)
         out.push('  }')
       }
     }

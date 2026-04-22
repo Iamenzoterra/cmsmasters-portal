@@ -305,6 +305,23 @@ function DrawerSettingsControl({ config, activeBreakpoint, gridKey, onUpdateGrid
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gridKey, grid['drawer-width']])
 
+  // Inherited value from a wider BP — shown as placeholder so the
+  // user sees what's actually live if they leave this BP unset.
+  // Walks desktop → tablet → current (ascending-width order, looking
+  // for the nearest wider BP that sets drawer-width).
+  const inheritedWidth = (() => {
+    if (grid['drawer-width']) return undefined
+    const sorted = Object.entries(config.grid)
+      .sort(([, a], [, b]) => parseInt(b['min-width'], 10) - parseInt(a['min-width'], 10))
+    const idx = sorted.findIndex(([n]) => n === gridKey)
+    if (idx < 0) return undefined
+    for (let i = 0; i < idx; i++) {
+      const v = sorted[i][1]['drawer-width']
+      if (v) return { bp: sorted[i][0], value: v.replace(/px$/, '') }
+    }
+    return undefined
+  })()
+
   const trigger = grid['drawer-trigger'] ?? 'peek'
   const position = grid['drawer-position'] ?? 'both'
 
@@ -348,7 +365,14 @@ function DrawerSettingsControl({ config, activeBreakpoint, gridKey, onUpdateGrid
 
       {/* Panel width */}
       <div className="lm-inspector__row" style={{ marginTop: '8px' }}>
-        <span className="lm-inspector__label">Panel width</span>
+        <span className="lm-inspector__label">
+          Panel width
+          {inheritedWidth && (
+            <span className="lm-inspector__hint">
+              {` inherits ${inheritedWidth.value}px from ${inheritedWidth.bp}`}
+            </span>
+          )}
+        </span>
       </div>
       <div className="lm-width-control">
         <input
@@ -356,7 +380,7 @@ function DrawerSettingsControl({ config, activeBreakpoint, gridKey, onUpdateGrid
           type="number"
           min="200"
           max="800"
-          placeholder="400"
+          placeholder={inheritedWidth?.value ?? '400'}
           value={widthDraft}
           onChange={(e) => setWidthDraft(e.target.value)}
           onBlur={() => {

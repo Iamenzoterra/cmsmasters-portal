@@ -324,6 +324,29 @@ export function Canvas({ config, tokens, activeBreakpoint, viewportWidth, gridKe
           </div>
         )}
 
+        {/* Drawered / pushed sidebars indicator — canvas triggers own
+            their open/close click, so to SELECT the slot for editing
+            we give each one a clickable badge here. Reuses the same
+            visual as hidden so the two indicator rows line up. */}
+        {drawerSlots.length > 0 && (
+          <div className="lm-hidden-sidebars">
+            {drawerSlots.map((name) => {
+              const mode = effectiveVisibility(name)
+              return (
+                <button
+                  key={name}
+                  type="button"
+                  className={`lm-hidden-sidebars__badge${name === selectedSlot ? ' lm-hidden-sidebars__badge--active' : ''}`}
+                  onClick={() => onSlotSelect(name)}
+                  title={`Select ${name}`}
+                >
+                  {name} ({mode})
+                </button>
+              )
+            })}
+          </div>
+        )}
+
         {/* Hover overlay */}
         {hoverInfo && viewportRef.current && (
           <SlotOverlay
