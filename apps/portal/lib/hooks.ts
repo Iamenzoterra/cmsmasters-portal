@@ -43,14 +43,31 @@ export function resolveSlots(html: string, slots: Record<string, string>): strin
 }
 
 /**
+ * Strip document-shell tags that must never appear in an embedded fragment:
+ * <link> (preconnect, dns-prefetch, external stylesheets, relative tokens.css
+ * that 404s under /themes/[slug]/), <meta>, <title>, <!doctype>. Fonts and
+ * resource hints belong in the root <head> (next/font handles Manrope),
+ * per-block styles come through block.css. Any of these that leak from
+ * Supabase-stored block/layout HTML get stripped defensively here.
+ */
+export function sanitizeEmbedHTML(html: string): string {
+  return html
+    .replace(/<link\b[^>]*>/gi, '')
+    .replace(/<meta\b[^>]*>/gi, '')
+    .replace(/<title\b[^>]*>[\s\S]*?<\/title>/gi, '')
+    .replace(/<!doctype\b[^>]*>/gi, '')
+}
+
+/**
  * Strip debug elements from layout HTML (debug toggle buttons, debug scripts).
  */
 export function stripDebug(html: string): string {
   // Remove debug toggle button
-  return html
+  const cleaned = html
     .replace(/<button\s+id="debugToggle"[\s\S]*?<\/button>/g, '')
     .replace(/<!--\s*DEBUG[^>]*-->/g, '')
     .replace(/<script>[\s\S]*?debugToggle[\s\S]*?<\/script>/g, '')
+  return sanitizeEmbedHTML(cleaned)
 }
 
 /**
@@ -210,13 +227,13 @@ export function renderBlock(
   if (cleaned.trim()) output += `<style>${cleaned}</style>\n`
 
   if (hasVariants) {
-    const baseWrap = `<div data-variant="base">${html}</div>`
+    const baseWrap = `<div data-variant="base">${sanitizeEmbedHTML(html)}</div>`
     const variantWraps = entries
-      .map(([name, v]) => `<div data-variant="${name}" hidden>${v.html}</div>`)
+      .map(([name, v]) => `<div data-variant="${name}" hidden>${sanitizeEmbedHTML(v.html)}</div>`)
       .join('')
     output += `<div data-block-shell="${slug}">${baseWrap}${variantWraps}</div>\n`
   } else {
-    output += `<div data-block-shell="${slug}">${html}</div>\n`
+    output += `<div data-block-shell="${slug}">${sanitizeEmbedHTML(html)}</div>\n`
   }
 
   if (js?.trim()) output += `<script type="module">${js}</script>\n`
