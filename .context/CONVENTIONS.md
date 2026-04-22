@@ -435,3 +435,47 @@ Layout Maker's css-generator emits `container-type: inline-size; container-name:
 ### Responsive tokens file
 
 `packages/ui/src/theme/tokens.responsive.css` is a hand-maintained companion to `tokens.css`. `/sync-tokens` does NOT touch it. Currently two clamp-based scaffold tokens (`--space-section`, `--text-display`); real population is deferred to WP-029 so design choices can be informed by real use in WP-025/026. Import order in portal globals: `tokens.css` before `tokens.responsive.css` before `portal-blocks.css`.
+
+---
+
+## Block Forge Core — when to call (WP-025, ADR-025)
+
+`@cmsmasters/block-forge-core` is the pure-function engine behind responsive block authoring. Consumed by `tools/block-forge` (WP-026) and Studio Responsive tab (WP-027); never by portal at render time.
+
+### Public surface (6 functions)
+
+| Function | Returns | Purpose |
+|---|---|---|
+| `analyzeBlock({html, css})` | `BlockAnalysis` | PostCSS-AST parse → flat rules list + element tree + warnings |
+| `generateSuggestions(analysis)` | `Suggestion[]` | Six ADR-025 heuristics in fixed order; IDs are deterministic djb2 hashes |
+| `applySuggestions(block, accepted)` | `BlockOutput` | Emit accepted suggestions as `@container slot (max-width:Npx)` chunks (or top-level for `bp:0`). `accepted: []` → identity |
+| `emitTweak(tweak, css)` | `string` | PostCSS mutation — append chunk / add inner rule / update decl |
+| `composeVariants(base, variants)` | `BlockOutput` | Scope variant CSS under `[data-variant="{name}"]` + reveal-rule in `@container` |
+| `renderForPreview(block, opts?)` | `PreviewResult` | Portal-parity preview — `<div data-block-shell="{slug}">…</div>` + `stripGlobalPageRules` CSS |
+
+Types: `BlockInput`, `BlockOutput`, `BlockAnalysis`, `Rule`, `Element`, `Suggestion`, `Heuristic`, `Confidence`, `Tweak`, `Variant`, `PreviewResult` — from `packages/block-forge-core/src/lib/types.ts`.
+
+### Variant name → breakpoint convention (locked)
+
+| Variant name | Reveal breakpoint |
+|---|---|
+| `sm` or `/^4\d\d$/` | `(max-width: 480px)` |
+| `md` or `/^6\d\d$/` | `(max-width: 640px)` |
+| `lg` or `/^7\d\d$/` | `(max-width: 768px)` |
+| anything else | no reveal rule — `onWarning` fires, variant CSS still inlined |
+
+`composeVariants` warns (via optional callback) for unknown names; it never throws. Block authors pick names from this table or document a new one here.
+
+### `bp: 0` — unconditional rules
+
+`media-maxwidth` heuristic emits suggestions with `bp: 0`. In `applySuggestions` and `emitTweak` this is a branch: `bp === 0` → top-level rule, NOT wrapped in `@container`. Other heuristics never emit `bp: 0`.
+
+### Why tokenized content doesn't trigger clamp suggestions
+
+Heuristics intentionally skip values containing `var(…)`, `calc(…)`, `clamp(…)`, `min(…)`, `max(…)`, `%`, `vw/vh/em` (but NOT `rem`). Token-driven padding like `var(--spacing-5xl, 64px)` is already a design-system decision — rewriting it into `clamp()` would fight the token layer. Feature, not bug.
+
+To get a clamp suggestion, author raw `px`/`rem` at ≥40px spacing or ≥24px font-size. If you see a block you expected to light up and didn't, check the CSS for `var(` first.
+
+### Portal render parity
+
+`renderForPreview` matches `apps/portal/lib/hooks.ts` → `renderBlock()` non-variant output: wrap in `<div data-block-shell="{slug}">`, pass CSS through `stripGlobalPageRules`. It does NOT prefix-scope with `.block-{slug}` — portal relies on authored `.block-{slug}` selectors already present in block CSS.

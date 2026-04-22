@@ -5,6 +5,7 @@
 > Замінює: hardcoded packages/blocks/ schemas model
 > Контекст: WP-005A Phases 0-2 done (type→block rename), Phases 3-4 cancelled
 > Responsive update 2026-04-22 (WP-024 / ADR-025): `blocks.variants` JSONB column added; `BlockRenderer` + `renderBlock()` inline variants as `<div data-variant>` siblings revealed by `@container slot (…)` rules; leaf slots expose `container-type: inline-size; container-name: slot` via LM-generated layout CSS. Existing blocks render unchanged (null variants = byte-identical output). See `.context/CONVENTIONS.md` → "Responsive blocks".
+> Engine update 2026-04-23 (WP-025 / ADR-025): `@cmsmasters/block-forge-core` ships the pure-function pipeline — `analyzeBlock` → `generateSuggestions` (6 heuristics) → `applySuggestions` / `emitTweak` / `composeVariants` / `renderForPreview`. Consumed by WP-026 (tools/block-forge Vite app) and WP-027 (Studio Responsive tab). See `.context/CONVENTIONS.md` → "Block Forge Core".
 
 ---
 

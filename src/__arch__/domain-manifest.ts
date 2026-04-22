@@ -245,8 +245,8 @@ export const DOMAINS: Record<string, DomainDefinition> = {
     allowed_imports_from: ['pkg-db'],
     known_gaps: [
       'important: heuristics never auto-apply — consumers MUST present suggestions for accept/tweak/reject per ADR-025',
+      'important: heuristics skip values containing var()/calc()/clamp()/min()/max()/%/vw/vh/em (rem allowed) — tokenized content does NOT trigger clamp suggestions by design',
       'note: fixture blocks in src/__tests__/fixtures/ are frozen; never /content-pull into this folder',
-      'note: Phase 4 shipped compose/ + 4 compose-path exports + 3 frozen fixtures + snapshot test. WP-025 code-complete — Phase 5 Close ships docs propagation only.',
     ],
   },
 

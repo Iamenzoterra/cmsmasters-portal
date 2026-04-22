@@ -2,7 +2,7 @@
 
 > Read this file FIRST. It gives you the full picture in 5 minutes.
 > Then read the specific layer spec for your current task.
-> Last updated: 22 April 2026
+> Last updated: 23 April 2026
 
 ---
 
@@ -116,6 +116,7 @@ Layer 2: Portal (Next.js 15)      ✅ DONE (WP-007: layout editor, theme pages, 
 Global Elements V2                ✅ DONE (WP-008: block categories, defaults, layout slot overrides, new portal resolution)
 Layer 3: Dashboard + Admin        ✅ DONE (WP-017: 9 phases, DB migration + auth refactor + 14 API endpoints + 2 SPAs)
 Responsive Blocks Foundation      ✅ DONE (WP-024: blocks.variants JSONB + BlockRenderer inlining + slot container-type + tokens.responsive.css scaffold — unblocks WP-025/026/027/028; ADR-025)
+Block Forge Core                  ✅ DONE (WP-025: pure-function engine — 6 public fns, 75 tests, 3 frozen fixtures + E2E snapshot; unblocks WP-026 tools/block-forge + WP-027 Studio Responsive tab; ADR-025)
 ```
 
 ### What's next
