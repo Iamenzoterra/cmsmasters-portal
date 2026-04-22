@@ -271,7 +271,7 @@ Running `npm run arch-test` continues to use only `src/__arch__/vitest.config.ts
 
 ## Git
 
-- **Commit:** `{pending — will embed SHA post-commit per WP-024 Phase 4 precedent}`
+- **Commit:** `249a421e` — `chore(logs): WP-025 Phase 0 RECON — audit + carry-overs for Phase 1 scaffold [WP-025 phase 0]`
 - **Staged:** `logs/wp-025/phase-0-task.md`, `logs/wp-025/phase-0-result.md` (only)
 - **Message:** `chore(logs): WP-025 Phase 0 RECON — audit + carry-overs for Phase 1 scaffold [WP-025 phase 0]`
 
