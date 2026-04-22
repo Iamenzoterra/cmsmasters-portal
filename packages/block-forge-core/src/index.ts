@@ -13,3 +13,5 @@ export type {
 } from './lib/types'
 
 export { analyzeBlock } from './analyze/analyze-block'
+
+export { generateSuggestions } from './rules'
