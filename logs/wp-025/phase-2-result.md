@@ -213,6 +213,6 @@ Not staged: nothing else touched.
 
 ## Git
 
-- **Commit:** `{pending}` — `feat(pkg-block-forge-core): analyzeBlock + CSS/HTML AST wrappers [WP-025 phase 2]`
+- **Commit:** `a0972344` — `feat(pkg-block-forge-core): analyzeBlock + CSS/HTML AST wrappers [WP-025 phase 2]`
 
 Final SHA embedded post-commit via follow-up `chore(logs)` per Phase 0 / Phase 1 / WP-024 Phase 4 precedent.
