@@ -200,6 +200,10 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'packages/block-forge-core/src/index.ts',
       'packages/block-forge-core/src/lib/types.ts',
       'packages/block-forge-core/src/__tests__/smoke.test.ts',
+      'packages/block-forge-core/src/analyze/parse-css.ts',
+      'packages/block-forge-core/src/analyze/parse-html.ts',
+      'packages/block-forge-core/src/analyze/analyze-block.ts',
+      'packages/block-forge-core/src/__tests__/analyze-block.test.ts',
     ],
     owned_tables: [],
     owned_routes: [],
@@ -208,7 +212,7 @@ export const DOMAINS: Record<string, DomainDefinition> = {
     known_gaps: [
       'important: heuristics never auto-apply — consumers MUST present suggestions for accept/tweak/reject per ADR-025',
       'note: fixture blocks in src/__tests__/fixtures/ are frozen; never /content-pull into this folder',
-      'note: scaffold-only in Phase 1 — analyze/ rules/ compose/ trees + function exports land in Phases 2-4',
+      'note: Phase 2 shipped analyze/ + analyzeBlock export. rules/ compose/ trees + remaining function exports land in Phases 3-4',
     ],
   },
 

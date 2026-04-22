@@ -11,3 +11,5 @@ export type {
   Variant,
   PreviewResult,
 } from './lib/types'
+
+export { analyzeBlock } from './analyze/analyze-block'
