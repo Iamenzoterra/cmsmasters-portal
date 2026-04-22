@@ -1,7 +1,7 @@
 # WP-024 Phase 4 — Result
 
 > Phase: 4 of 5 (Slot container-type + tokens.responsive.css scaffold)
-> Commit: `<filled post-commit>` (pre-commit HEAD was `ebccfa4d`)
+> Commit: `e43533b9` (pre-commit HEAD was `ebccfa4d`)
 > Domains touched: `pkg-ui`, `app-portal`, `infra-tooling`
 
 ---
@@ -119,4 +119,4 @@ Turned on the browser-side responsive mechanism for leaf slots: the layout-maker
 
 ## Git commit SHA
 
-`<filled post-commit>`
+`e43533b9`
