@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
-import { useForm, useWatch } from 'react-hook-form'
+import { useForm, useWatch, type UseFormReturn } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { pageSchema, type CreatePagePayload } from '@cmsmasters/validators'
 import type { Page, Block, SlotConfig } from '@cmsmasters/db'
@@ -10,7 +10,7 @@ import { Button } from '@cmsmasters/ui'
 import { fetchPageById, createPageApi, updatePageApi, deletePageApi, fetchPageBlocks, updatePageBlocks } from '../lib/page-api'
 import { fetchAllBlocks } from '../lib/block-api'
 import { nameToSlug } from '../lib/form-defaults'
-import { useToast } from '../components/toast'
+import { useToast, type ToastType } from '../components/toast'
 import { StyledSelect } from '../components/styled-select'
 import { FormSection } from '../components/form-section'
 import { CharCounter } from '../components/char-counter'
@@ -56,7 +56,7 @@ const LAYOUT_SCOPES = [
   { value: 'theme', label: 'Theme Page' },
 ] as const
 
-const GLOBAL_SLOTS = GLOBAL_SLOT_NAMES
+const GLOBAL_SLOTS: readonly string[] = GLOBAL_SLOT_NAMES
 
 /** Map Layout Maker friendly identifiers to DB block_type values. */
 const ALLOWED_TYPE_MAP: Record<string, string> = {
@@ -110,9 +110,9 @@ interface ImportContext {
   setLayoutCode: (code: string) => void
   setSlotConfig: (update: SlotConfig | ((prev: SlotConfig) => SlotConfig)) => void
   setLayoutScope: (scope: string) => void
-  form: { getValues: (key: string) => string; setValue: (key: string, val: string, opts: { shouldDirty: boolean }) => void }
+  form: UseFormReturn<CreatePagePayload>
   isNew: boolean
-  toast: (opts: { type: string; message: string }) => void
+  toast: (opts: { type: ToastType; message: string }) => void
 }
 
 /** Merge an incoming slot_config (from JSON import) with existing state:

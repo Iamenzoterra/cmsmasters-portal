@@ -453,10 +453,8 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       // components
       'apps/command-center/components/ADRViewer.tsx',
       'apps/command-center/components/ActivityFeed.tsx',
-      'apps/command-center/components/AgentationToolbar.tsx',
       'apps/command-center/components/AppCard.tsx',
       'apps/command-center/components/BurndownChart.tsx',
-      'apps/command-center/components/ComponentCard.tsx',
       'apps/command-center/components/ContentOverview.tsx',
       'apps/command-center/components/DependencyGraph.tsx',
       'apps/command-center/components/DesignSystemProgress.tsx',
@@ -472,12 +470,9 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'apps/command-center/components/TasksView.tsx',
       'apps/command-center/components/ThemeStatusTable.tsx',
       // ui
-      'apps/command-center/ui/AtomsShowcase.tsx',
       'apps/command-center/ui/Card.tsx',
-      'apps/command-center/ui/Checkbox.tsx',
       'apps/command-center/ui/DonutChart.tsx',
       'apps/command-center/ui/Input.tsx',
-      'apps/command-center/ui/Modal.tsx',
       'apps/command-center/ui/ProgressBar.tsx',
       'apps/command-center/ui/Select.tsx',
       'apps/command-center/ui/StatusBadge.tsx',
@@ -486,14 +481,12 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       // lib
       'apps/command-center/lib/data.ts',
       'apps/command-center/lib/phase-sync.ts',
-      'apps/command-center/lib/scanner.ts',
       'apps/command-center/lib/types.ts',
       'apps/command-center/lib/utils.ts',
       // cli
       'apps/command-center/cli/report.ts',
       'apps/command-center/cli/scan.ts',
       // theme
-      'apps/command-center/theme/tokens.ts',
       'apps/command-center/theme/utils.ts',
       // types
       'apps/command-center/types/tailwindcss.d.ts',
