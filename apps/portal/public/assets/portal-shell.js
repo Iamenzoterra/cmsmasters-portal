@@ -138,19 +138,37 @@
     return Number.isFinite(n) ? n : 2000
   }
 
-  /** Every trigger variant opens on a single tap now. The FAB used
-   *  to have an arm-then-open two-step flow that grew the circle
-   *  into a pill — user explicitly asked to kill the resize, so the
-   *  intermediate state is gone. Tap the same-side trigger while
-   *  open to close. */
-  function handleTriggerClick(_btn, side) {
+  /** Peek / hamburger / tab: one tap opens directly.
+   *  FAB: two-step. First tap ARMS the trigger — pill grows, label
+   *  ("Menu" / "Theme Details") fades in so user knows what they're
+   *  about to open. Second tap (or --drawer-fab-arm-timeout auto-
+   *  fire) opens the drawer. Tap same-side while open to close. */
+  function handleTriggerClick(btn, side) {
     if (document.body.classList.contains('drawer-is-open-' + side)) {
       closeDrawer()
       clearBothArms()
       return
     }
-    clearBothArms()
-    openDrawer(side)
+    if (!isFab(btn)) {
+      clearBothArms()
+      openDrawer(side)
+      return
+    }
+    if (isArmed(side)) {
+      clearBothArms()
+      openDrawer(side)
+      return
+    }
+    var other = side === 'left' ? 'right' : 'left'
+    clearArm(other)
+    document.body.classList.add('drawer-armed-' + side)
+    armTimers[side] = setTimeout(function () {
+      armTimers[side] = null
+      if (isArmed(side)) {
+        clearArm(side)
+        openDrawer(side)
+      }
+    }, getArmTimeout())
   }
 
   document.addEventListener('click', function (e) {

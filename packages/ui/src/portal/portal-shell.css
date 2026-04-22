@@ -299,20 +299,18 @@ body.drawer-is-open-right { --drawer-open-right: 0; }
   box-shadow: var(--drawer-trigger-shadow-right-hover);
 }
 
-/* FAB variant — corner trigger, stable 44×44 at every state.
+/* FAB variant — corner trigger with three states:
  *
- * Two states visually:
- *   rest  — chevron points AWAY from the edge (close affordance is
- *           hidden, chevron is the "open me" icon).
- *   open  — chevron sprite hidden, close (X) sprite shown. Same
- *           44×44 circle, just icon content swaps.
+ *   rest    — 44×44 circle, chevron sprite visible.
+ *   armed   — pill grows DOWN. Chev sprite collapses with the
+ *             icon-wrap, label reveals and reads bottom-to-top
+ *             (vertical-rl). First-tap feedback, user knows what
+ *             they're about to open.
+ *   open    — 44×44 circle, close (X) sprite visible. Armed class
+ *             cleared by portal-shell.js so pill collapses back.
  *
- * The trigger NEVER resizes. An earlier "armed" pill-growth state
- * was removed per user request — see PARITY-LOG. Armed body class
- * is still set by portal-shell.js for the 2-step open flow, but
- * it no longer drives any visual change on the FAB.
- *
- * All dimensions come from --drawer-fab-* tokens. */
+ * Icon-wrap contains BOTH sprites (chev + close) stacked absolute.
+ * Only one is visible at a time via opacity swap. */
 
 .drawer-trigger--fab {
   top: auto;
@@ -324,22 +322,20 @@ body.drawer-is-open-right { --drawer-open-right: 0; }
   color: var(--drawer-fab-fg);
   box-shadow: var(--drawer-fab-shadow);
   display: flex;
+  flex-direction: column-reverse;
   align-items: center;
-  justify-content: center;
+  overflow: hidden;
   padding: 0;
   transform: none;
   transition:
-    transform  var(--drawer-push-content-duration) var(--drawer-push-content-easing),
-    opacity    240ms ease;
+    transform var(--drawer-push-content-duration) var(--drawer-push-content-easing),
+    height    380ms var(--drawer-push-content-easing),
+    opacity   240ms ease;
 }
 
 .drawer-trigger--fab.drawer-trigger--left  { left:  var(--drawer-fab-inline); right: auto; }
 .drawer-trigger--fab.drawer-trigger--right { right: var(--drawer-fab-inline); left:  auto; }
 
-/* Icon-wrap is the 44×44 centering box; it NEVER resizes. The
- * rotation for chevron direction lives on the chev sprite itself
- * (not the wrap) so the close (X) sprite reads naturally on both
- * sides. */
 .drawer-trigger--fab .drawer-trigger__icon-wrap {
   width: var(--drawer-fab-size);
   height: var(--drawer-fab-size);
@@ -349,28 +345,33 @@ body.drawer-is-open-right { --drawer-open-right: 0; }
   justify-content: center;
   position: relative;
   background: transparent;
+  transition:
+    height  380ms var(--drawer-push-content-easing),
+    margin  380ms var(--drawer-push-content-easing),
+    opacity 240ms ease;
 }
 
-/* Both sprites share the same absolute position; only one is
- * visible at a time. Explicit stroke on the <svg> too — iOS Safari
- * sometimes fails to inherit stroke from parent `color` when
- * `currentColor` is the attribute value. Belt-and-suspenders on
- * top of the already-duplicated attributes on the <path>. */
+/* Both sprites overlap via absolute position; opacity picks which
+ * is visible. Explicit stroke/fill here too — iOS Safari sometimes
+ * fails to inherit stroke=currentColor from parent <svg> onto the
+ * <path>. Triple defense: inline <svg>/<path> attrs + this CSS +
+ * currentColor resolution from the FAB's `color`. */
 .drawer-trigger--fab .drawer-trigger__icon {
   width: var(--drawer-fab-chev-size);
   height: var(--drawer-fab-chev-size);
   position: absolute;
   stroke: currentColor;
   fill: none;
+  transition: opacity 220ms ease;
 }
 
-/* Chevron direction: left FAB shows chevron pointing right (away
- * from left edge), right FAB rotates 180° to point left (away
- * from right edge). */
+/* Chevron direction — left FAB points right; right FAB rotates
+ * 180° to point left. */
 .drawer-trigger--fab.drawer-trigger--left  .drawer-trigger__icon--chev { transform: rotate(0deg); }
 .drawer-trigger--fab.drawer-trigger--right .drawer-trigger__icon--chev { transform: rotate(180deg); }
 
-/* Chevron visible at rest, close hidden. Swap on drawer-is-open-{side}. */
+/* Close (X) sprite hidden at rest and in armed; revealed when
+ * drawer opens on that side. */
 .drawer-trigger--fab .drawer-trigger__icon--close { opacity: 0; }
 body.drawer-is-open-left  .drawer-trigger--fab.drawer-trigger--left  .drawer-trigger__icon--chev,
 body.drawer-is-open-right .drawer-trigger--fab.drawer-trigger--right .drawer-trigger__icon--chev {
@@ -381,11 +382,42 @@ body.drawer-is-open-right .drawer-trigger--fab.drawer-trigger--right .drawer-tri
   opacity: 1;
 }
 
-/* Label is never shown on the FAB button anymore — pill growth was
- * the old way to reveal it, and we dropped that. Keep it
- * display:none so HTML-level label markup doesn't leak visually. */
+/* Vertical label reads bottom-to-top. Hidden by default (0 opacity);
+ * fades in on armed with a small delay so the height transition
+ * begins before the text appears. Physical padding-top/bottom
+ * because writing-mode: vertical-rl remaps padding-block to the
+ * horizontal axis. */
 .drawer-trigger--fab .drawer-trigger__label {
-  display: none;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: var(--drawer-fab-label-size);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--drawer-fab-label-letter-spacing);
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0;
+  padding-top: var(--drawer-fab-label-padding-block);
+  padding-bottom: var(--drawer-fab-label-padding-block);
+  transition: opacity 220ms ease 160ms;
+}
+
+/* Armed — pill grows downward, icon-wrap collapses (both sprites
+ * disappear with it), label reveals. Body class drawer-armed-{side}
+ * is set by portal-shell.js on first tap. */
+body.drawer-armed-left  .drawer-trigger--fab.drawer-trigger--left,
+body.drawer-armed-right .drawer-trigger--fab.drawer-trigger--right {
+  height: auto;
+}
+body.drawer-armed-left  .drawer-trigger--fab.drawer-trigger--left  .drawer-trigger__icon-wrap,
+body.drawer-armed-right .drawer-trigger--fab.drawer-trigger--right .drawer-trigger__icon-wrap {
+  height: 0;
+  margin: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+body.drawer-armed-left  .drawer-trigger--fab.drawer-trigger--left  .drawer-trigger__label,
+body.drawer-armed-right .drawer-trigger--fab.drawer-trigger--right .drawer-trigger__label {
+  opacity: 1;
 }
 
 /* Push mode — intentionally has NO globally-applied rules in the
