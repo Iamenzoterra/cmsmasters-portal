@@ -29,6 +29,7 @@ status: full
 
 - **`resolveSlots` is single-pass.** Nested slots work because layout HTML (from DB) already contains `<main data-slot="content"><div data-slot="theme-blocks"></div></main>` — the outer is non-empty so it's skipped; the inner is empty and gets filled. NO runtime injection needed. (WP-020)
 - **The temporary injection regex in `themes/[slug]/page.tsx` (commit `640faa93`) has been deleted** (WP-020 Phase 4). Don't re-add it.
+- **Block variants are server-inlined.** `BlockRenderer` RSC + `renderBlock()` helper accept optional `variants?: BlockVariants | null`. When absent/null/empty, output is BYTE-IDENTICAL to pre-WP-024. When present, all variants emit as sibling `<div data-variant="base">…</div>` + `<div data-variant="{name}" hidden>…</div>` inside the scope wrapper; base + variant CSS concatenate into one `<style>` tag. `@container slot (max-width: …)` rules inside block CSS reveal the matching variant at each slot width. Variant keys regex-gated upstream by validators (`/^[a-z0-9-]+$/`); CSS content not sanitized. (WP-024 / ADR-025)
 
 ## Traps & Gotchas
 
@@ -39,6 +40,9 @@ status: full
 - **`stripDebug` removes debug toggle buttons** — blocks from /block-craft may include debug UI that must be stripped before production render.
 - **Portal uses its own Supabase client** (`lib/supabase.ts`) with the anon key — NOT the service_role from the API. RLS applies to all portal reads.
 - **`getThemeBySlug` uses `.eq('status', 'published')`** — draft themes are invisible to the portal.
+- **Two scope-wrapper conventions coexist — pre-existing divergence.** `BlockRenderer` RSC emits `<div class="block-{slug}">`; `renderBlock()` string helper emits `<div data-block-shell="{slug}">`. Both work for CSS scoping in practice. WP-024 flagged but did not normalize (scope discipline). Watch when reading across the two render paths — future WP candidate.
+- **`stripGlobalPageRules` matches top-level `html`/`body` only.** The regex `/(^|[}\s])(html|body)\s*\{[^}]*\}/g` stops at the first closing brace — `@container … { body { … } }` would have its inner `body {…}` stripped. Real variant/`@container` CSS uses class/attribute selectors under `.block-{slug}`, not raw `body`, so this edge case is harmless in practice (WP-024 phase-3 regression test confirms).
+- **Theme-page `.slot-inner` wrapper bypasses slot container-type.** `apps/portal/app/themes/[slug]/page.tsx:189` injects a hand-written `<div class="slot-inner">` NOT inside `[data-slot]` — LM-generated `[data-slot] > .slot-inner { container-type: inline-size }` does NOT apply to it. Blocks rendered through the theme-page slot-blocks closure cannot use `@container slot` queries against that wrapper's width. Composed pages (`[[...slug]]/page.tsx`) unaffected. Forward-risk deferred to a future WP.
 
 ## Blast Radius
 

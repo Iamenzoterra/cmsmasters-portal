@@ -415,3 +415,23 @@ export async function fetchAllBlocks(): Promise<Block[]> {
 - `packages/ui/src/portal/portal-blocks.css` — `.cms-btn` (4 variants, 3 sizes, all states), `.cms-card`, `[data-tooltip]`
 - `packages/ui/src/portal/animate-utils.js` — `trackMouse`, `magnetic`, `stagger`, `spring`, `onVisible`
 - `packages/ui/src/theme/tokens.css` — design tokens (Figma source of truth, synced via `/sync-tokens`)
+
+---
+
+## Responsive blocks (WP-024, ADR-025)
+
+### Slot container-type
+
+Layout Maker's css-generator emits `container-type: inline-size; container-name: slot` on the generic `[data-slot] > .slot-inner` rule. Block CSS may author `@container slot (max-width: …) { … }` to react to the block's slot width. Only leaf slots carry containment; container slots (with `nested-slots`) hold nested `<div data-slot>` children and correctly skip the rule.
+
+**Forward-risk — theme-page wrapper:** `apps/portal/app/themes/[slug]/page.tsx` constructs a hand-written `<div class="slot-inner">` (NOT inside `[data-slot]`) for the `theme-blocks` closure. That wrapper does NOT get `container-type` from LM-generated layout CSS, so `@container slot` queries inside those blocks evaluate against the nearest ancestor instead of the theme-blocks slot. Composed pages (`[[...slug]]/page.tsx`) are unaffected. Deferred to a future WP.
+
+**Forward-risk — lazy re-export rollout:** the `container-type` contract only lands on a theme when its layout CSS is regenerated and republished. Existing themes keep serving pre-WP-024 layout CSS until someone opens the layout in LM and hits Export. WP-024 does not batch-re-export — rollout is edit-driven.
+
+### Block variants
+
+`blocks.variants` is a nullable JSONB column of shape `Record<string, { html: string; css: string }> | null`. Null means "no variants" — renderer output is byte-identical to pre-WP-024. When present, `BlockRenderer` / `renderBlock()` inline all variants as sibling `<div data-variant="base">` + `<div data-variant="{name}" hidden>` elements; base + variant CSS concatenate into one `<style>` tag; `@container` rules inside block CSS reveal the matching variant at each slot width. Variant keys regex-gated by validators (`/^[a-z0-9-]+$/`); CSS content is not sanitized at render time — variant CSS MUST scope under `.block-{slug}` (authoring convention, enforced by block author).
+
+### Responsive tokens file
+
+`packages/ui/src/theme/tokens.responsive.css` is a hand-maintained companion to `tokens.css`. `/sync-tokens` does NOT touch it. Currently two clamp-based scaffold tokens (`--space-section`, `--text-display`); real population is deferred to WP-029 so design choices can be informed by real use in WP-025/026. Import order in portal globals: `tokens.css` before `tokens.responsive.css` before `portal-blocks.css`.
