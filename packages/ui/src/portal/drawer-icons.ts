@@ -28,6 +28,11 @@ export const DRAWER_ICONS: readonly DrawerIcon[] = [
     d: 'M9 5l7 7-7 7',
   },
   {
+    name: 'close',
+    label: 'Close (X)',
+    d: 'M6 6l12 12M18 6l-12 12',
+  },
+  {
     name: 'menu',
     label: 'Menu (hamburger)',
     d: 'M3 6h18M3 12h18M3 18h18',

@@ -91,6 +91,7 @@ function renderTrigger(
   const out: string[] = []
   const label = slot['drawer-trigger-label'] || (side === 'left' ? 'Menu' : 'Details')
   const icon = getDrawerIcon(slot['drawer-trigger-icon'])
+  const closeIcon = getDrawerIcon('close')
   const color = slot['drawer-trigger-color']
   const styleAttr = color
     ? ` style="--drawer-trigger-bg: hsl(var(${color}))"`
@@ -100,13 +101,19 @@ function renderTrigger(
     `  <button type="button" class="drawer-trigger drawer-trigger--${variant} drawer-trigger--${side}" data-drawer-open="${side}" aria-label="${escapeAttr(label)}"${styleAttr}>`,
   )
   out.push('    <span class="drawer-trigger__icon-wrap" aria-hidden="true">')
+  // Two SVG sprites in the same wrap — shell CSS shows the chev at
+  // rest and the close (X) when `body.drawer-is-open-{side}`. Only
+  // one is visible at any time so no hit-test / layout conflict.
+  //
+  // SVG attributes duplicated on each <path> (not just the outer
+  // <svg>) — iOS Safari doesn't reliably cascade fill="none" /
+  // stroke="currentColor" from <svg> to <path>; the icon silently
+  // becomes invisible while Chrome / desktop Safari render fine.
   out.push(
-    // Attributes duplicated on the <path> (not just the <svg>) so
-    // iOS Safari renders consistently. Older Safari versions don't
-    // always cascade fill="none" / stroke="currentColor" from the
-    // outer <svg> to a child <path> — chevron silently disappears
-    // on iPhone while Chrome / desktop Safari render fine.
-    `      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="${icon.d}" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    `      <svg class="drawer-trigger__icon drawer-trigger__icon--chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="${icon.d}" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  )
+  out.push(
+    `      <svg class="drawer-trigger__icon drawer-trigger__icon--close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="${closeIcon.d}" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   )
   out.push('    </span>')
   out.push(`    <span class="drawer-trigger__label">${escapeHTML(label)}</span>`)

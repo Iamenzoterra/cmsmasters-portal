@@ -706,9 +706,155 @@ e93a96d7 refactor(layout-maker): drawer width driven by YAML, not code
 
 ---
 
-_Кінець літопису. Користувач: "все ще проблеми". Три відкритих
-пункти в §16. Перед наступною атакою — §17 (верифікувати deploy
-state). Якщо після deploy + re-export проблеми залишаються —
-логувати детальну Playwright-діагностику кожного з трьох бугів і
-повертатися до §7.1 (React Portal pattern) або розглядати
-заміну FAB-логіки на простіший один-тап._
+---
+
+## 20. Спроба 12 — Playwright діагностика + breakthrough
+
+Користувач: "давай не стріляти навмання, досліди нормально".
+Зробив методично через Playwright.
+
+### 20.1 Перевірка #1 — fixes в live CSS
+
+- Live `portal-shell.js` має `lockBodyScroll` ✓
+- Live `portal-shell.js` має `pointerdown` handler ✓
+- Live layout CSS має `pointer-events: auto` на sidebar ✓
+- Live HTML має `stroke-width="3"` + duplicated path attrs ✓
+- Sidebar computed: `pointerEvents: "auto"`, `overflow: auto`,
+  `touchAction: "pan-y"`, `position: fixed`
+- Sidebar is scrollable (`scrollHeight 1406 > clientHeight 812`)
+
+**Висновок:** ВСІ мої фікси долетіли, але проблеми залишались.
+Значить щось інше блокує.
+
+### 20.2 BREAKTHROUGH — `document.elementFromPoint()` викриває злодія
+
+Тестую що на вершині у різних координатах всередині сайдбара:
+
+```js
+document.elementFromPoint(100, 200) → .drawer-layer.is-open
+document.elementFromPoint(200, 400) → .drawer-layer.is-open
+document.elementFromPoint(180, 500) → .drawer-layer.is-open
+document.elementFromPoint(330, 760) → .drawer-layer.is-open
+```
+
+**Точна причина:** `.drawer-layer.is-open` (z-index: 1100,
+pointer-events: auto) сидить ПОВЕРХ всього viewport'а. Це
+shell'овий click-catcher для бекдропа. В push-mode бекдроп
+`display: none`, але layer залишався живим і катав ВСІ wheel,
+touch, swipe, click події. Ніщо не доходило до sidebar (z:1) чи
+FAB (z:1050).
+
+Усі попередні спроби (pointer-events:auto на sidebar, Vaul lock,
+swipe handler, CSS focus mode) натикалися на цей невидимий
+pointer-катч з z:1100.
+
+### 20.3 Фікс — двохрівневий
+
+**(A) Shell CSS** (deploys with Portal bundle, no re-export needed):
+Прибрав правило `.drawer-layer.is-open { pointer-events: auto }`.
+Layer тепер ЗАВЖДИ pointer-events: none. `.drawer-backdrop` child
+отримує pointer-events:auto тільки в drawer-mode (коли backdrop
+visible). В push-mode backdrop display:none → не в hit-tree → layer
+прозорий для подій.
+
+```css
+.drawer-layer {
+  position: fixed;
+  inset: 0;
+  z-index: var(--drawer-z-backdrop);
+  pointer-events: none;  /* ← always none */
+}
+.drawer-layer.is-open .drawer-backdrop {
+  opacity: 1;
+  pointer-events: auto;  /* ← click-to-close only on backdrop */
+}
+```
+
+**(B) Generator CSS** (belt-and-suspenders, requires re-export):
+В push @media емітиться `.drawer-layer { display: none }`. Навіть
+якщо shell CSS не deployed, layer не рендериться → hit-test minus.
+
+Коміти: `c3378288` (generator), `f8b2bf65` (shell).
+
+### 20.4 Результат
+
+Користувач: **"ура! оновлюй квест!"** Scroll + swipe + FAB
+clickability запрацювали.
+
+---
+
+## 21. Спроба 13 — Finishing touches (поточна ітерація)
+
+Після §20 залишились 3 менших пункти:
+
+### 21.1 Шеврон невидимий на iOS
+
+Попередні спроби не допомогли:
+- `stroke-width` 2 → 2.5 → 3 (тонкий stroke) — все одно невидно
+- Duplicated path attrs (iOS SVG каскад) — все одно невидно
+
+**Додаткова спроба:**
+- Shell CSS: defensive `stroke: currentColor; fill: none` на
+  `.drawer-trigger__icon` (застосовується до обох сприйтів).
+  Подвійний захист поверх інлайн-атрибутів.
+- Розмір чеврону `--drawer-fab-chev-size: 18px` (було 14px) — робить
+  stroke візуально товстішим на iOS.
+
+Якщо не допоможе — треба буде тестувати на реальному iPhone через
+Safari Web Inspector (Playwright desktop не відтворить).
+
+### 21.2 Чеврон → хрестик при відкритому drawer
+
+HTML-generator тепер емітить ДВА SVG сприти в icon-wrap:
+- `.drawer-trigger__icon--chev` — звичайний chevron-right
+- `.drawer-trigger__icon--close` — X (path: `M6 6l12 12M18 6l-12 12`)
+
+Shell CSS перемикає `opacity` між ними:
+- rest: chev opacity:1, close opacity:0
+- `body.drawer-is-open-{side}` на відповідному FAB: chev 0, close 1
+
+Обидва в одному icon-wrap, `position: absolute`, розмір 18x18
+(чи що виставлено в токенах). Жодного layout shift.
+
+Додано новий icon entry в `drawer-icons.ts`: `name: 'close',
+d: 'M6 6l12 12M18 6l-12 12'`.
+
+### 21.3 Заборонити ресайз трігера
+
+Користувач: "заборонити ресайз трігера на контенті". Попередня
+approved-design мала FAB який рос в armed-state до пілли з
+вертикальним label всередині. Killed entirely:
+- `.drawer-trigger--fab { flex-direction: (removed column-reverse) }`
+- Прибрано `body.drawer-armed-{side}` → `height: auto` rule
+- Прибрано всі armed-label / armed-icon-collapse rules
+- Shell has `.drawer-trigger--fab .drawer-trigger__label {
+  display: none }` — label вже не використовується для FAB
+
+Portal-shell.js: прибрано arm-then-open 2-крокову логіку. Тап →
+open. Другий тап → close. Не треба armTimers, clearArm, isArmed,
+isFab-based routing — все простіше.
+
+---
+
+## 22. Підсумок всіх commits у цій quest-і
+
+```
+4dc7354d refactor(portal,layout-maker): push drawer focus architecture
+8558a9fd fix(portal): sidebar visibility + armed FAB label beside circle
+6c2d6f9a revert(portal): restore approved FAB trigger design
+c10dc7f6 fix(portal): Vaul scroll lock + pointer swipe, keep 300px push width
+e93a96d7 refactor(layout-maker): drawer width driven by YAML, not code
+3ffae6e8 docs(layout-maker): drawer-push-quest chronicle — attempts 8-11
+6068ee68 feat(layout-maker): select drawered sidebar + drawer-width inheritance
+595e61e8 fix(portal): sidebar pointer-events:auto so touch scroll + swipe work
+bd42ab21 fix(portal): chevron invisible on iOS Safari — duplicate SVG attrs
+c3378288 fix(portal): hide .drawer-layer in push mode so events reach sidebar
+f8b2bf65 fix(portal): drawer-layer never traps pointer events, only backdrop does
+[this commit] fix(portal): chevron/X swap, no FAB resize, one-tap open, iOS CSS
+```
+
+---
+
+_Кінець літопису (поки що). Після deploy + re-export — тестувати
+на реальному iPhone всі три пункти §21. Якщо chevron все ще
+невидимий — взяти Safari Web Inspector для debug на пристрої._

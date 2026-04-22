@@ -89,7 +89,7 @@
   --drawer-fab-bottom: 28px;
   --drawer-fab-inline: 18px;
   --drawer-fab-shadow: 0 8px 20px -6px hsl(var(--brand-deep-blue-2) / 0.45);
-  --drawer-fab-chev-size: 14px;
+  --drawer-fab-chev-size: 18px;
   --drawer-fab-label-size: 11px;
   --drawer-fab-label-letter-spacing: 2px;
   --drawer-fab-label-padding-block: 24px;
@@ -299,18 +299,20 @@ body.drawer-is-open-right { --drawer-open-right: 0; }
   box-shadow: var(--drawer-trigger-shadow-right-hover);
 }
 
-/* FAB variant — corner trigger that "arms" before opening.
+/* FAB variant — corner trigger, stable 44×44 at every state.
  *
- * Three states:
- *   rest  — 44×44 circle, chevron points AWAY from the edge.
- *   armed — grows DOWN into a vertical pill, chevron flips to point
- *           TOWARD the edge, label fades in reading bottom-to-top.
- *           Reached by clicking rest OR auto-disarmed from open.
- *   open  — drawer open; trigger slides along with pushed content
- *           so it stays anchored to the visible corner.
+ * Two states visually:
+ *   rest  — chevron points AWAY from the edge (close affordance is
+ *           hidden, chevron is the "open me" icon).
+ *   open  — chevron sprite hidden, close (X) sprite shown. Same
+ *           44×44 circle, just icon content swaps.
  *
- * Portal-shell.js drives the state transitions; CSS here is purely
- * presentational. All dimensions come from --drawer-fab-* tokens. */
+ * The trigger NEVER resizes. An earlier "armed" pill-growth state
+ * was removed per user request — see PARITY-LOG. Armed body class
+ * is still set by portal-shell.js for the 2-step open flow, but
+ * it no longer drives any visual change on the FAB.
+ *
+ * All dimensions come from --drawer-fab-* tokens. */
 
 .drawer-trigger--fab {
   top: auto;
@@ -322,23 +324,22 @@ body.drawer-is-open-right { --drawer-open-right: 0; }
   color: var(--drawer-fab-fg);
   box-shadow: var(--drawer-fab-shadow);
   display: flex;
-  flex-direction: column-reverse;
   align-items: center;
-  overflow: hidden;
+  justify-content: center;
   padding: 0;
   transform: none;
   transition:
     transform  var(--drawer-push-content-duration) var(--drawer-push-content-easing),
-    height     380ms var(--drawer-push-content-easing),
     opacity    240ms ease;
 }
 
 .drawer-trigger--fab.drawer-trigger--left  { left:  var(--drawer-fab-inline); right: auto; }
 .drawer-trigger--fab.drawer-trigger--right { right: var(--drawer-fab-inline); left:  auto; }
 
-/* Chevron — the bottom 44×44 region; a child of the trigger that
- * collapses when armed (height 0 → the pill shrinks to just the
- * label). SVG stroke color inherits from trigger fg. */
+/* Icon-wrap is the 44×44 centering box; it NEVER resizes. The
+ * rotation for chevron direction lives on the chev sprite itself
+ * (not the wrap) so the close (X) sprite reads naturally on both
+ * sides. */
 .drawer-trigger--fab .drawer-trigger__icon-wrap {
   width: var(--drawer-fab-size);
   height: var(--drawer-fab-size);
@@ -346,80 +347,45 @@ body.drawer-is-open-right { --drawer-open-right: 0; }
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 0;
+  position: relative;
   background: transparent;
-  transition:
-    transform 380ms var(--drawer-push-content-easing),
-    height    380ms var(--drawer-push-content-easing),
-    margin    380ms var(--drawer-push-content-easing),
-    opacity   240ms ease;
 }
 
-.drawer-trigger--fab .drawer-trigger__icon-wrap svg {
+/* Both sprites share the same absolute position; only one is
+ * visible at a time. Explicit stroke on the <svg> too — iOS Safari
+ * sometimes fails to inherit stroke from parent `color` when
+ * `currentColor` is the attribute value. Belt-and-suspenders on
+ * top of the already-duplicated attributes on the <path>. */
+.drawer-trigger--fab .drawer-trigger__icon {
   width: var(--drawer-fab-chev-size);
   height: var(--drawer-fab-chev-size);
+  position: absolute;
+  stroke: currentColor;
+  fill: none;
 }
 
-/* Resting chevron points AWAY from the edge. Default SVG in
- * html-generator is the "chevron-right" icon (d = "M9 5l7 7-7 7"),
- * which by itself points right. For the left trigger we leave it
- * as is — it points right, away from the left edge. For the right
- * trigger we rotate 180° so it points left, away from the right
- * edge. In armed state both rotate by 180° to point AT the edge. */
-.drawer-trigger--fab.drawer-trigger--left  .drawer-trigger__icon-wrap { transform: rotate(0deg); }
-.drawer-trigger--fab.drawer-trigger--right .drawer-trigger__icon-wrap { transform: rotate(180deg); }
+/* Chevron direction: left FAB shows chevron pointing right (away
+ * from left edge), right FAB rotates 180° to point left (away
+ * from right edge). */
+.drawer-trigger--fab.drawer-trigger--left  .drawer-trigger__icon--chev { transform: rotate(0deg); }
+.drawer-trigger--fab.drawer-trigger--right .drawer-trigger__icon--chev { transform: rotate(180deg); }
 
-/* Vertical label reads bottom-to-top. Hidden by default (0 opacity);
- * fades in on armed with a small delay so the height transition
- * begins before text appears.
- *
- * Padding note: writing-mode: vertical-rl remaps padding-block to
- * the horizontal axis, which is NOT what we want. Use physical
- * padding-top/bottom so the spacing stays at the visual top and
- * bottom of the pill regardless of writing-mode / rotate. */
-.drawer-trigger--fab .drawer-trigger__label {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  font-size: var(--drawer-fab-label-size);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: var(--drawer-fab-label-letter-spacing);
-  text-transform: uppercase;
-  white-space: nowrap;
+/* Chevron visible at rest, close hidden. Swap on drawer-is-open-{side}. */
+.drawer-trigger--fab .drawer-trigger__icon--close { opacity: 0; }
+body.drawer-is-open-left  .drawer-trigger--fab.drawer-trigger--left  .drawer-trigger__icon--chev,
+body.drawer-is-open-right .drawer-trigger--fab.drawer-trigger--right .drawer-trigger__icon--chev {
   opacity: 0;
-  padding-top: var(--drawer-fab-label-padding-block);
-  padding-bottom: var(--drawer-fab-label-padding-block);
-  transition: opacity 220ms ease 160ms;
 }
-
-/* Armed — chevron shrinks + fades, label appears, pill grows.
- *
- * Armed state is keyed off body.drawer-armed-{side} (set by
- * portal-shell.js) rather than a class on the trigger element.
- * A layout can render multiple variant buttons per side (one per
- * variant used across BPs) — only one visible per BP via @media
- * display:none. A body-level flag lets the armed rule fire on
- * whichever button is currently live, without the script knowing
- * which. The `.drawer-trigger--fab` class scoping makes sure peek /
- * hamburger / tab buttons stay inert under the same body class. */
-body.drawer-armed-left  .drawer-trigger--fab.drawer-trigger--left,
-body.drawer-armed-right .drawer-trigger--fab.drawer-trigger--right {
-  height: auto;
-}
-
-body.drawer-armed-left  .drawer-trigger--fab.drawer-trigger--left  .drawer-trigger__icon-wrap,
-body.drawer-armed-right .drawer-trigger--fab.drawer-trigger--right .drawer-trigger__icon-wrap {
-  height: 0;
-  margin: 0;
-  opacity: 0;
-  overflow: hidden;
-}
-
-body.drawer-armed-left  .drawer-trigger--fab.drawer-trigger--left  .drawer-trigger__icon-wrap { transform: rotate(180deg); }
-body.drawer-armed-right .drawer-trigger--fab.drawer-trigger--right .drawer-trigger__icon-wrap { transform: rotate(0deg); }
-
-body.drawer-armed-left  .drawer-trigger--fab.drawer-trigger--left  .drawer-trigger__label,
-body.drawer-armed-right .drawer-trigger--fab.drawer-trigger--right .drawer-trigger__label {
+body.drawer-is-open-left  .drawer-trigger--fab.drawer-trigger--left  .drawer-trigger__icon--close,
+body.drawer-is-open-right .drawer-trigger--fab.drawer-trigger--right .drawer-trigger__icon--close {
   opacity: 1;
+}
+
+/* Label is never shown on the FAB button anymore — pill growth was
+ * the old way to reveal it, and we dropped that. Keep it
+ * display:none so HTML-level label markup doesn't leak visually. */
+.drawer-trigger--fab .drawer-trigger__label {
+  display: none;
 }
 
 /* Push mode — intentionally has NO globally-applied rules in the

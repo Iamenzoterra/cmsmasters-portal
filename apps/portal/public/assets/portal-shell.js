@@ -138,33 +138,19 @@
     return Number.isFinite(n) ? n : 2000
   }
 
-  /** Handle a click on a trigger. For peek/hamburger variants this
-   *  is a direct toggle. For FAB it's the arm-then-open flow. */
-  function handleTriggerClick(btn, side) {
-    const alreadyOpenOnThisSide = document.body.classList.contains('drawer-is-open-' + side)
-
-    if (alreadyOpenOnThisSide) {
+  /** Every trigger variant opens on a single tap now. The FAB used
+   *  to have an arm-then-open two-step flow that grew the circle
+   *  into a pill — user explicitly asked to kill the resize, so the
+   *  intermediate state is gone. Tap the same-side trigger while
+   *  open to close. */
+  function handleTriggerClick(_btn, side) {
+    if (document.body.classList.contains('drawer-is-open-' + side)) {
       closeDrawer()
+      clearBothArms()
       return
     }
-
-    if (!isFab(btn)) {
-      openDrawer(side)
-      return
-    }
-
-    // FAB path — arm via body class first, then open on second
-    // click or after the timeout.
-    if (isArmed(side)) {
-      openDrawer(side)
-      return
-    }
-
-    const other = side === 'left' ? 'right' : 'left'
-    clearArm(other)
-    closeDrawer()
-    document.body.classList.add('drawer-armed-' + side)
-    armTimers[side] = setTimeout(() => openDrawer(side), getArmTimeout())
+    clearBothArms()
+    openDrawer(side)
   }
 
   document.addEventListener('click', function (e) {
