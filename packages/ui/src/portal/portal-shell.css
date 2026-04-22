@@ -157,9 +157,18 @@
   display: none;
 }
 
-/* The drawer layer wraps backdrop + panels and sits on top of the layout
- * when any panel is open. pointer-events are off by default so a closed
- * drawer never blocks the page. */
+/* The drawer layer wraps the backdrop and sits above the layout
+ * when any panel is open. CRITICAL: the layer itself is ALWAYS
+ * pointer-events:none — only the visible backdrop inside catches
+ * clicks. The previous rule .drawer-layer.is-open { pointer-events:
+ * auto } turned the entire fixed-inset:0 element into a click
+ * catcher, which in push mode (where .drawer-backdrop is
+ * display:none) left an invisible full-viewport layer absorbing
+ * every wheel, touch, swipe, and click. Sidebar couldn't scroll,
+ * swipe-to-close never reached the document handler, FAB clicks
+ * never landed. Keep pointer-events on the backdrop child only —
+ * it becomes hit-testable when display-on in drawer mode, stays
+ * out of the hit tree when display:none in push mode. */
 .drawer-layer {
   position: fixed;
   inset: 0;
@@ -176,10 +185,6 @@
   opacity: 0;
   transition: opacity var(--drawer-backdrop-duration) var(--drawer-enter-easing);
   pointer-events: none;
-}
-
-.drawer-layer.is-open {
-  pointer-events: auto;
 }
 
 .drawer-layer.is-open .drawer-backdrop {
