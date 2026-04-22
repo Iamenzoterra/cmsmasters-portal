@@ -516,7 +516,21 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
       out.push('    pointer-events: none;')
       out.push('  }')
 
+      // Drawer-layer is the shell's click-catcher that sits at
+      // z-index:1100 (above the sidebar z:1 and the FAB z:1050) and
+      // flips pointer-events:auto when `is-open` fires, so clicks on
+      // the backdrop close the drawer. In DRAWER (overlay) mode
+      // that's correct — you need something to click to dismiss. In
+      // PUSH mode there IS no backdrop (.drawer-backdrop is
+      // display:none here), and leaving the layer around with
+      // pointer-events:auto makes it absorb every wheel / touch /
+      // click over the entire viewport. Result: sidebar can't
+      // scroll, swipes don't reach the document handler, FAB
+      // clicks never land on the FAB. Hide the layer in push mode.
       out.push('')
+      out.push('  .drawer-layer {')
+      out.push('    display: none;')
+      out.push('  }')
       out.push('  .drawer-backdrop {')
       out.push('    display: none;')
       out.push('  }')
