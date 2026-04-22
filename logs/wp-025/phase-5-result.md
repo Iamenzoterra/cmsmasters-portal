@@ -178,7 +178,7 @@ The gate also surfaced the two advisory nits (typecheck fallback, routing-table 
 | Phase 2 — Analyzer | `analyze/parse-css.ts`, `analyze/parse-html.ts`, `analyze/analyze-block.ts` | Phase 2 commits | arch-test 402; `analyzeBlock` export ships; 15 tests |
 | Phase 3 — Rule engine | 6 heuristics + `rules/index.ts` dispatcher + `lib/hash.ts` + 7 tests | `7c0fde92` (impl) + `b0f020f8` (SHA embed) | arch-test 417; 43 tests; dispatcher determinism locked |
 | Phase 4 — Compose path + fixtures + snapshot | 4 compose fns + 2 lib helpers + 5 tests + 3 frozen fixtures + E2E snapshot | `fc8aa430` (impl) + `07b48cb4` (SHA embed) | arch-test 436; 75 tests; nested-row NO-trigger locked E2E |
-| Phase 5 — Close (docs) | 6 docs propagated, WP-025 status flipped | `<TBD>` (this phase) + `chore(logs)` follow-up | arch-test 442; zero code changes; skill `status: full` |
+| Phase 5 — Close (docs) | 6 docs propagated, WP-025 status flipped | `0a98ed6b` + `chore(logs)` follow-up | arch-test 442; zero code changes; skill `status: full` |
 
 ### Arch-test journey
 
@@ -201,8 +201,8 @@ Net journey: 384 → 442 (+58 across 5 phases). All green every phase.
 b0f020f8  chore(logs): embed phase-3 commit SHA in result log
 fc8aa430  feat(pkg-block-forge-core): compose path + fixtures + E2E snapshot [WP-025 phase 4]
 07b48cb4  chore(logs): embed phase-4 commit SHA in result log
-<TBD>     docs: WP-025 close — propagate block-forge-core contracts [WP-025 phase 5]
-<TBD>     chore(logs): embed phase-5 commit SHA in result log
+0a98ed6b  docs: WP-025 close — propagate block-forge-core contracts [WP-025 phase 5]
+4044463c  chore(logs): embed phase-5 commit SHA in result log
 ```
 
 (Plus earlier Phase 0–2 commits from prior session.)
@@ -258,7 +258,7 @@ logs/wp-025/phase-5-result.md
 docs: WP-025 close — propagate block-forge-core contracts [WP-025 phase 5]
 ```
 
-**Final SHA:** `<embed after commit>`
+**Final SHA:** `0a98ed6b09784b09bf01558ada53e294ae76a6ea` (embedded via SHA-follow-up `chore(logs)` commit)
 
 ---
 
