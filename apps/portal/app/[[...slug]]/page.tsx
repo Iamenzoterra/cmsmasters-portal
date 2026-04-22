@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import type { BlockVariants } from '@cmsmasters/db'
 import { getComposedPageBySlug, getPageBlocksWithData } from '@/lib/blocks'
 import { resolveGlobalBlocks } from '@/lib/global-elements'
 import { BlockRenderer } from '@/app/_components/block-renderer'
@@ -32,10 +33,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-function renderSlotBlocks(blocks: Array<{ html: string; css: string; slug: string; js?: string }>) {
+function renderSlotBlocks(blocks: Array<{ html: string; css: string; slug: string; js?: string; variants?: BlockVariants | null }>) {
   if (blocks.length === 0) return null
   return blocks.map((b, i) => (
-    <BlockRenderer key={i} html={b.html} css={b.css} slug={b.slug} js={b.js || undefined} />
+    <BlockRenderer key={i} html={b.html} css={b.css} slug={b.slug} js={b.js || undefined} variants={b.variants} />
   ))
 }
 
@@ -65,7 +66,7 @@ export default async function ComposedPage({ params }: Props) {
   // Extract block data from page_blocks join
   const blocks = pageBlocks.map((pb) => {
     const block = (pb as Record<string, unknown>).blocks as {
-      html: string; css: string; slug: string; js?: string
+      html: string; css: string; slug: string; js?: string; variants?: BlockVariants | null
     } | null
     return block
   }).filter((b): b is NonNullable<typeof b> => b !== null)
@@ -87,6 +88,7 @@ export default async function ComposedPage({ params }: Props) {
             css={block.css}
             slug={block.slug}
             js={block.js || undefined}
+            variants={block.variants}
           />
         ))}
       </main>

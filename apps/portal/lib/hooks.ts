@@ -2,6 +2,7 @@
  * Hook resolution — compile-time string replacement.
  * All hooks resolved at Astro build time. Zero JS in output.
  */
+import type { BlockVariants } from '@cmsmasters/db'
 
 /**
  * Resolve slot placeholders in layout HTML.
@@ -164,24 +165,60 @@ export function resolveBlockHooks(
  * Strip top-level `html`/`body` rules from a block's CSS. Blocks must stay
  * scoped — any global body/html declarations leak into the page shell and
  * override layout-level styles (e.g. background).
+ *
+ * Verified (WP-024 phase 3): the regex matches only `html`/`body` selectors
+ * followed by a brace-delimited rule body. `@container` / `@media` /
+ * `@supports` wrappers are untouched — they start with `@`, not `html`/`body`.
+ * Nested `body { … }` inside an `@container` block IS stripped (documented
+ * pre-existing behavior); this does not matter for WP-024 because variant
+ * CSS uses class/attribute selectors under `.block-{slug}`, not raw `body`.
  */
-function stripGlobalPageRules(css: string): string {
+export function stripGlobalPageRules(css: string): string {
   return css.replace(/(^|[}\s])(html|body)\s*\{[^}]*\}/g, '$1')
 }
 
+// INVARIANT (WP-024 / ADR-025): variant CSS MUST be scoped under
+// `[data-block-shell="{slug}"]` (string helper) or `.block-{slug}` (RSC).
+// Any @container rule inside variant CSS must nest its selectors under that
+// block scope. Authoring tools (future WPs) will enforce this at edit time.
 /**
- * Render a single block: wrap HTML in scoped container, prepend CSS.
+ * Render a single block to an HTML string: wrap HTML in scoped container,
+ * prepend CSS. When `variants` are present, inlines all variant CSS and
+ * emits `<div data-variant="…">` siblings for base + each variant.
+ * When absent/empty, output is byte-identical to pre-WP-024 shape.
+ *
+ * Variant name safety: variant keys are validated by Zod
+ * (`/^[a-z0-9-]+$/`) — no HTML escaping needed since that regex excludes
+ * `<`, `>`, `"`, `'`, `&`, and whitespace.
  */
 export function renderBlock(
   html: string,
   css: string,
   slug: string,
-  js?: string
+  js?: string,
+  variants?: BlockVariants | null,
 ): string {
+  const entries = variants ? Object.entries(variants) : []
+  const hasVariants = entries.length > 0
+
+  const combinedCss = hasVariants
+    ? [css, ...entries.map(([, v]) => v.css)].filter(Boolean).join('\n')
+    : css
+  const cleaned = stripGlobalPageRules(combinedCss)
+
   let output = ''
-  const cleaned = stripGlobalPageRules(css)
   if (cleaned.trim()) output += `<style>${cleaned}</style>\n`
-  output += `<div data-block-shell="${slug}">${html}</div>\n`
+
+  if (hasVariants) {
+    const baseWrap = `<div data-variant="base">${html}</div>`
+    const variantWraps = entries
+      .map(([name, v]) => `<div data-variant="${name}" hidden>${v.html}</div>`)
+      .join('')
+    output += `<div data-block-shell="${slug}">${baseWrap}${variantWraps}</div>\n`
+  } else {
+    output += `<div data-block-shell="${slug}">${html}</div>\n`
+  }
+
   if (js?.trim()) output += `<script type="module">${js}</script>\n`
   return output
 }

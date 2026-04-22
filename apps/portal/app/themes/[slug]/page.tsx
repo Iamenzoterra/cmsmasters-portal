@@ -178,7 +178,7 @@ export default async function ThemePage({ params }: Props) {
       const block = blockMap.get(pos.block_id)
       if (!block) return ''
       const html = resolveBlockHooks(block.html, block.hooks as Record<string, unknown>, meta)
-      return renderBlock(html, block.css, block.slug, block.js || undefined)
+      return renderBlock(html, block.css, block.slug, block.js || undefined, block.variants)
     })
     .join('\n')
 
@@ -189,7 +189,7 @@ export default async function ThemePage({ params }: Props) {
     if (blocks.length === 0) return '<div class="slot-inner"></div>'
     const rendered = blocks.map((block) => {
       const html = resolveBlockHooks(block.html, block.hooks as Record<string, unknown>, meta)
-      return renderBlock(html, block.css, block.slug, block.js || undefined)
+      return renderBlock(html, block.css, block.slug, block.js || undefined, block.variants)
     })
     return `<div class="slot-inner">${rendered.join('\n')}</div>`
   }
