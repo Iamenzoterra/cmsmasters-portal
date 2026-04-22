@@ -24,6 +24,22 @@ const metadataSchema = z.object({
   figma_node: z.string().optional(),
 }).passthrough().default({})
 
+// ── Variants schema ──
+// Responsive blocks (WP-024 / ADR-025): optional named structural variants.
+// Absent → block has no variants; portal renders base html/css only.
+// Present → renderer inlines each variant as <div data-variant="{name}" hidden>
+//           and @container rules inside block CSS reveal the right one.
+
+const variantPayloadSchema = z.object({
+  html: z.string().min(1),
+  css: z.string().default(''),
+})
+
+const variantsSchema = z.record(
+  z.string().regex(/^[a-z0-9-]+$/),
+  variantPayloadSchema
+)
+
 // ── Create block ──
 
 export const createBlockSchema = z.object({
@@ -37,6 +53,7 @@ export const createBlockSchema = z.object({
   is_default: z.boolean().default(false),
   hooks: hooksSchema,
   metadata: metadataSchema,
+  variants: variantsSchema.optional(),
 })
 
 // ── Update block (all fields optional except immutable slug) ──
@@ -51,6 +68,7 @@ export const updateBlockSchema = z.object({
   is_default: z.boolean().optional(),
   hooks: hooksSchema.optional(),
   metadata: metadataSchema.optional(),
+  variants: variantsSchema.optional(),
 })
 
 export type CreateBlockPayload = z.infer<typeof createBlockSchema>
