@@ -89,7 +89,7 @@
   --drawer-fab-bottom: 28px;
   --drawer-fab-inline: 18px;
   --drawer-fab-shadow: 0 8px 20px -6px hsl(var(--brand-deep-blue-2) / 0.45);
-  --drawer-fab-chev-size: 18px;
+  --drawer-fab-chev-size: 14px;
   --drawer-fab-label-size: 11px;
   --drawer-fab-label-letter-spacing: 2px;
   --drawer-fab-label-padding-block: 24px;
@@ -99,14 +99,11 @@
   --drawer-fab-arm-timeout: 2000ms;
 
   /* ─────── Push sidebar mode (mobile variant) ─────── */
-  /* iOS-style push: sidebar is a fixed-width panel pinned to the
-   * edge; body slides by that same width (margin-inline) so a
-   * sliver of content stays visible as a tap-to-close affordance,
-   * matching the native iOS mail drawer. The previous full-viewport
-   * default looked like a drawer covering the whole page — including
-   * the header rendered outside this theme's layout-frame — so we
-   * pin push-width to the same value drawer mode uses at mobile. */
-  --drawer-push-width: var(--drawer-panel-width-mobile);
+  /* True push: the content frame slides ENTIRELY off the viewport
+   * (not just by drawer-panel-width) to reveal a full-viewport-width
+   * sidebar behind it. Matches the native mobile drawer pattern on
+   * iOS/Android. iOS-style timing for 60fps margin transitions. */
+  --drawer-push-width: 100%;
   --drawer-push-content-duration: 520ms;
   --drawer-push-content-easing: cubic-bezier(0.32, 0.72, 0, 1);
 
@@ -141,16 +138,11 @@
    * covers the sidebar (layer 1) when the drawer is closed. When the
    * frame margin-slides aside, the sidebar is revealed. No shadow, no
    * backdrop — just two layers sliding past each other. */
-  /* Push mode puts everything else into opacity:0 / visibility:hidden,
-   * so stacking is a non-issue in practice. The high value is belt-
-   * and-suspenders insurance against sticky blocks (e.g. block-level
-   * sticky-headers with z-index:999) in case any residual paint
-   * leaks. */
-  --drawer-z-push-sidebar: 2000;
+  --drawer-z-push-sidebar: 1;
   --drawer-z-push-frame:   2;
   --drawer-z-trigger:  1050;
   --drawer-z-backdrop: 1100;
-  --drawer-z-panel:    2500;
+  --drawer-z-panel:    1200;
 }
 
 /* ──────────────── Structure ──────────────── */
@@ -212,14 +204,6 @@
 
 body.drawer-is-open-left  { --drawer-open-left:  0; }
 body.drawer-is-open-right { --drawer-open-right: 0; }
-
-/* Scroll lock lives in portal-shell.js (Vaul pattern — body
- * position:fixed with top:-scrollY, restored on close). Plain
- * overflow:hidden isn't reliable on iOS Safari: momentum scroll
- * and rubber-band continue to bleed through. The JS approach also
- * preserves scroll position on close, which overflow:hidden
- * doesn't. Don't reintroduce the CSS version here — the two
- * mechanisms fight each other. */
 
 /* ──────────────── Triggers ──────────────── */
 
@@ -333,15 +317,15 @@ body.drawer-is-open-right { --drawer-open-right: 0; }
   color: var(--drawer-fab-fg);
   box-shadow: var(--drawer-fab-shadow);
   display: flex;
+  flex-direction: column-reverse;
   align-items: center;
-  justify-content: center;
-  /* overflow: visible (default) so the absolute-positioned
-   * armed-state label can escape above the circle. */
+  overflow: hidden;
   padding: 0;
   transform: none;
   transition:
-    transform var(--drawer-push-content-duration) var(--drawer-push-content-easing),
-    opacity   240ms ease;
+    transform  var(--drawer-push-content-duration) var(--drawer-push-content-easing),
+    height     380ms var(--drawer-push-content-easing),
+    opacity    240ms ease;
 }
 
 .drawer-trigger--fab.drawer-trigger--left  { left:  var(--drawer-fab-inline); right: auto; }
@@ -402,61 +386,36 @@ body.drawer-is-open-right { --drawer-open-right: 0; }
   transition: opacity 220ms ease 160ms;
 }
 
-/* FAB armed state — label floats BESIDE the circle, button stays 44×44.
+/* Armed — chevron shrinks + fades, label appears, pill grows.
  *
- * First tap on the FAB sets `body.drawer-armed-{side}` (portal-shell.js).
- * The label (`.drawer-trigger__label`) is absolutely positioned
- * above the circle (vertical text, reading bottom-to-top on the right
- * side, top-to-bottom on the left) so the user sees what they're
- * about to open. Second tap — or the --drawer-fab-arm-timeout auto-
- * fire — opens the drawer.
- *
- * The circle NEVER resizes — the label sits outside the circle's
- * box via `position: absolute; bottom: calc(100% + gap)`. This was
- * the user's explicit ask: "трігер не ресайзиться на мобільному",
- * while keeping "фаза переоду в текст theme details". */
-
-.drawer-trigger--fab .drawer-trigger__label {
-  position: absolute;
-  bottom: calc(100% + 10px);
-  left: 50%;
-  transform: translateX(-50%) translateY(6px);
-  writing-mode: vertical-rl;
-  font-size: var(--drawer-fab-label-size);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: var(--drawer-fab-label-letter-spacing);
-  text-transform: uppercase;
-  white-space: nowrap;
-  color: var(--drawer-fab-bg);
-  opacity: 0;
-  pointer-events: none;
-  transition:
-    opacity 220ms ease,
-    transform 220ms cubic-bezier(0.32, 0.72, 0, 1);
+ * Armed state is keyed off body.drawer-armed-{side} (set by
+ * portal-shell.js) rather than a class on the trigger element.
+ * A layout can render multiple variant buttons per side (one per
+ * variant used across BPs) — only one visible per BP via @media
+ * display:none. A body-level flag lets the armed rule fire on
+ * whichever button is currently live, without the script knowing
+ * which. The `.drawer-trigger--fab` class scoping makes sure peek /
+ * hamburger / tab buttons stay inert under the same body class. */
+body.drawer-armed-left  .drawer-trigger--fab.drawer-trigger--left,
+body.drawer-armed-right .drawer-trigger--fab.drawer-trigger--right {
+  height: auto;
 }
 
-/* Right-side FAB reads bottom-to-top (same direction as the peek trigger). */
-.drawer-trigger--fab.drawer-trigger--right .drawer-trigger__label {
-  transform: translateX(-50%) translateY(6px) rotate(180deg);
-}
-
-/* Armed state — label fades in + slides up to its resting position. */
-body.drawer-armed-left  .drawer-trigger--fab.drawer-trigger--left  .drawer-trigger__label {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
-body.drawer-armed-right .drawer-trigger--fab.drawer-trigger--right .drawer-trigger__label {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0) rotate(180deg);
-}
-
-/* Armed chevron hint — flip to point TOWARD the edge (away from the label). */
 body.drawer-armed-left  .drawer-trigger--fab.drawer-trigger--left  .drawer-trigger__icon-wrap,
 body.drawer-armed-right .drawer-trigger--fab.drawer-trigger--right .drawer-trigger__icon-wrap {
-  transform: rotate(180deg);
+  height: 0;
+  margin: 0;
+  opacity: 0;
+  overflow: hidden;
 }
+
 body.drawer-armed-left  .drawer-trigger--fab.drawer-trigger--left  .drawer-trigger__icon-wrap { transform: rotate(180deg); }
 body.drawer-armed-right .drawer-trigger--fab.drawer-trigger--right .drawer-trigger__icon-wrap { transform: rotate(0deg); }
+
+body.drawer-armed-left  .drawer-trigger--fab.drawer-trigger--left  .drawer-trigger__label,
+body.drawer-armed-right .drawer-trigger--fab.drawer-trigger--right .drawer-trigger__label {
+  opacity: 1;
+}
 
 /* Push mode — intentionally has NO globally-applied rules in the
  * shell. Push is a per-BP concern: at a BP that uses push, the
