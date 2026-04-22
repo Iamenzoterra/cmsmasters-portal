@@ -64,6 +64,40 @@
     return document.body.classList.contains('drawer-armed-' + side)
   }
 
+  // Scroll lock — Vaul pattern. Pin body with position:fixed and
+  // the negative of the current scrollY as top, so the page stays
+  // at the same visual position while the drawer owns the scroll.
+  // On close we restore and window.scrollTo(0, saved) — overflow:
+  // hidden alone leaks momentum on iOS Safari.
+  let lockedScrollY = 0
+  let lockedStyleCache = ''
+  function isScrollLocked() {
+    return document.body.hasAttribute('data-scroll-locked')
+  }
+  function lockBodyScroll() {
+    if (isScrollLocked()) return
+    lockedScrollY = window.scrollY || document.documentElement.scrollTop || 0
+    lockedStyleCache = document.body.getAttribute('style') || ''
+    document.body.setAttribute('data-scroll-locked', '')
+    document.body.style.position = 'fixed'
+    document.body.style.top = '-' + lockedScrollY + 'px'
+    document.body.style.left = '0'
+    document.body.style.right = '0'
+    document.body.style.width = '100%'
+    document.body.style.overflow = 'hidden'
+  }
+  function unlockBodyScroll() {
+    if (!isScrollLocked()) return
+    document.body.removeAttribute('data-scroll-locked')
+    if (lockedStyleCache) {
+      document.body.setAttribute('style', lockedStyleCache)
+    } else {
+      document.body.removeAttribute('style')
+    }
+    lockedStyleCache = ''
+    window.scrollTo(0, lockedScrollY)
+  }
+
   function openDrawer(side) {
     const other = side === 'left' ? 'right' : 'left'
     document.body.classList.remove('drawer-is-open-' + other)
@@ -71,6 +105,7 @@
     const layer = document.querySelector('.drawer-layer')
     if (layer) layer.classList.add('is-open')
     clearBothArms()
+    lockBodyScroll()
   }
 
   function closeDrawer() {
@@ -81,6 +116,7 @@
     )
     const layer = document.querySelector('.drawer-layer')
     if (layer) layer.classList.remove('is-open')
+    unlockBodyScroll()
   }
 
   /** Is this trigger a FAB? Decided by class — FAB is the only
@@ -167,4 +203,54 @@
       clearBothArms()
     }
   })
+
+  // ───────── Swipe-to-close ─────────
+  //
+  // Drawer dismisses on a swipe AWAY from its open edge. Left drawer:
+  // swipe left. Right drawer: swipe right. Horizontal gesture must
+  // dominate vertical one so vertical panel scrolls don't accidentally
+  // close it. Velocity OR distance threshold — matches Vaul tuning.
+  const SWIPE_DISTANCE_RATIO = 0.25
+  const SWIPE_VELOCITY = 0.35
+  const SWIPE_MIN_DX = 40
+  let pointer = null
+
+  function getPushWidthPx() {
+    const raw = getComputedStyle(document.documentElement)
+      .getPropertyValue('--drawer-push-width').trim()
+    if (raw.endsWith('%')) return window.innerWidth * (parseFloat(raw) / 100)
+    const n = parseFloat(raw)
+    return Number.isFinite(n) ? n : window.innerWidth * 0.8
+  }
+
+  document.addEventListener('pointerdown', function (e) {
+    if (!document.body.classList.contains('drawer-is-open')) { pointer = null; return }
+    if (e.pointerType === 'mouse' && e.button !== 0) { pointer = null; return }
+    pointer = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now() }
+  }, { passive: true })
+
+  document.addEventListener('pointerup', function (e) {
+    if (pointer === null || e.pointerId !== pointer.id) return
+    const dx = e.clientX - pointer.x
+    const dy = e.clientY - pointer.y
+    const dt = Math.max(1, performance.now() - pointer.t)
+    pointer = null
+
+    if (Math.abs(dx) <= Math.abs(dy)) return
+    if (Math.abs(dx) < SWIPE_MIN_DX) return
+
+    const width = getPushWidthPx()
+    const distanceOk = Math.abs(dx) > SWIPE_DISTANCE_RATIO * width
+    const velocityOk = Math.abs(dx) / dt > SWIPE_VELOCITY
+    if (!distanceOk && !velocityOk) return
+
+    const body = document.body
+    if (body.classList.contains('drawer-is-open-left') && dx < 0) {
+      closeDrawer(); clearBothArms()
+    } else if (body.classList.contains('drawer-is-open-right') && dx > 0) {
+      closeDrawer(); clearBothArms()
+    }
+  }, { passive: true })
+
+  document.addEventListener('pointercancel', function () { pointer = null }, { passive: true })
 })()

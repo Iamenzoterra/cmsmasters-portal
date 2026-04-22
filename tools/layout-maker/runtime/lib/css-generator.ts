@@ -440,7 +440,11 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
         out.push('  }')
       }
 
-      // Layout-level push-width override — see header comment point 5.
+      // Pin push-width to the mobile panel width (≈300px). 100% full-
+      // viewport flattens block content because sidebar blocks are
+      // designed for a ~300px column; going wider loses their
+      // intended layout. Layout CSS overrides any legacy shell value
+      // so this lands without needing Portal redeploy.
       out.push('')
       out.push('  :root {')
       out.push('    --drawer-push-width: var(--drawer-panel-width-mobile);')
