@@ -291,11 +291,26 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'apps/studio/src/components/block-import-panel.tsx',
       'apps/studio/src/lib/block-processor.ts',
       'apps/studio/src/lib/token-map.ts',
+      // WP-027 Phase 1: Responsive tab scaffold (source + PARITY contract).
+      'apps/studio/src/pages/block-editor/responsive/ResponsiveTab.tsx',
+      'apps/studio/src/pages/block-editor/responsive/ResponsivePreview.tsx',
+      'apps/studio/src/pages/block-editor/responsive/PreviewPanel.tsx',
+      'apps/studio/src/pages/block-editor/responsive/SuggestionList.tsx',
+      'apps/studio/src/pages/block-editor/responsive/SuggestionRow.tsx',
+      'apps/studio/src/pages/block-editor/responsive/session-state.ts',
+      'apps/studio/src/pages/block-editor/responsive/preview-assets.ts',
+      'apps/studio/src/pages/block-editor/responsive/PARITY.md',
+      // WP-027 Phase 1: Responsive tab tests (1 real + 3 describe.skip stubs per
+      // pkg-block-forge-core precedent; stubs land real tests in Phases 2/3/4).
+      'apps/studio/src/pages/block-editor/responsive/__tests__/session-state.test.ts',
+      'apps/studio/src/pages/block-editor/responsive/__tests__/preview-assets.test.ts',
+      'apps/studio/src/pages/block-editor/responsive/__tests__/suggestion-row.test.tsx',
+      'apps/studio/src/pages/block-editor/responsive/__tests__/integration.test.tsx',
     ],
     owned_tables: [],
     owned_routes: [],
     public_entrypoints: [],
-    allowed_imports_from: ['pkg-db', 'pkg-validators', 'pkg-api-client', 'pkg-ui', 'studio-core'],
+    allowed_imports_from: ['pkg-db', 'pkg-validators', 'pkg-api-client', 'pkg-ui', 'pkg-block-forge-core', 'studio-core'],
     known_gaps: [
       'important: block-processor depends on token-map — if tokens.css changes, token-map may need updates',
       'note: processing is 100% client-side — no API calls for token analysis',

@@ -7,7 +7,9 @@
     "dev": "vite --port 5173",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "react": "^19.0.0",
@@ -17,6 +19,7 @@
     "@hookform/resolvers": "^3",
     "lucide-react": "^0.468.0",
     "@cmsmasters/auth": "*",
+    "@cmsmasters/block-forge-core": "*",
     "@cmsmasters/db": "*",
     "@cmsmasters/validators": "*",
     "@cmsmasters/ui": "*"
@@ -30,6 +33,9 @@
     "autoprefixer": "^10",
     "typescript": "^5",
     "@types/react": "^19",
-    "@types/react-dom": "^19"
+    "@types/react-dom": "^19",
+    "@testing-library/react": "^16",
+    "jsdom": "^25",
+    "vitest": "^4"
   }
 }

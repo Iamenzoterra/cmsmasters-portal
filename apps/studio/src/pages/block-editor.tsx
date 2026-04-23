@@ -17,6 +17,7 @@ import { FormSection } from '../components/form-section'
 import { DeleteConfirmModal } from '../components/delete-confirm-modal'
 import { BlockImportPanel } from '../components/block-import-panel'
 import { ThumbnailUpload } from '../components/thumbnail-upload'
+import { ResponsiveTab } from './block-editor/responsive/ResponsiveTab'
 import tokensCSS from '../../../../packages/ui/src/theme/tokens.css?raw'
 import tokensResponsiveCSS from '../../../../packages/ui/src/theme/tokens.responsive.css?raw'
 import portalBlocksCSS from '../../../../packages/ui/src/portal/portal-blocks.css?raw'
@@ -278,6 +279,10 @@ export function BlockEditor() {
   const [showProcess, setShowProcess] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [blockCategories, setBlockCategories] = useState<BlockCategory[]>([])
+  // WP-027 Phase 1: 2-tab bar. Tab 1 = Editor (all existing UI + Process button unchanged);
+  // Tab 2 = Responsive (new). Save footer stays OUTSIDE the conditional so dirty state +
+  // Save button remain reachable on both tabs.
+  const [activeTab, setActiveTab] = useState<'editor' | 'responsive'>('editor')
 
   // Fetch block categories for theme blocks context
   useEffect(() => {
@@ -542,7 +547,35 @@ ${code}${scriptTag}
         </div>
       </div>
 
-      {/* Body: 2-column */}
+      {/* WP-027 Phase 1: 2-tab bar. Pattern mirrors theme-meta.tsx. */}
+      <div className="flex shrink-0" style={{ borderBottom: '1px solid hsl(var(--border-default))', padding: '0 var(--spacing-xl)', backgroundColor: 'hsl(var(--bg-surface))' }}>
+        {([
+          { key: 'editor', label: 'Editor' },
+          { key: 'responsive', label: 'Responsive' },
+        ] as const).map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => setActiveTab(t.key)}
+            className="border-0 bg-transparent"
+            style={{
+              padding: 'var(--spacing-sm) var(--spacing-md)',
+              fontSize: 'var(--text-sm-font-size)',
+              fontWeight: activeTab === t.key ? 'var(--font-weight-semibold)' : 'var(--font-weight-medium)',
+              color: activeTab === t.key ? 'hsl(var(--text-primary))' : 'hsl(var(--text-muted))',
+              borderBottom: activeTab === t.key ? '2px solid hsl(var(--text-primary))' : '2px solid transparent',
+              cursor: 'pointer',
+              marginBottom: '-1px',
+            }}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Body: 2-column (Editor tab) or Responsive tab — only ONE renders at a time.
+          Save footer stays OUTSIDE this conditional — always visible. */}
+      {activeTab === 'editor' && (
       <div className="flex flex-1 overflow-y-auto" style={{ padding: 'var(--spacing-xl)', gap: 'var(--spacing-xl)' }}>
         {/* Left: Form */}
         <div className="flex min-w-0 flex-1 flex-col" style={{ gap: 'var(--spacing-lg)', maxWidth: '900px' }}>
@@ -782,6 +815,12 @@ ${code}${scriptTag}
           />
         )}
       </div>
+      )}
+      {activeTab === 'responsive' && (
+        <div className="flex flex-1 flex-col overflow-y-auto" style={{ padding: 'var(--spacing-xl)' }}>
+          <ResponsiveTab />
+        </div>
+      )}
 
       {/* Footer */}
       <div
