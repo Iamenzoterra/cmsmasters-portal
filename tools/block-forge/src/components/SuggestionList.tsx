@@ -1,16 +1,19 @@
-// Phase 3 — sorted list of suggestions with optional warning banner above
-// and friendly empty-state below. Stateless: App.tsx owns the hook.
+// Phase 4 — session-aware list: filters out rejected suggestions, passes
+// accept/reject handlers down, marks pending rows with an "in flight" pill.
 //
-// Sort order is stable: dispatcher-order (HEURISTIC_ORDER) → selector →
-// breakpoint. This matches the natural reading order of the rule engine's
-// output and keeps test assertions deterministic.
+// Accepted rows stay visible with the pending pill so the author sees what
+// will apply on the next Save. Rejected rows hide immediately.
 
 import type { Suggestion } from '@cmsmasters/block-forge-core'
 import { SuggestionRow } from './SuggestionRow'
+import type { SessionState } from '../lib/session'
 
 type Props = {
   suggestions: Suggestion[]
   warnings: string[]
+  session: SessionState
+  onAccept: (id: string) => void
+  onReject: (id: string) => void
 }
 
 /** Dispatcher order from WP-025 — stable list ordering. */
@@ -33,8 +36,16 @@ function sortSuggestions(suggestions: Suggestion[]): Suggestion[] {
   })
 }
 
-export function SuggestionList({ suggestions, warnings }: Props) {
+export function SuggestionList({
+  suggestions,
+  warnings,
+  session,
+  onAccept,
+  onReject,
+}: Props) {
   const sorted = sortSuggestions(suggestions)
+  // Rejected rows hide; pending rows stay visible so the author can Undo.
+  const visible = sorted.filter((s) => !session.rejected.includes(s.id))
 
   return (
     <div className="flex h-full flex-col gap-3 overflow-auto p-4">
@@ -54,17 +65,23 @@ export function SuggestionList({ suggestions, warnings }: Props) {
         </div>
       )}
 
-      {sorted.length === 0 ? (
+      {visible.length === 0 ? (
         <div className="flex flex-1 items-center justify-center text-sm text-[hsl(var(--text-muted))]">
           No suggestions — block has no responsive-authoring triggers.
         </div>
       ) : (
         <div className="flex flex-col gap-2">
           <div className="text-xs text-[hsl(var(--text-muted))]">
-            {sorted.length} suggestion{sorted.length === 1 ? '' : 's'}
+            {visible.length} suggestion{visible.length === 1 ? '' : 's'}
           </div>
-          {sorted.map((s) => (
-            <SuggestionRow key={s.id} suggestion={s} />
+          {visible.map((s) => (
+            <SuggestionRow
+              key={s.id}
+              suggestion={s}
+              isPending={session.pending.includes(s.id)}
+              onAccept={onAccept}
+              onReject={onReject}
+            />
           ))}
         </div>
       )}

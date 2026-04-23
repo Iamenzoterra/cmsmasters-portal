@@ -1,23 +1,28 @@
-// Phase 3 — single suggestion row: heuristic badge, selector, BP,
-// rationale, confidence pill, disabled Accept / Reject (Phase 4 wires).
+// Phase 4 — Accept / Reject / Undo wiring.
 //
-// Token grep gate passed at write time (all 8 tokens present in tokens.css):
-//   --status-success-bg/-fg, --status-info-bg/-fg, --bg-surface, --bg-page,
-//   --text-primary, --text-muted, --border-default.
+// Two visual modes:
+//   (a) default — Accept (success-green) + Reject (neutral, hover-red)
+//   (b) pending — "will apply on save" pill in header + single "Undo" button
+//       that moves id to `rejected` (hides the row). MVP shortcut: undo-via-
+//       reject keeps the state machine simple; session.undo(state) is wired
+//       separately through history for precise rollback.
 //
-// ConfidencePill uses inline `style={{ backgroundColor, color }}` — the token
-// pair is runtime-driven by the `level` prop, so this is the escape hatch the
-// CONVENTIONS doc allows for truly dynamic styling.
+// Token grep (all verified in Phase 3):
+//   --status-success-bg/-fg, --status-info-bg/-fg, --status-error-fg,
+//   --bg-surface, --bg-page, --text-primary, --text-muted, --border-default.
+//
+// ConfidencePill retains its dynamic inline-style pattern from Phase 3 (per
+// CONVENTIONS "truly dynamic" exception).
 
 import type { Suggestion, Confidence } from '@cmsmasters/block-forge-core'
 
 type Props = {
   suggestion: Suggestion
+  isPending: boolean
+  onAccept: (id: string) => void
+  onReject: (id: string) => void
 }
 
-// Confidence → token mapping.
-// No `--status-warning-*` exists in tokens.css, so `medium` borrows info.
-// `low` uses neutral surface + muted text — quieter than info.
 const CONFIDENCE_STYLES: Record<
   Confidence,
   { bg: string; fg: string; label: string }
@@ -51,13 +56,30 @@ function ConfidencePill({ level }: { level: Confidence }) {
   )
 }
 
-export function SuggestionRow({ suggestion }: Props) {
+function PendingPill() {
+  return (
+    <span
+      data-role="pending-pill"
+      className="rounded-full bg-[hsl(var(--status-info-bg))] px-2 py-0.5 text-xs font-semibold text-[hsl(var(--status-info-fg))]"
+    >
+      will apply on save
+    </span>
+  )
+}
+
+export function SuggestionRow({
+  suggestion,
+  isPending,
+  onAccept,
+  onReject,
+}: Props) {
   const { heuristic, selector, bp, rationale, confidence, property, value } =
     suggestion
 
   return (
     <div
       data-suggestion-id={suggestion.id}
+      data-pending={isPending || undefined}
       className="flex flex-col gap-2 rounded border border-[hsl(var(--border-default))] bg-[hsl(var(--bg-surface))] p-3"
     >
       <div className="flex items-center gap-2">
@@ -70,7 +92,8 @@ export function SuggestionRow({ suggestion }: Props) {
         <span className="text-xs text-[hsl(var(--text-muted))]">
           {bp === 0 ? 'base' : `@${bp}px`}
         </span>
-        <span className="ml-auto">
+        <span className="ml-auto flex items-center gap-2">
+          {isPending && <PendingPill />}
           <ConfidencePill level={confidence} />
         </span>
       </div>
@@ -85,22 +108,35 @@ export function SuggestionRow({ suggestion }: Props) {
       <p className="text-sm text-[hsl(var(--text-primary))]">{rationale}</p>
 
       <div className="flex gap-2">
-        <button
-          type="button"
-          disabled
-          title="Phase 4 — accept/reject wiring pending"
-          className="rounded border border-[hsl(var(--border-default))] bg-[hsl(var(--bg-surface))] px-3 py-1 text-xs text-[hsl(var(--text-muted))] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          Accept
-        </button>
-        <button
-          type="button"
-          disabled
-          title="Phase 4 — accept/reject wiring pending"
-          className="rounded border border-[hsl(var(--border-default))] bg-[hsl(var(--bg-surface))] px-3 py-1 text-xs text-[hsl(var(--text-muted))] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          Reject
-        </button>
+        {isPending ? (
+          <button
+            type="button"
+            data-action="undo"
+            onClick={() => onReject(suggestion.id)}
+            className="rounded border border-[hsl(var(--border-default))] bg-[hsl(var(--bg-surface))] px-3 py-1 text-xs text-[hsl(var(--text-muted))] hover:border-[hsl(var(--status-error-fg))] hover:text-[hsl(var(--status-error-fg))]"
+          >
+            Undo
+          </button>
+        ) : (
+          <>
+            <button
+              type="button"
+              data-action="accept"
+              onClick={() => onAccept(suggestion.id)}
+              className="rounded border border-[hsl(var(--status-success-fg))] bg-[hsl(var(--status-success-bg))] px-3 py-1 text-xs font-semibold text-[hsl(var(--status-success-fg))] hover:opacity-80"
+            >
+              Accept
+            </button>
+            <button
+              type="button"
+              data-action="reject"
+              onClick={() => onReject(suggestion.id)}
+              className="rounded border border-[hsl(var(--border-default))] bg-[hsl(var(--bg-surface))] px-3 py-1 text-xs text-[hsl(var(--text-muted))] hover:border-[hsl(var(--status-error-fg))] hover:text-[hsl(var(--status-error-fg))]"
+            >
+              Reject
+            </button>
+          </>
+        )}
       </div>
     </div>
   )

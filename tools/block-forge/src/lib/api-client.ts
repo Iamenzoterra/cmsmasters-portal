@@ -30,3 +30,40 @@ export async function getBlock(slug: string): Promise<BlockJson> {
   }
   return (await res.json()) as BlockJson
 }
+
+export type SaveBlockRequest = {
+  block: BlockJson
+  /** True on the first save-of-this-session; server writes `.bak` iff true. */
+  requestBackup: boolean
+}
+
+export type SaveBlockResponse = {
+  ok: true
+  slug: string
+  backupCreated: boolean
+}
+
+export async function saveBlock(
+  req: SaveBlockRequest,
+): Promise<SaveBlockResponse> {
+  const res = await fetch(
+    `/api/blocks/${encodeURIComponent(req.block.slug)}`,
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        block: req.block,
+        requestBackup: req.requestBackup,
+      }),
+    },
+  )
+  if (!res.ok) {
+    const errBody = await res
+      .json()
+      .catch(() => ({ error: 'unknown' }))
+    throw new Error(
+      `saveBlock failed: ${res.status} ${JSON.stringify(errBody)}`,
+    )
+  }
+  return (await res.json()) as SaveBlockResponse
+}
