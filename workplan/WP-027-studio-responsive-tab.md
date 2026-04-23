@@ -471,7 +471,7 @@ npm run arch-test                                  # green
    - `.context/CONVENTIONS.md` — subsection on "Cross-surface parity: preview injection contract lives in two PARITY.md files and must edit together"
    - `.claude/skills/domains/studio-blocks/SKILL.md` — new Responsive-tab section: Start Here files, Invariants (engine-only consumption, Path B composition, RHF isDirty integration, PARITY with tools/block-forge/), Traps (touching block-preview.tsx owned by studio-core, parallel dirty slice, variant-compose skipped for non-null variants, theme-page slot-block used for parity check), Blast Radius
    - `tools/block-forge/PARITY.md` — cross-reference the new Studio PARITY.md; note that any contract change here must also apply there
-   - `apps/studio/src/pages/block-editor/responsive/PARITY.md` — finalize
+   - `apps/studio/src/pages/block-editor/responsive/PARITY.md` — finalize; **add deviation #6: Block-type uniform applicability** — Responsive tab covers `/blocks/:id`, `/elements/:id`, `/global-elements/:id` identically (all three share `.slot-inner` container-type context); complex elements (tabs, dynamic content) are prime candidates, atomic elements gracefully show empty-state; slot-context variance (content vs sidebar vs header widths) is pre-existing, not element-specific — acknowledge once and move on
    - `workplan/BLOCK-ARCHITECTURE-V2.md` — cross-reference WP-027 and the dual-surface pattern
 5.3. **Brain approves** (6 doc files → gate kicks in; pattern now 3/3 → 4/4 after this).
 5.4. CC executes approved doc updates.
