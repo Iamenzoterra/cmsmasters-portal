@@ -222,3 +222,128 @@ git commit -m "{description} [WP-{NNN} phase {X}]"
 - **Add new files to `domain-manifest.ts`** — update `owned_files` array for the correct domain
 - **Run `npm run arch-test` before committing** — this is not optional
 - {Any task-specific instructions}
+
+---
+---
+
+# BRAIN → OPERATOR HANDOFF SUMMARY
+
+> **Audience:** this section is NOT part of the task file handed to CC/Hands.
+> It's the short message Brain posts to the Operator (user) AFTER writing
+> everything above, as the handoff preamble. The Operator reviews this
+> summary → approves commit → passes the full task file to Hands.
+>
+> **Why codified:** the format proved itself across WP-026 Phases 4–5 and
+> WP-027 Phases 0–3. Every new Brain session using this format yields the
+> same handoff quality any Operator can act on without re-negotiating the
+> protocol.
+
+## Pre-flight checklist (before posting the summary)
+
+Brain runs these quick reads BEFORE posting the handoff — this is what caught
+WP-027 Phase 2 double-wrap + Phase 3 token-invention blockers:
+
+1. **Grep real constant values** — any DS token, HEURISTIC_ORDER, engine type
+   signature, path depth, snapshot entry the task prompt references MUST be
+   verified against source at read-time. Invented constants cause compile/lint
+   hard-fails on Hands' first run. Use Read/Grep on:
+   - `packages/ui/src/theme/tokens.css` — confirm every `hsl(var(--...))` ref
+   - `packages/{relevant}/src/lib/types.ts` — confirm field names + shapes
+   - `packages/{relevant}/src/__tests__/__snapshots__/*.snap` — ground truth
+     for fixture assertions (saved memory `feedback_fixture_snapshot_ground_truth.md`)
+   - `tools/{reference}/src/...` — reference components when the prompt claims
+     "mirror verbatim"
+2. **Cross-check load-bearing plan amendments** — any Brain rulings locked in
+   prior phases should appear in the prompt's rulings section (not just
+   referenced by number). Hands reads linearly; don't rely on them chasing refs.
+3. **Arch-test target math** — current count via Read on last phase result log +
+   delta from new owned_files. If the number doesn't add up, the manifest edit
+   plan is wrong.
+
+## Output format (fill in every placeholder)
+
+```markdown
+Phase {N} промпт готовий: `logs/wp-{NNN}/phase-{N}-task.md`.
+
+## Структура
+
+**{N} tasks, ~{X}h budget:**
+
+| # | Task | Scope |
+|---|------|-------|
+| {N}.1 | `{file/artifact}` {verb} | {one-line scope — what changes, with key constraint} |
+| {N}.2 | `{file}` {verb} | {scope} |
+| ... | ... | ... |
+| {N}.last | Gates | arch-test {count} {unchanged|+delta|reasoning}, {test count} green |
+
+## {M} Brain rulings locked
+
+1. **{Decision noun phrase}** — {one-line rationale, reference prior phase/source if inherited}
+2. **{Decision}** — {rationale}
+...
+
+## Hard gates (inherited + Phase {N} additions)
+
+- Zero touch: `{path1}`, `{path2}`, {...} — {one-line "why" for non-obvious ones}
+- Zero manifest edits (if files already registered) OR manifest delta = +{N} (if new files)
+- Zero {phase-specific forbidden action, e.g. "Accept/Reject handlers" in Phase 3}
+- Zero copy of {reference assets — e.g. fixtures, tokens — when import is the correct path}
+
+## Escalation triggers
+
+Written to catch {load-bearing-assumption-class} up-front:
+- {load-bearing assumption} differs from plan → STOP, re-plan {affected artifact}
+- {required-constant} doesn't exist in source → can't mirror, surface to Brain
+- {snapshot/reality contradicts draft assertion} → adapt to reality before commit
+- {external-system shape change} → contract misalignment; don't silently work around
+
+## Arch-test target
+
+**{count} / 0** — {unchanged because no new files | baseline {X} + {Y} new owned_files | +6 from SKILL flip ({domain} skeleton → full)}.
+
+## Git state
+
+- `logs/wp-{NNN}/phase-{N}-task.md` — new untracked
+- `workplan/WP-{NNN}-*.md` — modified (if amendments applied) / unchanged
+- {other files if any}
+- Nothing staged, nothing committed
+
+## Next
+
+1. Review → commit pair (task prompt + workplan if amended) → handoff Hands
+2. АБО правки ({optionally name the most likely fork — e.g. "especially ruling N" or "task N.X scope"})
+3. АБО self-commit if workflow permits
+
+Чекаю.
+```
+
+## Field sizing & tone
+
+- **Structура table:** 3–10 rows typical. Column 3 is ONE concise phrase per row,
+  not a paragraph. If you can't compress it, the task is too big — split.
+- **Brain rulings:** usually 5–10. Surface decisions that lock cross-surface
+  behavior OR override plan assumptions. Don't list every Phase-0 carry-over —
+  only load-bearing ones.
+- **Hard gates:** explicit forbidden actions. Inherit from prior phases; add
+  phase-specific ones. "Do NOT" framing, not "should avoid."
+- **Escalation triggers:** 3–7 items. Each must be a concrete trigger condition
+  Hands can test, not a vague "surface if concerned." Specifically targets the
+  class of blocker that Phase 2/3 catches exposed.
+- **Next options:** always 3 — review/edits/self-commit. The "self-commit if
+  workflow permits" option is an explicit opt-in, not a default.
+- **Final line "Чекаю."** (or equivalent acknowledgment) — signals Brain is
+  parked, not running other agents in parallel.
+
+## When to use
+
+- After writing the phase task file (the body of this TASK-TEMPLATE.md).
+- BEFORE committing the task prompt or any workplan amendments.
+- ALWAYS — not optional. The handoff summary is what makes the Brain session
+  auditable + replayable by any Operator.
+
+## When NOT to use
+
+- Bugfix / hotfix phases where the entire scope fits in a 3-line message.
+- Result-log or close-phase posts — those have their own format (see
+  `logs/wp-026/phase-5-result.md` for the Close canonical).
+- Pure question-and-answer exchanges where no task file is written.
