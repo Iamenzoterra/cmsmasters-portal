@@ -6,6 +6,7 @@
 > Контекст: WP-005A Phases 0-2 done (type→block rename), Phases 3-4 cancelled
 > Responsive update 2026-04-22 (WP-024 / ADR-025): `blocks.variants` JSONB column added; `BlockRenderer` + `renderBlock()` inline variants as `<div data-variant>` siblings revealed by `@container slot (…)` rules; leaf slots expose `container-type: inline-size; container-name: slot` via LM-generated layout CSS. Existing blocks render unchanged (null variants = byte-identical output). See `.context/CONVENTIONS.md` → "Responsive blocks".
 > Engine update 2026-04-23 (WP-025 / ADR-025): `@cmsmasters/block-forge-core` ships the pure-function pipeline — `analyzeBlock` → `generateSuggestions` (6 heuristics) → `applySuggestions` / `emitTweak` / `composeVariants` / `renderForPreview`. Consumed by WP-026 (tools/block-forge Vite app) and WP-027 (Studio Responsive tab). See `.context/CONVENTIONS.md` → "Block Forge Core".
+> Dev tool update 2026-04-23 (WP-026): `tools/block-forge/` Vite app ships as the first consumer of `@cmsmasters/block-forge-core`. File-based authoring against `content/db/blocks/*.json` at port 7702: pick block → 3-panel preview (1440/768/375) → review ADR-025 suggestions → accept/reject → Save (with backup-on-first-save). Covers the MVP authoring loop before Studio integration (WP-027). See `.claude/skills/domains/infra-tooling/SKILL.md` → "Block Forge".
 
 ---
 

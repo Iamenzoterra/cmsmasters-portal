@@ -479,3 +479,63 @@ To get a clamp suggestion, author raw `px`/`rem` at ≥40px spacing or ≥24px f
 ### Portal render parity
 
 `renderForPreview` matches `apps/portal/lib/hooks.ts` → `renderBlock()` non-variant output: wrap in `<div data-block-shell="{slug}">`, pass CSS through `stripGlobalPageRules`. It does NOT prefix-scope with `.block-{slug}` — portal relies on authored `.block-{slug}` selectors already present in block CSS.
+
+---
+
+## Block-forge dev tool conventions (WP-026, ADR-025)
+
+`tools/block-forge/` is the first consumer of `@cmsmasters/block-forge-core`. These rules apply to block-forge specifically; other Vite-based dev tools (layout-maker, studio-mockups) are free to pick their own patterns unless explicitly called out.
+
+### 1. File I/O contract (save safety)
+
+Six non-negotiable rules from the WP-026 Phase 0 / `tools/block-forge/src/lib/file-io.ts`:
+
+1. **Read guards.** `readBlock` rejects missing/empty `html` or `slug` with a typed `BlockIoError`. The renderer never sees invalid input.
+2. **Write scope.** Writes are restricted to the exact file path that was opened. No new-file creation, no directory traversal — the POST handler in `vite.config.ts` (`blocksApiPlugin`) checks `access(filepath, W_OK)` before write.
+3. **First-save-per-session backup.** First save in a session writes `<path>.bak` with the pre-overwrite bytes verbatim. Client tracks `session.backedUp: boolean` in `src/lib/session.ts`; POST body carries `requestBackup: boolean` so the server stays stateless.
+4. **Dirty-state guards.** `beforeunload` prompts on tab close while the session has pending accepts; picker-switch confirms discard via `window.confirm`.
+5. **No-op Save.** Save button is disabled when `session.pending.length === 0 || saveInFlight`.
+6. **No deletes.** Block-forge never removes `.json` or `.bak` files. Clean-up is out-of-band (manual).
+
+Reference: `tools/block-forge/PARITY.md` for the preview-side contract; `tools/block-forge/README.md` for the end-user explanation.
+
+### 2. Preview parity with portal
+
+Block-forge's iframe MUST match `apps/portal/lib/hooks.ts` → `renderBlock()` non-variant output byte-for-byte (modulo theme-page chrome, which block-forge omits by design):
+
+- **Token injection:** `packages/ui/src/theme/tokens.css` and `tokens.responsive.css` inside `@layer tokens`.
+- **Slot wrapper:** `<div class="slot-inner"><div data-block-shell="{slug}">…</div></div>`. The outer `.slot-inner` carries `container-type: inline-size; container-name: slot` (set in `@layer shared`), matching LM's `css-generator.ts:254-255`.
+- **`@layer` order:** `tokens, reset, shared, block`. Non-negotiable — authored block CSS may rely on cascade order.
+- **Change discipline:** ANY change to token injection, slot wrapper, or `@layer` order MUST update `tools/block-forge/PARITY.md` in the same commit. See PARITY.md "Discipline" section.
+
+LM does NOT wrap its iframe this way (legacy blocks use `@media`, not `@container slot`). Do not copy LM's iframe pattern into block-forge.
+
+### 3. Vitest config for Vite tools
+
+When a Vite-based tool imports `?raw` CSS (block-forge's `preview-assets.ts` does), `vite.config.ts` MUST include `test: { css: true }`:
+
+```ts
+test: {
+  css: true,  // required — ?raw imports load as empty strings otherwise
+  environment: 'node',
+  // ...
+}
+```
+
+Without it, assertions that scan the CSS content silently run on empty strings and pass on nothing. Reference saved memory `feedback_vitest_css_raw.md`.
+
+### 4. `data-*` test hooks for dev tools
+
+Dev tools use stable DOM selectors via `data-*` attributes (non-presentational, zero CSS impact) rather than text content or Tailwind class chains. Block-forge's reserved hooks:
+
+- `data-action="save"` — Save button in `StatusBar`.
+- `data-action="accept" | "reject" | "undo"` — Suggestion row buttons.
+- `data-role="source-path" | "pending-count" | "last-saved" | "save-error"` — Status bar readouts.
+- `data-role="warnings"` — SuggestionList warnings region.
+- `data-pending="true"` — Row in pending state.
+- `data-suggestion-id="{id}"` — Row identity for targeting one of many.
+- `data-region="triptych" | "suggestions" | "status"` — Top-level app regions.
+
+Browser QA (Chrome DevTools, Playwright) and integration tests (`src/__tests__/integration.test.tsx`) consume these. Renaming any hook requires a test sweep.
+
+Apps (portal / dashboard / studio / admin) continue to prefer semantic ARIA roles first; `data-*` is for dev-tool surfaces where test-only hooks don't leak into production UX.
