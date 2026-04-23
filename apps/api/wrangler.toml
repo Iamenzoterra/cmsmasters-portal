@@ -16,9 +16,10 @@ R2_PUBLIC_URL = "https://assets.cmsmasters.studio"
 #   SUPABASE_SERVICE_KEY=eyJ...
 #   SUPABASE_JWT_SECRET=your-jwt-secret
 
-# R2 bucket for block assets (images, etc.)
+# R2 bucket for block assets (images, icons, etc.)
+# Full docs: docs/r2-images-bucket-icons-management.md
 # Create bucket: wrangler r2 bucket create cmsmasters-assets
-# Enable public access in Cloudflare dashboard → R2 → bucket → Settings → Public access
+# Public custom domain: assets.cmsmasters.studio (configured via Cloudflare dashboard)
 [[r2_buckets]]
 binding = "ASSETS_BUCKET"
 bucket_name = "cmsmasters-assets"

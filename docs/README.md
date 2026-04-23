@@ -111,6 +111,16 @@ BLOCKED:
 
 Exit code `0` in all cases. If `phases.json` is missing, an error message is written to stdout instead of a report. Only an unhandled exception produces exit code `1`.
 
+## Documentation Index
+
+| Doc | Scope |
+|-----|-------|
+| [`docs/OPERATIONS-GUIDE.md`](./OPERATIONS-GUIDE.md) | How the portal runs, starts up, updates — single source of truth for ops |
+| [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) | System architecture overview |
+| [`docs/FIGMA_SYNC_INSTRUCTIONS.md`](./FIGMA_SYNC_INSTRUCTIONS.md) | Manual token-sync pipeline (automated via `/sync-tokens`) |
+| [`docs/r2-images-bucket-icons-management.md`](./r2-images-bucket-icons-management.md) | R2 bucket layout, `assets.cmsmasters.studio` custom domain, Cloudflare Image Transformations, render-time image rewriter |
+| [`docs/page-speed-insights--pgi.md`](./page-speed-insights--pgi.md) | PageSpeed Insights reference / notes |
+
 ## Monorepo Structure
 
 ```

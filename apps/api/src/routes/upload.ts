@@ -1,3 +1,5 @@
+// R2 bucket overview + public URL conventions + rewriter contract:
+// docs/r2-images-bucket-icons-management.md
 import { Hono } from 'hono'
 import type { AuthEnv } from '../middleware/auth'
 import type { Env } from '../env'

@@ -328,6 +328,10 @@ Every theme page has: JSON-LD Product schema, Open Graph tags, Twitter cards, ca
 
 ### Image optimization (R2 + Cloudflare Transformations)
 
+> Full spec: [`docs/r2-images-bucket-icons-management.md`](./r2-images-bucket-icons-management.md)
+> — bucket layout, dashboard config, rewriter rules, troubleshooting. The summary below is a
+> fast reference.
+
 Block images live in Cloudflare R2 bucket `cmsmasters-assets`, served via custom
 domain **`assets.cmsmasters.studio`**. On render, portal rewrites every block
 `<img>` through the Cloudflare Image Transformations endpoint:

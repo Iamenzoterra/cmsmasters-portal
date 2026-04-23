@@ -1,3 +1,5 @@
+// Docs: docs/r2-images-bucket-icons-management.md
+// - bucket layout, URL conventions, CF dashboard config, troubleshooting.
 const CDN_HOST = 'https://assets.cmsmasters.studio'
 
 const ASSET_HOST_PATTERNS = [
