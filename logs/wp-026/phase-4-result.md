@@ -83,15 +83,19 @@ Dev server: `:7702`. Test block: `header` (4 horizontal-overflow + media-maxwidt
 | 5 | Disk check after first save | ✅ `header.json` 6970 → 7073 bytes (CSS grew — overflow-x applied); `header.json.bak` exists with 6970 bytes (original) |
 | 6 | Accept another + Save (second save) | ✅ Saves successfully |
 | 7 | `.bak` NOT recreated on second save | ✅ mtime `1776941163` unchanged across both saves; size still 6970 (original) |
-| 8 | Accept → try switch to `sidebar-pricing` | ✅ `window.confirm` dialog fires ("Unsaved suggestion state — discard and switch block?") |
-| 9 | Cancel dialog | ✅ Stay on `header`; pending count still "1 pending"; source path unchanged |
-| 10 | Retry switch → confirm dialog | ✅ Switch succeeds; `sidebar-pricing.json` loads; pending pill gone; "Last saved: never" (session reset) |
-| 11 | `beforeunload` guard (structural) | ✅ `useEffect([session])` only registers the handler when `isDirty(session) === true`; not explicitly fired in QA but the listener is attached/detached as expected (verified via React DevTools effect logs during session dirtying/cleaning in step 3 → step 4 cycle) |
-| 12 | Restore state | ✅ `git checkout -- content/db/blocks/header.json` + `rm content/db/blocks/header.json.bak` — confirmed clean |
+| 8 | Clean switch after save (no prompt expected) | ✅ Supplemental run (AC gap closure): post-save (dirty=false), switched header→sidebar-pricing via `select.dispatchEvent(change)` with `window.confirm` monkey-patched to record calls — `dialogFiredOnCleanSwitch: false`, `currentSelection: sidebar-pricing` |
+| 9 | Dirty switch → prompt fires → cancel | ✅ `window.confirm` dialog fires ("Unsaved suggestion state — discard and switch block?"); cancel keeps `header` + 1 pending |
+| 10 | Dirty switch → prompt fires → confirm | ✅ Switch succeeds; session resets (`Last saved: never`) |
+| 11 | `beforeunload` live trigger on dirty state | ✅ Supplemental run: dispatched `new Event('beforeunload', {cancelable:true})` on `window` while dirty → `defaultPrevented: true`, `returnValue: ''` (handler rewrote placeholder), `dispatched: false` (listener cancelled). Flip-side: post-save clean state → `defaultPrevented: false`, `returnValue` untouched, event proceeds. The handler's `e.preventDefault() + e.returnValue = ''` pair is the exact contract browsers consult to decide whether to show the native "Leave site?" prompt. |
+| 12 | Restore state | ✅ `git checkout -- content/db/blocks/header.json` + `rm -f content/db/blocks/header.json.bak` — confirmed clean after each run |
 
 Screenshot: `tools/block-forge/phase-4-save-flow-verification.png` (gitignored; captures `sidebar-pricing` in post-reset state with 3 enabled Accept buttons, green confidence pill on the row, disabled Save, "Last saved: never").
 
-**Deviation from §Browser QA step 8:** the prompt said "Switch to sidebar-pricing (dirty state false, no prompt)" — but after step 6 (second save completed) I re-accepted a suggestion to reach dirty state FOR the dirty-switch test. The cleaner switch tested in step 10 was the post-confirm transition. Functional result equivalent — dirty/clean transitions both exercised.
+**AC gap closure (supplemental run):** two §Browser-QA items flagged as "structural substitution" in the initial run were re-tested live and captured verbatim here:
+1. **Step 8 — clean switch no-prompt** — monkey-patched `window.confirm` as a sentinel; switched `header→sidebar-pricing` post-save with `dirty=false`; captured `dialogFiredOnCleanSwitch: false`. Positive evidence: the guard correctly skips `confirm()` when `isDirty(session) === false`.
+2. **Step 11 — beforeunload live dispatch** — dispatched `new Event('beforeunload', {cancelable:true})` directly on `window`; captured `defaultPrevented: true`, `returnValue: ''` (handler overwrote placeholder), `window.dispatchEvent(...) === false` (handler cancelled). Flip-side (clean state): `defaultPrevented: false`, `returnValue` untouched, dispatch returned true.
+
+Both cases now verified with positive evidence rather than effect-attachment inference. All 12 browser-QA steps are **green-live**.
 
 ---
 
@@ -160,12 +164,7 @@ ls: cannot access 'content/db/blocks/*.bak': No such file or directory
 
 3. **Test count 46 instead of prompt's "~33"**. Prompt's §Success target (line 39) said "test total ~33" but §4.9 math `file-io 14 + preview 9 + integration existing 4 + integration save-flow 4 + session 15 = 46`. Landed 46, which matches the §4.9 math. §Success number was the stale estimate.
 
-4. **`fast-loading-speed.json` drift during QA window** — showed CDN URL changes (`pub-c82d3ffae6954db48f40feef14b8e2e0.r2.dev → assets.cmsmasters.studio`) in 3 locations inside the block JSON. Source not definitively traced; possible causes ruled out:
-   - My POST handler: no — only POSTs to `header` during QA (slug param controls target).
-   - Integration tests: no — `vi.spyOn` mocks `saveBlock`; no real HTTP calls.
-   - Some other tool's sync/revalidate job: plausible but not proven.
-
-   **Resolution:** `git checkout -- content/db/blocks/fast-loading-speed.json` to revert. Phase 4 commit is clean. Flagged here for Brain visibility in case the drift reappears — may indicate a background sync tool modifying JSON files on a schedule.
+4. **`fast-loading-speed.json` drift during QA window** — showed CDN URL changes (`pub-c82d3ffae6954db48f40feef14b8e2e0.r2.dev → assets.cmsmasters.studio`) in 3 locations inside the block JSON. **Source identified in AC gap closure:** `tools/content-sync.js` line 102 — `fs.writeFileSync(file, JSON.stringify(row, null, 2) + '\n')` inside the `pull()` function. `content-sync pull` reads from Supabase and overwrites local `content/db/blocks/*.json`. Someone (or a scripted job) invoked `content-sync pull` after the R2 → cmsmasters.studio CDN migration in the DB, and the diff sat uncommitted until I noticed during Phase 4 git-status. **Not from Phase 4 code.** Reverted pre-commit; post-revert the file hash matches `HEAD:content/db/blocks/fast-loading-speed.json` exactly (`ecd6635f8a1d002abbf745bbca0fb305a2aeca88`). Brain visibility: the uncommitted diff may come back on any future `content-sync pull` — worth landing a separate commit for the CDN URL sync when appropriate.
 
 5. **`data-*` test hooks added** — `data-action` (accept/reject/save), `data-role` (heuristic/pending-pill/pending-count/source-path/last-saved/save-error), `data-pending`, `data-suggestion-id` (carried from Phase 3). Used extensively by browser QA (stable DOM selectors) and by integration tests. Non-presentational, zero CSS impact, trivial to read.
 
@@ -192,7 +191,7 @@ None this phase. The three Phase 3 Plan Corrections (C1 spacing-clamp→font-cla
 1. **Commit SHA(s):** `1ff1f604` (feat + result log) + this chore-logs SHA-embed amendment
 2. **Arch-test:** 470 / 0 ✅
 3. **Tests:** 46 / 46 ✅ (file-io 14 + preview-assets 9 + session 15 + integration 8)
-4. **Browser QA:** 12 / 12 steps pass (step 11 verified structurally via effect-attachment pattern rather than triggering an actual beforeunload navigation)
+4. **Browser QA:** 12 / 12 steps green-live. AC gap closure run added positive evidence for the clean-switch (no-prompt) and beforeunload handler dispatch paths.
 5. **`.bak` semantics:** first-save creates; second-save-same-session preserves (mtime + bytes unchanged) ✅
 6. **Git cleanliness:** `content/db/blocks/` clean; only `sidebar-perfect-for.json` untracked (pre-existing) ✅
 7. **Deviations:** 5 (curl skip, narrow harness, test-count delta, `fast-loading-speed` drift revert, `data-*` hooks) — all documented
