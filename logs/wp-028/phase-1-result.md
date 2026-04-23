@@ -156,7 +156,15 @@ All 13 AC checks pass.
 ## Git
 
 - Task prompt commit: `0eab5493` (`chore(logs): WP-028 Phase 1 task prompt`)
-- Implementation commit: to be recorded on commit (follow-up SHA-embed commit optional, per WP-026/027 pattern)
+- Implementation commit: `66bb180a` (`feat(ui+studio+tools): WP-028 Phase 1 — RHF variants + pkg-ui slider/drawer + placeholders [WP-028 phase 1]`)
+- SHA-embed follow-up: this commit (`chore(logs): embed phase-1 commit SHA in result log [WP-028 phase 1]`)
+
+**Note on history:** Three LM-reforge commits (`306af86a`, `099640a8`, `7b3a736e`) landed on `main` between
+this phase's task-prompt commit and implementation commit as parallel unrelated work. Their side-effect was
+adding `tools/layout-maker` to root workspaces + installing `@testing-library/jest-dom` into layout-maker.
+This is why `package-lock.json` did NOT need to be part of the Phase 1 implementation commit — the radix-dep
+lockfile entries landed in `7b3a736e`'s lockfile snapshot (LM-reforge phase 0 follow-up + transitive resolution
+picked them up automatically since my `npm install` ran before that commit finalized).
 
 ---
 
