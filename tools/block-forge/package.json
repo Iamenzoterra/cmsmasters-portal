@@ -1,0 +1,30 @@
+{
+  "name": "block-forge",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "^19",
+    "react-dom": "^19",
+    "@cmsmasters/block-forge-core": "*",
+    "@cmsmasters/db": "*",
+    "@cmsmasters/ui": "*"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^4",
+    "jsdom": "^25",
+    "typescript": "^5",
+    "vite": "^6",
+    "vitest": "^4"
+  }
+}
