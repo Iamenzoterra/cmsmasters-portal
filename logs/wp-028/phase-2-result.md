@@ -160,4 +160,6 @@ Manual click-in-iframe → slider → preview reflow → save round-trip was NOT
 
 ## Git
 
-- Commit: _(to be filled in after commit)_
+- Task-prompt commit: `0c26ba1a` — `chore(logs): WP-028 Phase 2 task prompt`
+- Implementation commit: `70a09ae9` — `feat(studio+tools): WP-028 Phase 2 — Tweak panel + element-click postMessage + emitTweak dispatch [WP-028 phase 2]` (20 files; +1780 / −151)
+- SHA-embed: _(this commit — updates result log with implementation SHA)_
