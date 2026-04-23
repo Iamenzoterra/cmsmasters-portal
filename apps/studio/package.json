@@ -12,30 +12,31 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-router-dom": "^7",
-    "react-hook-form": "^7",
-    "@hookform/resolvers": "^3",
-    "lucide-react": "^0.468.0",
     "@cmsmasters/auth": "*",
     "@cmsmasters/block-forge-core": "*",
     "@cmsmasters/db": "*",
+    "@cmsmasters/ui": "*",
     "@cmsmasters/validators": "*",
-    "@cmsmasters/ui": "*"
+    "@hookform/resolvers": "^3",
+    "lucide-react": "^0.468.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-hook-form": "^7",
+    "react-router-dom": "^7"
   },
   "devDependencies": {
-    "vite": "^6",
-    "@vitejs/plugin-react": "^4",
-    "tailwindcss": "^4",
     "@tailwindcss/postcss": "^4",
-    "postcss": "^8",
-    "autoprefixer": "^10",
-    "typescript": "^5",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/react": "^16",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@testing-library/react": "^16",
+    "@vitejs/plugin-react": "^4",
+    "autoprefixer": "^10",
     "jsdom": "^25",
+    "postcss": "^8",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vite": "^6",
     "vitest": "^4"
   }
 }
