@@ -17,7 +17,8 @@ import { FormSection } from '../components/form-section'
 import { DeleteConfirmModal } from '../components/delete-confirm-modal'
 import { BlockImportPanel } from '../components/block-import-panel'
 import { ThumbnailUpload } from '../components/thumbnail-upload'
-import { ResponsiveTab } from './block-editor/responsive/ResponsiveTab'
+import { ResponsiveTab, dispatchTweakToForm } from './block-editor/responsive/ResponsiveTab'
+import type { Tweak } from '@cmsmasters/block-forge-core'
 import tokensCSS from '../../../../packages/ui/src/theme/tokens.css?raw'
 import tokensResponsiveCSS from '../../../../packages/ui/src/theme/tokens.responsive.css?raw'
 import portalBlocksCSS from '../../../../packages/ui/src/portal/portal-blocks.css?raw'
@@ -307,6 +308,15 @@ export function BlockEditor() {
     const newFormData = blockToFormData(appliedBlock)
     form.setValue('code', newFormData.code, { shouldDirty: true })
     // Deliberately NO setExistingBlock — analysis base must stay stable per Brain ruling 2.
+  }, [form])
+
+  // WP-028 Phase 2: tweak dispatch via RHF. Delegates to `dispatchTweakToForm`
+  // helper which reads `form.getValues('code')` SYNCHRONOUSLY at dispatch time
+  // (Brain OQ4 invariant — prevents silent loss of textarea-edited CSS when
+  // author tweaks after editing code). The useCallback closure retains a stable
+  // `form` ref; `getValues` still reads current state per RHF semantics.
+  const handleTweakDispatch = useCallback((tweak: Tweak) => {
+    dispatchTweakToForm(form, tweak)
   }, [form])
 
   // Fetch block categories for theme blocks context
@@ -869,6 +879,7 @@ ${code}${scriptTag}
         <ResponsiveTab
           block={existingBlock}
           onApplyToForm={handleApplyToForm}
+          onTweakDispatch={handleTweakDispatch}
           saveNonce={saveNonce}
         />
       </div>

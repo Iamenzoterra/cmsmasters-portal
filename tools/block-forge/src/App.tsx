@@ -1,41 +1,45 @@
 // Phase 4 — session + save orchestration.
-//
-// Responsibilities at this level:
-//   1. Own `session` state (one session per selected block slug).
-//      Session resets on every slug change, including re-selecting same slug
-//      (Phase 0 §0.7 save-safety rule 3 — "switch-and-back = new session").
-//   2. Route accept/reject clicks from <SuggestionList> → session transitions.
-//   3. Orchestrate Save: applySuggestions → saveBlock (POST) with
-//      `requestBackup: !session.backedUp` → refetch block from disk →
-//      clearAfterSave(). Re-analysis happens automatically because
-//      useAnalysis keys on (slug, html, css).
-//   4. Dirty-state guards: `beforeunload` prompt; picker-switch `window.confirm`.
-//   5. Source-path display: one-time GET /api/blocks to read `sourceDir`.
-//
-// Server stays stateless; client is the sole owner of session state.
-//
-// Token names (all verified in tokens.css; Phase 3 sanity):
-//   --bg-page, --text-primary, --text-muted, --border-default,
-//   --status-error-fg.
+// WP-028 Phase 2 — adds TweakPanel selection state + element-click listener +
+// per-BP tweak dispatch via session.addTweak + composeTweakedCss render layer.
+// Debounced 300ms dispatch (Ruling I); Reset scoped to {selector, bp} (Ruling J).
 
-import { useCallback, useEffect, useState } from 'react'
-import { applySuggestions } from '@cmsmasters/block-forge-core'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { applySuggestions, type Tweak } from '@cmsmasters/block-forge-core'
 import type { BlockJson } from './types'
 import { getBlock, listBlocks, saveBlock } from './lib/api-client'
 import { useAnalysis } from './lib/useAnalysis'
 import {
   accept as acceptFn,
+  addTweak,
   clearAfterSave,
+  composeTweakedCss,
   createSession,
   isDirty,
   pickAccepted,
   reject as rejectFn,
+  removeTweaksFor,
   type SessionState,
 } from './lib/session'
 import { BlockPicker } from './components/BlockPicker'
 import { PreviewTriptych } from './components/PreviewTriptych'
 import { SuggestionList } from './components/SuggestionList'
 import { StatusBar } from './components/StatusBar'
+import { TweakPanel, type TweakSelection } from './components/TweakPanel'
+
+/**
+ * Small inline debounce — keeps App.tsx self-contained (no new util files
+ * per Phase 2 arch-test Δ0 rule). Trailing-edge semantics.
+ */
+function debounce<A extends unknown[]>(
+  fn: (...args: A) => void,
+  ms: number,
+): (...args: A) => void {
+  let tid: ReturnType<typeof setTimeout> | null = null
+  return (...args: A) => {
+    if (tid) clearTimeout(tid)
+    tid = setTimeout(() => fn(...args), ms)
+  }
+}
 
 export function App() {
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null)
@@ -116,11 +120,82 @@ export function App() {
 
   const { suggestions, warnings } = useAnalysis(block)
 
+  // WP-028 Phase 2 — compose tweaks over base CSS at render time.
+  // Block-forge equivalent of Studio's "form.getValues('code')" invariant:
+  // session.tweaks is the live authored state, composed fresh each render.
+  const composedBlock = useMemo<BlockJson | null>(() => {
+    if (!block) return null
+    if (session.tweaks.length === 0) return block
+    return { ...block, css: composeTweakedCss(block.css, session.tweaks) }
+  }, [block, session.tweaks])
+
+  // WP-028 Phase 2 — TweakPanel selection state + element-click listener.
+  const [selection, setSelection] = useState<TweakSelection | null>(null)
+  const [currentBp, setCurrentBp] = useState<1440 | 768 | 480>(1440)
+  const currentSlug = block?.slug ?? null
+
+  // Clear selection on block switch.
+  useEffect(() => {
+    setSelection(null)
+  }, [currentSlug])
+
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (!e.data || typeof e.data !== 'object') return
+      if ((e.data as { type?: unknown }).type !== 'block-forge:element-click') return
+      const data = e.data as {
+        type: 'block-forge:element-click'
+        slug?: string
+        selector?: string
+        computedStyle?: Record<string, string>
+      }
+      if (currentSlug && data.slug !== currentSlug) return
+      if (typeof data.selector !== 'string') return
+      setSelection({
+        selector: data.selector,
+        bp: currentBp,
+        computedStyle: data.computedStyle ?? {},
+      })
+    }
+    window.addEventListener('message', handler)
+    return () => window.removeEventListener('message', handler)
+  }, [currentSlug, currentBp])
+
   const handleAccept = useCallback((id: string) => {
     setSession((prev) => acceptFn(prev, id))
   }, [])
   const handleReject = useCallback((id: string) => {
     setSession((prev) => rejectFn(prev, id))
+  }, [])
+
+  // WP-028 Phase 2 — debounced tweak dispatch (Ruling I: 300ms on dispatch side).
+  const debouncedAddTweak = useMemo(
+    () =>
+      debounce((tweak: Tweak) => {
+        setSession((prev) => addTweak(prev, tweak))
+      }, 300),
+    [],
+  )
+
+  const handleTweak = useCallback(
+    (tweak: Tweak) => {
+      debouncedAddTweak(tweak)
+    },
+    [debouncedAddTweak],
+  )
+
+  const handleBpChange = useCallback((bp: 1440 | 768 | 480) => {
+    setCurrentBp(bp)
+    setSelection((prev) => (prev ? { ...prev, bp } : prev))
+  }, [])
+
+  const handleResetTweaks = useCallback(() => {
+    if (!selection) return
+    setSession((prev) => removeTweaksFor(prev, selection.selector, selection.bp))
+  }, [selection])
+
+  const handleClose = useCallback(() => {
+    setSelection(null)
   }, [])
 
   const handleSave = useCallback(async () => {
@@ -180,15 +255,24 @@ export function App() {
           data-region="triptych"
           className="overflow-auto border-r border-[hsl(var(--border-default))]"
         >
-          <PreviewTriptych block={block} />
+          <PreviewTriptych block={composedBlock} />
         </section>
-        <aside data-region="suggestions" className="overflow-hidden">
-          <SuggestionList
-            suggestions={suggestions}
-            warnings={warnings}
-            session={session}
-            onAccept={handleAccept}
-            onReject={handleReject}
+        <aside data-region="suggestions" className="flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-hidden">
+            <SuggestionList
+              suggestions={suggestions}
+              warnings={warnings}
+              session={session}
+              onAccept={handleAccept}
+              onReject={handleReject}
+            />
+          </div>
+          <TweakPanel
+            selection={selection}
+            onBpChange={handleBpChange}
+            onTweak={handleTweak}
+            onReset={handleResetTweaks}
+            onClose={handleClose}
           />
         </aside>
       </main>

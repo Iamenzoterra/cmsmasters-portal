@@ -52,7 +52,9 @@ import { StatusBar } from '../components/StatusBar'
 import * as apiClient from '../lib/api-client'
 import {
   accept,
+  addTweak,
   clearAfterSave,
+  composeTweakedCss,
   createSession,
   pickAccepted,
   type SessionState,
@@ -342,6 +344,40 @@ describe('Save flow — POST payload contract', () => {
     expect(applied.css).toContain('clamp(')
   })
 
+  // ─────────────────────────────────────────────────────────────────────
+  // WP-028 Phase 2 — tweak flow end-to-end via session + compose
+  // ─────────────────────────────────────────────────────────────────────
+  it('WP-028: addTweak → composeTweakedCss produces @container chunk over base CSS', () => {
+    // Starts from a live base CSS (fixture), appends tweak via session.addTweak,
+    // composes the render-time output — verifies the full "session is live source of
+    // truth, compose at render" invariant (Ruling D; block-forge equivalent of Studio OQ4).
+    let session = createSession()
+    session = addTweak(session, {
+      selector: '.hero-cta',
+      bp: 768,
+      property: 'padding',
+      value: '16px',
+    })
+    session = addTweak(session, {
+      selector: '.hero-cta',
+      bp: 768,
+      property: 'display',
+      value: 'none',
+    })
+
+    const baseCss = spacingFont.css
+    const composed = composeTweakedCss(baseCss, session.tweaks)
+
+    // Base rules preserved.
+    expect(composed.length).toBeGreaterThan(baseCss.length)
+    // Tweak container block emitted.
+    expect(composed).toContain('@container slot (max-width: 768px)')
+    expect(composed).toContain('padding: 16px')
+    expect(composed).toContain('display: none')
+    // And the selector carried through.
+    expect(composed).toContain('.hero-cta')
+  })
+
   it('session resets cleanly on createSession (surface test for slug-change behavior)', () => {
     // App.tsx's useEffect([selectedSlug]) calls `setSession(createSession())`
     // on every slug change. Here we verify the reducer surface: a brand-new
@@ -355,6 +391,7 @@ describe('Save flow — POST payload contract', () => {
     const fresh = createSession()
     expect(fresh.pending).toEqual([])
     expect(fresh.rejected).toEqual([])
+    expect(fresh.tweaks).toEqual([])
     expect(fresh.history).toEqual([])
     expect(fresh.backedUp).toBe(false)
     expect(fresh.lastSavedAt).toBeNull()

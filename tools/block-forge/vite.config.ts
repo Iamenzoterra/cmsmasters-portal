@@ -186,10 +186,29 @@ export default defineConfig({
     port: 7702,
     strictPort: true,
   },
+  resolve: {
+    // WP-028 Phase 2 — Dedupe React + Radix across tools/block-forge's own
+    // node_modules AND the hoisted root node_modules. Slider (from @cmsmasters/ui)
+    // imports react from the root workspace; block-forge also has react locally.
+    // Without dedupe, two React copies load and Radix hooks hit `useRef: null`.
+    dedupe: [
+      'react',
+      'react-dom',
+      'react/jsx-runtime',
+      '@radix-ui/react-slider',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-slot',
+    ],
+    alias: {
+      // Force resolution of React to root node_modules (same as @cmsmasters/ui consumers).
+      react: path.resolve(__dirname, '../../node_modules/react'),
+      'react-dom': path.resolve(__dirname, '../../node_modules/react-dom'),
+    },
+  },
   optimizeDeps: {
     // Defensive: pre-bundle the TS-source entrypoint of the workspace core package
     // so Vite dev server resolves it cleanly on first dev run (Phase 0 carry-over (b)).
-    include: ['@cmsmasters/block-forge-core'],
+    include: ['@cmsmasters/block-forge-core', 'react', 'react-dom', '@radix-ui/react-slider'],
   },
   test: {
     // Vitest mocks .css imports as empty strings by default, which breaks our

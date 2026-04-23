@@ -1,26 +1,17 @@
 // WP-027 Phase 4 — Responsive tab with session state + displayBlock live-preview + handlers.
-//
-// Phase 3 introduced engine wiring (analyzeBlock + generateSuggestions) + display-only rows.
-// Phase 4 adds:
-//   - useState(SessionState) via pure transition helpers from ./session-state
-//   - handleAccept / handleReject callbacks (dispatch + form push for accepts)
-//   - displayBlock memo (overrides Phase 2 ruling 7 — preview now reflects pending accepts)
-//   - onApplyToForm callback prop — parent (block-editor.tsx) wraps form.setValue('code', ...)
-//   - saveNonce-triggered clearAfterSave — parent increments nonce on successful save; we clear
-//
-// Brain ruling 2: analysis base stays stable — useResponsiveAnalysis deps are still
-//   [block?.id, block?.html, block?.css]. Accept/reject never re-run analyzeBlock.
-// Brain ruling 4: displayBlock layers pending accepts for live preview.
-// Brain ruling 8: clearAfterSave ONLY on successful updateBlockApi (parent increments saveNonce).
-// Brain ruling 9: session preserved across tab switches — block-editor.tsx uses CSS display:none
-//   instead of conditional render so this component stays mounted.
+// WP-028 Phase 2 — adds TweakPanel wiring: selection state + element-click listener +
+// per-BP tweak dispatch with 300ms debounce. OQ4 invariant enforced via the exported
+// `dispatchTweakToForm` helper which block-editor.tsx wires into its `onTweakDispatch`
+// callback (reads form.getValues('code') at dispatch time, NOT cached block.css).
 
 import { useMemo, useState, useCallback, useEffect, useRef } from 'react'
 import {
   analyzeBlock,
   generateSuggestions,
   applySuggestions,
+  emitTweak,
   type Suggestion,
+  type Tweak,
 } from '@cmsmasters/block-forge-core'
 import type { Block } from '@cmsmasters/db'
 import {
@@ -33,11 +24,19 @@ import {
 } from './session-state'
 import { ResponsivePreview } from './ResponsivePreview'
 import { SuggestionList } from './SuggestionList'
+import { TweakPanel, type TweakSelection } from './TweakPanel'
 
 interface ResponsiveTabProps {
   block: Block | null
   /** Parent callback — wraps form.setValue('code', blockToFormData(appliedBlock).code, { shouldDirty: true }). */
   onApplyToForm?: (appliedBlock: Block) => void
+  /**
+   * WP-028 Phase 2 — parent callback invoked by the TweakPanel's debounced dispatch.
+   * Parent (block-editor.tsx) wraps `dispatchTweakToForm(form, tweak)` in a useCallback
+   * so `form.getValues('code')` resolves at dispatch time (OQ4 invariant). Optional to
+   * keep ResponsiveTab usable in read-only/test contexts without a form.
+   */
+  onTweakDispatch?: (tweak: Tweak) => void
   /**
    * Parent-controlled counter. Incrementing this after a successful DB save signals
    * this component to call `clearAfterSave(session)`. Required to honor Brain ruling 8:
@@ -48,21 +47,18 @@ interface ResponsiveTabProps {
 
 interface AnalysisResult {
   suggestions: Suggestion[]
-  warnings: string[] // engine's BlockAnalysis.warnings is string[] (verified types.ts:22)
+  warnings: string[]
   error: Error | null
 }
 
 /**
  * Analyzes the BASE block (ignoring variants + ignoring session accepts per Brain ruling 2)
- * and returns suggestions + warnings + any thrown error. Memoized on stable primitives so
- * accept/reject dispatches do NOT cause the suggestions list to churn mid-session.
+ * and returns suggestions + warnings + any thrown error.
  */
 function useResponsiveAnalysis(block: Block | null): AnalysisResult {
   return useMemo(() => {
     if (!block) return { suggestions: [], warnings: [], error: null }
     try {
-      // analyzeBlock takes only { html, css } per AnalyzeBlockInput — engine doesn't read slug.
-      // (Phase 3 Deviation #1; preserved in Phase 4.)
       const analysis = analyzeBlock({
         html: block.html ?? '',
         css: block.css ?? '',
@@ -80,30 +76,92 @@ function useResponsiveAnalysis(block: Block | null): AnalysisResult {
         error: err instanceof Error ? err : new Error(String(err)),
       }
     }
-    // Deliberately NOT keyed on block.variants — Brain ruling 2 (analyze base only).
-    // Deliberately NOT keyed on session state — Brain ruling 2 (analysis base stable).
   }, [block?.id, block?.html, block?.css])
 }
 
-export function ResponsiveTab({ block, onApplyToForm, saveNonce }: ResponsiveTabProps) {
+/**
+ * OQ4 INVARIANT — pure helper exported for direct unit testing.
+ *
+ * Reads LIVE form.code at dispatch time, splits into {html, css}, runs `emitTweak`
+ * against the CSS only, reassembles, and writes back via form.setValue. The
+ * block-editor.tsx useCallback simply closes over `form` and delegates to this
+ * helper, so the invariant is enforced at the single source rather than per-caller.
+ *
+ * @param form RHF subset — just the two methods we need (keeps the signature
+ *             test-friendly; a full UseFormReturn<BlockFormData> is compatible).
+ * @param tweak The authored per-BP override to apply.
+ *
+ * @invariant `form.getValues('code')` is called SYNCHRONOUSLY at dispatch time.
+ *            No cached closure over block.css or a prior getValues() result.
+ *            Tested in TweakPanel.test.tsx "OQ4 invariant" describe.
+ */
+export function dispatchTweakToForm(
+  form: {
+    getValues: (key: 'code') => string
+    setValue: (
+      key: 'code',
+      value: string,
+      opts?: { shouldDirty?: boolean },
+    ) => void
+  },
+  tweak: Tweak,
+): void {
+  const liveCode = form.getValues('code')
+  // Split into <style>…</style> CSS and HTML rest. Duplicates block-editor.tsx
+  // splitCode inline to avoid a cross-file dependency.
+  const styleRe = /<style[^>]*>([\s\S]*?)<\/style>/gi
+  let baseCss = ''
+  let m: RegExpExecArray | null
+  const re = new RegExp(styleRe.source, styleRe.flags)
+  while ((m = re.exec(liveCode)) !== null) {
+    baseCss += (baseCss ? '\n\n' : '') + m[1].trim()
+  }
+  const htmlOnly = liveCode.replace(styleRe, '').trim()
+
+  const nextCss = emitTweak(tweak, baseCss)
+  const combined = nextCss.trim()
+    ? `<style>\n${nextCss}\n</style>\n\n${htmlOnly}`
+    : htmlOnly
+
+  form.setValue('code', combined, { shouldDirty: true })
+}
+
+/**
+ * Small inline debounce — keeps ResponsiveTab self-contained (no new util files
+ * per Phase 2 arch-test Δ0 rule). Trailing-edge semantics match lodash.debounce.
+ */
+function debounce<A extends unknown[]>(
+  fn: (...args: A) => void,
+  ms: number,
+): (...args: A) => void {
+  let tid: ReturnType<typeof setTimeout> | null = null
+  return (...args: A) => {
+    if (tid) clearTimeout(tid)
+    tid = setTimeout(() => fn(...args), ms)
+  }
+}
+
+export function ResponsiveTab({
+  block,
+  onApplyToForm,
+  onTweakDispatch,
+  saveNonce,
+}: ResponsiveTabProps) {
   const { suggestions, warnings, error } = useResponsiveAnalysis(block)
 
   const [session, setSession] = useState<SessionState>(() => createSession())
 
-  // Reset session when block.id changes (user navigates to a different block).
-  // Render-phase state update per React docs "getDerivedStateFromProps"-style — allowed when
-  // guarded by an equality check; React bails out after the second render.
-  //
-  // ⚠ Normalize both sides to null — `block?.id` is `undefined` when block is null,
-  // and `undefined !== null` would loop infinitely otherwise.
+  // Reset session when block.id changes.
   const currentBlockId = block?.id ?? null
   const [lastBlockId, setLastBlockId] = useState<string | null>(currentBlockId)
   if (currentBlockId !== lastBlockId) {
     setSession(createSession())
     setLastBlockId(currentBlockId)
+    // Also clear selection on block switch — selector context no longer applies.
+    // Deferred to an effect below (render-phase state mutations only touch session).
   }
 
-  // Brain ruling 8: parent-signal clearAfterSave. Ref-gate prevents firing on mount.
+  // Brain ruling 8: parent-signal clearAfterSave.
   const saveNonceRef = useRef<number | undefined>(saveNonce)
   useEffect(() => {
     if (saveNonce === undefined) return
@@ -112,8 +170,40 @@ export function ResponsiveTab({ block, onApplyToForm, saveNonce }: ResponsiveTab
     setSession((prev) => clearAfterSave(prev))
   }, [saveNonce])
 
-  // Helper: compute applied block from current session + push to parent form.
-  // Called from handleAccept (post-dispatch). Reject doesn't push — it only hides the row.
+  // WP-028 Phase 2 — TweakPanel selection state + element-click listener.
+  const [selection, setSelection] = useState<TweakSelection | null>(null)
+  const [currentBp, setCurrentBp] = useState<1440 | 768 | 480>(1440)
+  const currentSlug = block?.slug ?? null
+
+  // Clear selection whenever the active block changes (different DOM tree).
+  useEffect(() => {
+    setSelection(null)
+  }, [currentSlug])
+
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (!e.data || typeof e.data !== 'object') return
+      if ((e.data as { type?: unknown }).type !== 'block-forge:element-click') return
+      const data = e.data as {
+        type: 'block-forge:element-click'
+        slug?: string
+        selector?: string
+        computedStyle?: Record<string, string>
+      }
+      // Slug filter — multiple iframes emit the same type with their own slug.
+      if (currentSlug && data.slug !== currentSlug) return
+      if (typeof data.selector !== 'string') return
+      setSelection({
+        selector: data.selector,
+        bp: currentBp,
+        computedStyle: data.computedStyle ?? {},
+      })
+    }
+    window.addEventListener('message', handler)
+    return () => window.removeEventListener('message', handler)
+  }, [currentSlug, currentBp])
+
+  // Apply-accepted-suggestions propagation (pre-existing Phase 4 flow).
   const applyToFormFromSession = useCallback(
     (newSession: SessionState) => {
       if (!block || !onApplyToForm) return
@@ -135,7 +225,6 @@ export function ResponsiveTab({ block, onApplyToForm, saveNonce }: ResponsiveTab
     (id: string) => {
       setSession((prev) => {
         const next = acceptFn(prev, id)
-        // acceptFn returns SAME ref on no-op (already-acted id). Skip form push to avoid churn.
         if (next !== prev) applyToFormFromSession(next)
         return next
       })
@@ -143,17 +232,11 @@ export function ResponsiveTab({ block, onApplyToForm, saveNonce }: ResponsiveTab
     [applyToFormFromSession],
   )
 
-  const handleReject = useCallback(
-    (id: string) => {
-      setSession((prev) => rejectFn(prev, id))
-      // Reject hides the row but doesn't change CSS — no form push needed.
-    },
-    [],
-  )
+  const handleReject = useCallback((id: string) => {
+    setSession((prev) => rejectFn(prev, id))
+  }, [])
 
-  // Brain ruling 4: displayBlock layers pending accepts over base block for live preview.
-  // Keyed on session.pending ref (changes on accept/undo — empty-array sentinel kept stable via
-  // initial createSession()) + suggestions (stable across session changes per Brain ruling 2).
+  // displayBlock for preview — pending accepts only; tweaks live in form.code directly.
   const displayBlock = useMemo(() => {
     if (!block || session.pending.length === 0) return block
     const accepted = pickAccepted(session, suggestions)
@@ -163,6 +246,60 @@ export function ResponsiveTab({ block, onApplyToForm, saveNonce }: ResponsiveTab
     )
     return { ...block, html: applied.html, css: applied.css }
   }, [block, session, suggestions])
+
+  // WP-028 Phase 2 — debounced dispatcher; 300ms on dispatch side (Ruling I).
+  const onTweakDispatchRef = useRef(onTweakDispatch)
+  useEffect(() => {
+    onTweakDispatchRef.current = onTweakDispatch
+  }, [onTweakDispatch])
+
+  const debouncedDispatch = useMemo(
+    () =>
+      debounce((tweak: Tweak) => {
+        onTweakDispatchRef.current?.(tweak)
+      }, 300),
+    [],
+  )
+
+  const handleTweak = useCallback(
+    (tweak: Tweak) => {
+      debouncedDispatch(tweak)
+    },
+    [debouncedDispatch],
+  )
+
+  const handleBpChange = useCallback((bp: 1440 | 768 | 480) => {
+    setCurrentBp(bp)
+    setSelection((prev) => (prev ? { ...prev, bp } : prev))
+  }, [])
+
+  const handleReset = useCallback(() => {
+    if (!selection || !onTweakDispatchRef.current) return
+    // Reset scope (Ruling J): remove current-pair declarations by dispatching
+    // "revert" tweaks for each of the 4 tweakable properties. `emitTweak` with
+    // value: 'revert' updates the declaration in-place so subsequent layers
+    // inherit the base rule cleanly — a best-effort Reset without re-implementing
+    // CSS removal in RHF. Full rule-removal is Phase 2.5 polish.
+    const { selector, bp } = selection
+    const properties: Array<Tweak['property']> = [
+      'padding',
+      'font-size',
+      'gap',
+      'display',
+    ]
+    for (const property of properties) {
+      onTweakDispatchRef.current({
+        selector,
+        bp,
+        property,
+        value: 'revert',
+      })
+    }
+  }, [selection])
+
+  const handleClose = useCallback(() => {
+    setSelection(null)
+  }, [])
 
   return (
     <div
@@ -181,6 +318,13 @@ export function ResponsiveTab({ block, onApplyToForm, saveNonce }: ResponsiveTab
         session={session}
         onAccept={handleAccept}
         onReject={handleReject}
+      />
+      <TweakPanel
+        selection={selection}
+        onBpChange={handleBpChange}
+        onTweak={handleTweak}
+        onReset={handleReset}
+        onClose={handleClose}
       />
     </div>
   )

@@ -79,6 +79,68 @@ export function composeSrcDoc(input: ComposeSrcDocInput): string {
     });
     ro.observe(document.body);
   </script>
+  <script>
+    // WP-028 Phase 2 — element-click selection for TweakPanel (Ruling E: strictly additive).
+    // Delegates clicks on document.body; derives a stable selector (Ruling H: id > stable
+    // class > nth-of-type, max depth 5); emits 'block-forge:element-click' postMessage with
+    // selector, rect, and computedStyle seeds for the parent TweakPanel to consume.
+    (function () {
+      const CLICKABLE_TAGS = ['DIV','SECTION','ARTICLE','ASIDE','HEADER','FOOTER','NAV','MAIN',
+                              'H1','H2','H3','H4','H5','H6','P','SPAN','A','BUTTON','UL','OL','LI','IMG'];
+      const UTILITY_PREFIXES = ['hover:','focus:','active:','animate-','group-','peer-'];
+
+      function stableClass(el) {
+        if (!el.className || typeof el.className !== 'string') return null;
+        const classes = el.className.split(/\s+/).filter(Boolean);
+        return classes.find((c) => !UTILITY_PREFIXES.some((p) => c.startsWith(p))) || null;
+      }
+
+      function deriveSelector(el) {
+        if (!el || el === document.body) return 'body';
+        if (el.id) return '#' + CSS.escape(el.id);
+
+        const path = [];
+        let cur = el;
+        let depth = 0;
+        while (cur && cur !== document.body && depth < 5) {
+          if (cur.id) { path.unshift('#' + CSS.escape(cur.id)); break; }
+          const cls = stableClass(cur);
+          if (cls) {
+            path.unshift(cur.tagName.toLowerCase() + '.' + CSS.escape(cls));
+          } else {
+            const parent = cur.parentElement;
+            const siblings = parent ? Array.from(parent.children).filter((c) => c.tagName === cur.tagName) : [];
+            const idx = siblings.indexOf(cur) + 1;
+            path.unshift(cur.tagName.toLowerCase() + ':nth-of-type(' + idx + ')');
+          }
+          cur = cur.parentElement;
+          depth += 1;
+        }
+        return path.join(' > ');
+      }
+
+      document.body.addEventListener('click', (e) => {
+        const el = e.target;
+        if (!el || !CLICKABLE_TAGS.includes(el.tagName)) return;
+        e.preventDefault(); e.stopPropagation();
+
+        const rect = el.getBoundingClientRect();
+        const cs = getComputedStyle(el);
+
+        parent.postMessage({
+          type: 'block-forge:element-click',
+          slug: ${JSON.stringify(slug)},
+          selector: deriveSelector(el),
+          rect: { x: rect.x, y: rect.y, w: rect.width, h: rect.height },
+          computedStyle: {
+            padding: cs.padding, paddingTop: cs.paddingTop, paddingRight: cs.paddingRight,
+            paddingBottom: cs.paddingBottom, paddingLeft: cs.paddingLeft,
+            fontSize: cs.fontSize, gap: cs.gap, display: cs.display,
+          },
+        }, '*');
+      }, true);
+    })();
+  </script>
 </body>
 </html>`
 }

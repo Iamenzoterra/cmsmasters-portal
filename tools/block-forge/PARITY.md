@@ -37,6 +37,11 @@ Matches portal's `apps/portal/lib/hooks.ts:234` output + WP-024 slot wrapper. LM
 2. Block's own `block.js` (if present) — appended after animate-utils.
 3. ResizeObserver → `postMessage({ type: 'block-forge:iframe-height', slug, width, height })` for parent-panel height sync.
    - `type` literal is pinned by `preview-assets.test.ts` case (i) — any rename forces test update.
+4. **Element-click delegator** (WP-028 Phase 2) → `postMessage({ type: 'block-forge:element-click', slug, selector, rect, computedStyle })` for parent TweakPanel seeding.
+   - Delegated click listener on `document.body` (capture phase). Filters by `CLICKABLE_TAGS` (semantic block elements) and emits `e.preventDefault() + e.stopPropagation()` on match so the preview doesn't navigate/submit.
+   - Selector derivation per Ruling H: `#id` → stable class → `nth-of-type` fallback walk, max depth 5. Utility prefixes (`hover:`, `focus:`, `active:`, `animate-`, `group-`, `peer-`) excluded from "stable" class pool.
+   - Strictly additive injection (Ruling E) — wrap structure, layer order, and slot CSS are unchanged. Any future PARITY edit that touches wrap structure should land separately from the click-handler script.
+   - Cross-surface byte-identical with `apps/studio/src/pages/block-editor/responsive/preview-assets.ts` click-handler block.
 
 ### Canonical breakpoints
 - Desktop: 1440px

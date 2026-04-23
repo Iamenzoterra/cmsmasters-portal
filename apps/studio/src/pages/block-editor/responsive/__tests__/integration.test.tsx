@@ -16,19 +16,29 @@
 // (Task 4.8) — too integration-heavy for unit test harness without auth mocks.
 
 // @vitest-environment jsdom
-import { describe, it, expect, afterEach, vi } from 'vitest'
-import { render, cleanup, screen, fireEvent } from '@testing-library/react'
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
+import { act, render, cleanup, screen, fireEvent } from '@testing-library/react'
 import { ResponsiveTab } from '../ResponsiveTab'
 import type { Block } from '@cmsmasters/db'
 
-// jsdom doesn't implement ResizeObserver; PreviewPanel.tsx (Phase 2) uses it for scale-to-fit.
+// jsdom doesn't implement ResizeObserver / PointerCapture; PreviewPanel + Radix Slider use them.
 class ResizeObserverMock {
   observe() {}
   unobserve() {}
   disconnect() {}
 }
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-;(globalThis as any).ResizeObserver ??= ResizeObserverMock
+/* eslint-disable @typescript-eslint/no-explicit-any */
+if (!(globalThis as any).ResizeObserver) {
+  (globalThis as any).ResizeObserver = ResizeObserverMock
+}
+if (typeof Element !== 'undefined') {
+  const P = Element.prototype as any
+  if (!P.hasPointerCapture) P.hasPointerCapture = () => false
+  if (!P.setPointerCapture) P.setPointerCapture = () => undefined
+  if (!P.releasePointerCapture) P.releasePointerCapture = () => undefined
+  if (!P.scrollIntoView) P.scrollIntoView = () => undefined
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 // Fixture reuse per Brain ruling 7 (Phase 0 carry-over (f)) — 7 dots from __tests__/
 import blockSpacingFontHtml from '../../../../../../../packages/block-forge-core/src/__tests__/fixtures/block-spacing-font.html?raw'
@@ -155,5 +165,108 @@ describe('ResponsiveTab — Phase 4 Accept/Reject/Save flow', () => {
     // Simulate parent's successful save: increment saveNonce → child clears session.
     rerender(<ResponsiveTab block={block} onApplyToForm={onApplyToForm} saveNonce={1} />)
     expect(document.querySelectorAll('[data-role="pending-pill"]').length).toBe(0)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────
+// WP-028 Phase 2 — TweakPanel integration: postMessage → selection → dispatch
+// ─────────────────────────────────────────────────────────────────────────
+describe('ResponsiveTab — WP-028 Phase 2 TweakPanel flow', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('element-click postMessage populates TweakPanel selection (slug-filtered)', () => {
+    const block = fixtureBlock('block-spacing-font', blockSpacingFontHtml, blockSpacingFontCss)
+    render(<ResponsiveTab block={block} />)
+
+    // Before message: TweakPanel empty.
+    const empty = document.querySelector('[data-testid="tweak-panel"][data-empty="true"]')
+    expect(empty).toBeTruthy()
+
+    act(() => {
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          data: {
+            type: 'block-forge:element-click',
+            slug: 'block-spacing-font',
+            selector: '.hero-cta',
+            computedStyle: { padding: '24px', fontSize: '18px', gap: '0px', display: 'block' },
+          },
+        }),
+      )
+    })
+
+    const panel = document.querySelector('[data-testid="tweak-panel"]') as HTMLElement | null
+    expect(panel).toBeTruthy()
+    expect(panel!.getAttribute('data-selector')).toBe('.hero-cta')
+    expect(panel!.getAttribute('data-bp')).toBe('1440') // default currentBp
+  })
+
+  it('postMessage with different slug is IGNORED (slug filter)', () => {
+    const block = fixtureBlock('block-spacing-font', blockSpacingFontHtml, blockSpacingFontCss)
+    render(<ResponsiveTab block={block} />)
+
+    act(() => {
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          data: {
+            type: 'block-forge:element-click',
+            slug: 'some-other-block',
+            selector: '.foreign',
+            computedStyle: {},
+          },
+        }),
+      )
+    })
+
+    // Panel stays empty — slug mismatch filtered it out.
+    const empty = document.querySelector('[data-testid="tweak-panel"][data-empty="true"]')
+    expect(empty).toBeTruthy()
+  })
+
+  it('BP picker click + hide toggle → onTweakDispatch fires after debounce', () => {
+    const onTweakDispatch = vi.fn()
+    const block = fixtureBlock('block-spacing-font', blockSpacingFontHtml, blockSpacingFontCss)
+    render(<ResponsiveTab block={block} onTweakDispatch={onTweakDispatch} />)
+
+    // Seed selection via postMessage.
+    act(() => {
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          data: {
+            type: 'block-forge:element-click',
+            slug: 'block-spacing-font',
+            selector: '.hero-cta',
+            computedStyle: { padding: '24px', fontSize: '18px', gap: '0px', display: 'block' },
+          },
+        }),
+      )
+    })
+
+    // Switch to 768 BP.
+    fireEvent.click(document.querySelector('[data-testid="tweak-panel-bp-768"]') as HTMLButtonElement)
+    // Click Hide.
+    fireEvent.click(document.querySelector('[data-testid="tweak-panel-visibility-hide"]') as HTMLButtonElement)
+
+    // Before debounce expires — no dispatch.
+    expect(onTweakDispatch).not.toHaveBeenCalled()
+
+    // Advance 300ms.
+    act(() => {
+      vi.advanceTimersByTime(300)
+    })
+
+    expect(onTweakDispatch).toHaveBeenCalled()
+    const lastCall = onTweakDispatch.mock.calls[onTweakDispatch.mock.calls.length - 1][0]
+    expect(lastCall).toEqual({
+      selector: '.hero-cta',
+      bp: 768,
+      property: 'display',
+      value: 'none',
+    })
   })
 })
