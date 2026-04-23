@@ -2,7 +2,9 @@ import * as React from 'react';
 
 /**
  * TweakPanel — tools/block-forge surface. Phase 1 placeholder.
- * Phase 2 dispatch reads session + file state at dispatch time (Brain OQ4 equiv).
+ * Phase 2 dispatch MUST read current session state at dispatch time (NOT cached
+ * block-from-file). Cross-surface equivalent of Studio's `form.getValues('code')`
+ * rule (Brain OQ4) — dispatch source-of-truth is the live session, not DB/file.
  * Cross-surface parity mirror: apps/studio/src/pages/block-editor/responsive/TweakPanel.tsx
  */
 export interface TweakPanelProps {

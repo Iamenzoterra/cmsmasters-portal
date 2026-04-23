@@ -2,7 +2,9 @@ import * as React from 'react';
 
 /**
  * TweakPanel — Studio Responsive tab surface. Phase 1 placeholder.
- * Phase 2 dispatch MUST read form.getValues('code') at dispatch time (Brain OQ4).
+ * Phase 2 dispatch MUST read form.getValues('code') at dispatch time (NOT cached
+ * block.css from DB). Brain OQ4 rule: dispatch source-of-truth is live RHF form
+ * state, not the original load. Prevents silent loss of textarea-edited CSS.
  * Cross-surface parity mirror: tools/block-forge/src/components/TweakPanel.tsx
  */
 export interface TweakPanelProps {
