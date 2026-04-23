@@ -289,7 +289,32 @@ follow-up resolves deviations from the initial commit honestly.
 | Commit | Subject | Files | Summary |
 |--------|---------|------:|---------|
 | `306af86a` | `chore(lm): phase 0 — test runner setup [LM-reforge phase 0]` | 6 | Initial P0 — runner wired with two Brain-ratified deviations (jest-dom defer, lockfile skip) |
-| _follow-up_ | `chore(lm): phase 0 follow-up — workspace integration + wiring-proof tests [LM-reforge phase 0]` | 7 | LM into root workspaces; restore jest-dom; two new wiring-proof tests; rewrite this log honestly |
+| `099640a8` | `chore(logs): embed phase-0 commit sha in result log [LM-reforge phase 0]` | 1 | Log bookkeeping — embed `306af86a` in the first version of this file |
+| `7b3a736e` | `chore(lm): phase 0 follow-up — workspace integration + wiring-proof tests [LM-reforge phase 0]` | 7 | LM into root workspaces; restore jest-dom; two new wiring-proof tests; rewrite this log honestly |
 
-Both commits stay on `main`. The follow-up layers on top — not an amend —
-so the honest path is preserved in history.
+All three commits stay on `main`. The follow-up layers on top — not an
+amend — so the honest path is preserved in history.
+
+### Aborted commit `b96b9257` — never pushed, reflog-only
+
+During the follow-up commit, my scope-filter `git status --short | grep -E
+"^[AM]  (package|tools/layout-maker|logs/lm-reforge)"` hid staged files
+outside those path prefixes. A parallel workflow (WP-028 Phase 1) had
+staged 18 unrelated files at some earlier point in the session; my filter
+didn't show them, my `git commit` (without pathspec) swept them up. The
+contaminated commit `b96b9257` briefly existed on `main` before I caught
+it via `git log -1 --name-status`.
+
+**Recovery.** `git reset HEAD~1` (mixed — non-destructive to working tree,
+reflog-recoverable) immediately, then recommitted with explicit pathspec
+on `git commit -- <paths>` as a belt-and-suspenders scope gate. The
+resulting `7b3a736e` has exactly the 7 intended files. WP-028 files
+subsequently landed as their own commit (`66bb180a`) from the parallel
+workflow, orthogonal to this phase — verified via `git show 66bb180a
+--stat` showing zero overlap with any `tools/layout-maker` or root
+`package.json` / `package-lock.json` paths.
+
+**Lesson (should have been obvious).** Never use a filtered `git status`
+as a pre-commit scope check. Either use `git diff --cached --name-only`
+unfiltered, or rely on pathspec on `git commit` itself. Filtered status
+hides the very things you need to see.
