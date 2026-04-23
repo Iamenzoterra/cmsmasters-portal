@@ -7,9 +7,10 @@ status: full
 
 ## Start Here
 
-1. `apps/studio/src/pages/block-editor.tsx` — 941-line editor with Process panel, preview iframe, import/export
+1. `apps/studio/src/pages/block-editor.tsx` — 941-line editor with Process panel, preview iframe, import/export, 2-tab surface (Editor | Responsive)
 2. `apps/studio/src/lib/block-processor.ts` — CSS scanner: finds hardcoded values, suggests token replacements
 3. `apps/studio/src/lib/token-map.ts` — maps hex/px/font values to design token names
+4. `apps/studio/src/pages/block-editor/responsive/ResponsiveTab.tsx` — engine-backed preview triptych + suggestion list; consumes `@cmsmasters/block-forge-core` `analyzeBlock → generateSuggestions → applySuggestions` pipeline (WP-027, ADR-025)
 
 ## Public API
 
@@ -23,6 +24,9 @@ status: full
 - **CSS scoping: every block gets `.block-{slug}` prefix.** This prevents style leaking between blocks on the portal.
 - **block-import-panel preserves `<script>` tags** during HTML import. It strips `<html>`, `<head>`, `<body>` wrappers but keeps inline scripts.
 - **Image tracking via `ImageRef` type.** block-processor detects images in HTML (`img-src`) and CSS (`css-url`), tracks their status (`new`, `existing`, `removed`) for R2 batch upload.
+- **Responsive tab session state is pure — no React state inside session module.** `apps/studio/src/pages/block-editor/responsive/session-state.ts` exports pure functions (`createSession`, `accept`, `reject`, `undo`, `clearAfterSave`, `isActOn`, `pickAccepted`, `isDirty`). All React state lives in `ResponsiveTab`'s `useState`. Mirrors `tools/block-forge/src/lib/session.ts` minus `backedUp`/`lastSavedAt`.
+- **Preview uses Path B — `renderForPreview(block, { variants })`.** The engine does compose+render in one call; Studio's `composeSrcDoc` deliberately single-wraps (drops the inner `data-block-shell` layer) because the engine already wraps. See `tools/block-forge/PARITY.md` → "WP-027 Studio Responsive tab cross-reference".
+- **Save ALWAYS revalidates cache-wide.** `/api/content/revalidate` POST body is `{}` — Portal invalidates every tag. Path-scoped revalidation misses layout cache; see memory `feedback_revalidate_default.md`.
 
 ## Traps & Gotchas
 
@@ -31,6 +35,9 @@ status: full
 - **"Import strips my scripts"** — block-import-panel DOES preserve `<script>` tags, but only from the `<body>`. Scripts in `<head>` are stripped with the wrapper.
 - **`idCounter` in block-processor is module-level** — suggestion IDs increment across calls. `resetIdCounter()` exists for testing but is not called automatically between imports.
 - **Suggestion `category` field** determines UI grouping: `color`, `typography`, `spacing`, `radius`, `shadow`, `component`. Component suggestions include `suggestedClass` (e.g., `.cms-btn`) and optional `warning`.
+- **"Responsive tab Save button doesn't enable after Accept"** — missing `onApplyToForm` callback wiring. Accept updates session but not `formState.isDirty`. Wire the callback + `form.setValue('code', ..., { shouldDirty: true })` on every mount.
+- **"Session wipes on tab switch"** — tab switch must use CSS `display: none`, NOT unmount. If future routing refactor unmounts, lift session state to `block-editor.tsx` before landing.
+- **"Responsive tab preview is triple-nested"** — Studio's `composeSrcDoc` must NOT wrap `data-block-shell` — the engine already does. Triple-nest = silent `@container slot` query failure. Block-forge parity is `@layer shared` + outer `.slot-inner`; Studio inherits via Path B.
 
 ## Blast Radius
 
@@ -38,6 +45,8 @@ status: full
 - **Changing token-map.ts** — affects token suggestion accuracy for ALL CSS properties
 - **Changing block-editor.tsx** — affects block CRUD, import, export, Process panel preview, and all block editing UI
 - **Changing block-import-panel.tsx** — affects HTML import with script preservation
+- **Changing `apps/studio/src/pages/block-editor/responsive/session-state.ts`** — affects Responsive tab dirty-state, Accept/Reject/Undo flows, and the Save button enable/disable logic. Tests mirror block-forge's `session.test.ts` verbatim.
+- **Changing `apps/studio/src/pages/block-editor/responsive/ResponsiveTab.tsx`** — affects the entire authoring surface for responsive heuristics. Consumers: `block-editor.tsx` only. No cross-app imports.
 
 ## Recipes
 

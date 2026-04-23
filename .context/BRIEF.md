@@ -2,7 +2,7 @@
 
 > Read this file FIRST. It gives you the full picture in 5 minutes.
 > Then read the specific layer spec for your current task.
-> Last updated: 23 April 2026
+> Last updated: 2026-04-23
 
 ---
 
@@ -74,7 +74,7 @@ The company operates 4 fragmented domains with no shared navigation, broken post
 | App | Status | Details |
 |-----|--------|---------|
 | Command Center | ✅ DONE | 6 pages, localhost:4000, own dark theme |
-| Studio | ✅ DONE | Login, themes, blocks (editor + Process panel with token scanner + R2 image upload + component detection), templates, pages, global elements settings, **theme meta (categories + tags CRUD with tabbed UI + picker modals)**. Block editor: HTML+CSS+JS fields, import with script preservation, export. Process panel: split preview (before/after), zoom, scroll, replay, animation support. Theme editor: category/tag picker modals with is_primary toggle, junction table save/load. |
+| Studio | ✅ DONE | Login, themes, blocks (editor + Process panel with token scanner + **Responsive tab (WP-027)** + R2 image upload + component detection), templates, pages, global elements settings, **theme meta (categories + tags CRUD with tabbed UI + picker modals)**. Block editor: HTML+CSS+JS fields, import with script preservation, export, 2-tab surface (Editor \| Responsive). Process panel: split preview (before/after), zoom, scroll, replay, animation support. Theme editor: category/tag picker modals with is_primary toggle, junction table save/load. |
 | Portal | ✅ DONE | **Next.js 15 App Router (SSG + ISR)** on Vercel. Theme pages (layout + global elements + template blocks + hook resolution). **Multi-block slots**: sidebar/header/footer slots support multiple blocks with configurable gap (WP-014). Composed pages (page_blocks + global elements). SEO: JSON-LD Product/WebPage, OG, canonical, sitemap.xml, robots.txt. On-demand revalidation via `/api/revalidate`. Dev port: 3100. |
 | Dashboard | ✅ DONE | Vite SPA on :5174. My Themes (license cards, support status, bundled plugins), My Account (profile, 4 stat cards, capabilities table, access details), Support (mock), Downloads (mock). Auth: any authenticated user. Lazy routes. |
 | Admin | ✅ DONE | Vite SPA on :5175. Overview (5 KPIs, activation feed, date range toggle), Staff & Roles (grant/revoke), User Inspector (search + full detail), Audit Log (filterable), System Health (DB/R2/Envato status). Auth: admin only via staff_roles. |
@@ -118,6 +118,7 @@ Layer 3: Dashboard + Admin        ✅ DONE (WP-017: 9 phases, DB migration + aut
 Responsive Blocks Foundation      ✅ DONE (WP-024: blocks.variants JSONB + BlockRenderer inlining + slot container-type + tokens.responsive.css scaffold — unblocks WP-025/026/027/028; ADR-025)
 Block Forge Core                  ✅ DONE (WP-025: pure-function engine — 6 public fns, 75 tests, 3 frozen fixtures + E2E snapshot; unblocks WP-026 tools/block-forge + WP-027 Studio Responsive tab; ADR-025)
 Block Forge MVP                   ✅ DONE (WP-026: tools/block-forge/ Vite app on :7702 — file-based authoring against content/db/blocks/*.json, 3-panel preview (1440/768/375), accept/reject suggestions, save with .bak; 46 tests, zero PARITY divergences; unblocks WP-027 Studio Responsive tab + WP-028 Tweaks/Variants UI; ADR-025)
+Studio Responsive tab             ✅ DONE (WP-027: apps/studio/ Block Editor's 2-tab surface (Editor | Responsive); display-only suggestion list (6 heuristics via @cmsmasters/block-forge-core); Accept/Reject → form.code dirty → DB save via updateBlockApi({variants}) + Hono /revalidate ≤15 LOC extension ({} = cache-wide); 489/0 arch-test + unit coverage preserved + 6/6 e2e scenarios; composeSrcDoc single-wrap deviation from block-forge PARITY §7 documented; unblocks WP-028 Tweaks/Variants UI + WP-029 tokens.responsive.css populate; ADR-025)
 ```
 
 ### What's next

@@ -539,3 +539,42 @@ Dev tools use stable DOM selectors via `data-*` attributes (non-presentational, 
 Browser QA (Chrome DevTools, Playwright) and integration tests (`src/__tests__/integration.test.tsx`) consume these. Renaming any hook requires a test sweep.
 
 Apps (portal / dashboard / studio / admin) continue to prefer semantic ARIA roles first; `data-*` is for dev-tool surfaces where test-only hooks don't leak into production UX.
+
+---
+
+## Studio Responsive tab conventions (WP-027, ADR-025)
+
+`apps/studio/src/pages/block-editor.tsx` hosts a 2-tab interface (Editor | Responsive). The Responsive tab surfaces `@cmsmasters/block-forge-core` heuristics against the currently-loaded block. These rules apply to the Responsive tab specifically; the Editor tab's rules are inherited from WP-006 block-editor.
+
+### 1. Preview render — Path B (engine absorbs composeVariants)
+
+The Responsive tab's preview triptych feeds `renderForPreview(block, { variants })` directly. The engine returns pre-wrapped HTML (`<div data-block-shell="{slug}">…</div>`) and stripped CSS — Studio's `composeSrcDoc` drops the inner shell wrap to avoid double-nesting.
+
+**Deliberate deviation from `tools/block-forge/PARITY.md` §7:** block-forge wraps twice (its own `composeSrcDoc` + engine's `renderForPreview`) because block-forge predates Path B. Studio's composeSrcDoc is a conscious single-wrap. Do NOT "align with block-forge" by adding the inner wrap — you'll regress to triple-nest. See `logs/wp-027/phase-2-result.md` for the original trace + `tools/block-forge/PARITY.md` → "WP-027 Studio Responsive tab cross-reference".
+
+### 2. Session state — pure mirror of block-forge's session.ts
+
+`apps/studio/src/pages/block-editor/responsive/session-state.ts` is a pure-function module mirroring `tools/block-forge/src/lib/session.ts` minus two fields (`backedUp`, `lastSavedAt`) that don't apply to DB-backed authoring. API: `createSession, accept, reject, undo, clearAfterSave, isActOn, pickAccepted, isDirty`. Tests mirror block-forge verbatim at `apps/studio/src/pages/block-editor/responsive/__tests__/session-state.test.ts`.
+
+**Trap:** `isDirty(session)` reports pending accepts ONLY. The canonical "unsaved changes" signal combines `isDirty(session) || formState.isDirty` — React Hook Form's `formState.isDirty` tracks the Editor tab's textarea separately. Save button consumes the OR.
+
+### 3. Accept → form dirty via callback
+
+The `ResponsiveTab` emits an optional `onApplyToForm(block: Block)` callback when a suggestion is Accepted. `block-editor.tsx` wires it to:
+```tsx
+form.setValue('code', blockToFormData(appliedBlock).code, { shouldDirty: true })
+```
+
+This is the ONLY bridge between the session state and the RHF form. If the callback is omitted, Accept silently updates session but leaves the form clean — Save button would not enable. Always wire the callback when mounting `ResponsiveTab` outside a read-only context.
+
+### 4. Revalidation on Save — cache-wide via `{}`
+
+`handleSave` in `block-editor.tsx` POSTs to `/api/content/revalidate` with empty body `{}` after a successful PATCH. Hono's `revalidate.ts` handler was extended (≤15 LOC) to accept `{}` / `{ all: true }` and forward `{}` to Portal — `revalidatePath()` with no argument invalidates every tag.
+
+**Trap:** Do NOT default to `{ slug, type: 'block' }` path-scoped revalidation for block saves. Block CSS changes cascade to every theme using the block; single-path revalidation misses the layout cache. Memory `feedback_revalidate_default.md` enforces this.
+
+### 5. Tab-switch preservation
+
+Session state lives in `ResponsiveTab`'s `useState` and persists across tab switches via CSS `display: none` on the inactive tab (NOT unmount). Unmounting would wipe pending accepts on every Editor↔Responsive toggle — UX-hostile and session-destructive. The parent also passes `saveNonce` (counter incremented on successful save) so the child can `clearAfterSave` precisely on save-success — not on Discard.
+
+**Trap:** If future work moves `ResponsiveTab` to a route-based split or Suspense boundary, session state MUST lift to `block-editor.tsx` (or a context) before unmount lands. Silent fix path: add `persistSession` prop + `useEffect` sync.

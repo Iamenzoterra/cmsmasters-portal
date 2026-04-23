@@ -574,3 +574,38 @@ This WP blocks:
 - **`--border-base` note from WP-026** — if that issue stems from a bad token reference elsewhere in `packages/ui/` or Studio, Phase 0 is the chance to include a quick grep check. Out-of-scope fix, but discovery is cheap.
 - **WP-028 lookahead.** WP-028 will add tweak sliders and variants drawer to BOTH surfaces in lockstep. WP-027's parity contract is what makes that tractable: any WP-028 edit lands in two places with one design call.
 - **ADR-025 is the tie-breaker** on any authoring-semantic question.
+
+---
+
+## ✅ CLOSED — 2026-04-23
+
+All 5 phases complete. WP-027 is production-merged.
+
+### Final state
+- **Tests:** arch-test 489/0 baseline preserved across all 5 phases + 46 block-forge unit tests (cross-surface parity) + Studio session-state / integration / SuggestionRow vitest suites green
+- **e2e matrix:** 6/6 Playwright scenarios pass (see `logs/wp-027/phase-4-result.md` §4.8)
+- **Screenshots:** 7 committed under `logs/wp-027/wp-027-p4-e2e-scenario*.png` + Phase 1–3 visual verification screenshots
+- **DS violations:** zero (lint-ds clean across Phases 1–4)
+- **PARITY divergences:** one deliberate (composeSrcDoc single-wrap, documented as cross-ref in `tools/block-forge/PARITY.md`) + six Phase 4 documented deviations
+
+### Commit lineage
+| Phase | Commits | Type |
+|-------|---------|------|
+| Phase 0 | `b0e44713` (task prompt), `25225432` (RECON result) | chore(logs) |
+| Phase 1 | `a34ff13d` (feat), `32a7b7b3` (result), `ee810aa3` (visual verification) | feat(studio) |
+| Phase 2 | `569cdb69` (feat), `21bdbeee` (result + 5 screenshots) | feat(studio) |
+| Phase 3 | `f70872e0` (task), `5dba05da` (feat), `5451c1b1` (result + screenshots) | feat(studio) |
+| Phase 4 | `06841d08` (task), `0b527945` (feat), `8cb9a0ee` (result), `b3dec18f` (e2e matrix) | feat(studio+api) |
+| Phase 5 | `da8d0296` (task prompt) + close commit (this phase) | chore(docs) |
+
+### Unblocks
+- **WP-028 Tweaks/Variants UI** — depends on Responsive tab's session state + preview harness
+- **WP-029 tokens.responsive.css populate** — depends on real WP-027 usage to inform clamp choices
+
+### Cross-refs
+- Architecture: `workplan/BLOCK-ARCHITECTURE-V2.md` (WP-027 status line appended Phase 5)
+- Conventions: `.context/CONVENTIONS.md` → "Studio Responsive tab conventions"
+- Skill: `.claude/skills/domains/studio-blocks/SKILL.md` (Start Here +1, Invariants +3, Traps +3, Blast Radius +2)
+- PARITY cross-ref: `tools/block-forge/PARITY.md` → "WP-027 Studio Responsive tab cross-reference"
+- Phase results: `logs/wp-027/phase-{0..5}-result.md`
+- ADR: `workplan/adr/025-responsive-blocks.md`

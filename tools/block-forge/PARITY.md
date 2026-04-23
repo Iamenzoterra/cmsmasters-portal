@@ -78,6 +78,44 @@ Across Phases 2–4 of WP-026, **zero open divergences** were observed against t
 
 Block-forge is baseline-true vs the portal theme-page render as of the commit closing WP-026.
 
+## WP-027 Studio Responsive tab cross-reference
+
+Studio's Responsive tab (WP-027) consumes `@cmsmasters/block-forge-core` directly via Path B — `renderForPreview(block, { variants })` absorbs composeVariants in one call. This yields a different iframe DOM shape from block-forge's:
+
+### block-forge (this tool) — double-wrap, deliberate
+```
+<div class="slot-inner">              ← composeSrcDoc writes (outer)
+  <div data-block-shell="{slug}">     ← composeSrcDoc writes (inner)
+    {block.html}                      ← block content
+  </div>
+</div>
+```
+
+### Studio Responsive tab — single-wrap, deliberate
+```
+<div class="slot-inner">              ← Studio composeSrcDoc writes (outer only)
+  <div data-block-shell="{slug}">     ← renderForPreview engine wrote (already in block.html)
+    {block.html content}
+  </div>
+</div>
+```
+
+**Why the divergence:** block-forge predates engine Path B (WP-025 shipped the convenience overload; block-forge Phase 2 was already wrapping). Studio started fresh with Path B so the engine does the inner wrap; Studio's composeSrcDoc drops its inner wrap to avoid triple-nest.
+
+**Contract:** if block-forge ever migrates to Path B (Phase 6+ refactor), drop its inner wrap here AND in `preview-assets.ts`. Until then, do NOT "align Studio to block-forge" — you'll regress Studio to triple-nest and `@container slot` queries will silently evaluate against the wrong box. The divergence is NOT an "Open Divergence" against the portal (where both tools agree on the `@container slot` contract) — it is a surface-local delta between the two authoring tools.
+
+### Phase 4 documented deviations (from `logs/wp-027/phase-4-result.md`)
+
+Six divergences between Phase 4 plan and shipped code, all acceptable, all logged:
+1. `analyzeBlock` run on stable source (base block only), not dirty form content — prevents suggestion churn during an Accept storm
+2. Tab mount uses CSS `display: none` (not unmount) — preserves session across Editor↔Responsive switches
+3. `clearAfterSave` only on successful save — error path preserves pending accepts (Brain ruling 8)
+4. `onApplyToForm` callback is optional — `ResponsiveTab` works in read-only preview contexts
+5. `authHeaders` imported directly in `block-editor.tsx` (not duplicated) — single source
+6. Null-block / empty-pending guards in `displayBlock` memo — prevents infinite re-render on block-id transition edge case
+
+See `logs/wp-027/phase-4-result.md` §"6 documented deviations" for full trace.
+
 ## Cross-contract test layers
 
 Block-forge's safety net is two-layered:
