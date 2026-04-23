@@ -44,7 +44,16 @@ export function rewriteImages(html: string): string {
     const src = srcMatch[1]
     const path = toAssetPath(src)
     if (path === null) return match
-    if (isSvg(path)) return match
+
+    // SVG: migrate to canonical CDN host (so legacy r2.dev URLs move to
+    // assets.cmsmasters.studio for cache headers + uniformity), but do not
+    // add /cdn-cgi/image/ — format=auto would rasterise vector.
+    if (isSvg(path)) {
+      const canonical = `${CDN_HOST}/${path}`
+      if (src === canonical) return match
+      return match.replace(src, canonical)
+    }
+
     if (/\ssrcset\s*=/i.test(attrs)) return match
 
     const newSrc = buildImageUrl(path, { width: DEFAULT_SRC_WIDTH })

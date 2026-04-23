@@ -123,6 +123,7 @@ Wiring:
 
 - `apps/portal/app/_components/block-renderer.tsx` (content pages) — wraps `html` and every variant's `html` before `dangerouslySetInnerHTML`
 - `apps/portal/lib/hooks.ts` (`renderBlock`, used by theme pages) — same, at HTML-string composition time
+- `apps/portal/app/themes/[slug]/page.tsx` — a **layout-level** second pass on the final `pageHTML` after `resolveMetaHooks`. Catches `<img>` tags injected by meta hooks (`{{theme_details}}` / `{{help_and_support}}` icon URLs) that bypass per-block rewriting
 
 ### Rewriter rules
 
@@ -132,7 +133,9 @@ Wiring:
 | `src="https://assets.cmsmasters.studio/blocks/x.png"` | Rewritten with transformation |
 | `src="/blocks/x.png"` or bare path | Treated as our asset, rewritten |
 | `src="https://external.example/x.png"` | Untouched |
-| `src="....svg"` (any .svg) | Untouched — SVG is vector, transformations would rasterise |
+| `src="....svg"` on legacy `pub-*.r2.dev` host or bare path | Host migrated to `assets.cmsmasters.studio`, no transformation added (SVG is vector) |
+| `src="....svg"` already on `assets.cmsmasters.studio` | Untouched |
+| `src="....svg"` on external host | Untouched |
 | Tag already has `srcset` | Untouched — author opted out |
 | Tag lacks `loading=` | `loading="lazy"` added |
 | Tag lacks `decoding=` | `decoding="async"` added |
@@ -223,3 +226,4 @@ won't break, but new publishes should only use `assets.cmsmasters.studio`.
 | Date | Change |
 |------|--------|
 | 2026-04-23 | Custom domain `assets.cmsmasters.studio` enabled; Transformations enabled with `assets.cmsmasters.studio` as only allowed origin; rewriter deployed; content migrated off `pub-*.r2.dev` host (see commit `b5ccfb32`) |
+| 2026-04-23 | Rewriter now migrates SVG hostname from `pub-*.r2.dev` to `assets.cmsmasters.studio` (without transformation). Added layout-level rewriter pass in `themes/[slug]/page.tsx` after `resolveMetaHooks` — catches icons injected by `{{theme_details}}` / `{{help_and_support}}` meta hooks |

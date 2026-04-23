@@ -20,6 +20,7 @@ import {
   renderBlock,
   stripDebug,
 } from '@/lib/hooks'
+import { rewriteImages } from '@/lib/optimize-images'
 export const revalidate = 3600
 
 // Cache theme fetch so generateMetadata and page component share the same data
@@ -222,6 +223,11 @@ export default async function ThemePage({ params }: Props) {
     const footer = renderSlotBlocks(globalElements.footer)
     pageHTML = `${header}\n<main data-slot="content"><div data-slot="theme-blocks"><div class="slot-inner">${themeBlocksHTML}</div></div></main>\n${footer}`
   }
+
+  // Layout-level rewriter pass: catches <img> tags injected by meta hooks
+  // (e.g. {{theme_details}} icon_url, {{help_and_support}} icon_url) that
+  // bypass the block-level rewriter inside renderBlock.
+  pageHTML = rewriteImages(pageHTML)
 
   // 8. JSON-LD Product schema
   const title = seo.title || (meta.name as string) || slug
