@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-23
 **Duration:** ~75 min
-**Commit(s):** _(embedded post-commit below)_
+**Commit(s):** `1ff1f604` (feat) + this chore-logs SHA-embed amendment
 **Arch-test:** 470 / 0
 **Test totals:** file-io 14 + preview-assets 9 + session 15 + integration 8 = **46 / 46**
 **Build:** clean (2.14s, 193 modules; same pre-existing warnings as Phase 3)
@@ -189,7 +189,7 @@ None this phase. The three Phase 3 Plan Corrections (C1 spacing-clamp→font-cla
 
 ## Summary for Brain
 
-1. **Commit SHA(s):** _embedded post-commit._
+1. **Commit SHA(s):** `1ff1f604` (feat + result log) + this chore-logs SHA-embed amendment
 2. **Arch-test:** 470 / 0 ✅
 3. **Tests:** 46 / 46 ✅ (file-io 14 + preview-assets 9 + session 15 + integration 8)
 4. **Browser QA:** 12 / 12 steps pass (step 11 verified structurally via effect-attachment pattern rather than triggering an actual beforeunload navigation)
