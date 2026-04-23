@@ -169,7 +169,7 @@ addendum (see Open Questions).
 
 ## Git
 
-To be filled after commit:
-
-- Commit: `{sha}` — `chore(lm): phase 0 — test runner setup [LM-reforge phase 0]`
-- Files included per the 6-file scope above.
+- Commit: `306af86a` — `chore(lm): phase 0 — test runner setup [LM-reforge phase 0]`
+- Files included: 6 (matches 6-file scope hard gate)
+- Insertions: 659 · deletions: 2
+- DS-lint hook: ✅ clean (0 files lintable in this scope)
