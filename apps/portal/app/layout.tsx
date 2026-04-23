@@ -17,6 +17,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://assets.cmsmasters.studio" />
+        <link rel="dns-prefetch" href="https://assets.cmsmasters.studio" />
+      </head>
       <body className={manrope.variable}>
         {children}
         <Script src="/assets/animate-utils.js" strategy="afterInteractive" />
