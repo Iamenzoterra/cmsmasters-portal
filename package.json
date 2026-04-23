@@ -4,7 +4,8 @@
   "packageManager": "npm@10.9.4",
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "tools/layout-maker"
   ],
   "knip": {
     "ignore": [
