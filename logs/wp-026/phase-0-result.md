@@ -3,6 +3,7 @@
 **Date:** 2026-04-23
 **Duration:** ~55 min
 **Arch-test baseline:** 442 / 0
+**Commit:** `50689098` (this log + phase-0-task.md together)
 
 ---
 
