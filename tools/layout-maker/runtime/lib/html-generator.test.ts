@@ -187,4 +187,77 @@ describe('html-generator: drawer shell', () => {
     expect(html).toMatch(/data-drawer-open="left"/)
     expect(html).not.toMatch(/data-drawer-open="right"/)
   })
+
+  // PARITY-LOG: "tablet peek/tab pill shows a close (X) sprite alongside
+  // the chevron at rest". FAB is the only variant whose icon-wrap paints
+  // a chev↔close swap on open — peek/tab/hamburger hide themselves while
+  // a drawer is open, so they have no open state that would consume the
+  // close sprite. Emitting it anyway let peek's flex icon-wrap paint the
+  // chev and X side-by-side.
+
+  it('emits a chev sprite inside every trigger button', () => {
+    const config = base(true) // tablet: peek (default)
+    config.grid.mobile = {
+      'min-width': '375px',
+      columns: { 'sidebar-left': '1fr', content: '1fr', 'sidebar-right': '1fr' },
+      'column-gap': '0',
+      sidebars: 'drawer',
+      'drawer-trigger': 'fab',
+    }
+    const html = generateHTML(config)
+    // 2 peek + 2 fab buttons = 4 chev sprites total.
+    const chevs = html.match(/drawer-trigger__icon--chev/g) ?? []
+    expect(chevs.length).toBe(4)
+  })
+
+  it('emits __icon--close only for FAB triggers (not peek / tab / hamburger)', () => {
+    const config = base(true) // tablet: peek (default)
+    config.grid.mobile = {
+      'min-width': '375px',
+      columns: { 'sidebar-left': '1fr', content: '1fr', 'sidebar-right': '1fr' },
+      'column-gap': '0',
+      sidebars: 'drawer',
+      'drawer-trigger': 'fab',
+    }
+    const html = generateHTML(config)
+
+    // 2 fab buttons (left + right) → 2 close sprites. Not 4.
+    const closes = html.match(/drawer-trigger__icon--close/g) ?? []
+    expect(closes.length).toBe(2)
+
+    // Peek buttons carry only the chev sprite; FAB buttons carry both.
+    const peekButtons =
+      html.match(/<button[^>]*drawer-trigger--peek[^>]*>[\s\S]*?<\/button>/g) ?? []
+    expect(peekButtons.length).toBe(2)
+    for (const btn of peekButtons) {
+      expect(btn).toMatch(/drawer-trigger__icon--chev/)
+      expect(btn).not.toMatch(/drawer-trigger__icon--close/)
+    }
+    const fabButtons =
+      html.match(/<button[^>]*drawer-trigger--fab[^>]*>[\s\S]*?<\/button>/g) ?? []
+    expect(fabButtons.length).toBe(2)
+    for (const btn of fabButtons) {
+      expect(btn).toMatch(/drawer-trigger__icon--chev/)
+      expect(btn).toMatch(/drawer-trigger__icon--close/)
+    }
+  })
+
+  it('hamburger and tab triggers do not emit a close sprite either', () => {
+    const config = base(false)
+    config.grid.tablet = {
+      ...config.grid.tablet,
+      sidebars: 'drawer',
+      'drawer-trigger': 'hamburger',
+    }
+    config.grid.mobile = {
+      'min-width': '375px',
+      columns: { 'sidebar-left': '1fr', content: '1fr', 'sidebar-right': '1fr' },
+      'column-gap': '0',
+      sidebars: 'drawer',
+      'drawer-trigger': 'tab',
+    }
+    const html = generateHTML(config)
+    // Neither variant has an open-state icon swap; no close sprite at all.
+    expect(html).not.toMatch(/drawer-trigger__icon--close/)
+  })
 })

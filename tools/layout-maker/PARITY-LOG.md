@@ -71,6 +71,31 @@ fix is in the generator, the Inspector, the schema, or the Portal.
 
 ## Fixed
 
+### [tablet] Peek / tab trigger pill shows a close (X) sprite alongside the chevron at rest
+
+- **Layout / scope:** `layouts/2132.yaml` (tablet `drawer-trigger: tab`, right sidebar `drawer-trigger-label: theme details`) / `theme`
+- **Breakpoint:** tablet (and mobile if peek/tab is used there; generally: any BP where `drawer-trigger` is `peek` or `tab`)
+- **Slot:** drawer trigger buttons inside `.drawer-shell`
+- **Field:** `grid.{bp}.drawer-trigger: peek | tab`
+- **LM claims:** LM canvas (`DrawerPreview.tsx:164-179`) shows the peek/tab pill with ONE icon — only the slot's `drawer-trigger-icon` (chevron by default) inside the circular icon-wrap. Inspector exposes no close-icon field. Canvas is correct.
+- **Portal rendered (before fix):** the pill's 26×26 flex icon-wrap rendered BOTH a `>` and an `×` side-by-side. The 13×13 chev and 13×13 close sprite each took half the wrap, so they sat together in the circle — the X was never meant to exist on peek/tab (it belongs to the FAB chev↔close opacity swap).
+- **Where the lie lived:** **html-generator + shell**. `renderTrigger` (`html-generator.ts:112-117`) emitted both `.drawer-trigger__icon--chev` AND `.drawer-trigger__icon--close` sprites for **every** variant. Its comment described a shell-driven opacity swap that only exists for FAB — `portal-shell.css:381-389` scopes every close-sprite rule to `.drawer-trigger--fab` alone. Peek / tab / hamburger had zero rules hiding `__icon--close`, so opacity defaulted to 1; and their icon-wrap uses `display: flex` (not grid like FAB), so the two sprites rendered side-by-side instead of stacking.
+- **Root cause:** FAB is the only variant that needs a close sprite — peek/tab/hamburger hide themselves when any drawer is open (`portal-shell.css:477-481`), so they have no "open" state to paint. The generator should not emit a sprite the variant's shell rules never consume, and the shell should defensively hide any stray close-sprite that reaches a non-FAB trigger.
+- **Repro (before fix):**
+  1. Open `layouts/2132.yaml` in LM; confirm `grid.tablet.drawer-trigger: tab`.
+  2. Export the layout, upsert to Supabase, revalidate the `theme-*` tag.
+  3. Open the theme page in Portal at tablet width (~768–1439 px).
+  4. Observe the right-side "THEME DETAILS" pill — the circular icon area paints `>` and `×` together.
+- **Fix:**
+  1. **Generator:** `renderTrigger` (`html-generator.ts`) now guards the close-sprite `<svg>` behind `if (variant === 'fab')`. Non-fab triggers emit only the chev sprite. Comment updated to state the chev↔close swap is FAB-specific.
+  2. **Shell (belt-and-braces):** `portal-shell.css` adds `:is(.drawer-trigger--peek, .drawer-trigger--tab, .drawer-trigger--hamburger) .drawer-trigger__icon--close { display: none }` so a stale exported HTML (pre-fix) still can't paint the X — the sprite is stripped at render time if it sneaks in.
+- **Status:** `fixed <this commit>`
+- **Contract/test:** `html-generator.test.ts` — three new cases:
+  - `emits a chev sprite inside every trigger button` (4 chev sprites for peek × 2 sides + fab × 2 sides).
+  - `emits __icon--close only for FAB triggers (not peek / tab / hamburger)` — asserts fab buttons contain both sprites and peek buttons contain only chev.
+  - `hamburger and tab triggers do not emit a close sprite either` — negative case for the two remaining non-fab variants.
+- **Follow-up / not in scope:** LM canvas `DrawerPreview.tsx` renders a single chev even for FAB — so the canvas does not paint the FAB open-state X. Separate divergence (canvas vs Portal on FAB open state); not this fix's scope.
+
 ### [all-bp] Slot container-type enables per-slot responsive variants (WP-024 / ADR-025)
 
 - **Layout / scope:** all layouts / all scopes — generic `.slot-inner` rule

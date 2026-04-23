@@ -388,6 +388,19 @@ body.drawer-is-open-right .drawer-trigger--fab.drawer-trigger--right .drawer-tri
   opacity: 1;
 }
 
+/* Defensive rule — peek / tab / hamburger triggers have no at-rest↔
+ * open icon swap (they hide themselves entirely while any drawer is
+ * open, see the `body.drawer-is-open :is(...)` block below). The
+ * close sprite belongs to FAB alone; html-generator only emits it for
+ * the fab variant, and this rule guarantees the peek pill's 26×26
+ * icon-wrap can never paint "> ×" side-by-side even if a stale layout
+ * HTML (pre-fix export) carries the sprite. Paired contract test:
+ * html-generator.test.ts — "emits __icon--close only for FAB triggers". */
+:is(.drawer-trigger--peek, .drawer-trigger--tab, .drawer-trigger--hamburger)
+  .drawer-trigger__icon--close {
+  display: none;
+}
+
 /* Vertical label reads bottom-to-top. Hidden by default (0 opacity);
  * fades in on armed with a small delay so the height transition
  * begins before the text appears. Physical padding-top/bottom
