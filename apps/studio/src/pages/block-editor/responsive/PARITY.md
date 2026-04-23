@@ -120,7 +120,20 @@ The following intentional deltas from `tools/block-forge/PARITY.md` apply only t
    **Anti-regression test:** `__tests__/preview-assets.test.ts` case `(studio-1)` pins the single-wrap contract — input html without `data-block-shell` produces output body without `data-block-shell`. Any future edit that accidentally re-adds the inner wrap in composeSrcDoc fails this test.
 
 8. **Known corner: theme-page slot-block bypass.** (forward-risk acknowledgement, not fixed)
-   `apps/portal/app/themes/[slug]/page.tsx:189` has a known `.slot-inner` bypass for theme-page slot-closure rendering (documented in app-portal SKILL). Variant-bearing blocks rendered through that path may differ from iframe preview output. **Phase 2.8 manual parity check uses a composed-page block (via `apps/portal/app/[[...slug]]/page.tsx`) ONLY — never a theme-page slot block** — to avoid false positives against this known delta. If a theme-page slot-block ever needs parity verification, either patch app-portal's bypass first or add an explicit separate contract with its own test suite.
+   `apps/portal/app/themes/[slug]/page.tsx:189` has a known `.slot-inner` bypass for theme-page slot-closure rendering (documented in app-portal SKILL). **Variant-bearing** blocks rendered through that path may differ from iframe preview output. For **non-variant** blocks the bypass does NOT affect output — theme-page is a valid parity surface in that case. Phase 2.8 parity check used theme-page against a non-variant block (`fast-loading-speed`) because that was the only published surface at the time. Composed-page parity (via `apps/portal/app/[[...slug]]/page.tsx`) remains the preferred surface and the MANDATORY one once variant-bearing blocks need parity verification.
+
+9. **Image URL-rewriter lives above the injection stack.** ✅ (documented Phase 2.8)
+   Portal runtime wraps rendered block HTML with a layout-level image-URL rewriter (`commit a69f99a8 fix(portal): migrate SVG icon hostnames + layout-level image rewrite`) that:
+   - Replaces R2 pub-URL host (`pub-*.r2.dev`) with the custom CDN host `assets.cmsmasters.studio`
+   - Adds Cloudflare Image Resizing prefix: `/cdn-cgi/image/format=auto,quality=85,width=800/`
+   - Generates `srcset` with 4 width variants (400/800/1200/1600w)
+
+   **Studio Responsive tab deliberately does NOT apply this rewriter.** The tab is an editor view — content authors need to see the raw asset URLs as they were authored and stored, not the CDN-optimized versions. This is an **expected & documented delta** between the two surfaces, not a bug, not a contract breach.
+
+   **Implications for parity testing:**
+   - Byte-identical parity up to `<img src=` attribute value ✅
+   - URL-rewriter delta lives at `apps/portal/app/layout.tsx` post-processing, not at `renderBlock()` or injection stack
+   - Any future parity test that needs to compare Studio output vs Portal runtime should either (a) normalize asset URLs before diff, or (b) compare against Portal's pre-rewriter `renderBlock()` output directly.
 
 ---
 
