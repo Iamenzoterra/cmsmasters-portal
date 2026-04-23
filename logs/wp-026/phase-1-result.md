@@ -74,9 +74,18 @@ Zero output, zero errors.
 - `curl http://localhost:7702/` returns the expected `index.html` with `<title>Block Forge</title>` + `/@vite/client` + `/src/main.tsx` script tags.
 - `curl http://localhost:7702/src/App.tsx` returns Vite-transformed TSX with JSX runtime + HMR boilerplate (confirms compile pipeline works end-to-end).
 - `curl http://localhost:7702/src/main.tsx` imports `react`, `react-dom/client`, and `/src/App.tsx` — import graph wired correctly.
-- Dev server stopped via `TaskStop` after smoke test — no orphaned process.
+- Dev server stopped via `TaskStop` + `Stop-Process` (strictPort verified once on stale-port collision — killed, restarted clean).
 
-**Manual shell render:** the 4 regions render as prescribed in §1.4 — `<strong>Block Forge</strong>` header, three `<em>…placeholder</em>` blocks in the triptych/suggestions/status zones.
+**Visual render via Playwright** (closed /ac gap #1):
+- Page title: `Block Forge`
+- Accessibility snapshot confirms all 4 regions rendered with correct ARIA roles:
+  - `banner` → `<strong>Block Forge</strong> — Phase 1 shell (picker + triptych + suggestions land in Phase 2+)`
+  - `main` → `<em>Preview triptych — Phase 2 placeholder</em>`
+  - `complementary` → `<em>Suggestion list — Phase 3 placeholder</em>`
+  - `contentinfo` → `<em>Status bar — Phase 4 placeholder</em>`
+- Grid layout intact: header row / main row (1fr + 360px columns) / footer row, 1px borders between zones, full viewport (100vh).
+- Only console output: favicon.ico 404 (standard browser request, not scoped to this phase — cosmetic, zero impact).
+- Full-page screenshot: `tools/block-forge/phase-1-shell-verification.png` (not committed; visual record only).
 
 ### Root-alias smoke tests
 - `npm run block-forge:test` → 14/14 green (same output as above, just invoked via root alias).
