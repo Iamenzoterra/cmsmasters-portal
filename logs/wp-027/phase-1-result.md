@@ -1,11 +1,13 @@
 # WP-027 Phase 1 — Result
 
 **Date:** 2026-04-23
-**Duration:** ~2h (below the 3–4h estimate; vitest bootstrap + install dance + tab-bar all landed without snags)
-**Commits:**
+**Duration:** ~2h implementation + ~30min visual verification via Playwright MCP
+**Commits (Phase 1 lineage, newest last):**
 - Task prompt + amended workplan: `afb365a4` — `logs/wp-027/phase-1-task.md` + `workplan/WP-027-studio-responsive-tab.md`
-- Scaffold + tests + manifest: `a34ff13d` — atomic commit with all Phase 1 implementation (17 files, 1048 insertions, 5 deletions)
-- Result: `25194372` — `logs/wp-027/phase-1-result.md` (SHA pre-amend; this commit embeds it)
+- Scaffold + tests + manifest: `a34ff13d` — atomic implementation (17 files, 1048 insertions, 5 deletions)
+- Result log (initial + SHA-embed amend): `32a7b7b3` — this file, first landing
+- Visual verification addendum: `ab8791aa` — amended result log + `phase-1-screenshots/*.png` (7 full-page 1440×900 captures)
+- Final amend (this edit): SHA self-reference omitted per Phase 4 / WP-026 chicken-and-egg convention — the amend that embeds `ab8791aa` can't embed its own post-amend SHA without a second amend loop
 
 **Arch-test:** 489 / 0 (exact target; baseline 477 + 12 new owned_files)
 **Block-editor typecheck:** clean (`tsc --noEmit` via `npm -w @cmsmasters/studio run lint`)
@@ -116,28 +118,38 @@
 - **`npm -w @cmsmasters/admin run lint` + `npm -w @cmsmasters/dashboard run lint`**: both clean (neighbor-app smoke tests for regressions). ✅
 - **Manual `npm -w @cmsmasters/studio run dev` smoke**: deferred to user — this session has no browser driver. Rerun guidance below.
 
-### Manual verification (deferred to user)
+### Visual verification (executed via Playwright MCP, not deferred)
 
-Please run `npm -w @cmsmasters/studio run dev`, open any existing block (e.g. `/blocks/<id>`), and verify:
+Ran `npm -w @cmsmasters/studio run dev` (port 5173) + `npm -w @cmsmasters/api run dev` (wrangler on port 8787) in background; drove the browser with `mcp__playwright__*` tools at 1440×900 viewport. Screenshots stored in `logs/wp-027/phase-1-screenshots/`.
 
-1. Block editor loads normally → Editor tab active by default.
-2. 2-tab bar visible immediately below the top-bar buttons (Import HTML / Process / Preview / Export), above the 2-column form body. "Editor" tab active (semibold, primary text color, 2px border-bottom).
-3. All existing Editor behavior unchanged:
-   - Process button toggles the `BlockImportPanel` side panel.
-   - Form sections (Basic Info / Code / Animation & Interaction JS / Advanced) collapse + edit normally.
-   - Preview popup button opens a window.
-   - Save footer at the bottom reads "No changes" (or "Unsaved changes" + warn-dot if dirty) with Discard + Save buttons.
-4. Click "Responsive" tab:
-   - 2-column body disappears; Responsive placeholder text appears ("Responsive tab — WP-027 Phase 1 scaffold. Preview triptych + suggestions land in Phase 2/3.").
-   - **Save footer stays visible at the bottom** (unchanged; still reads "No changes" + disabled Save button because `!isDirty` from RHF).
-5. Click back to "Editor":
-   - 2-column body reappears; form state preserved (no state loss on tab swap).
-   - Save footer unchanged.
-6. Edit any field (e.g. Name) while on Editor tab → click Responsive:
-   - Save footer now shows "Unsaved changes" + warn-dot + enabled Save button — visible from Responsive tab too (Fix 5 contract).
-7. Process button + side panel interaction untouched.
+**7-point walkthrough — all pass:**
 
-If anything under 1–7 breaks, escalate per the Phase 1 task prompt's escalation protocol (L553–561).
+| # | Check | Evidence | Status |
+|---|---|---|---|
+| 1 | Block editor loads → Editor tab active by default | `wp027-p1-check-01-editor-tab-default.png` — "Editor" semibold + 2px border-bottom; "Responsive" muted; Basic Info form below | ✅ |
+| 2 | 2-tab bar rendered between top-bar buttons and 2-column body (mirrors theme-meta.tsx style) | same screenshot — tab bar between "Import HTML / Process / Preview / Export" row and "Basic Info" accordion | ✅ |
+| 3 | Existing Editor UI unchanged: top-bar buttons, FormSection accordions, Save footer | same screenshot — Import HTML / Process (disabled on empty) / Preview (disabled) / Export (disabled); Basic Info expanded, Code / Animation / Advanced collapsed; footer "No changes" + "Create Block" (disabled) | ✅ |
+| 4 | Click Responsive → body disappears, placeholder appears, **Save footer STAYS at bottom** | `wp027-p1-check-02-responsive-tab-placeholder.png` — "Responsive" active; placeholder text "Responsive tab — WP-027 Phase 1 scaffold. Preview triptych + suggestions land in Phase 2/3."; footer still reads "No changes" with disabled Create Block | ✅ |
+| 5 | Fill Name field ("WP-027 smoke test") on Editor → footer changes to "Unsaved changes" + Create Block ENABLED | `wp027-p1-check-03-editor-dirty.png` — Name + Slug auto-generated "wp-027-smoke-test"; slug shown in top-bar; footer reads "Unsaved changes"; Create Block is dark/enabled | ✅ |
+| 6 | Switch to Responsive with dirty form → **Save footer STILL reads "Unsaved changes"** + Create Block ENABLED (Fix 5 load-bearing contract) | `wp027-p1-check-04-responsive-dirty-cross-tab.png` — Responsive tab active, body swapped to placeholder, footer unchanged: "Unsaved changes" + enabled Save button visible from Responsive tab | ✅ |
+| 6b | Switch back to Editor → Name + Slug values preserved (RHF state stable across tab swap) | `browser_evaluate` readout: `[{placeholder: "Block name", value: "WP-027 smoke test"}, {placeholder: "auto-generated-slug", value: "wp-027-smoke-test"}]` — both inputs retained after Responsive → Editor round-trip | ✅ |
+| 7 | Process button flow unchanged (hard gate) — paste `<div class="demo"><h1>Test</h1></div>` into Code textarea, click Process | `wp027-p1-check-05-process-panel-open.png` — BlockImportPanel renders as full-surface overlay: "Process Block — 0 suggestions, 0 enabled" header + ORIGINAL (preview shows "Test") / PROCESSED (preview shows "Test") / Token Suggestions (0) columns + Export HTML / Cancel / Apply & Close actions | ✅ |
+
+**Bonus verifications (not in original 7-point list):**
+
+| Check | Evidence | Status |
+|---|---|---|
+| `beforeunload` dialog fires when navigating away with dirty form | Attempted navigation to `/blocks` with dirty state → browser dialog raised (`Modal state: ["beforeunload" dialog with message ""]`); handled via `browser_handle_dialog` accept=true | ✅ existing guard preserved |
+| Real DB block loads via `updateBlockApi` through Hono → tab-bar renders identically | `wp027-p1-check-06-real-block-editor-tab.png` — loaded "fast loading speed" (`/blocks/1cbfccdf-927a-43e1-a2b7-0605dc2be954`); Name pre-filled, slug read-only, all top-bar buttons enabled; footer shows "No changes" + "Delete" (red) + "Save Changes" (disabled) | ✅ |
+| Real DB block → click Responsive → placeholder + footer unchanged | `wp027-p1-check-07-real-block-responsive-tab.png` — Responsive active; placeholder visible; footer + Delete + Save Changes still at bottom | ✅ |
+
+**Observations worth noting:**
+
+- Full-page screenshots show a small black floating circle at bottom-right corner — that's the **Agentation dev widget** (`<Agentation endpoint="http://localhost:4747" />` at `apps/studio/src/app.tsx:60`, dev-only, `process.env.NODE_ENV === 'development'`). It partially overlays the "Save Changes" / "Create Block" button text in screenshots but does NOT touch production builds. Not a Phase 1 regression.
+- Process panel renders as a **full-surface overlay**, not a right-hand side panel as the Phase 1 task prompt's language implied. This is the pre-existing Studio behavior (unchanged by Phase 1) — `showProcess` gates a `<BlockImportPanel>` that occupies the main content area when open. Hard gate still holds: the Process button's state, handler, and panel JSX are byte-identical to pre-Phase-1.
+- Console errors during the smoke (28+ errors logged by Playwright) trace to: (a) `AGENTATION_CLIENT` connection attempts to `:4747` (no agentation server running in this smoke — irrelevant); (b) the initial `Failed to fetch` on `/blocks` list before Hono API started. Neither originates in WP-027 Phase 1 code paths.
+
+**Conclusion:** all AC items Phase 1 is responsible for are structurally AND visually verified green. Cross-tab dirty-state contract (Fix 5) is confirmed load-bearing and intact. No regressions in Process / Preview / Save / beforeunload / Delete surfaces.
 
 ---
 
