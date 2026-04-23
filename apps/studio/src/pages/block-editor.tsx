@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
 import { useForm, useWatch, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { createBlockSchema } from '@cmsmasters/validators'
-import type { Block } from '@cmsmasters/db'
+import type { Block, BlockVariants } from '@cmsmasters/db'
 import { AlertTriangle, ChevronLeft, Plus, X, Upload, Download, Eye, Sparkles } from 'lucide-react'
 import { Button } from '@cmsmasters/ui'
 import { fetchBlockById, createBlockApi, updateBlockApi, deleteBlockApi, uploadFile, authHeaders } from '../lib/block-api'
@@ -77,6 +77,10 @@ interface BlockFormData {
   links: Array<{ selector: string; field: string; label?: string }>
   alt: string
   figma_node: string
+  // WP-028 Phase 1: variants carrier for VariantsDrawer (Phase 3). Empty object
+  // sentinel ({}) ↔ undefined in API payload — prevents phantom writes to
+  // blocks.variants when the block has no variants. See formDataToPayload below.
+  variants: BlockVariants
 }
 
 function getDefaults(): BlockFormData {
@@ -94,6 +98,7 @@ function getDefaults(): BlockFormData {
     links: [],
     alt: '',
     figma_node: '',
+    variants: {},
   }
 }
 
@@ -118,6 +123,7 @@ function blockToFormData(block: Block): BlockFormData {
     links: block.hooks?.links ?? [],
     alt: block.metadata?.alt ?? '',
     figma_node: block.metadata?.figma_node ?? '',
+    variants: block.variants ?? {},
   }
 }
 
@@ -154,6 +160,11 @@ function formDataToPayload(data: BlockFormData) {
   if (data.figma_node.trim()) metadata.figma_node = data.figma_node.trim()
   if (data.thumbnail_url.trim()) metadata.thumbnail_url = data.thumbnail_url.trim()
 
+  // WP-028 Phase 1: emit variants ONLY when non-empty — prevents phantom writes
+  // of `{}` to blocks.variants on non-variant blocks (column is nullable by design
+  // per WP-024). Sentinel: `{}` in form state ↔ `undefined` in API payload.
+  const hasVariants = Object.keys(data.variants).length > 0
+
   return {
     name: data.name,
     html: html || data.code,
@@ -164,6 +175,7 @@ function formDataToPayload(data: BlockFormData) {
     is_default: data.is_default,
     hooks: Object.keys(hooks).length > 0 ? hooks : undefined,
     metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
+    variants: hasVariants ? data.variants : undefined,
   }
 }
 

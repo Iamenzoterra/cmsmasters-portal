@@ -1,0 +1,3 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`VariantsDrawer (apps/studio) > parity snapshot — cross-surface mirror contract 1`] = `"<div data-testid="variants-drawer" data-open="true" aria-label="Variants drawer"></div>"`;

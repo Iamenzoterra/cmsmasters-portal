@@ -136,6 +136,8 @@ export const DOMAINS: Record<string, DomainDefinition> = {
     owned_files: [
       'packages/ui/src/lib/utils.ts',
       'packages/ui/src/primitives/button.tsx',
+      'packages/ui/src/primitives/drawer.tsx',
+      'packages/ui/src/primitives/slider.tsx',
       'packages/ui/src/portal/animate-utils.js',
       'packages/ui/src/portal/portal-blocks.css',
       'packages/ui/src/theme/tokens.css',
@@ -306,6 +308,12 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'apps/studio/src/pages/block-editor/responsive/__tests__/preview-assets.test.ts',
       'apps/studio/src/pages/block-editor/responsive/__tests__/suggestion-row.test.tsx',
       'apps/studio/src/pages/block-editor/responsive/__tests__/integration.test.tsx',
+      // WP-028 Phase 1: TweakPanel + VariantsDrawer placeholder scaffolds
+      // (cross-surface parity mirrors with tools/block-forge; Phase 2/3 fill them in).
+      'apps/studio/src/pages/block-editor/responsive/TweakPanel.tsx',
+      'apps/studio/src/pages/block-editor/responsive/VariantsDrawer.tsx',
+      'apps/studio/src/pages/block-editor/responsive/__tests__/TweakPanel.test.tsx',
+      'apps/studio/src/pages/block-editor/responsive/__tests__/VariantsDrawer.test.tsx',
     ],
     owned_tables: [],
     owned_routes: [],
@@ -618,6 +626,10 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'tools/block-forge/src/components/SuggestionList.tsx',
       'tools/block-forge/src/components/SuggestionRow.tsx',
       'tools/block-forge/src/components/StatusBar.tsx',
+      // WP-028 Phase 1: TweakPanel + VariantsDrawer placeholder scaffolds
+      // (cross-surface parity mirrors with apps/studio; Phase 2/3 fill them in).
+      'tools/block-forge/src/components/TweakPanel.tsx',
+      'tools/block-forge/src/components/VariantsDrawer.tsx',
       'tools/block-forge/src/lib/file-io.ts',
       'tools/block-forge/src/lib/paths.ts',
       'tools/block-forge/src/lib/preview-assets.ts',
@@ -628,6 +640,9 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'tools/block-forge/src/__tests__/preview-assets.test.ts',
       'tools/block-forge/src/__tests__/integration.test.tsx',
       'tools/block-forge/src/__tests__/session.test.ts',
+      // WP-028 Phase 1: parity tests for TweakPanel + VariantsDrawer placeholders.
+      'tools/block-forge/src/__tests__/TweakPanel.test.tsx',
+      'tools/block-forge/src/__tests__/VariantsDrawer.test.tsx',
       'nx.json',
     ],
     owned_tables: [],

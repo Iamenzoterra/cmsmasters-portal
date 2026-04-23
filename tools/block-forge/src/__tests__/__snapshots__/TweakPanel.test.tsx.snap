@@ -1,0 +1,3 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`TweakPanel (tools/block-forge) > parity snapshot — cross-surface mirror contract 1`] = `"<div data-testid="tweak-panel" data-selector=".cta-btn" data-bp="480" aria-label="Element tweak panel"></div>"`;
