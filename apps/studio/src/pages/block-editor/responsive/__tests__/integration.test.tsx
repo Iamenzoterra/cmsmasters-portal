@@ -5,17 +5,23 @@
 // feedback_fixture_snapshot_ground_truth.md): fixture filename is aspirational, snapshot
 // is authority.
 //
-// Phase 4 will expand with save-flow cases: spy on updateBlockApi + fetch revalidate,
-// assert RHF dirty transitions, assert session-state clearAfterSave.
+// Phase 4 scope additions:
+//   - Un-gated Accept/Reject (DISABLED contract flipped)
+//   - onApplyToForm dispatched on accept (not on reject)
+//   - PendingPill shown on accepted rows
+//   - Rejected rows disappear from list
+//   - saveNonce increment triggers clearAfterSave (pending-pill clears)
+//
+// Full block-editor save-flow (fetch spy on /revalidate) is deferred to manual e2e
+// (Task 4.8) — too integration-heavy for unit test harness without auth mocks.
 
 // @vitest-environment jsdom
-import { describe, it, expect, afterEach } from 'vitest'
-import { render, cleanup, screen } from '@testing-library/react'
+import { describe, it, expect, afterEach, vi } from 'vitest'
+import { render, cleanup, screen, fireEvent } from '@testing-library/react'
 import { ResponsiveTab } from '../ResponsiveTab'
 import type { Block } from '@cmsmasters/db'
 
 // jsdom doesn't implement ResizeObserver; PreviewPanel.tsx (Phase 2) uses it for scale-to-fit.
-// Minimal no-op polyfill so the component tree mounts during integration tests.
 class ResizeObserverMock {
   observe() {}
   unobserve() {}
@@ -33,7 +39,7 @@ import blockPlainCopyCss from '../../../../../../../packages/block-forge-core/sr
 afterEach(cleanup)
 
 function fixtureBlock(slug: string, html: string, css: string): Block {
-  // Engine only reads { slug, html, css }; full Block type from Supabase has many other
+  // Engine only reads { html, css }; full Block type from Supabase has many other
   // required fields (id, created_at, updated_at, name, etc.). Cast suppresses the extras.
   return {
     id: `fixture-${slug}`,
@@ -51,28 +57,20 @@ describe('ResponsiveTab — integration via WP-025 fixtures', () => {
     //   "suggestionCount": 3,
     //   "suggestionHeuristics": ["font-clamp", "media-maxwidth", "media-maxwidth"],
     //   "warnings": []
-    // Fixture filename suggests spacing-clamp fires; engine's var()-skip gate ignores
-    // spacing values wrapped in var() — so spacing-clamp does NOT fire. Don't assert it.
-    // HEURISTIC_ORDER sort: font-clamp (idx 2) before media-maxwidth (idx 5).
-
     const block = fixtureBlock('block-spacing-font', blockSpacingFontHtml, blockSpacingFontCss)
     render(<ResponsiveTab block={block} />)
 
-    // 3 total rendered rows
     const rows = document.querySelectorAll('[data-suggestion-id]')
     expect(rows.length).toBe(3)
 
-    // Heuristics render in data-role="heuristic" spans, in sort order
     const heuristicSpans = document.querySelectorAll('[data-role="heuristic"]')
     const heuristicTexts = Array.from(heuristicSpans).map((el) => el.textContent?.trim())
     expect(heuristicTexts).toEqual(['font-clamp', 'media-maxwidth', 'media-maxwidth'])
 
-    // No warnings banner (snapshot shows warnings: [])
     expect(screen.queryByText(/^Warnings \(/)).toBeNull()
   })
 
   it('block-plain-copy: empty state (no heuristic triggers, no warnings)', () => {
-    // Ground truth per snapshot:346-348 — suggestionCount: 0, warnings: [].
     const block = fixtureBlock('block-plain-copy', blockPlainCopyHtml, blockPlainCopyCss)
     render(<ResponsiveTab block={block} />)
     expect(screen.getByText(/No responsive suggestions/i)).toBeTruthy()
@@ -85,14 +83,77 @@ describe('ResponsiveTab — integration via WP-025 fixtures', () => {
     expect(screen.getByText(/No responsive suggestions/i)).toBeTruthy()
   })
 
-  it('Accept/Reject buttons remain DISABLED across all suggestion rows', () => {
+  it('Phase 4 contract: Accept/Reject buttons are ENABLED on all rows', () => {
     const block = fixtureBlock('block-spacing-font', blockSpacingFontHtml, blockSpacingFontCss)
     render(<ResponsiveTab block={block} />)
     const acceptButtons = screen.queryAllByRole('button', { name: /accept/i })
     const rejectButtons = screen.queryAllByRole('button', { name: /reject/i })
     expect(acceptButtons.length).toBe(3)
     expect(rejectButtons.length).toBe(3)
-    for (const btn of acceptButtons) expect(btn).toHaveProperty('disabled', true)
-    for (const btn of rejectButtons) expect(btn).toHaveProperty('disabled', true)
+    for (const btn of acceptButtons) expect(btn).toHaveProperty('disabled', false)
+    for (const btn of rejectButtons) expect(btn).toHaveProperty('disabled', false)
+  })
+})
+
+describe('ResponsiveTab — Phase 4 Accept/Reject/Save flow', () => {
+  it('Accept dispatches onApplyToForm with block containing applied CSS', () => {
+    const onApplyToForm = vi.fn()
+    const block = fixtureBlock('block-spacing-font', blockSpacingFontHtml, blockSpacingFontCss)
+    render(<ResponsiveTab block={block} onApplyToForm={onApplyToForm} />)
+
+    const acceptButtons = screen.getAllByRole('button', { name: /accept/i })
+    fireEvent.click(acceptButtons[0])
+
+    expect(onApplyToForm).toHaveBeenCalledTimes(1)
+    const appliedBlock = onApplyToForm.mock.calls[0][0] as Block
+    expect(appliedBlock.slug).toBe(block.slug)
+    // applySuggestions appends container-query CSS — string grows
+    expect((appliedBlock.css ?? '').length).toBeGreaterThan((block.css ?? '').length)
+    // Base analysis CSS unchanged (applySuggestions returns a new block; original untouched)
+    expect(block.css).toBe(blockSpacingFontCss)
+  })
+
+  it('Accept shows PendingPill on the accepted row', () => {
+    const onApplyToForm = vi.fn()
+    const block = fixtureBlock('block-spacing-font', blockSpacingFontHtml, blockSpacingFontCss)
+    render(<ResponsiveTab block={block} onApplyToForm={onApplyToForm} />)
+
+    expect(document.querySelectorAll('[data-role="pending-pill"]').length).toBe(0)
+
+    const acceptButtons = screen.getAllByRole('button', { name: /accept/i })
+    fireEvent.click(acceptButtons[0])
+
+    expect(document.querySelectorAll('[data-role="pending-pill"]').length).toBe(1)
+  })
+
+  it('Reject hides the suggestion row', () => {
+    const onApplyToForm = vi.fn()
+    const block = fixtureBlock('block-spacing-font', blockSpacingFontHtml, blockSpacingFontCss)
+    render(<ResponsiveTab block={block} onApplyToForm={onApplyToForm} />)
+
+    expect(document.querySelectorAll('[data-suggestion-id]').length).toBe(3)
+
+    const rejectButtons = screen.getAllByRole('button', { name: /reject/i })
+    fireEvent.click(rejectButtons[0])
+
+    expect(document.querySelectorAll('[data-suggestion-id]').length).toBe(2)
+    // Form NOT dirtied by reject — no onApplyToForm invocation
+    expect(onApplyToForm).not.toHaveBeenCalled()
+  })
+
+  it('saveNonce increment clears session (pending-pill disappears)', () => {
+    const onApplyToForm = vi.fn()
+    const block = fixtureBlock('block-spacing-font', blockSpacingFontHtml, blockSpacingFontCss)
+
+    const { rerender } = render(
+      <ResponsiveTab block={block} onApplyToForm={onApplyToForm} saveNonce={0} />,
+    )
+
+    fireEvent.click(screen.getAllByRole('button', { name: /accept/i })[0])
+    expect(document.querySelectorAll('[data-role="pending-pill"]').length).toBe(1)
+
+    // Simulate parent's successful save: increment saveNonce → child clears session.
+    rerender(<ResponsiveTab block={block} onApplyToForm={onApplyToForm} saveNonce={1} />)
+    expect(document.querySelectorAll('[data-role="pending-pill"]').length).toBe(0)
   })
 })

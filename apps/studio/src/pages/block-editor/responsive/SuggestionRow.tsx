@@ -1,8 +1,9 @@
-// WP-027 Phase 3 — display-only suggestion row (DISABLED Accept/Reject per Brain ruling 4).
+// WP-027 Phase 4 — un-gated SuggestionRow with onAccept/onReject handlers + PendingPill.
 //
 // Structural mirror of tools/block-forge/src/components/SuggestionRow.tsx.
-// Reference uses Tailwind className + `bg-[hsl(var(--token))]` pattern; Studio has no Tailwind,
-// so we use inline `style={{ ... }}` with token vars. Behavior byte-identical.
+// Phase 3 disabled the Accept/Reject buttons; Phase 4 enables them and adds a
+// "will apply on save" pill shown next to the confidence pill when the suggestion
+// is in the pending-accept set (parity with WP-026 reference L59-68).
 //
 // Field shape verified against packages/block-forge-core/src/lib/types.ts:41-50:
 //   { id, heuristic, selector, bp: number, property, value, rationale, confidence }
@@ -13,6 +14,10 @@ import type { Suggestion, Confidence } from '@cmsmasters/block-forge-core'
 
 interface SuggestionRowProps {
   suggestion: Suggestion
+  onAccept: (id: string) => void
+  onReject: (id: string) => void
+  /** Visual state — suggestion is accepted locally but not yet saved to DB. */
+  isPending: boolean
 }
 
 // Confidence → token mapping verbatim from tools/block-forge/src/components/SuggestionRow.tsx:26-45.
@@ -57,7 +62,28 @@ function ConfidencePill({ level }: { level: Confidence }) {
   )
 }
 
-export function SuggestionRow({ suggestion }: SuggestionRowProps) {
+// WP-027 Phase 4 — mirrors WP-026 reference SuggestionRow.tsx:59-68 pending-pill pattern.
+function PendingPill() {
+  return (
+    <span
+      data-role="pending-pill"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        padding: '2px var(--spacing-xs)',
+        borderRadius: 'var(--rounded-full)',
+        backgroundColor: 'hsl(var(--status-info-bg))',
+        color: 'hsl(var(--status-info-fg))',
+        fontSize: 'var(--text-xs-font-size)',
+        fontWeight: 'var(--font-weight-semibold)',
+      }}
+    >
+      will apply on save
+    </span>
+  )
+}
+
+export function SuggestionRow({ suggestion, onAccept, onReject, isPending }: SuggestionRowProps) {
   const { id, heuristic, selector, bp, property, value, rationale, confidence } = suggestion
 
   return (
@@ -73,7 +99,7 @@ export function SuggestionRow({ suggestion }: SuggestionRowProps) {
         backgroundColor: 'hsl(var(--bg-surface))',
       }}
     >
-      {/* Header: heuristic tag + bp label + confidence pill (right-aligned) */}
+      {/* Header: heuristic tag + bp label + (pending-pill when applicable) + confidence pill */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)' }}>
         <span
           data-role="heuristic"
@@ -92,7 +118,8 @@ export function SuggestionRow({ suggestion }: SuggestionRowProps) {
         <span style={{ fontSize: 'var(--text-xs-font-size)', color: 'hsl(var(--text-muted))' }}>
           {bp === 0 ? 'base' : `@${bp}px`}
         </span>
-        <span style={{ marginLeft: 'auto' }}>
+        <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: 'var(--spacing-xs)' }}>
+          {isPending && <PendingPill />}
           <ConfidencePill level={confidence} />
         </span>
       </div>
@@ -123,13 +150,13 @@ export function SuggestionRow({ suggestion }: SuggestionRowProps) {
         {rationale}
       </p>
 
-      {/* Accept/Reject — DISABLED in Phase 3 per Brain ruling 4; Phase 4 wires onClick */}
+      {/* Accept/Reject — enabled in Phase 4; dispatch to session-state via parent callbacks. */}
       <div style={{ display: 'flex', gap: 'var(--spacing-xs)', marginTop: 'var(--spacing-2xs)' }}>
         <button
           type="button"
           data-action="accept"
-          disabled
-          aria-label="Accept suggestion (enabled in Phase 4)"
+          onClick={() => onAccept(id)}
+          aria-label="Accept suggestion"
           style={{
             padding: '4px var(--spacing-sm)',
             borderRadius: 'var(--rounded-sm)',
@@ -138,8 +165,7 @@ export function SuggestionRow({ suggestion }: SuggestionRowProps) {
             color: 'hsl(var(--status-success-fg))',
             fontSize: 'var(--text-xs-font-size)',
             fontWeight: 'var(--font-weight-semibold)',
-            opacity: 0.5,
-            cursor: 'not-allowed',
+            cursor: 'pointer',
           }}
         >
           Accept
@@ -147,8 +173,8 @@ export function SuggestionRow({ suggestion }: SuggestionRowProps) {
         <button
           type="button"
           data-action="reject"
-          disabled
-          aria-label="Reject suggestion (enabled in Phase 4)"
+          onClick={() => onReject(id)}
+          aria-label="Reject suggestion"
           style={{
             padding: '4px var(--spacing-sm)',
             borderRadius: 'var(--rounded-sm)',
@@ -156,8 +182,7 @@ export function SuggestionRow({ suggestion }: SuggestionRowProps) {
             backgroundColor: 'hsl(var(--bg-surface))',
             color: 'hsl(var(--text-muted))',
             fontSize: 'var(--text-xs-font-size)',
-            opacity: 0.5,
-            cursor: 'not-allowed',
+            cursor: 'pointer',
           }}
         >
           Reject

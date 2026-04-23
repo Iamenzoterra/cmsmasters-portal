@@ -1,4 +1,4 @@
-import type { Block } from '@cmsmasters/db'
+import type { Block, BlockVariants } from '@cmsmasters/db'
 import { supabase } from './supabase'
 
 const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8787'
@@ -73,6 +73,9 @@ export async function updateBlockApi(
     css?: string
     hooks?: Record<string, unknown>
     metadata?: Record<string, unknown>
+    // WP-027 Phase 4: forward-compat for WP-028 variants drawer. Backend
+    // updateBlockSchema already validates this field (Phase 0 §0.4).
+    variants?: BlockVariants
   }
 ): Promise<Block> {
   const res = await fetch(`${apiUrl}/api/blocks/${id}`, {

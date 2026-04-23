@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
 import { useForm, useWatch, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -6,7 +6,7 @@ import { createBlockSchema } from '@cmsmasters/validators'
 import type { Block } from '@cmsmasters/db'
 import { AlertTriangle, ChevronLeft, Plus, X, Upload, Download, Eye, Sparkles } from 'lucide-react'
 import { Button } from '@cmsmasters/ui'
-import { fetchBlockById, createBlockApi, updateBlockApi, deleteBlockApi, uploadFile } from '../lib/block-api'
+import { fetchBlockById, createBlockApi, updateBlockApi, deleteBlockApi, uploadFile, authHeaders } from '../lib/block-api'
 import type { BlockCategory } from '@cmsmasters/db'
 import { getBlockCategories } from '@cmsmasters/db'
 import { supabase } from '../lib/supabase'
@@ -283,6 +283,19 @@ export function BlockEditor() {
   // Tab 2 = Responsive (new). Save footer stays OUTSIDE the conditional so dirty state +
   // Save button remain reachable on both tabs.
   const [activeTab, setActiveTab] = useState<'editor' | 'responsive'>('editor')
+  // WP-027 Phase 4: save-nonce drives ResponsiveTab's clearAfterSave. Increments on every
+  // successful updateBlockApi call so the child's useEffect fires. Parent doesn't need a ref
+  // to the child — no useImperativeHandle coupling. (Brain ruling 8: clear ONLY on success.)
+  const [saveNonce, setSaveNonce] = useState(0)
+
+  // WP-027 Phase 4: ResponsiveTab pushes applied suggestions into the form code field.
+  // Lives here (not in the tab) because the form handle is owned by this component.
+  // Only form.code updates → existing isDirty flow / Save-button behavior unchanged.
+  const handleApplyToForm = useCallback((appliedBlock: Block) => {
+    const newFormData = blockToFormData(appliedBlock)
+    form.setValue('code', newFormData.code, { shouldDirty: true })
+    // Deliberately NO setExistingBlock — analysis base must stay stable per Brain ruling 2.
+  }, [form])
 
   // Fetch block categories for theme blocks context
   useEffect(() => {
@@ -330,6 +343,23 @@ export function BlockEditor() {
         const saved = await updateBlockApi(id, payload)
         setExistingBlock(saved)
         reset(blockToFormData(saved))
+        // WP-027 Phase 4: signal ResponsiveTab to clearAfterSave (Brain ruling 8).
+        setSaveNonce((n) => n + 1)
+        // WP-027 Phase 4: fire-and-forget Portal revalidation (Brain ruling 5).
+        // Applies to both Editor-tab and Responsive-tab saves — silently fixes latent
+        // stale-Portal gap on Editor saves too. Failures non-fatal (console.warn only).
+        const apiBase = import.meta.env.VITE_API_URL ?? 'http://localhost:8787'
+        authHeaders()
+          .then((headers) =>
+            fetch(`${apiBase}/api/content/revalidate`, {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({ all: true }),
+            }),
+          )
+          .catch((err) => {
+            console.warn('[WP-027] Portal revalidation failed (save succeeded):', err)
+          })
         toast({ type: 'success', message: 'Block saved' })
       }
     } catch (error) {
@@ -816,11 +846,20 @@ ${code}${scriptTag}
         )}
       </div>
       )}
-      {activeTab === 'responsive' && (
-        <div className="flex flex-1 flex-col overflow-y-auto">
-          <ResponsiveTab block={existingBlock} />
-        </div>
-      )}
+      {/* WP-027 Phase 4: tab-switch must preserve ResponsiveTab session state (pending accepts,
+          rejected set, form-dirty link). Conditional render would unmount → session loss. Use
+          CSS display:none instead so the tab stays mounted (Brain ruling 9 + Task 4.0.a option a).
+          The Editor branch above still uses conditional render — no session state to preserve there. */}
+      <div
+        className="flex flex-1 flex-col overflow-y-auto"
+        style={{ display: activeTab === 'responsive' ? 'flex' : 'none' }}
+      >
+        <ResponsiveTab
+          block={existingBlock}
+          onApplyToForm={handleApplyToForm}
+          saveNonce={saveNonce}
+        />
+      </div>
 
       {/* Footer */}
       <div

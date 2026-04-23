@@ -10,7 +10,7 @@ revalidate.post(
   authMiddleware,
   requireRole('content_manager', 'admin'),
   async (c) => {
-    const body: { slug?: string; type?: string } = await c.req.json<{ slug?: string; type?: string }>().catch(() => ({}))
+    const body: { slug?: string; type?: string; all?: boolean } = await c.req.json<{ slug?: string; type?: string; all?: boolean }>().catch(() => ({}))
 
     const portalUrl = c.env.PORTAL_REVALIDATE_URL
     const portalSecret = c.env.PORTAL_REVALIDATE_SECRET
@@ -22,7 +22,12 @@ revalidate.post(
       }, 503)
     }
 
-    // Determine which path to revalidate
+    // WP-027 Phase 4: all-tags request when body is empty {} OR { all: true }.
+    // Per saved memory feedback_revalidate_default.md — Portal's /api/revalidate invalidates
+    // every tag when POST body is {}.
+    const isAllTagsRequest = body.all === true || Object.keys(body).length === 0
+
+    // Determine which path to revalidate (legacy { slug, type } branch — unchanged for theme-publish).
     let path = '/'
     if (body.slug && body.type === 'theme') {
       path = `/themes/${body.slug}`
@@ -37,20 +42,20 @@ revalidate.post(
           'Content-Type': 'application/json',
           'x-revalidate-token': portalSecret,
         },
-        body: JSON.stringify({ path }),
+        body: JSON.stringify(isAllTagsRequest ? {} : { path }),
       })
 
       const result = await response.json<Record<string, unknown>>()
 
       return c.json({
         revalidated: result.revalidated ?? false,
-        path,
+        ...(isAllTagsRequest ? { scope: 'all-tags' as const } : { path }),
         timestamp: new Date().toISOString(),
       })
     } catch (error) {
       return c.json({
         revalidated: false,
-        path,
+        ...(isAllTagsRequest ? { scope: 'all-tags' as const } : { path }),
         error: error instanceof Error ? error.message : 'Portal revalidation request failed',
       }, 502)
     }

@@ -1,4 +1,9 @@
-// WP-027 Phase 3 — ordered suggestion list with warnings banner + empty/error states.
+// WP-027 Phase 4 — ordered suggestion list with session-aware filtering + handler threading.
+//
+// Phase 3: display-only list with warnings banner + empty/error states.
+// Phase 4: threads session + onAccept/onReject through to SuggestionRow. Rejected IDs are
+// filtered out of the render list (per ADR-025 / reference behavior — rejected rows hide).
+// Pending IDs render with the PendingPill ("will apply on save") inside SuggestionRow.
 //
 // HEURISTIC_ORDER copied verbatim from tools/block-forge/src/components/SuggestionList.tsx:20-27
 // (engine does NOT export it publicly — it's a local block-forge const). Any future resync
@@ -9,6 +14,7 @@
 // warnings visuals must edit both surfaces in lockstep.
 
 import type { Suggestion, Heuristic } from '@cmsmasters/block-forge-core'
+import type { SessionState } from './session-state'
 import { SuggestionRow } from './SuggestionRow'
 
 // Verbatim from tools/block-forge/src/components/SuggestionList.tsx:20-27
@@ -36,9 +42,19 @@ interface SuggestionListProps {
   suggestions: Suggestion[]
   warnings: string[]
   error: Error | null
+  session: SessionState
+  onAccept: (id: string) => void
+  onReject: (id: string) => void
 }
 
-export function SuggestionList({ suggestions, warnings, error }: SuggestionListProps) {
+export function SuggestionList({
+  suggestions,
+  warnings,
+  error,
+  session,
+  onAccept,
+  onReject,
+}: SuggestionListProps) {
   // Error state — something threw inside analyzeBlock or generateSuggestions
   if (error) {
     return (
@@ -57,8 +73,11 @@ export function SuggestionList({ suggestions, warnings, error }: SuggestionListP
     )
   }
 
-  // Empty state — no suggestions AND no warnings
-  if (suggestions.length === 0 && warnings.length === 0) {
+  // Filter rejected suggestions out — they "disappear" from the list per ADR-025 semantics.
+  const visible = suggestions.filter((s) => !session.rejected.includes(s.id))
+
+  // Empty state — no visible suggestions AND no warnings
+  if (visible.length === 0 && warnings.length === 0) {
     return (
       <div
         style={{
@@ -72,7 +91,7 @@ export function SuggestionList({ suggestions, warnings, error }: SuggestionListP
     )
   }
 
-  const sorted = sortSuggestions(suggestions)
+  const sorted = sortSuggestions(visible)
 
   return (
     <div
@@ -104,7 +123,13 @@ export function SuggestionList({ suggestions, warnings, error }: SuggestionListP
         </div>
       )}
       {sorted.map((s) => (
-        <SuggestionRow key={s.id} suggestion={s} />
+        <SuggestionRow
+          key={s.id}
+          suggestion={s}
+          isPending={session.pending.includes(s.id)}
+          onAccept={onAccept}
+          onReject={onReject}
+        />
       ))}
     </div>
   )
