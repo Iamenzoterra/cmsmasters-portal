@@ -510,6 +510,37 @@ function AddSlotButton({ config, tokens, onCreateTopLevelSlot }: {
 }
 
 export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tokens, onShowToast, blockWarnings, onToggleSlot, onUpdateSlotConfig, onBatchUpdateSlotConfig, onUpdateSlotRole, onUpdateColumnWidth, onUpdateGridProp, onUpdateLayoutProp, onUpdateNestedSlots, onCreateNestedSlot, onCreateTopLevelSlot, onSelectSlot }: Props) {
+  // All hooks declared unconditionally at the top so the hook count stays
+  // stable across selectedSlot=null → selectedSlot=string transitions. Moving
+  // these below the `!config || !tokens` / `!selectedSlot` early returns
+  // (as they used to sit) made Inspector call 0 hooks on the empty branches
+  // and 6 hooks on the slot-selected branch — React 19 logs that exact
+  // invariant break as "Expected static flag was missing" on the transition.
+  // Null-safe computation keeps initial draft = '' in the empty states.
+  const safeColumnWidth = (config && selectedSlot) ? config.grid[gridKey]?.columns?.[selectedSlot] : undefined
+  const [widthDraft, setWidthDraft] = useState(
+    safeColumnWidth?.endsWith('px') ? parseInt(safeColumnWidth, 10).toString() : '',
+  )
+  // Resync width draft on context change (slot switch / BP switch / SSE reload).
+  // Per LM-reforge Phase 1 draft-handling rule: dirty draft discards on any
+  // of these drivers; no merge UX. Mirrors DrawerSettingsControl's pattern.
+  useEffect(() => {
+    setWidthDraft(safeColumnWidth?.endsWith('px') ? parseInt(safeColumnWidth, 10).toString() : '')
+  }, [selectedSlot, gridKey, safeColumnWidth])
+
+  const safeInnerMaxWidth = (config && selectedSlot)
+    ? resolveSlotConfig(selectedSlot, gridKey, config)['max-width']
+    : undefined
+  const [maxWidthDraft, setMaxWidthDraft] = useState(
+    safeInnerMaxWidth ? parseInt(safeInnerMaxWidth, 10).toString() : '',
+  )
+  useEffect(() => {
+    setMaxWidthDraft(safeInnerMaxWidth ? parseInt(safeInnerMaxWidth, 10).toString() : '')
+  }, [selectedSlot, gridKey, safeInnerMaxWidth])
+
+  const [pendingContainerSlot, setPendingContainerSlot] = useState<string | null>(null)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+
   if (!config || !tokens) {
     return (
       <div className="lm-inspector" data-active-bp={activeBreakpoint}>
@@ -583,30 +614,10 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
   const resetField = (key: string) =>
     onUpdateSlotConfig(selectedSlot, key, undefined, gridKey, activeBreakpoint as CanvasBreakpointId)
 
-  // Content width editing state
-  const currentPx = columnWidth?.endsWith('px') ? parseInt(columnWidth, 10).toString() : ''
-  const [widthDraft, setWidthDraft] = useState(currentPx)
-
-  // Sync draft when column width changes externally (SSE, slot switch)
-  const [prevColumnWidth, setPrevColumnWidth] = useState(columnWidth)
-  if (columnWidth !== prevColumnWidth) {
-    setPrevColumnWidth(columnWidth)
-    const newPx = columnWidth?.endsWith('px') ? parseInt(columnWidth, 10).toString() : ''
-    setWidthDraft(newPx)
-  }
-
-  // Inner max-width editing state
+  // Inner max-width — `hasInnerMaxWidth` is the only derived helper still
+  // used by JSX (widthDraft/maxWidthDraft hooks are declared at the top).
   const innerMaxWidth = slotConfig['max-width']
   const hasInnerMaxWidth = !!innerMaxWidth
-  const innerMaxWidthPx = hasInnerMaxWidth ? parseInt(innerMaxWidth!, 10).toString() : ''
-  const [maxWidthDraft, setMaxWidthDraft] = useState(innerMaxWidthPx)
-
-  // Sync max-width draft on external changes
-  const [prevMaxWidth, setPrevMaxWidth] = useState(innerMaxWidth)
-  if (innerMaxWidth !== prevMaxWidth) {
-    setPrevMaxWidth(innerMaxWidth)
-    setMaxWidthDraft(innerMaxWidth ? parseInt(innerMaxWidth, 10).toString() : '')
-  }
 
   const rows = buildPropertyRows(slotConfig as unknown as Record<string, unknown>, tokens)
   const usableWidth = computeUsableWidth(columnWidth, isFullWidth, slotConfig as unknown as Record<string, unknown>, tokens)
@@ -619,7 +630,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
   // (validator rejects empty []; see runtime validate). A "pending" local container
   // state lets the UI show the container panel before the first child is added —
   // never persisted until an add/create produces a non-empty array.
-  const [pendingContainerSlot, setPendingContainerSlot] = useState<string | null>(null)
+  // `pendingContainerSlot` state is declared at the top of Inspector (hooks-at-top rule).
   const nestedChildren = (baseSlot['nested-slots'] as string[] | undefined) ?? null
   const hasPersistedNested = Array.isArray(nestedChildren) && nestedChildren.length > 0
   const isPendingContainer = pendingContainerSlot === selectedSlot && !hasPersistedNested
@@ -640,7 +651,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
     return true
   })
 
-  const [showCreateModal, setShowCreateModal] = useState(false)
+  // `showCreateModal` state is declared at the top of Inspector (hooks-at-top rule).
 
   // Format helpers
   function formatLine(prop: string, token: string | undefined, resolved: string): string {
