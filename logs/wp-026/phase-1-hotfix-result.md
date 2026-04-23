@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-23
 **Duration:** ~35 min
-**Commit(s):** `<embed after commit>`
+**Commit(s):** `1d6e6feb`
 **Arch-test:** 455 / 0 (452 baseline + 3 new `infra-tooling.owned_files` — exact prediction)
 **File-io tests:** 14 / 14 (unchanged, zero regressions)
 
