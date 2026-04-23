@@ -152,19 +152,19 @@ Every item above is one the user could have read the code and caught independent
 
 ## Git
 
-Commit pending at time of writing. Commit plan:
+**Phase 1 commit:** `23fcc685` — fix(lm): phase 1 — Inspector stability + hook reorder [LM-reforge phase 1]
+**Staged scope:** exactly the 8 files listed in "Files Changed" above — explicit pathspec, no globs. Pre-commit DS-lint pass was clean (0 files to check — Inspector.tsx has no newly-introduced hardcoded styles).
 
-```bash
-git add \
-  tools/layout-maker/src/components/Inspector.tsx \
-  tools/layout-maker/src/components/Inspector.stability.test.tsx \
-  logs/lm-reforge/phase-1-result.md \
-  logs/lm-reforge/phase-1-console-clean.md \
-  logs/lm-reforge/visual-baselines/
+Chain on `main` at the time of this commit:
 
-git commit -m "fix(lm): phase 1 — Inspector stability + hook reorder [LM-reforge phase 1]"
+```
+23fcc685 (HEAD) fix(lm): phase 1 — Inspector stability + hook reorder  [this phase]
+fdebb5b5        chore(logs): WP-028 Phase 2 SHA embed                   [unrelated parallel workstream]
+70a09ae9        feat(studio+tools): WP-028 Phase 2 — Tweak panel …      [unrelated]
+b8dcfb8d        chore(logs): LM-reforge phase 1 task prompt             [this phase's prompt]
+1862a180        chore(logs): phase 0 result log — Brain-review          [P0 close]
 ```
 
-Pathspec-on-commit per P0's lesson learned (filtered `git status` as scope gate failed once; use explicit paths). No `--amend`, no `--no-verify`.
+Two WP-028 commits (`70a09ae9` + `fdebb5b5`) landed in parallel between the phase-1 task prompt commit and my phase-1 fix commit. They touch `apps/studio`, `packages/ui`, and `tools/block-forge` — no overlap with LM's Inspector. No conflict, no merge needed, no cleanup required.
 
-SHA will be embedded in a follow-up log commit once this one lands.
+Policy respected: new commit (not `--amend`), explicit pathspec-on-add (not `git add -A`), no `--no-verify`.
