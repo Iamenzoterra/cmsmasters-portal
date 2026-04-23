@@ -12,7 +12,12 @@
     "allowImportingTsExtensions": false,
     "noEmit": true,
     "isolatedModules": true,
-    "types": ["vite/client", "node"]
+    "types": ["vite/client", "node"],
+    "paths": {
+      "@cmsmasters/block-forge-core": ["../../packages/block-forge-core/src/index.ts"],
+      "@cmsmasters/db": ["../../packages/db/src/index.ts"],
+      "@cmsmasters/ui": ["../../packages/ui/index.ts"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

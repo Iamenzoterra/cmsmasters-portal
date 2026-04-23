@@ -17,12 +17,16 @@
     "@cmsmasters/ui": "*"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4",
     "@testing-library/react": "^16",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^4",
+    "autoprefixer": "^10",
     "jsdom": "^25",
+    "postcss": "^8",
+    "tailwindcss": "^4",
     "typescript": "^5",
     "vite": "^6",
     "vitest": "^4"
