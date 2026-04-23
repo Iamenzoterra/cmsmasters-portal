@@ -1,4 +1,5 @@
 import type { BlockVariants } from '@cmsmasters/db'
+import { rewriteImages } from '../../lib/optimize-images'
 
 // INVARIANT (WP-024 / ADR-025): variant CSS MUST be scoped under .block-{slug}.
 // Any @container rule inside variant CSS must nest its selectors under the
@@ -47,20 +48,20 @@ export function BlockRenderer({
       {combinedCss.trim() && <style dangerouslySetInnerHTML={{ __html: combinedCss }} />}
       {hasVariants ? (
         <div className={`block-${slug}`}>
-          <div data-variant="base" dangerouslySetInnerHTML={{ __html: html }} />
+          <div data-variant="base" dangerouslySetInnerHTML={{ __html: rewriteImages(html) }} />
           {entries.map(([name, v]) => (
             <div
               key={name}
               data-variant={name}
               hidden
-              dangerouslySetInnerHTML={{ __html: v.html }}
+              dangerouslySetInnerHTML={{ __html: rewriteImages(v.html) }}
             />
           ))}
         </div>
       ) : (
         <div
           className={`block-${slug}`}
-          dangerouslySetInnerHTML={{ __html: html }}
+          dangerouslySetInnerHTML={{ __html: rewriteImages(html) }}
         />
       )}
       {js?.trim() && (

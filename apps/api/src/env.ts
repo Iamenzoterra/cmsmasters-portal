@@ -11,7 +11,7 @@ interface R2BucketBinding {
 export interface Env {
   // Vars (from wrangler.toml [vars] or Cloudflare dashboard)
   SUPABASE_URL: string
-  R2_PUBLIC_URL: string // Public URL prefix for R2 assets (e.g., https://assets.cmsmasters.net)
+  R2_PUBLIC_URL: string // Public URL prefix for R2 assets (e.g., https://assets.cmsmasters.studio)
 
   // Secrets (from `wrangler secret put`)
   SUPABASE_SERVICE_KEY: string

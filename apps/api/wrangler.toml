@@ -5,7 +5,7 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 SUPABASE_URL = "https://yxcqtwuyktbjxstahfqj.supabase.co"
-R2_PUBLIC_URL = "https://pub-c82d3ffae6954db48f40feef14b8e2e0.r2.dev"
+R2_PUBLIC_URL = "https://assets.cmsmasters.studio"
 
 # Secrets (set via `wrangler secret put <NAME>`):
 # SUPABASE_SERVICE_KEY  — Supabase service_role key

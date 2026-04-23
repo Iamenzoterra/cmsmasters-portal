@@ -3,6 +3,7 @@
  * All hooks resolved at Astro build time. Zero JS in output.
  */
 import type { BlockVariants } from '@cmsmasters/db'
+import { rewriteImages } from './optimize-images'
 
 /**
  * Resolve slot placeholders in layout HTML.
@@ -227,13 +228,13 @@ export function renderBlock(
   if (cleaned.trim()) output += `<style>${cleaned}</style>\n`
 
   if (hasVariants) {
-    const baseWrap = `<div data-variant="base">${sanitizeEmbedHTML(html)}</div>`
+    const baseWrap = `<div data-variant="base">${rewriteImages(sanitizeEmbedHTML(html))}</div>`
     const variantWraps = entries
-      .map(([name, v]) => `<div data-variant="${name}" hidden>${sanitizeEmbedHTML(v.html)}</div>`)
+      .map(([name, v]) => `<div data-variant="${name}" hidden>${rewriteImages(sanitizeEmbedHTML(v.html))}</div>`)
       .join('')
     output += `<div data-block-shell="${slug}">${baseWrap}${variantWraps}</div>\n`
   } else {
-    output += `<div data-block-shell="${slug}">${sanitizeEmbedHTML(html)}</div>\n`
+    output += `<div data-block-shell="${slug}">${rewriteImages(sanitizeEmbedHTML(html))}</div>\n`
   }
 
   if (js?.trim()) output += `<script type="module">${js}</script>\n`

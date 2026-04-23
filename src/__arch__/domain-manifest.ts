@@ -269,6 +269,7 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'apps/portal/lib/blocks.ts',
       'apps/portal/lib/global-elements.ts',
       'apps/portal/lib/hooks.ts',
+      'apps/portal/lib/optimize-images.ts',
       'apps/portal/lib/supabase.ts',
     ],
     owned_tables: [],
