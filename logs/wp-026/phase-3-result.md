@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-23
 **Duration:** ~90 min
-**Commit(s):** _(embedded post-commit below)_
+**Commit(s):** `90f4af85` (feat) + this chore-logs amendment
 **Arch-test:** 467 / 0
 **Test totals:** file-io 14 + preview-assets 9 + integration 4 = 27 / 27
 **Build:** clean (2.03s, 193 modules; pre-existing @import-order + chunk-size warnings unchanged)
@@ -172,7 +172,7 @@ suggestionHeuristics: [ "font-clamp", "media-maxwidth", "media-maxwidth" ]
 
 ## Summary for Brain
 
-1. **Commit SHA(s):** _embedded post-commit; will update after `git commit` lands._
+1. **Commit SHA(s):** `90f4af85` (feat + result log) + this chore-logs SHA-embed amendment
 2. **Arch-test:** 467 / 0 ✅
 3. **Tests:** 27 / 27 ✅ (file-io 14 + preview-assets 9 + integration 4)
 4. **Suggestion counts for the 4 real blocks:** header 4, fast-loading-speed 3, sidebar-perfect-for 0, sidebar-pricing 3 — all ✅
