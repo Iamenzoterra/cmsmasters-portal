@@ -1,17 +1,18 @@
-// Phase 2 — picker + triptych wired on DS-compliant shell from Phase 1 hotfix.
-// Zero inline styles (save dynamic ones scoped inside PreviewPanel).
+// Phase 3 — added useAnalysis hook + SuggestionList in the suggestions aside.
+// Only two deltas vs Phase 2's App.tsx: the hook call + the <SuggestionList>
+// render. Picker/triptych/loading logic unchanged.
 //
-// Token fallbacks (Plan Correction — see phase-2-result.md):
-//   --status-danger-fg → fallback to --status-error-fg
-//   --bg-base          → fallback to --bg-surface
-// (Other tokens used here — --bg-page, --text-primary, --text-muted,
-//  --border-default — all verified in Phase 1 hotfix.)
+// Token names (canonical, all verified in tokens.css):
+//   --bg-page, --text-primary, --text-muted, --border-default,
+//   --status-error-fg (used for load-error label).
 
 import { useEffect, useState } from 'react'
 import type { BlockJson } from './types'
 import { getBlock } from './lib/api-client'
+import { useAnalysis } from './lib/useAnalysis'
 import { BlockPicker } from './components/BlockPicker'
 import { PreviewTriptych } from './components/PreviewTriptych'
+import { SuggestionList } from './components/SuggestionList'
 
 export function App() {
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null)
@@ -39,6 +40,8 @@ export function App() {
     }
   }, [selectedSlug])
 
+  const { suggestions, warnings } = useAnalysis(block)
+
   return (
     <div className="grid h-screen grid-rows-[auto_1fr_auto] bg-[hsl(var(--bg-page))] text-[hsl(var(--text-primary))]">
       <header className="flex items-center gap-6 border-b border-[hsl(var(--border-default))] px-6 py-3">
@@ -56,10 +59,8 @@ export function App() {
         >
           <PreviewTriptych block={block} />
         </section>
-        <aside data-region="suggestions" className="p-6">
-          <em className="text-sm text-[hsl(var(--text-muted))]">
-            Suggestion list — Phase 3 placeholder
-          </em>
+        <aside data-region="suggestions" className="overflow-hidden">
+          <SuggestionList suggestions={suggestions} warnings={warnings} />
         </aside>
       </main>
 
