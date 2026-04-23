@@ -596,7 +596,7 @@ All 5 phases complete. WP-027 is production-merged.
 | Phase 2 | `569cdb69` (feat), `21bdbeee` (result + 5 screenshots) | feat(studio) |
 | Phase 3 | `f70872e0` (task), `5dba05da` (feat), `5451c1b1` (result + screenshots) | feat(studio) |
 | Phase 4 | `06841d08` (task), `0b527945` (feat), `8cb9a0ee` (result), `b3dec18f` (e2e matrix) | feat(studio+api) |
-| Phase 5 | `da8d0296` (task prompt) + close commit (this phase) | chore(docs) |
+| Phase 5 | `da8d0296` (task prompt), `1112991f` (close, docs sync) | chore(docs) |
 
 ### Unblocks
 - **WP-028 Tweaks/Variants UI** — depends on Responsive tab's session state + preview harness

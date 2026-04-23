@@ -116,7 +116,8 @@ All 9 grep anchors pass.
 ## Git
 
 - Task prompt commit: `da8d0296` (`chore(logs): WP-027 Phase 5 task prompt`)
-- Close commit: _pending Brain approval_ — `chore(docs): WP-027 Phase 5 — close, docs sync [WP-027 phase 5]`
+- Close commit: `1112991f` (`chore(docs): WP-027 Phase 5 — close, docs sync [WP-027 phase 5]`)
 
-**Approval gate:** Per `feedback_close_phase_approval_gate.md` (6 doc files > 3 threshold), Hands pauses here.
-Staged diff (`git diff --cached`) presented below for Brain review before `git commit`.
+**Approval gate honored:** Per `feedback_close_phase_approval_gate.md` (6 doc files > 3 threshold),
+Hands paused and presented staged diff (`git diff --cached`) before commit; Brain reviewed file-by-file
+and approved ✅ with no change requests.
