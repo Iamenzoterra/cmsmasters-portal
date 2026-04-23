@@ -83,8 +83,9 @@ Grep evidence:
   - `header.json`
   - `sidebar-perfect-for.json`
   - `sidebar-pricing.json`
-- **Top-level keys observed (sampled `header.json`, representative of the schema):**
+- **Top-level keys (sampled all 4 blocks — schema-uniform, zero drift):**
   `block_type, css, hooks, html, id, is_default, js, metadata, name, slug, sort_order`
+  (Identical key set across `fast-loading-speed.json`, `header.json`, `sidebar-perfect-for.json`, `sidebar-pricing.json` — confirms the picker can safely assume a single schema and validate with one Zod shape in Phase 1.)
 - **Fixture SHAs (sha256 full):**
   - `block-spacing-font` → `content/db/blocks/fast-loading-speed.json`
     - Recorded at WP-025 freeze: `91aa6aefea1c267379c45dfd79bbcf80c510179726c0a1b1d2320a25e38d343a`
