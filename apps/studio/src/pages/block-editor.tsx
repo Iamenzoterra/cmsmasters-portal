@@ -817,8 +817,8 @@ ${code}${scriptTag}
       </div>
       )}
       {activeTab === 'responsive' && (
-        <div className="flex flex-1 flex-col overflow-y-auto" style={{ padding: 'var(--spacing-xl)' }}>
-          <ResponsiveTab />
+        <div className="flex flex-1 flex-col overflow-y-auto">
+          <ResponsiveTab block={existingBlock} />
         </div>
       )}
 
