@@ -212,19 +212,20 @@ Two WP-028 commits (`70a09ae9` + `fdebb5b5`) landed in parallel between the phas
 
 Policy respected: new commit (not `--amend`), explicit pathspec-on-add (not `git add -A`), no `--no-verify`.
 
-**Phase 1 follow-up commit:** pending at time of this log write; SHA to be embedded in a follow-up log commit once this one lands (P0 precedent — `7b3a736e` + `5fb8bcc7`).
+**Phase 1 follow-up commit:** `12efd4bf` — fix(lm): phase 1 follow-up — DrawerSettingsControl Rules-of-Hooks fix [LM-reforge phase 1]
 
-Planned chain after follow-up:
+Chain on `main` after follow-up:
 
 ```
-<pending>        chore(logs): embed phase-1 follow-up SHA         [SHA-embed commit]
-<pending>        fix(lm): phase 1 follow-up — DrawerSettingsControl Rules-of-Hooks fix  [this follow-up]
+<pending>        chore(logs): embed phase-1 follow-up SHA in result log   [SHA-embed commit]
+12efd4bf (HEAD)  fix(lm): phase 1 follow-up — DrawerSettingsControl R-o-H fix  [this follow-up]
+b1d8f01d         chore(logs): LM-reforge phase 1 follow-up task prompt        [Brain prompt]
 8255a588         chore(logs): embed phase-1 commit SHA in result log
-23fcc685         fix(lm): phase 1 — Inspector stability + hook reorder   [P1 initial]
+23fcc685         fix(lm): phase 1 — Inspector stability + hook reorder        [P1 initial]
 fdebb5b5         chore(logs): WP-028 Phase 2 SHA embed
 70a09ae9         feat(studio+tools): WP-028 Phase 2 …
 b8dcfb8d         chore(logs): LM-reforge phase 1 task prompt
-1862a180         chore(logs): phase 0 result log — Brain-review          [P0 close]
+1862a180         chore(logs): phase 0 result log — Brain-review              [P0 close]
 ```
 
 Follow-up scope (5 paths via explicit pathspec — `phase-1-followup-task.md` was committed separately by Brain in `b1d8f01d` before Hands started, so it is not in this follow-up's pathspec):
