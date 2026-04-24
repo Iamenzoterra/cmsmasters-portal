@@ -1,0 +1,29 @@
+version: 1
+name: scratch-recovered-alias
+scope: theme
+description: >-
+  Phase-2 scratch fixture — `theme-tablet` alias with canonical 768px width,
+  no `tablet` key. Exercises the Recovered-only badge: isFallbackResolved=true
+  AND isNonCanonicalMatch=false (resolved alias width matches canonical).
+grid:
+  desktop:
+    min-width: 1440px
+    columns:
+      content: 1fr
+    column-gap: '0'
+  theme-tablet:
+    min-width: 768px
+    columns:
+      content: 1fr
+    column-gap: '0'
+slots:
+  header:
+    position: top
+    min-height: 60px
+  content:
+    min-height: 400px
+    padding-top: '--spacing-xl'
+    padding-bottom: '--spacing-xl'
+  footer:
+    position: bottom
+    min-height: 80px

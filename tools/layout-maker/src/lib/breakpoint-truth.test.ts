@@ -76,4 +76,27 @@ describe('deriveBreakpointTruth', () => {
     expect(t.resolvedKey).toBe('desktop')
     expect(t.resolvedMinWidth).toBe(1440)
   })
+
+  // Added in P2 follow-up to close AC #6 — exercises the Recovered-only
+  // badge state: canonical key missing, fallback lands on an alias whose
+  // width HAPPENS to match canonical, so isNonCanonicalMatch stays false.
+  // In the 5-case set above, every fallback scenario also had a divergent
+  // width, masking this branch.
+  it('canonical key absent, fallback alias width matches canonical → Recovered only (no Non-canonical)', () => {
+    const t = deriveBreakpointTruth(
+      'tablet',
+      makeGrid({ desktop: 1440, 'theme-tablet': 768 }),
+    )
+    expect(t).toMatchObject({
+      canonicalId: 'tablet',
+      canonicalWidth: 768,
+      resolvedKey: 'theme-tablet',
+      resolvedMinWidth: 768,
+      hasCanonicalGridKey: false,
+      isFallbackResolved: true,
+      isNonCanonicalMatch: false,
+      willMaterializeCanonicalKey: true,
+      materializationSourceKey: 'theme-tablet',
+    })
+  })
 })

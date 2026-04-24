@@ -10,12 +10,13 @@
 
 ## Status Frame
 
-**Status:** ✅ COMPLETE
+**Status:** ✅ COMPLETE (incl. `/ac` follow-up closing AC #6)
 **Bundle size:** 313.53 kB JS (Δ = +2.83 kB vs 310.70 kB baseline; within ±5 kB hard gate)
-**Tests:** 12 passed / 12 total (7 prior + 5 new `breakpoint-truth`)
-**Console:** 0 errors / 0 warnings across full BP rotation + materialization flow
+**Tests:** 13 passed / 13 total (7 prior + 5 new `breakpoint-truth` + 1 follow-up for Recovered-only branch)
+**Console:** 0 errors / 0 warnings across full BP rotation + materialization flow + Recovered-fixture visual
 **Grep-gate:** F.1 = 76 (Δ 0) · F.2 = 5 (Δ 0) · F.3 = 95 (Δ +4 — acknowledged, 4 intentional new sites)
 **Materialization flow:** 5/5 steps proven end-to-end — UI prediction matches `ensureGridEntry` behavior byte-identically.
+**Recovered badge:** visually proven via dedicated fixture — see § Follow-up below.
 
 ---
 
@@ -299,7 +300,7 @@ Per prompt §Acceptance Criteria:
 - [x] `npm --prefix tools/layout-maker run build` exits 0 (**313.53 kB**, Δ +2.83 kB, within ±5 kB).
 - [x] `BreakpointBar` shows canonical + resolved + edit-target on the primary reading path (three separate rows visible by default).
 - [x] Non-canonical resolved shows `Non-canonical` badge — proven in p2-bp-bar-non-canonical.png (theme-page-layout @ tablet, width 1400 ≠ 768).
-- [x] Fallback nearest-match shows `Recovered` hint — *note*: the scratch-desktop-only @ tablet case has **both** `isFallbackResolved=true` AND `isNonCanonicalMatch=true` (because resolved width 1440 ≠ canonical 768), so the stricter `Non-canonical` wins per the derivator's flag precedence (`Recovered` only renders when `isFallbackResolved && !isNonCanonicalMatch`). The `Recovered`-only visual state is reachable but would need a fixture where the fallback resolves to an alias whose width HAPPENS to match canonical — contrived, not in current fixtures. Flag precedence documented in derivator + tests; UI branch gated correctly.
+- [x] Fallback nearest-match shows `Recovered` hint — **closed in follow-up:** `scratch-recovered-alias.yaml` fixture (only `desktop` + `theme-tablet @ 768px` keys) exercises `isFallbackResolved=true` + `isNonCanonicalMatch=false`. Screenshot `p2-bp-bar-recovered.png` shows both `Resolved` row and Inspector footer rendering a `Recovered` (info-style) badge. 6th contract test added to lock the flag combination. Visual evidence captured; soft gap removed.
 - [x] Missing canonical key → `Edit target: First edit will create grid.<id> from <source> @ <px>` copy — proven in p2-bp-bar-materialization.png + 5-step flow step 2.
 - [x] After first canonicalizing edit, UI flips — flow step 4: `Resolved: tablet @ 768px` (no badge), `Edit target: tablet @ 768px` chip, footer says `Base / canonical override`.
 - [x] Inspector footer renders in BOTH empty-state AND slot-selected states — verified via a11y snapshots at both states (uid=22_110-118 present in empty-state + slot-selected snapshots).
@@ -328,6 +329,30 @@ Per prompt §Acceptance Criteria:
 | 8–11 | `logs/lm-reforge/visual-baselines/p2-*.png` (4 files) | NEW | 4 screenshots |
 
 Total: **11 paths**. Prompt budget was 12 (or 13 with scratch fixture) — came in 1 path under even with the fixture, because `phase-2-task.md` was committed ahead of Hands work in `261ff7a5`.
+
+### Follow-up commit (AC #6 closure — Recovered badge visual proof)
+
+Added after `/ac` review flagged AC #6 as a soft gap. Feedback rule
+"visual check is a MUST, never deferred" (memory: `feedback_visual_check_mandatory.md`)
+makes the absence of a visual proof unacceptable.
+
+| # | Path | Status |
+|---|------|--------|
+| 1 | `tools/layout-maker/layouts/scratch-recovered-alias.yaml` | NEW (fixture: only desktop + theme-tablet @ 768px alias) |
+| 2 | `tools/layout-maker/src/lib/breakpoint-truth.test.ts` | modified (+1 test: Recovered-only flag combo) |
+| 3 | `logs/lm-reforge/visual-baselines/p2-bp-bar-recovered.png` | NEW screenshot |
+| 4 | `logs/lm-reforge/phase-2-result.md` | modified (this update) |
+
+Derivator output observed on `scratch-recovered-alias` @ tablet (dumped via `evaluate_script`):
+```
+Resolved:theme-tablet@ min-width 768pxRecovered
+Edit target:First edit will create grid.tablet from theme-tablet @ 768px
+Footer: Breakpoint tablet → theme-tablet (768px) Recovered
+        Edit writes to will create grid.tablet from theme-tablet
+Badges: [ Recovered (lm-bp-badge--info), Recovered (lm-bp-badge--info) ]
+```
+
+Both badges use `lm-bp-badge--info` (correct — `Recovered` is the info variant; `Non-canonical` is the warn variant). The UI branch gate `truth.isFallbackResolved && !truth.isNonCanonicalMatch` is exercised; stricter `Non-canonical` did not fire (as expected — 768 === 768).
 
 Untouched this phase: `App.tsx`, `lib/types.ts`, `runtime/**`, `PARITY-LOG.md`, `CLAUDE.md`, `vitest.config.ts`, `tsconfig.json`, P1 tests, root `package.json`, root `package-lock.json`.
 
@@ -390,17 +415,15 @@ that the prompt's own Task 2.3 BreakpointBar copy already consumes — and
 keeps the two surfaces saying the same thing in the same words. Flagging it
 explicitly because the spec was terse and I took a liberty.
 
-**One AC interpretation to surface.** The "Recovered" badge path (fallback
-resolve + width matches canonical) was not demonstrably triggered by any
-current fixture. The derivator supports it (`isFallbackResolved && !isNonCanonicalMatch`);
-the UI branch renders correctly when those flags combine; contract tests
-cover the `(true, true)` and `(false, false)` combinations but not `(true, false)`.
-To hit `(true, false)` you need a fixture where the fallback resolution
-picks an alias whose min-width HAPPENS to match canonical (e.g. `tablet` canonical
-is 768 AND the fallback lands on a `theme-tablet` whose min-width is also 768 —
-rare). Adding a 6th test would be trivial and probably worthwhile; I did not
-add it this phase to stay at Brain's prescribed 5 test cases. Raised as a
-possible follow-up; not a blocker for P2 close.
+**Recovered badge visual gap — closed in `/ac` follow-up.** The initial P2
+close left AC #6 (Recovered-only badge) as a soft gap — the derivator supported
+it, UI branch was gated correctly, and contract tests covered the
+`(true, true)` and `(false, false)` corners, but no visual proof for
+`(true, false)`. User invoked `/ac` and rejected the soft gap per the
+"visual check is a MUST" rule. Follow-up: added `scratch-recovered-alias.yaml`
+(desktop + theme-tablet @ 768px), captured `p2-bp-bar-recovered.png` showing
+the badge on both BreakpointBar and Inspector footer, and added a 6th contract
+test locking the flag combination. AC #6 now ✅.
 
 **No shortcuts taken.** No console suppression. No try/catch around the
 derivator. No re-implementation of `resolveGridKey` strategy. No edits to
