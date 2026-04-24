@@ -3,7 +3,7 @@
 > Task: `logs/lm-reforge/phase-3-task.md`
 > Role: Hands
 > Date: 2026-04-24
-> Feature commit: _embedded in follow-up chore commit_
+> Feature commit: `f99c1070`
 > Status removal commit: `5c510442`
 
 ---
@@ -196,8 +196,8 @@ Appendix B DS migration will fold these into `--text-xs-font-size` token refs.
 ## Commits
 
 1. `5c510442` — `fix(lm): remove status from export UI [LM-reforge phase 3]`
-2. _Feature commit to land next_ — `feat(lm): phase 3 — live validation + export blocking [LM-reforge phase 3]` (explicit pathspec per P0 lesson)
-3. _Follow-up chore_ — embed feature-commit SHA in this result log
+2. `f99c1070` — `feat(lm): phase 3 — live validation + export blocking [LM-reforge phase 3]` (explicit pathspec per P0 lesson)
+3. _This commit_ — `chore(logs): embed phase-3 commit SHA in result log [LM-reforge phase 3]`
 
 ---
 
