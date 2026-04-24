@@ -476,9 +476,10 @@ echo "(expect: ≥ 104 passing)"
 cd tools/block-forge && npm test 2>&1 | tail -5 && cd ../..
 echo "(expect: ≥ 132 passing)"
 
-# 5. Validator accepts null
-node -e "
-const { updateBlockSchema } = require('./packages/validators/dist/block.js');
+# 5. Validator accepts null (NOTE: @cmsmasters/validators has no build step — main points to src/index.ts.
+# Use tsx inline instead of node require. C1 concern from Hands pre-flight audit.)
+npx tsx -e "
+import { updateBlockSchema } from './packages/validators/src/block';
 const r1 = updateBlockSchema.safeParse({ variants: null });
 const r2 = updateBlockSchema.safeParse({ variants: { sm: { html:'<p/>', css:'' } } });
 const r3 = updateBlockSchema.safeParse({});  // variants missing (still optional)
