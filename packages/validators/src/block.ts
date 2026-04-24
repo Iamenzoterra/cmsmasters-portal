@@ -53,7 +53,12 @@ export const createBlockSchema = z.object({
   is_default: z.boolean().default(false),
   hooks: hooksSchema,
   metadata: metadataSchema,
-  variants: variantsSchema.optional(),
+  // WP-028 Phase 5 (Ruling HH / OQ2) — accept `null` as an explicit clear-signal
+  // alongside missing/undefined. Supabase `update({ variants: null })` NULLs the
+  // column; `update({ variants: undefined })` is dropped client-side and leaves
+  // the old row value intact. Clients emit null on empty to avoid that silent
+  // drift (Studio formDataToPayload + tools/block-forge App.tsx handleSave).
+  variants: variantsSchema.nullable().optional(),
 })
 
 // ── Update block (all fields optional except immutable slug) ──
@@ -68,7 +73,7 @@ export const updateBlockSchema = z.object({
   is_default: z.boolean().optional(),
   hooks: hooksSchema.optional(),
   metadata: metadataSchema.optional(),
-  variants: variantsSchema.optional(),
+  variants: variantsSchema.nullable().optional(),
 })
 
 export type CreateBlockPayload = z.infer<typeof createBlockSchema>

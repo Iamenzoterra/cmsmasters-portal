@@ -165,3 +165,50 @@ Block-forge's safety net is two-layered:
 2. **UI surface contract** — `tools/block-forge/src/__tests__/integration.test.tsx` verifies that the Vite app consumes the engine identically: suggestion IDs flow through to DOM `data-suggestion-id`; Save POST payload matches `applySuggestions` output exactly; `requestBackup` flag flips correctly after first save per session.
 
 A regression in one layer fails tests in that layer — never silently. The snapshot is the ground truth for fixture behavior (not the filename); see saved memory `feedback_fixture_snapshot_ground_truth.md`.
+
+## Dirty-state contract (WP-028 Phase 5)
+
+Authoritative enumeration of dirty signals + save-enabling sources across both surfaces. All rows reflect the canonical post-Phase-4 carve-out behaviour (Phase 4 fixed StatusBar `hasChanges` + `handleSave` pre-existing bugs where tweak-only and variant-only edits were silently non-saving) plus the Phase 5 OQ2 clear-signal fix (empty variants emit `null`, not `undefined`).
+
+### Studio Responsive tab (RHF-driven)
+
+| Source | Field | Triggers `formState.isDirty` | Save button reads |
+|--------|-------|------------------------------|-------------------|
+| Code textarea (Editor tab) | `form.code` | Yes (RHF native) | `formState.isDirty` |
+| Suggestion Accept (Responsive tab) | `form.code` via `setValue('code', ..., { shouldDirty: true })` | Yes | same |
+| Tweak slider dispatch | `form.code` via `dispatchTweakToForm → setValue('code', ..., { shouldDirty: true })` | Yes | same |
+| Variant CRUD (fork/rename/delete) | `form.variants` via `dispatchVariantToForm → setValue('variants', ..., { shouldDirty: true })` | Yes | same |
+| Variant editor (update-content) | `form.variants` via `dispatchVariantToForm({kind:'update-content'})` → `setValue` | Yes | same |
+
+**Save payload shape (post-Phase-5):** `formDataToPayload` emits `variants: populated-map` when `Object.keys(data.variants).length > 0`, else `variants: null`. The `null` sentinel is the OQ2 clear-signal — Supabase JS `update({ variants: null })` NULLs the column; `update({ variants: undefined })` (pre-Phase-5) silently dropped the key and left the prior value intact. Validator accepts `variantsSchema.nullable().optional()`.
+
+### tools/block-forge (session-driven)
+
+| Source | State mutation | `isDirty(session)` true | StatusBar `hasChanges` reads |
+|--------|----------------|-------------------------|------------------------------|
+| Suggestion Accept | `pending.push(id)` | Yes | `isDirty(session)` |
+| Suggestion Reject | `rejected.push(id)` | Yes | same |
+| Tweak dispatch | `tweaks.push(tweak)` | Yes (post-Phase-4 StatusBar fix) | same |
+| Variant fork | `variants[name] = {...}` | Yes | same |
+| Variant rename | variants key swap | Yes | same |
+| Variant delete | variants key removal | Yes | same |
+| Variant editor (update-content) | `variants[name].html / .css` updated via `updateVariantContent` | Yes | same |
+| Undo | history pop | If history non-empty, yes; else no-op | same |
+
+**handleSave path (post-Phase-4+5):**
+1. Early return if `!isDirty(session)` — prevents no-op fs writes (Phase 4 carve-out).
+2. `accepted = pickAccepted(session, suggestions)`; `applySuggestions` only runs when `accepted.length > 0`, else html/css pass through verbatim (Phase 4 carve-out).
+3. Payload `{ ...block, html: applied.html, css: applied.css, variants: hasVariants ? session.variants : null }` written via `saveBlock` → fs middleware. `null` on empty (Phase 5 OQ2 / Ruling LL — JSON.stringify preserves the key for disk/DB parity with Studio's PUT payload).
+4. `.bak` written iff `!session.backedUp` (first save per session).
+5. `clearAfterSave(session, refreshed.variants ?? {})` — session aligns to post-save disk state.
+
+**Pre-existing save-path gap (Phase 5 result-log OQ5 candidate for Phase 6+):** `composeTweakedCss` runs in the render-time `composedBlock` memo (App.tsx L146-153) but is NOT called inside `handleSave`. A tweak-only save therefore writes the base CSS, not the tweak-composed CSS. Phase 4 carve-outs fixed the "save proceeds at all" bug; tweak-composition at save time was never in scope and is logged here for transparency. Phase 5 integration pins cover the save-happens half only.
+
+### Cross-tab concurrency — last-write-wins semantics
+
+Both surfaces follow last-write-wins — no per-tab isolation, no explicit conflict-resolution UI. Example scenarios:
+
+1. **Studio:** Editor-tab textarea edits `form.code` → author switches to Responsive tab → tweak slider dispatches → `dispatchTweakToForm` also writes `form.code`. Result: tweak-composed CSS lands; manual textarea edits preserved iff outside the CSS region PostCSS `emitTweak` touched.
+2. **block-forge:** Accept suggestion → tweak element → variant fork. All three land in `session` (each via a distinct reducer path); `handleSave` writes all in one fs round-trip.
+
+Transparent last-write-wins is acceptable per the WP-028 workplan §5 directive: "document last-write-wins behaviour. No new logic unless real data loss." Phase 4 live-smoke confirmed no data loss on either surface. This section is the canonical documentation; Phase 6 Close cross-references it without duplication.

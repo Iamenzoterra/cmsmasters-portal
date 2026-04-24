@@ -453,3 +453,61 @@ describe('ResponsiveTab — WP-028 Phase 3 Variant drawer integration', () => {
     })
   })
 })
+
+// ─────────────────────────────────────────────────────────────────────────
+// WP-028 Phase 5 — OQ2 clear-signal pin (Ruling HH).
+//
+// Background: pre-Phase-5 `formDataToPayload` emitted `variants: undefined`
+// when `Object.keys(data.variants).length === 0`. Supabase JS client
+// silently drops undefined keys from `update(...)` bodies, so the column
+// kept its prior value — author saw "0 variants" in UI but Portal + DB
+// still served the old map. Phase 5 flips the sentinel to `null` so
+// `update({ variants: null })` NULLs the column, closing the silent-drift
+// loop (validator change `variantsSchema.nullable().optional()` makes the
+// payload valid end-to-end).
+//
+// Kept inline with integration to avoid creating a new test file (arch-test
+// Δ0 — Ruling JJ "documented not refactored").
+// ─────────────────────────────────────────────────────────────────────────
+import { formDataToPayload } from '../../../block-editor'
+
+/** Minimal BlockFormData fixture. Unused fields get safe defaults so the
+ *  test focuses on the variants-empty-vs-populated axis. */
+function makeFormData(
+  overrides: Partial<Parameters<typeof formDataToPayload>[0]> = {},
+): Parameters<typeof formDataToPayload>[0] {
+  return {
+    name: 'test-block',
+    slug: 'test-block',
+    block_type: '',
+    block_category_id: '',
+    is_default: false,
+    code: '<section class="block-test" data-block><p>x</p></section>',
+    js: '',
+    thumbnail_url: '',
+    hasPriceHook: false,
+    priceSelector: '',
+    links: [],
+    alt: '',
+    figma_node: '',
+    variants: {},
+    ...overrides,
+  }
+}
+
+describe('formDataToPayload — OQ2 clear-signal pin', () => {
+  it('emits variants: null when form.variants is empty [Phase 5 OQ2 pin]', () => {
+    const payload = formDataToPayload(makeFormData({ variants: {} }))
+    expect(payload.variants).toBeNull()
+    // Ruling LL — JSON.stringify preserves the key with null value (disk/DB parity
+    // across Studio API PUT + tools/block-forge fs write).
+    const serialized = JSON.stringify(payload)
+    expect(serialized).toContain('"variants":null')
+  })
+
+  it('passes variants map through when populated [Phase 5 positive control]', () => {
+    const variants = { sm: { html: '<h2>sm</h2>', css: '.x { padding: 12px }' } }
+    const payload = formDataToPayload(makeFormData({ variants }))
+    expect(payload.variants).toEqual(variants)
+  })
+})

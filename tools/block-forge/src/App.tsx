@@ -277,15 +277,20 @@ export function App() {
           : { html: block.html, css: block.css }
       // Merge applied html/css back into the full BlockJson so we preserve
       // non-engine fields (name, id, block_type, hooks, metadata, etc.).
-      // WP-028 Phase 3 — serialize session.variants; emit undefined when empty so
-      // the writer preserves Studio's payload convention (blocks.variants nullable
-      // by design per WP-024 — phantom `{}` would be a silent drift).
+      // WP-028 Phase 3 — serialize session.variants; emit the non-populated
+      // sentinel when empty (disk parity with Studio's formDataToPayload).
+      // WP-028 Phase 5 (Ruling HH+LL / OQ2) — sentinel flipped undefined → null
+      // to match Studio's PUT payload and preserve the key through JSON.stringify
+      // round-trip. JSON.stringify drops undefined keys but preserves null, so
+      // both disk on-the-wire bytes and the DB column behave the same way
+      // (Studio API → Supabase; block-forge fs → .json file). Consumers treat
+      // `null | undefined | {}` as "no variants".
       const hasVariants = Object.keys(session.variants).length > 0
       const updatedBlock: BlockJson = {
         ...block,
         html: applied.html,
         css: applied.css,
-        variants: hasVariants ? session.variants : undefined,
+        variants: hasVariants ? session.variants : null,
       }
       const requestBackup = !session.backedUp
       await saveBlock({ block: updatedBlock, requestBackup })

@@ -16,11 +16,14 @@ export type BlockJson = {
   is_default?: boolean
   sort_order?: number
   /**
-   * WP-028 Phase 3 — named variants. Emit ONLY when non-empty (disk parity with
-   * Studio's `formDataToPayload` which sends `undefined` for empty, not `{}`).
-   * Consumers treat `undefined | {}` as "no variants".
+   * WP-028 Phase 3 — named variants. Emit ONLY when populated.
+   * WP-028 Phase 5 (Ruling HH+LL / OQ2) — on empty, emit `null` (NOT undefined)
+   * for disk/DB parity with Studio's `formDataToPayload`. `JSON.stringify` drops
+   * undefined keys but preserves null, so both the fs round-trip (block-forge)
+   * and the Supabase PUT round-trip (Studio) round-trip through the same
+   * on-the-wire shape. Consumers treat `null | undefined | {}` as "no variants".
    */
-  variants?: BlockVariants
+  variants?: BlockVariants | null
 }
 
 export type ReadBlockError =

@@ -56,6 +56,7 @@ import {
   clearAfterSave,
   composeTweakedCss,
   createSession,
+  isDirty,
   pickAccepted,
   type SessionState,
 } from '../lib/session'
@@ -541,5 +542,136 @@ describe('Phase 4 — updateVariantContent → save round-trip', () => {
     // Undo again → v1 (baseline).
     s = undo(s)
     expect(s.variants.sm.html).toBe('<h2>v1</h2>')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────
+// WP-028 Phase 5 — Carve-out regression pins (Ruling KK) + OQ2 clear-signal
+// (Ruling HH).
+//
+// Background: Phase 4 fixed 2 silent-broken bugs inline as scope carve-outs:
+//   1) StatusBar.hasChanges = isDirty(session)       (was: pendingCount > 0)
+//   2) handleSave: if (!isDirty(session)) return     (was: accepted.length === 0)
+// Prior to those fixes, tweak-only or variant-only edits never reached disk:
+// the Save button stayed disabled AND handleSave early-returned before the
+// write. Both fixes landed at commit bff6ef77. Phase 5 pins the resulting
+// contract so any later regression of either clause breaks a test.
+//
+// Pins exercise the save-payload contract by assembling the same payload
+// App.tsx handleSave builds (per tools/block-forge/src/App.tsx L256-305
+// post-Phase-4). Deliberate mirror — the harness encodes what "ship this to
+// disk" means. Full App.tsx render-level pinning is deferred (Phase 6 Close
+// or later) because the App surface pulls in BlockPicker + sourceDir fetch,
+// which is heavyweight for this pin's purpose.
+//
+// Tweak composition gap note: `composeTweakedCss` runs in the render-time
+// `composedBlock` memo (App.tsx L146-153) but NOT in `handleSave`. So saved
+// CSS on a tweak-only session is base CSS, not tweak-composed CSS. This is
+// a pre-existing gap (never in Phase 4 carve-out scope) and is documented
+// as Phase 5 result-log OQ5 / Phase 6 Close cleanup candidate. Pins assert
+// the save-happens contract only.
+// ─────────────────────────────────────────────────────────────────────────
+describe('Phase 5 — Carve-out regression pins + OQ2 clear-signal', () => {
+  let baseBlock: BlockJson
+
+  beforeAll(async () => {
+    baseBlock = await loadFixture('block-spacing-font')
+  })
+
+  /**
+   * Mirror of App.tsx handleSave payload-assembly (L256-305 post-Phase-4+5):
+   * 1) Early-return guard uses isDirty(session), not accepted.length.
+   * 2) applySuggestions only runs when suggestions were accepted; otherwise
+   *    html/css pass through verbatim.
+   * 3) variants: populated session.variants OR null (Phase 5 OQ2 clear-signal).
+   */
+  function assembleSavePayload(
+    block: BlockJson,
+    session: SessionState,
+    suggestions: import('@cmsmasters/block-forge-core').Suggestion[],
+  ): BlockJson | null {
+    if (!isDirty(session)) return null
+    const accepted = pickAccepted(session, suggestions)
+    const applied =
+      accepted.length > 0
+        ? applySuggestions(
+            { slug: block.slug, html: block.html, css: block.css },
+            accepted,
+          )
+        : { html: block.html, css: block.css }
+    const hasVariants = Object.keys(session.variants).length > 0
+    return {
+      ...block,
+      html: applied.html,
+      css: applied.css,
+      variants: hasVariants ? session.variants : null,
+    }
+  }
+
+  it('tweak-only save [Phase 2/4 carve-out pin] — isDirty true → payload assembled (not early-returned)', () => {
+    // Pre-Phase-4 bug: StatusBar read pendingCount only → Save button disabled;
+    // handleSave early-returned on accepted.length === 0 → never reached fs. Both
+    // legs silently dropped tweak-only saves. isDirty(session) must be the gate.
+    let s = createSession()
+    s = addTweak(s, {
+      selector: '.hero-cta',
+      bp: 768,
+      property: 'padding',
+      value: '16px',
+    })
+    expect(isDirty(s)).toBe(true)
+    const payload = assembleSavePayload(baseBlock, s, [])
+    expect(payload).not.toBeNull()
+    expect(payload!.slug).toBe(baseBlock.slug)
+    // Tweak composition not asserted here — pre-existing gap (see header note).
+  })
+
+  it('variant-only save [Phase 3/4 carve-out pin] — payload carries variants map (not early-returned)', () => {
+    // Pre-Phase-4 bug: handleSave early-returned on accepted.length === 0 →
+    // variant-only edits never reached disk. Phase 4 carve-out removed that.
+    let s = createSession()
+    s = createVariant(s, 'sm', { html: '<h2>sm</h2>', css: '.x { padding: 12px }' })
+    expect(isDirty(s)).toBe(true)
+    const payload = assembleSavePayload(baseBlock, s, [])
+    expect(payload).not.toBeNull()
+    expect(payload!.variants).toEqual({
+      sm: { html: '<h2>sm</h2>', css: '.x { padding: 12px }' },
+    })
+  })
+
+  it('mixed save [Phase 4 mixed carve-out pin] — tweak + variant both dirty; payload has variants, save proceeds', () => {
+    let s = createSession()
+    s = addTweak(s, { selector: '.btn', bp: 768, property: 'display', value: 'none' })
+    s = createVariant(s, 'md', { html: '<h2>md</h2>', css: '' })
+    expect(isDirty(s)).toBe(true)
+    const payload = assembleSavePayload(baseBlock, s, [])
+    expect(payload).not.toBeNull()
+    expect(payload!.variants).toEqual({ md: { html: '<h2>md</h2>', css: '' } })
+  })
+
+  it('OQ2 clear-signal pin [Ruling HH] — empty session.variants → payload variants === null', () => {
+    // Pre-Phase-5: payload emitted undefined on empty, which Supabase JS client
+    // silently DROPS from the update body. Result: DB kept the prior variants
+    // row value; author saw "0 variants" in UI but Portal still served the old
+    // JSON. Phase 5 flips to null so Supabase NULLs the column on clear-save.
+    // Note: isDirty() requires some history entry (variant CRUD, tweak, etc.)
+    // to return true. A createSession() is not dirty, so we simulate the
+    // "author added then deleted all variants" flow to exercise the clear path.
+    let s = createSession()
+    s = createVariant(s, 'sm', { html: '<h2>sm</h2>', css: '' })
+    s = deleteVariant(s, 'sm')
+    expect(isDirty(s)).toBe(true) // history still carries create + delete
+    expect(Object.keys(s.variants)).toHaveLength(0) // but map is empty
+
+    const payload = assembleSavePayload(baseBlock, s, [])
+    expect(payload).not.toBeNull()
+    expect(payload!.variants).toBeNull()
+
+    // Ruling LL — JSON.stringify preserves the key with null (disk/DB parity
+    // with Studio's PUT payload).
+    const serialized = JSON.stringify(payload)
+    expect(serialized).toContain('"variants":null')
+    const parsed = JSON.parse(serialized) as BlockJson
+    expect(parsed.variants).toBeNull()
   })
 })

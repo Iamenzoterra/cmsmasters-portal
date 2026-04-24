@@ -140,7 +140,7 @@ function splitCode(code: string): { html: string; css: string } {
   return { html, css }
 }
 
-function formDataToPayload(data: BlockFormData) {
+export function formDataToPayload(data: BlockFormData) {
   const { html, css } = splitCode(data.code)
 
   const hooks: Record<string, unknown> = {}
@@ -163,7 +163,10 @@ function formDataToPayload(data: BlockFormData) {
 
   // WP-028 Phase 1: emit variants ONLY when non-empty — prevents phantom writes
   // of `{}` to blocks.variants on non-variant blocks (column is nullable by design
-  // per WP-024). Sentinel: `{}` in form state ↔ `undefined` in API payload.
+  // per WP-024). Sentinel: `{}` in form state ↔ `null` in API payload.
+  // WP-028 Phase 5 (Ruling HH / OQ2): empty sentinel flipped undefined → null so
+  // Supabase `update({ variants: null })` actually NULLs the column (undefined is
+  // silently dropped). Validator: `variantsSchema.nullable().optional()`.
   const hasVariants = Object.keys(data.variants).length > 0
 
   return {
@@ -176,7 +179,7 @@ function formDataToPayload(data: BlockFormData) {
     is_default: data.is_default,
     hooks: Object.keys(hooks).length > 0 ? hooks : undefined,
     metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
-    variants: hasVariants ? data.variants : undefined,
+    variants: hasVariants ? data.variants : null,
   }
 }
 

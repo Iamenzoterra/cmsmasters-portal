@@ -578,3 +578,11 @@ This is the ONLY bridge between the session state and the RHF form. If the callb
 Session state lives in `ResponsiveTab`'s `useState` and persists across tab switches via CSS `display: none` on the inactive tab (NOT unmount). Unmounting would wipe pending accepts on every Editor↔Responsive toggle — UX-hostile and session-destructive. The parent also passes `saveNonce` (counter incremented on successful save) so the child can `clearAfterSave` precisely on save-success — not on Discard.
 
 **Trap:** If future work moves `ResponsiveTab` to a route-based split or Suspense boundary, session state MUST lift to `block-editor.tsx` (or a context) before unmount lands. Silent fix path: add `persistSession` prop + `useEffect` sync.
+
+### 6. Dirty-state coupling across block-editor surfaces (WP-028 Phase 5)
+
+Studio's `block-editor.tsx` integrates 3 editing surfaces that all write into the same RHF `form` instance: Editor-tab Code textarea, Responsive-tab suggestion list (Accept/Reject), and Responsive-tab tweak/variant drawer. Last write wins — there is no per-tab isolation or conflict-resolution UI. `formState.isDirty` is the canonical save-enabling signal; every dispatch that mutates form state sets `shouldDirty: true` so the existing Save footer fires uniformly.
+
+Full enumeration (Studio + block-forge mirror) lives in `apps/studio/src/pages/block-editor/responsive/PARITY.md` §Dirty-state contract. `tools/block-forge/PARITY.md` carries a byte-identical section for the session-driven sibling surface.
+
+**OQ2 clear-signal (Phase 5):** `formDataToPayload` emits `variants: null` on empty and the full map otherwise. The validator (`updateBlockSchema.variants`, `createBlockSchema.variants`) accepts `variantsSchema.nullable().optional()`; Hono forwards whole `parsed.data` through to Supabase so `update({ variants: null })` NULLs the column. Pre-Phase-5 emitted `undefined`, which Supabase JS silently dropped — DB kept the prior value and the author's "delete all variants" intent never reached disk. See `logs/wp-028/parked-oqs.md` OQ2 for the full trace.
