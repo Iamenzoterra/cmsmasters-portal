@@ -3,12 +3,9 @@ import { Slider } from '@cmsmasters/ui';
 import type { Tweak } from '@cmsmasters/block-forge-core';
 
 /**
- * TweakPanel — Studio Responsive tab surface. WP-028 Phase 2 real impl.
- * Dispatch flows through `onTweak` prop — parent (block-editor.tsx) reads
- * `form.getValues('code')` at dispatch time (Brain OQ4). No form-state or
- * debounce in this component; parent owns both (Ruling I: live slider,
- * debounced dispatch).
- * Cross-surface parity mirror: tools/block-forge/src/components/TweakPanel.tsx
+ * TweakPanel — Studio Responsive tab. WP-028 Phase 2 real impl.
+ * Parent (block-editor.tsx) owns debounce + form.setValue (Brain OQ4 invariant).
+ * Mirror: tools/block-forge/src/components/TweakPanel.tsx
  */
 export type TweakSelection = {
   /** CSS selector derived from the clicked element (Ruling H). */
@@ -22,6 +19,14 @@ export type TweakSelection = {
 export interface TweakPanelProps {
   /** Null = empty state; populated = selector header + BP picker + sliders. */
   selection: TweakSelection | null
+  /**
+   * WP-028 Phase 2a — authored tweaks for the current (selector, bp) pair,
+   * supplied by the parent. Last-wins per property; when present, overrides
+   * the computedStyle-seed for slider positions and Hide/Show aria-pressed.
+   * Default [] so the component stays drop-in for callers who haven't wired
+   * it yet (falls back to computedStyle seed).
+   */
+  appliedTweaks?: Tweak[]
   /** BP picker onChange — parent keeps selector, updates bp in selection. */
   onBpChange: (bp: 1440 | 768 | 480) => void
   /** Emitted on every slider value change (debounced upstream per Ruling I). */
@@ -57,13 +62,28 @@ export function TweakPanel(props: TweakPanelProps) {
     )
   }
 
-  const { selection, onBpChange, onTweak, onReset, onClose } = props
+  const { selection, appliedTweaks, onBpChange, onTweak, onReset, onClose } = props
   const { selector, bp, computedStyle } = selection
 
-  const paddingSeed = parsePixels(computedStyle.padding)
-  const fontSizeSeed = parsePixels(computedStyle.fontSize) || 16
-  const gapSeed = parsePixels(computedStyle.gap)
-  const isHidden = computedStyle.display === 'none'
+  // WP-028 Phase 2a — applied-tweak lookup. Last-wins per property so a repeated
+  // dispatch (e.g., slider drag final value) overrides the earlier entry.
+  function latestValue(property: string): string | undefined {
+    if (!appliedTweaks || appliedTweaks.length === 0) return undefined
+    for (let i = appliedTweaks.length - 1; i >= 0; i--) {
+      if (appliedTweaks[i].property === property) return appliedTweaks[i].value
+    }
+    return undefined
+  }
+
+  const paddingOverride = latestValue('padding')
+  const fontSizeOverride = latestValue('font-size')
+  const gapOverride = latestValue('gap')
+  const displayOverride = latestValue('display')
+
+  const paddingSeed = paddingOverride ? parsePixels(paddingOverride) : parsePixels(computedStyle.padding)
+  const fontSizeSeed = fontSizeOverride ? parsePixels(fontSizeOverride) : (parsePixels(computedStyle.fontSize) || 16)
+  const gapSeed = gapOverride ? parsePixels(gapOverride) : parsePixels(computedStyle.gap)
+  const isHidden = displayOverride === 'none' || (displayOverride === undefined && computedStyle.display === 'none')
 
   return (
     <div

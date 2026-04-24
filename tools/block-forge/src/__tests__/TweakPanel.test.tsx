@@ -54,7 +54,7 @@ function makeProps(overrides: Partial<React.ComponentProps<typeof TweakPanel>> =
   }
 }
 
-describe('TweakPanel (tools/block-forge) — empty state', () => {
+describe('TweakPanel — empty state', () => {
   it('renders empty placeholder with testid + aria-label when selection is null', () => {
     const { getByTestId } = render(<TweakPanel {...makeProps({ selection: null })} />)
     const el = getByTestId('tweak-panel')
@@ -64,7 +64,7 @@ describe('TweakPanel (tools/block-forge) — empty state', () => {
   })
 })
 
-describe('TweakPanel (tools/block-forge) — populated state', () => {
+describe('TweakPanel — populated state', () => {
   it('reflects selector + bp via data attrs', () => {
     const { getByTestId } = render(
       <TweakPanel {...makeProps({ selection: makeSelection() })} />,

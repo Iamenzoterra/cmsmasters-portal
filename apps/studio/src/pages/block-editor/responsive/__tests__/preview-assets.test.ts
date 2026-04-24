@@ -14,7 +14,7 @@
 // CSS imports load as empty strings and the token-substring assertions would
 // silently pass against `''`. Saved memory: feedback_vitest_css_raw.md.
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { renderForPreview } from '@cmsmasters/block-forge-core'
 import { composeSrcDoc } from '../preview-assets'
 
@@ -205,5 +205,70 @@ describe('preview-assets — variant-bearing block rendering (Path B)', () => {
     expect(srcdoc).not.toContain('data-variant=')
     expect(srcdoc).toContain('<div data-block-shell="plain">')
     expect(srcdoc).toContain('<p>hi</p>')
+  })
+})
+
+/**
+ * WP-028 Phase 2a — DOM harness mirroring block-forge's injected click-handler test.
+ * Extracts deriveSelector from composeSrcDoc output and runs against jsdom-built
+ * elements. Regression guard for commit 53c9ffd1 (template-literal \s+ escape bug).
+ */
+describe('injected click-handler script — selector derivation via DOM harness', () => {
+  function buildDeriveSelector(srcdoc: string): (el: Element) => string {
+    const iife = srcdoc.match(/\/\/ WP-028 Phase 2 — element-click[\s\S]+?\}\)\(\);/)?.[0]
+    if (!iife) throw new Error('could not locate click-handler IIFE')
+    const utilMatch = iife.match(/const UTILITY_PREFIXES = \[[^\]]+\];/)?.[0]
+    const stableStart = iife.indexOf('function stableClass')
+    const deriveStart = iife.indexOf('function deriveSelector')
+    const listenerStart = iife.indexOf('document.body.addEventListener')
+    if (!utilMatch || stableStart < 0 || deriveStart < 0 || listenerStart < 0) {
+      throw new Error('could not locate helper function anchors in IIFE source')
+    }
+    const stableMatch = iife.slice(stableStart, deriveStart).trim()
+    const deriveMatch = iife.slice(deriveStart, listenerStart).trim()
+    // CSS.escape polyfill — jsdom's CSS may lack escape; this matches the
+    // WHATWG spec well enough for ident-class escaping in our test cases.
+    const cssPolyfill = {
+      escape: (s: string) =>
+        String(s).replace(/[^a-zA-Z0-9_-]/g, (c) => '\\' + c),
+    }
+    const body = `${utilMatch}\n${stableMatch}\n${deriveMatch}\nreturn deriveSelector(__target);`
+    return (el: Element) => new Function('__target', 'CSS', 'document', body)(
+      el,
+      cssPolyfill,
+      globalThis.document,
+    ) as string
+  }
+
+  const SRCDOC = composeSrcDoc({ html: 'x', css: '', width: 768, slug: 'test-block' })
+  const deriveSelector = buildDeriveSelector(SRCDOC)
+
+  beforeEach(() => {
+    document.body.innerHTML = '<div class="slot-inner"></div>'
+  })
+
+  it('derives stable class (not space-escape) for multi-class "heading reveal"', () => {
+    const root = document.querySelector('.slot-inner')!
+    root.innerHTML = '<section class="my-block"><h2 class="heading reveal">Hi</h2></section>'
+    const sel = deriveSelector(root.querySelector('h2')!)
+    expect(sel).not.toContain('\\ ')
+    expect(sel).toContain('h2.heading')
+    expect(sel).toContain('section.my-block')
+    expect(sel).toContain('div.slot-inner')
+  })
+
+  it('emits id selector when element has an id (Ruling H priority)', () => {
+    const root = document.querySelector('.slot-inner')!
+    root.innerHTML = '<section><p id="cta-lead">text</p></section>'
+    expect(deriveSelector(root.querySelector('#cta-lead')!)).toBe('#cta-lead')
+  })
+
+  it('ignores utility-prefixed classes and finds the first stable class', () => {
+    const root = document.querySelector('.slot-inner')!
+    root.innerHTML = '<section><button class="hover:text-red animate-pulse real-class">x</button></section>'
+    const sel = deriveSelector(root.querySelector('button')!)
+    expect(sel).toContain('button.real-class')
+    expect(sel).not.toContain('hover')
+    expect(sel).not.toContain('animate-pulse')
   })
 })

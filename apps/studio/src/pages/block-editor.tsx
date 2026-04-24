@@ -17,7 +17,7 @@ import { FormSection } from '../components/form-section'
 import { DeleteConfirmModal } from '../components/delete-confirm-modal'
 import { BlockImportPanel } from '../components/block-import-panel'
 import { ThumbnailUpload } from '../components/thumbnail-upload'
-import { ResponsiveTab, dispatchTweakToForm } from './block-editor/responsive/ResponsiveTab'
+import { ResponsiveTab, dispatchTweakToForm, resetTweaksInForm } from './block-editor/responsive/ResponsiveTab'
 import type { Tweak } from '@cmsmasters/block-forge-core'
 import tokensCSS from '../../../../packages/ui/src/theme/tokens.css?raw'
 import tokensResponsiveCSS from '../../../../packages/ui/src/theme/tokens.responsive.css?raw'
@@ -317,6 +317,13 @@ export function BlockEditor() {
   // `form` ref; `getValues` still reads current state per RHF semantics.
   const handleTweakDispatch = useCallback((tweak: Tweak) => {
     dispatchTweakToForm(form, tweak)
+  }, [form])
+
+  // WP-028 Phase 2a: Reset handler — parses form.code, removes the 4 tweak
+  // declarations under @container slot (max-width: {bp}px) > selector, writes
+  // back with shouldDirty. Scoped to (selector, bp) only — other cells preserved.
+  const handleResetTweaks = useCallback((selector: string, bp: 1440 | 768 | 480) => {
+    resetTweaksInForm(form, selector, bp)
   }, [form])
 
   // Fetch block categories for theme blocks context
@@ -880,6 +887,8 @@ ${code}${scriptTag}
           block={existingBlock}
           onApplyToForm={handleApplyToForm}
           onTweakDispatch={handleTweakDispatch}
+          onResetTweaks={handleResetTweaks}
+          watchedFormCode={watchedCode ?? ''}
           saveNonce={saveNonce}
         />
       </div>

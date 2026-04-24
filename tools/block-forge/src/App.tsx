@@ -198,6 +198,15 @@ export function App() {
     setSelection(null)
   }, [])
 
+  // WP-028 Phase 2a — derive appliedTweaks for the current (selector, bp) pair
+  // from session.tweaks. Drives TweakPanel's slider seeds + Hide/Show aria-pressed.
+  const appliedTweaksForSelection = useMemo<Tweak[]>(() => {
+    if (!selection) return []
+    return session.tweaks.filter(
+      (t) => t.selector === selection.selector && t.bp === selection.bp,
+    )
+  }, [selection, session.tweaks])
+
   const handleSave = useCallback(async () => {
     if (!block) return
     const accepted = pickAccepted(session, suggestions)
@@ -269,6 +278,7 @@ export function App() {
           </div>
           <TweakPanel
             selection={selection}
+            appliedTweaks={appliedTweaksForSelection}
             onBpChange={handleBpChange}
             onTweak={handleTweak}
             onReset={handleResetTweaks}

@@ -3,8 +3,11 @@
 // per-BP tweak dispatch with 300ms debounce. OQ4 invariant enforced via the exported
 // `dispatchTweakToForm` helper which block-editor.tsx wires into its `onTweakDispatch`
 // callback (reads form.getValues('code') at dispatch time, NOT cached block.css).
+// WP-028 Phase 2a — Reset now performs real rule-removal (postcss-based); TweakPanel
+// receives `appliedTweaks` to drive aria-pressed sync + slider seed from latest state.
 
 import { useMemo, useState, useCallback, useEffect, useRef } from 'react'
+import postcss, { type AtRule as PcssAtRule, type Rule as PcssRule } from 'postcss'
 import {
   analyzeBlock,
   generateSuggestions,
@@ -37,6 +40,20 @@ interface ResponsiveTabProps {
    * keep ResponsiveTab usable in read-only/test contexts without a form.
    */
   onTweakDispatch?: (tweak: Tweak) => void
+  /**
+   * WP-028 Phase 2a — parent callback for Reset button. Wraps `resetTweaksInForm(form, ...)`
+   * which parses live form.code, removes the 4 tweak declarations under
+   * `@container slot (max-width: {bp}px) > {selector}`, writes back with shouldDirty.
+   * Optional — falls back to a no-op in test contexts.
+   */
+  onResetTweaks?: (selector: string, bp: 1440 | 768 | 480) => void
+  /**
+   * WP-028 Phase 2a — live `form.code` value, watched by parent via `useWatch`.
+   * Drives the TweakPanel slider positions + Hide/Show aria-pressed state so UI
+   * reflects the authored state (including mid-session tweaks), not the initial
+   * computedStyle-seed snapshot.
+   */
+  watchedFormCode?: string
   /**
    * Parent-controlled counter. Incrementing this after a successful DB save signals
    * this component to call `clearAfterSave(session)`. Required to honor Brain ruling 8:
@@ -107,23 +124,9 @@ export function dispatchTweakToForm(
   tweak: Tweak,
 ): void {
   const liveCode = form.getValues('code')
-  // Split into <style>…</style> CSS and HTML rest. Duplicates block-editor.tsx
-  // splitCode inline to avoid a cross-file dependency.
-  const styleRe = /<style[^>]*>([\s\S]*?)<\/style>/gi
-  let baseCss = ''
-  let m: RegExpExecArray | null
-  const re = new RegExp(styleRe.source, styleRe.flags)
-  while ((m = re.exec(liveCode)) !== null) {
-    baseCss += (baseCss ? '\n\n' : '') + m[1].trim()
-  }
-  const htmlOnly = liveCode.replace(styleRe, '').trim()
-
-  const nextCss = emitTweak(tweak, baseCss)
-  const combined = nextCss.trim()
-    ? `<style>\n${nextCss}\n</style>\n\n${htmlOnly}`
-    : htmlOnly
-
-  form.setValue('code', combined, { shouldDirty: true })
+  const { html, css } = splitCode(liveCode)
+  const nextCss = emitTweak(tweak, css)
+  form.setValue('code', assembleCode(nextCss, html), { shouldDirty: true })
 }
 
 /**
@@ -141,10 +144,149 @@ function debounce<A extends unknown[]>(
   }
 }
 
+/**
+ * Extract the CSS block from a `form.code` string shaped like
+ * `<style>...</style>\n\n<html>`. Empty string if no <style> tag.
+ * Exported so the OQ4 dispatcher and the Reset + applied-tweak helpers
+ * share the same split semantics.
+ */
+function splitCode(code: string): { html: string; css: string } {
+  const styleRe = /<style[^>]*>([\s\S]*?)<\/style>/gi
+  let css = ''
+  let m: RegExpExecArray | null
+  while ((m = styleRe.exec(code)) !== null) {
+    css += (css ? '\n\n' : '') + m[1].trim()
+  }
+  const html = code.replace(styleRe, '').trim()
+  return { html, css }
+}
+
+function assembleCode(css: string, html: string): string {
+  return css.trim() ? `<style>\n${css}\n</style>\n\n${html}` : html
+}
+
+/**
+ * Match a PostCSS `@container` AtRule whose params correspond to
+ * `slot (max-width: {bp}px)`. Bp=0 is the top-level (no container) case.
+ */
+function isContainerFor(atRule: PcssAtRule, bp: number): boolean {
+  if (atRule.name !== 'container') return false
+  const m = atRule.params.match(/slot\s*\(\s*max-width:\s*(\d+)px\s*\)/i)
+  return !!m && Number(m[1]) === bp
+}
+
+/**
+ * Parse the current `form.code` and return the tweaks currently authored
+ * for (selector, bp). Used to seed TweakPanel's slider positions + the
+ * aria-pressed state of Hide/Show so the UI reflects the live form state.
+ *
+ * Pure function — no side effects, safe to memoize at render time.
+ */
+export function parseAppliedTweaks(
+  formCode: string,
+  selector: string,
+  bp: 1440 | 768 | 480,
+): Tweak[] {
+  const { css } = splitCode(formCode)
+  if (!css) return []
+  let root: postcss.Root
+  try {
+    root = postcss.parse(css)
+  } catch {
+    return []
+  }
+  const out: Tweak[] = []
+
+  function collectFromRule(rule: PcssRule, actualBp: number) {
+    if (rule.selector.trim() !== selector.trim()) return
+    rule.walkDecls((decl) => {
+      out.push({
+        selector,
+        bp: actualBp,
+        property: decl.prop,
+        value: decl.value,
+      })
+    })
+  }
+
+  // bp > 0 → inside matching @container slot (max-width: {bp}px)
+  root.walkAtRules('container', (atRule) => {
+    if (!isContainerFor(atRule, bp)) return
+    atRule.walkRules((rule) => collectFromRule(rule, bp))
+  })
+
+  return out
+}
+
+/**
+ * Remove every declaration for `properties` inside `selector` under
+ * `@container slot (max-width: {bp}px)`. Cleanup:
+ *   - If the selector rule becomes empty, remove the rule.
+ *   - If the @container becomes empty, remove the container.
+ *
+ * Pure; exported for direct unit testing.
+ */
+export function removeTweaksFromCss(
+  css: string,
+  selector: string,
+  bp: 1440 | 768 | 480,
+  properties: readonly string[],
+): string {
+  if (!css.trim()) return css
+  let root: postcss.Root
+  try {
+    root = postcss.parse(css)
+  } catch {
+    return css
+  }
+  const propSet = new Set(properties)
+
+  root.walkAtRules('container', (atRule) => {
+    if (!isContainerFor(atRule, bp)) return
+    atRule.walkRules((rule) => {
+      if (rule.selector.trim() !== selector.trim()) return
+      rule.walkDecls((decl) => {
+        if (propSet.has(decl.prop)) decl.remove()
+      })
+      if (rule.nodes.length === 0) rule.remove()
+    })
+    if (atRule.nodes.length === 0) atRule.remove()
+  })
+
+  return root.toString()
+}
+
+/**
+ * Studio Reset handler (WP-028 Phase 2a). Reads live form.code, removes all
+ * Phase-2 tweak declarations for (selector, bp), writes back with shouldDirty.
+ * Exported for direct testing.
+ */
+export function resetTweaksInForm(
+  form: {
+    getValues: (key: 'code') => string
+    setValue: (
+      key: 'code',
+      value: string,
+      opts?: { shouldDirty?: boolean },
+    ) => void
+  },
+  selector: string,
+  bp: 1440 | 768 | 480,
+  properties: readonly string[] = ['padding', 'font-size', 'gap', 'display'],
+): void {
+  const liveCode = form.getValues('code')
+  const { html, css } = splitCode(liveCode)
+  const nextCss = removeTweaksFromCss(css, selector, bp, properties)
+  if (nextCss === css) return // no-op — nothing to reset
+  form.setValue('code', assembleCode(nextCss, html), { shouldDirty: true })
+}
+
 export function ResponsiveTab({
   block,
   onApplyToForm,
   onTweakDispatch,
+  onResetTweaks,
+  watchedFormCode,
   saveNonce,
 }: ResponsiveTabProps) {
   const { suggestions, warnings, error } = useResponsiveAnalysis(block)
@@ -273,33 +415,33 @@ export function ResponsiveTab({
     setSelection((prev) => (prev ? { ...prev, bp } : prev))
   }, [])
 
+  const onResetTweaksRef = useRef(onResetTweaks)
+  useEffect(() => {
+    onResetTweaksRef.current = onResetTweaks
+  }, [onResetTweaks])
+
   const handleReset = useCallback(() => {
-    if (!selection || !onTweakDispatchRef.current) return
-    // Reset scope (Ruling J): remove current-pair declarations by dispatching
-    // "revert" tweaks for each of the 4 tweakable properties. `emitTweak` with
-    // value: 'revert' updates the declaration in-place so subsequent layers
-    // inherit the base rule cleanly — a best-effort Reset without re-implementing
-    // CSS removal in RHF. Full rule-removal is Phase 2.5 polish.
-    const { selector, bp } = selection
-    const properties: Array<Tweak['property']> = [
-      'padding',
-      'font-size',
-      'gap',
-      'display',
-    ]
-    for (const property of properties) {
-      onTweakDispatchRef.current({
-        selector,
-        bp,
-        property,
-        value: 'revert',
-      })
-    }
+    if (!selection || !onResetTweaksRef.current) return
+    // WP-028 Phase 2a — real rule-removal: parent (block-editor.tsx) calls
+    // resetTweaksInForm which removes the 4 tweak declarations under the
+    // `@container slot (max-width: {bp}px)` rule for this selector. Cleanup
+    // collapses empty rules + empty containers. Ruling J scope preserved:
+    // other bps and other selectors are untouched because the postcss walk
+    // is keyed on BOTH (selector, bp).
+    onResetTweaksRef.current(selection.selector, selection.bp)
   }, [selection])
 
   const handleClose = useCallback(() => {
     setSelection(null)
   }, [])
+
+  // WP-028 Phase 2a — applied tweaks for the current (selector, bp) pair,
+  // parsed from live form.code. Drives TweakPanel's slider positions + Hide/Show
+  // aria-pressed state. Undefined when no selection (empty-state panel).
+  const appliedTweaks = useMemo<Tweak[]>(() => {
+    if (!selection || !watchedFormCode) return []
+    return parseAppliedTweaks(watchedFormCode, selection.selector, selection.bp)
+  }, [selection, watchedFormCode])
 
   return (
     <div
@@ -321,6 +463,7 @@ export function ResponsiveTab({
       />
       <TweakPanel
         selection={selection}
+        appliedTweaks={appliedTweaks}
         onBpChange={handleBpChange}
         onTweak={handleTweak}
         onReset={handleReset}

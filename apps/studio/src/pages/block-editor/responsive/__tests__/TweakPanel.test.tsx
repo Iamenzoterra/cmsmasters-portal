@@ -8,7 +8,12 @@ import { describe, it, expect, afterEach, vi } from 'vitest'
 import { render, cleanup, fireEvent } from '@testing-library/react'
 import type { Tweak } from '@cmsmasters/block-forge-core'
 import { TweakPanel, type TweakSelection } from '../TweakPanel'
-import { dispatchTweakToForm } from '../ResponsiveTab'
+import {
+  dispatchTweakToForm,
+  parseAppliedTweaks,
+  removeTweaksFromCss,
+  resetTweaksInForm,
+} from '../ResponsiveTab'
 
 // jsdom doesn't implement ResizeObserver / PointerCapture; Radix Slider uses them.
 class ResizeObserverMock {
@@ -56,7 +61,7 @@ function makeProps(overrides: Partial<React.ComponentProps<typeof TweakPanel>> =
   }
 }
 
-describe('TweakPanel (apps/studio) — empty state', () => {
+describe('TweakPanel — empty state', () => {
   it('renders empty placeholder with testid + aria-label when selection is null', () => {
     const { getByTestId } = render(<TweakPanel {...makeProps({ selection: null })} />)
     const el = getByTestId('tweak-panel')
@@ -66,7 +71,7 @@ describe('TweakPanel (apps/studio) — empty state', () => {
   })
 })
 
-describe('TweakPanel (apps/studio) — populated state', () => {
+describe('TweakPanel — populated state', () => {
   it('reflects selector + bp via data attrs', () => {
     const { getByTestId } = render(
       <TweakPanel {...makeProps({ selection: makeSelection() })} />,
@@ -232,5 +237,179 @@ describe('OQ4 invariant — dispatch reads live form.code at dispatch time', () 
     expect(secondNewCode).toContain('font-weight: bold')
     expect(secondNewCode).toContain('@container slot (max-width: 768px)')
     expect(secondNewCode).toContain('font-size: 20px')
+  })
+})
+
+/**
+ * WP-028 Phase 2a — Reset + appliedTweaks helper tests.
+ * Closes the honesty gap where "Reset" used `value: 'revert'` tweaks (cosmetic,
+ * left CSS residue) and aria-pressed on Hide/Show lagged behind actual dispatch.
+ */
+describe('parseAppliedTweaks (Phase 2a)', () => {
+  it('extracts declarations from @container slot (max-width: {bp}px) > selector', () => {
+    const code =
+      '<style>\n' +
+      '.cta-btn { color: blue }\n' +
+      '@container slot (max-width: 768px) {\n' +
+      '  .cta-btn { padding: 24px; font-size: 20px; }\n' +
+      '}\n' +
+      '</style>\n\n<button class="cta-btn">x</button>'
+
+    const tweaks = parseAppliedTweaks(code, '.cta-btn', 768)
+    expect(tweaks).toHaveLength(2)
+    expect(tweaks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ property: 'padding', value: '24px', bp: 768 }),
+        expect.objectContaining({ property: 'font-size', value: '20px', bp: 768 }),
+      ]),
+    )
+  })
+
+  it('returns [] when no matching container or selector', () => {
+    const code =
+      '<style>\n' +
+      '@container slot (max-width: 480px) { .other { padding: 16px } }\n' +
+      '</style>\n\n<div />'
+    expect(parseAppliedTweaks(code, '.cta-btn', 768)).toEqual([])
+    expect(parseAppliedTweaks(code, '.other', 768)).toEqual([]) // wrong bp
+  })
+
+  it('returns [] on empty code or unparseable CSS', () => {
+    expect(parseAppliedTweaks('', '.x', 480)).toEqual([])
+    expect(parseAppliedTweaks('<button>no style</button>', '.x', 480)).toEqual([])
+  })
+})
+
+describe('removeTweaksFromCss (Phase 2a)', () => {
+  it('removes matched declarations and cleans empty rule + empty container', () => {
+    const css =
+      '.cta-btn { color: blue }\n' +
+      '@container slot (max-width: 768px) {\n' +
+      '  .cta-btn { padding: 24px; font-size: 20px }\n' +
+      '}'
+    const out = removeTweaksFromCss(css, '.cta-btn', 768, ['padding', 'font-size', 'gap', 'display'])
+    // Base rule preserved.
+    expect(out).toContain('.cta-btn { color: blue }')
+    // Container rule entirely removed since it became empty.
+    expect(out).not.toContain('@container slot (max-width: 768px)')
+    expect(out).not.toContain('padding: 24px')
+  })
+
+  it('preserves other selectors inside the same @container', () => {
+    const css =
+      '@container slot (max-width: 768px) {\n' +
+      '  .cta-btn { padding: 24px }\n' +
+      '  .other { gap: 8px }\n' +
+      '}'
+    const out = removeTweaksFromCss(css, '.cta-btn', 768, ['padding'])
+    expect(out).not.toContain('.cta-btn')
+    expect(out).toContain('@container slot (max-width: 768px)')
+    expect(out).toContain('.other')
+    expect(out).toContain('gap: 8px')
+  })
+
+  it('preserves tweaks at OTHER bps for the same selector (Ruling J)', () => {
+    const css =
+      '@container slot (max-width: 768px) { .cta-btn { padding: 24px } }\n' +
+      '@container slot (max-width: 480px) { .cta-btn { padding: 16px } }'
+    const out = removeTweaksFromCss(css, '.cta-btn', 768, ['padding'])
+    expect(out).not.toContain('max-width: 768px')
+    expect(out).toContain('max-width: 480px')
+    expect(out).toContain('padding: 16px')
+  })
+
+  it('no-op when nothing matches (returns equivalent output)', () => {
+    const css = '.cta-btn { color: blue }'
+    // We don't guarantee referential equality from postcss.toString(), just content equality.
+    expect(removeTweaksFromCss(css, '.missing', 480, ['padding'])).toBe(css)
+  })
+})
+
+describe('resetTweaksInForm (Phase 2a)', () => {
+  it('reads live form.code, removes matched declarations, writes clean output back', () => {
+    const input =
+      '<style>\n.cta-btn { color: blue }\n' +
+      '@container slot (max-width: 768px) {\n' +
+      '  .cta-btn { padding: 24px; font-size: 20px }\n' +
+      '}\n</style>\n\n<button class="cta-btn">x</button>'
+    const getValues = vi.fn(() => input)
+    const setValue = vi.fn()
+    const form = { getValues, setValue }
+
+    resetTweaksInForm(form, '.cta-btn', 768)
+
+    expect(getValues).toHaveBeenCalledWith('code')
+    expect(setValue).toHaveBeenCalledTimes(1)
+    const [key, out, opts] = setValue.mock.calls[0]
+    expect(key).toBe('code')
+    expect(opts).toEqual({ shouldDirty: true })
+    expect(out).toContain('.cta-btn { color: blue }')
+    expect(out).not.toContain('@container slot (max-width: 768px)')
+    expect(out).toContain('<button class="cta-btn">x</button>')
+  })
+
+  it('is a no-op when no matching rule exists (setValue not called)', () => {
+    const input = '<style>\n.cta-btn { color: blue }\n</style>\n\n<button />'
+    const setValue = vi.fn()
+    resetTweaksInForm(
+      { getValues: () => input, setValue },
+      '.cta-btn',
+      768,
+    )
+    expect(setValue).not.toHaveBeenCalled()
+  })
+})
+
+describe('TweakPanel — appliedTweaks override (Phase 2a)', () => {
+  it('derives slider seed + Hide aria-pressed from appliedTweaks (not computedStyle) when present', () => {
+    const selection: TweakSelection = {
+      selector: '.cta-btn',
+      bp: 480,
+      computedStyle: { padding: '24px', fontSize: '16px', gap: '0px', display: 'block' },
+    }
+    const { getByTestId } = render(
+      <TweakPanel
+        selection={selection}
+        appliedTweaks={[
+          { selector: '.cta-btn', bp: 480, property: 'padding', value: '64px' },
+          { selector: '.cta-btn', bp: 480, property: 'display', value: 'none' },
+        ]}
+        onBpChange={vi.fn()}
+        onTweak={vi.fn()}
+        onReset={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    )
+    // Hide button should be aria-pressed=true because applied display: none wins.
+    expect(getByTestId('tweak-panel-visibility-hide').getAttribute('aria-pressed')).toBe('true')
+    expect(getByTestId('tweak-panel-visibility-show').getAttribute('aria-pressed')).toBe('false')
+
+    // Padding slider aria-valuenow reflects the applied 64px (not computedStyle's 24).
+    const paddingSlider = getByTestId('tweak-panel').querySelector(
+      'span[aria-label="Padding at 480px breakpoint"] [role="slider"]',
+    )
+    expect(paddingSlider?.getAttribute('aria-valuenow')).toBe('64')
+  })
+
+  it('falls back to computedStyle seed when appliedTweaks is empty/undefined', () => {
+    const selection: TweakSelection = {
+      selector: '.cta-btn',
+      bp: 480,
+      computedStyle: { padding: '32px', fontSize: '18px', gap: '0px', display: 'block' },
+    }
+    const { getByTestId } = render(
+      <TweakPanel
+        selection={selection}
+        appliedTweaks={[]}
+        onBpChange={vi.fn()}
+        onTweak={vi.fn()}
+        onReset={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    )
+    const paddingSlider = getByTestId('tweak-panel').querySelector(
+      'span[aria-label="Padding at 480px breakpoint"] [role="slider"]',
+    )
+    expect(paddingSlider?.getAttribute('aria-valuenow')).toBe('32')
   })
 })
