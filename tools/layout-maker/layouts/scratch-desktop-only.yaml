@@ -1,0 +1,23 @@
+version: 1
+name: scratch-desktop-only
+scope: theme
+description: >-
+  Phase-2 scratch fixture — only `desktop` grid key to exercise materialization disclosure
+  (willMaterializeCanonicalKey=true) when switching to tablet/mobile.
+grid:
+  desktop:
+    min-width: 1440px
+    columns:
+      content: 1fr
+    column-gap: '0'
+slots:
+  header:
+    position: top
+    min-height: 60px
+  content:
+    padding-top: '--spacing-xl'
+    padding-bottom: '--spacing-xl'
+    min-height: 400px
+  footer:
+    position: bottom
+    min-height: 80px

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import type { LayoutConfig, TokenMap, ScopingWarning, PerBpSlotField, CanvasBreakpointId, SlotConfig } from '../lib/types'
 import { resolveSlotConfig, getBaseGridKey, isFieldOverridden } from '../lib/types'
+import { deriveBreakpointTruth } from '../lib/breakpoint-truth'
 import { resolveToken, resolveTokenPx, hslTripletToHex } from '../lib/tokens'
 import { SLOT_DEFINITIONS } from '@cmsmasters/db/slots'
 import { CopyButton } from './CopyButton'
@@ -11,6 +12,44 @@ import { CreateSlotModal } from './CreateSlotModal'
 import { DRAWER_ICONS } from '../../../../packages/ui/src/portal/drawer-icons'
 
 const GLOBAL_SLOT_NAMES_SET: Set<string> = new Set(SLOT_DEFINITIONS.map(s => s.name))
+
+function BreakpointFooter({ config, activeBreakpoint }: {
+  config: LayoutConfig
+  activeBreakpoint: string
+}) {
+  const truth = deriveBreakpointTruth(activeBreakpoint as CanvasBreakpointId, config.grid)
+  const writesTo = truth.willMaterializeCanonicalKey
+    ? `will create grid.${truth.canonicalId} from ${truth.materializationSourceKey}`
+    : truth.resolvedKey === truth.canonicalId
+      ? 'Base / canonical override'
+      : `Override: ${truth.resolvedKey}`
+
+  return (
+    <div className="lm-inspector__bp-footer">
+      <div className="lm-inspector__bp-row">
+        <span className="lm-inspector__label">Breakpoint</span>
+        <span>
+          <strong>{truth.canonicalId}</strong>
+          <span className="lm-inspector__muted"> &rarr; {truth.resolvedKey} ({truth.resolvedMinWidth}px)</span>
+        </span>
+        {truth.isNonCanonicalMatch && (
+          <span className="lm-bp-badge lm-bp-badge--warn" title="Resolved width differs from canonical">
+            Non-canonical
+          </span>
+        )}
+        {truth.isFallbackResolved && !truth.isNonCanonicalMatch && (
+          <span className="lm-bp-badge lm-bp-badge--info" title="Nearest-match resolution">
+            Recovered
+          </span>
+        )}
+      </div>
+      <div className="lm-inspector__bp-row">
+        <span className="lm-inspector__label">Edit writes to</span>
+        <span className="lm-inspector__muted">{writesTo}</span>
+      </div>
+    </div>
+  )
+}
 
 const BLOCK_TYPE_OPTIONS = [
   { id: 'theme-block', label: 'Theme blocks' },
@@ -591,6 +630,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
             <TokenReference categories={tokens.categories} onCopied={() => onShowToast('Copied!')} />
           )}
         </div>
+        <BreakpointFooter config={config} activeBreakpoint={activeBreakpoint} />
       </div>
     )
   }
@@ -1392,6 +1432,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
           <TokenReference categories={tokens.categories} onCopied={handleCopied} />
         )}
       </div>
+      <BreakpointFooter config={config} activeBreakpoint={activeBreakpoint} />
     </div>
   )
 }

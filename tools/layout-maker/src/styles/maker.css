@@ -246,6 +246,66 @@ body {
   font-weight: 500;
 }
 
+/* ── BP Truth Surface (Phase 2) — active / resolved / edit-target ── */
+
+.lm-bp-bar__active,
+.lm-bp-bar__resolved,
+.lm-bp-bar__target {
+  display: flex;
+  align-items: center;
+  gap: var(--lm-sp-6);
+  font-size: 13px;
+  color: var(--lm-text-secondary);
+  flex-wrap: wrap;
+}
+
+.lm-bp-bar__active strong,
+.lm-bp-bar__resolved strong {
+  color: var(--lm-text-primary);
+  font-weight: 500;
+}
+
+.lm-bp-bar__muted {
+  color: var(--lm-text-muted);
+}
+
+.lm-bp-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
+
+.lm-bp-badge--warn {
+  background: var(--lm-bg-hover);
+  color: var(--lm-text-accent);
+  border: 1px solid var(--lm-border-focus);
+}
+
+.lm-bp-badge--info {
+  background: var(--lm-bg-hover);
+  color: var(--lm-text-secondary);
+  border: 1px solid var(--lm-border);
+}
+
+.lm-bp-bar__materialization,
+.lm-bp-bar__chip {
+  color: var(--lm-text-secondary);
+}
+
+.lm-bp-bar__materialization code,
+.lm-bp-bar__chip code {
+  font-family: var(--lm-font-mono);
+  font-size: 12px;
+  padding: 1px 6px;
+  background: var(--lm-bg-input);
+  color: var(--lm-text-primary);
+  border-radius: 4px;
+}
+
 .lm-bp-bar__row {
   display: flex;
   align-items: center;
@@ -621,6 +681,35 @@ body {
   flex: 1;
   overflow-y: auto;
   padding: var(--lm-sp-6) var(--lm-sp-8);
+}
+
+/* ── Inspector BP Footer (Phase 2) — panel-level breakpoint reminder ── */
+
+.lm-inspector__bp-footer {
+  border-top: 1px solid var(--lm-border-subtle);
+  padding: var(--lm-sp-6) var(--lm-sp-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--lm-sp-2);
+  font-size: 12px;
+  background: var(--lm-bg-panel);
+  flex-shrink: 0;
+}
+
+.lm-inspector__bp-row {
+  display: flex;
+  align-items: center;
+  gap: var(--lm-sp-3);
+  flex-wrap: wrap;
+}
+
+.lm-inspector__bp-row strong {
+  color: var(--lm-text-primary);
+  font-weight: 500;
+}
+
+.lm-inspector__muted {
+  color: var(--lm-text-muted);
 }
 
 /* ── Slot Toggles (pinned above inspector body) ─────────────── */

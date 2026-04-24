@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import type { ReactNode } from 'react'
 import type { CanvasBreakpointId, LayoutConfig, TokenMap } from '../lib/types'
-import { CANVAS_BREAKPOINTS, DEVICE_PRESETS, resolveGridKey } from '../lib/types'
+import { CANVAS_BREAKPOINTS, DEVICE_PRESETS } from '../lib/types'
+import { deriveBreakpointTruth } from '../lib/breakpoint-truth'
 
 interface Props {
   config: LayoutConfig
@@ -37,12 +38,11 @@ const icons: Record<CanvasBreakpointId, ReactNode> = {
 }
 
 export function BreakpointBar({ config, tokens, activeBreakpoint, viewportWidth, onBreakpointChange, onDevicePreset }: Props) {
-  const gridKey = resolveGridKey(activeBreakpoint, config.grid)
-  const grid = config.grid[gridKey]
+  const truth = deriveBreakpointTruth(activeBreakpoint, config.grid)
+  const grid = config.grid[truth.resolvedKey]
   if (!grid) return null
 
-  const canonicalWidth = CANVAS_BREAKPOINTS.find((b) => b.id === activeBreakpoint)!.width
-  const isCustomWidth = viewportWidth !== canonicalWidth
+  const isCustomWidth = viewportWidth !== truth.canonicalWidth
 
   // Resolve a spacing token to px value
   function resolveGap(tokenOrValue: string): string {
@@ -91,15 +91,62 @@ export function BreakpointBar({ config, tokens, activeBreakpoint, viewportWidth,
         />
       </div>
 
+      {/* Layer 1: Active canonical — which BP the operator selected. */}
+      <div className="lm-bp-bar__active">
+        <span>Active:</span>
+        <strong>{canonicalLabel(truth.canonicalId)}</strong>
+        <span className="lm-bp-bar__muted">— {truth.canonicalWidth}px</span>
+        {isCustomWidth && (
+          <span
+            className="lm-bp-badge lm-bp-badge--warn"
+            title="Viewport differs from canonical width"
+          >
+            custom viewport
+          </span>
+        )}
+      </div>
+
+      {/* Layer 2: Resolved config key + divergence badges. */}
+      <div className="lm-bp-bar__resolved">
+        <span>Resolved:</span>
+        <strong>{truth.resolvedKey}</strong>
+        <span className="lm-bp-bar__muted">@ min-width {truth.resolvedMinWidth}px</span>
+        {truth.isNonCanonicalMatch && (
+          <span
+            className="lm-bp-badge lm-bp-badge--warn"
+            title="Resolved width differs from canonical"
+          >
+            Non-canonical
+          </span>
+        )}
+        {truth.isFallbackResolved && !truth.isNonCanonicalMatch && (
+          <span
+            className="lm-bp-badge lm-bp-badge--info"
+            title="Nearest-match resolution"
+          >
+            Recovered
+          </span>
+        )}
+      </div>
+
+      {/* Edit target: materialization hint OR live target chip. */}
+      <div className="lm-bp-bar__target">
+        <span>Edit target:</span>
+        {truth.willMaterializeCanonicalKey ? (
+          <span className="lm-bp-bar__materialization">
+            First edit will create <code>grid.{truth.canonicalId}</code> from{' '}
+            <code>{truth.materializationSourceKey}</code> @ {truth.resolvedMinWidth}px
+          </span>
+        ) : (
+          <span className="lm-bp-bar__chip">
+            <code>{truth.canonicalId}</code> @ {truth.canonicalWidth}px
+          </span>
+        )}
+      </div>
+
+      {/* Layer 3: existing debug row — viewport, columns, gap, max. */}
       <div className="lm-bp-bar__widths">
-        <span>
-          Viewport: <strong>{viewportWidth}px</strong>
-          {isCustomWidth && (
-            <span className="lm-bp-bar__custom-badge">custom</span>
-          )}
-        </span>
-        <span className="lm-bp-bar__sep">|</span>
-        <span>Grid: <strong>{gridKey}</strong></span>
+        <span>Viewport: <strong>{viewportWidth}px</strong></span>
         {columnWidths.map(({ name, width }) => (
           <span key={name}>
             {name}: <strong>{width}</strong>
@@ -196,4 +243,8 @@ function PresetDropdown({ presetsByBp, viewportWidth, onSelect }: PresetDropdown
       )}
     </div>
   )
+}
+
+function canonicalLabel(id: CanvasBreakpointId): string {
+  return CANVAS_BREAKPOINTS.find((b) => b.id === id)?.label ?? id
 }
