@@ -38,7 +38,7 @@ Phase 4 landed the tabbed variant editor on both surfaces byte-identical (mod 3-
 | BB | 300ms debounce + flush-on-unmount | ✅ **Deviation**: implemented with empty-deps effect + latest-values ref, NOT deps-array cleanup (the task-prompt sketch had a bug that would fire flush on every keystroke). Mechanism preserved, bug corrected. |
 | CC | Width slider default per variant name | ✅ Helper `revealBpForName()`; `sm/4\d\d→480, md/6\d\d→640, lg/7\d\d→768, custom→640` |
 | DD | Save reuses existing paths | ✅ Studio RHF.isDirty footer; block-forge session.isDirty status bar. **Scope carve-out**: 2 bugs fixed to make this actually work for variant-only edits (see §Scope carve-outs) |
-| EE | Playwright Portal verification MANDATORY | ⚠️ **Partial**: Studio → DB write verified with live network trace + Supabase GET showing variant marker. Portal-side render verification **deferred** (no local Portal instance running; see §Portal deferral) |
+| EE | Playwright Portal verification MANDATORY | ✅ **COMPLETE**: Studio → DB write verified via live network trace + Supabase GET; Portal render verified via live Next.js dev + revalidate fire + both reveal directions (sm-active at BP=480 slot=475; base-active at BP=400 slot=475) with DOM assertions + screenshots 10+11 |
 | FF | block-editor.tsx +0 LOC | ✅ Zero delta — existing handleVariantDispatch accepted `update-content` transparently |
 | GG | Lockstep metric on threshold (projected 16-17 diffs >15) | ⚠️ **Surface for Phase 5 re-audit** — see §REIMPLEMENT metric |
 | II | Mini-preview slug reservation `'variant-preview'` | ✅ TweakPanel listener filter at ResponsiveTab.tsx:L410 + App.tsx:L174 checks `data.slug !== currentSlug`; drawer iframe's `'variant-preview'` slug never matches any real block slug |
@@ -169,17 +169,32 @@ Subsequent GET via both local and prod API endpoints confirms DB now has variant
 
 **This is the first real write of `blocks.variants` JSONB in production Supabase.**
 
-### Portal verification (Task 4.7) — deferred, documented gap
+### Portal verification (Task 4.7) — COMPLETE
 
-No local Portal instance running. Setting up portal-app dev server + routing a theme URL through `fast-loading-speed` block would require substantive additional orchestration (theme fixture, page layout, SSG cache primming). Given:
-- Studio → DB write path proven end-to-end (network trace + Supabase GET)
-- Portal render engine uses `renderForPreview(block, { variants })` — the SAME engine call proven via Phase 3 Playwright smoke + block-forge Phase 4 mini-preview iframe (both show variants.sm CSS applied correctly)
-- WP-024 Portal render path was already contract-tested against the same `@container` reveal machinery
+Spun Portal dev server on port 3100 (Next.js 15 `next dev`); Supabase URL + anon key in `.env`. Found published theme `/themes/456456` (Rejuvita) that uses the `fast-loading-speed` block. Authored a realistic sm variant (via local API PUT, Studio JWT): red background, "MOBILE VARIANT 375px" heading, with self-authored `@container slot (max-width: 480px)` reveal rule (ADR-025 / WP-024 convention — Portal's `renderBlock` at `apps/portal/lib/hooks.ts:L222-224` concatenates variant CSS without extra scoping, so authors write their own reveal + scope).
 
-The Portal render gap is documented for Phase 5 Phase 0 RECON coverage OR a separate portal-specific smoke phase. Per `feedback_visual_check_mandatory.md` escalation protocol:
-- Attempted: Studio login via service-key + session-injection → WORKED (Studio was already authenticated from prior session)
-- Blocker: No Portal dev instance running locally; spinning one up requires theme-routing scaffold outside WP-028 Phase 4 scope
-- Surfaced for Brain decision on Phase 4.5 portal-smoke or Phase 5 inclusion
+**Reveal mechanism proof — both directions captured:**
+
+10. `wp028-p4-smoke-10-portal-sm-reveal.png` — Portal at 1440px viewport, `fast-loading-speed` slot width = 475px, reveal BP = 480px → `[data-variant="sm"]` display:block; `[data-variant="base"]` display:none. Red background + "MOBILE VARIANT 375px" text visible. DOM assertion:
+    ```
+    variants: [
+      { name: 'base', display: 'none', h2text: 'Optimized for Fast Loading Speed' },
+      { name: 'sm',   display: 'block', h2text: 'MOBILE VARIANT 375px' },
+    ]
+    ```
+11. `wp028-p4-smoke-11-portal-base-reveal.png` — same theme/slot (width still 475px), changed reveal BP to 400px → sm hidden (slot 475 > 400), base visible. Blue background + "Optimized for Fast Loading Speed" text + original gauge content. DOM assertion:
+    ```
+    variants: [
+      { name: 'base', display: 'block', h2text: 'Optimized for Fast Loading Speed' },
+      { name: 'sm',   display: 'none',  h2text: 'MOBILE VARIANT 375px' },
+    ]
+    ```
+
+**Revalidate contract verified:** `POST http://localhost:3100/api/revalidate` with `{all:true}` → 200 response `{revalidated:true,tags:[themes,blocks,layouts,pages,templates,global-elements]}`. Next.js cache busts correctly; fresh variants data flows on subsequent GET.
+
+**Note on Portal's variant CSS scoping (not a Phase 4 bug):** Portal's `renderBlock` inlines variant CSS verbatim without adding `[data-variant="name"]` scope wrappers — by design per ADR-025. Authors write reveal rules themselves (`@container slot (max-width: Npx) { [data-variant="sm"] { display: block } [data-variant="base"] { display: none } }`). My first test variant CSS (`.block-fast-loading-speed { background: red }` un-scoped, no reveal rule) leaked to base variant because I hadn't included the `@container` + `[data-variant]` scoping. Re-authored with proper scope → variant reveal works as designed.
+
+Container query is **slot-width-driven, not viewport-width-driven** — the slot containing this block is 475px wide regardless of viewport. This is why both 1440px and 375px viewports showed the same variant state at BP=480 (both < 480 → sm reveals). The variant system responds to layout slot width, not browser window width.
 
 ## Scope carve-outs (Pre-existing block-forge save-path bugs fixed to unblock Phase 4)
 
@@ -237,16 +252,16 @@ Combined with prior phases (header only + path for imports):
 
 4. **StatusBar.tsx + App.tsx handleSave touched** (scope carve-outs §above). Not on task-prompt's zero-touch list but fix was mandatory for Phase 4 acceptance (variant-only save path). Changes isolated to 4 lines total. Tests pass.
 
-5. **Portal render verification deferred** per §Portal deferral above.
+5. **Portal render verification COMPLETE** — see §Portal verification (Task 4.7).
 
 6. **Pre-existing vitest 4 Mock signature fix** — touched Phase 3 VariantsDrawer.test.tsx to unblock typecheck. Pre-existing regression; trivial fix (7 occurrences × 2 surfaces).
 
 ## Open questions for Phase 5
 
-1. Portal smoke — run as part of Phase 5 Phase 0 RECON? Or spin a dedicated Phase 4.5 portal-smoke?
-2. Production Hono deployment lag — current production Worker doesn't persist `variants` on PUT. Needs redeploy to cloudflare. Coordinated with Phase 5 scope or separate ops task?
-3. `updateBlockSchema` accepts `variants.optional()` but not `.nullable()` — should `variants: null` be allowed in PUT body to clear the column? Currently can only clear via direct Supabase (service-key). Document as known limitation or expand schema?
-4. Studio's `VITE_API_URL` .env vs .env.local resolution — dev session hit prod API instead of local (even though .env.local override was set). Investigate Vite env loading or add explicit note in docs/CONVENTIONS.md.
+1. Production Hono deployment lag — current production Worker doesn't persist `variants` on PUT. Needs redeploy to Cloudflare. Coordinated with Phase 5 scope or separate ops task?
+2. `updateBlockSchema` accepts `variants.optional()` but not `.nullable()` — should `variants: null` be allowed in PUT body to clear the column? Currently can only clear via direct Supabase (service-key). Document as known limitation or expand schema?
+3. Studio's `VITE_API_URL` .env vs .env.local resolution — dev session hit prod API instead of local (even though .env.local override was set). Investigate Vite env loading or add explicit note in docs/CONVENTIONS.md.
+4. Portal variant CSS scoping is author-authored (no engine auto-scope in `renderBlock`). Should Phase 5+ ship a Studio-side validator warning when variant CSS lacks `[data-variant="NAME"]` prefix or `@container` reveal rule? Would catch WP-028-Phase-4-style authoring mistakes at edit time.
 
 ## Dev DB state after smoke
 
@@ -267,4 +282,4 @@ Combined with prior phases (header only + path for imports):
 - [x] Playwright smoke screenshots saved to `logs/wp-028/smoke-p4/` (9 files)
 - [x] Network trace evidence captured (PUT body with variants.sm.css marker)
 - [x] Supabase variants write proof captured (direct-local-PUT response body)
-- [⚠] Portal variant render verified — **deferred** per §Portal deferral
+- [x] Portal variant render verified — sm reveal (smoke-10) + base reveal (smoke-11) with DOM state + screenshots
