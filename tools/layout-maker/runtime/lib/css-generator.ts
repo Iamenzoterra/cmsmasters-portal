@@ -231,9 +231,14 @@ export function generateCSS(config: LayoutConfig, tokens: TokenMap): string {
   }
 
   // ── Slot inner CSS custom properties (base = desktop) ──
+  // Container slots have no .slot-inner host (line 261-262 skips the consumer
+  // rule) so emitting --sl-<container>-* vars here would leak dead code and
+  // give the Inspector a reason to surface inner-params fields that Portal
+  // will silently ignore. Matches the leaf/container PARITY contract.
   out.push('/* ── Slot inner vars (base) ── */')
   out.push(':root {')
   for (const [name, slot] of Object.entries(config.slots)) {
+    if (slot['nested-slots'] && slot['nested-slots'].length > 0) continue
     const vars = resolveSlotVars(name, slot, tokens)
     for (const [prop, val] of Object.entries(vars)) {
       out.push(`  ${prop}: ${val};`)

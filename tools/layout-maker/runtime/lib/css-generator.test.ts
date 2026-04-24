@@ -446,3 +446,56 @@ describe('WP-024: slot container-type (ADR-025)', () => {
     }
   })
 })
+
+describe('Phase 4: container slots never reach the leaf inner-params pipeline', () => {
+  // PARITY-LOG lock — `[tablet] align + max-width on container slots are
+  // silently ignored`. Generator side: zero `[data-slot="X"] > .slot-inner`
+  // rule AND zero `--sl-X-{mw,al,px,pt,pb,gap}` vars for slots with
+  // non-empty `nested-slots`. Inspector side locks the other half (see
+  // Inspector.test.tsx container-no-inner-params). Co-contract: if either
+  // side breaks, the Inspector can expose fields Portal silently drops.
+  const containerConfig: LayoutConfig = {
+    version: 1,
+    name: 'test',
+    scope: 'theme',
+    grid: {
+      desktop: {
+        'min-width': '1440px',
+        'column-gap': '0',
+        columns: { outer: '1fr' },
+      },
+    },
+    slots: {
+      outer: {
+        'nested-slots': ['theme-blocks'],
+        // Inner-params authored on a container. The PARITY lie: user sets
+        // these via Inspector, YAML stores them, Portal ignores them.
+        'max-width': '615px',
+        align: 'center',
+        padding: '--spacing-xl',
+        gap: '--spacing-xl',
+      },
+      'theme-blocks': {},
+    },
+  }
+
+  it('emits no `[data-slot="outer"] > .slot-inner` rule for container slots', () => {
+    const css = generateCSS(containerConfig, tokens)
+    expect(css).not.toMatch(/\[data-slot="outer"\]\s*>\s*\.slot-inner/)
+  })
+
+  it('emits no --sl-<container>-{mw,al,px,pt,pb,gap} vars for container slots', () => {
+    const css = generateCSS(containerConfig, tokens)
+    expect(css).not.toMatch(/--sl-outer-mw/)
+    expect(css).not.toMatch(/--sl-outer-al/)
+    expect(css).not.toMatch(/--sl-outer-px/)
+    expect(css).not.toMatch(/--sl-outer-pt/)
+    expect(css).not.toMatch(/--sl-outer-pb/)
+    expect(css).not.toMatch(/--sl-outer-gap/)
+  })
+
+  it('still emits inner rule + vars for adjacent leaf slots (regression guard)', () => {
+    const css = generateCSS(containerConfig, tokens)
+    expect(css).toMatch(/\[data-slot="theme-blocks"\]\s*>\s*\.slot-inner/)
+  })
+})
