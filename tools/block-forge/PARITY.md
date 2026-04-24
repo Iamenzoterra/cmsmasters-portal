@@ -23,12 +23,14 @@
 
 ### DOM hierarchy in iframe body
 ```
-<div class="slot-inner">                   ← containment context (inline-size, name=slot)
-  <div data-block-shell="{slug}">          ← portal-parity block wrapper
+<div class="slot-inner">                   ← containment context (inline-size, name=slot) — composeSrcDoc writes
+  <div data-block-shell="{slug}">          ← portal-parity block wrapper — renderForPreview writes upstream
     {block.html}
   </div>
 </div>
 ```
+
+**Wrap emitter split (post-WP-028 Phase 3.5):** the outer `.slot-inner` is emitted by `composeSrcDoc` (this file). The inner `<div data-block-shell="{slug}">` comes PRE-WRAPPED via `renderForPreview(block, { variants })` — engine `wrapBlockHtml` at `packages/block-forge-core/src/lib/css-scoping.ts:26-28`. DOM output byte-identical to pre-3.5; only the WHO-wraps changed, not the WHAT-emits.
 
 Matches portal's `apps/portal/lib/hooks.ts:234` output + WP-024 slot wrapper. LM does NOT wrap (legacy blocks use `@media`, not `@container slot`) — block-forge's divergence from LM is deliberate.
 
@@ -76,6 +78,10 @@ _(empty)_
 
 Variant CRUD drawer landed end-to-end on both surfaces (tools/block-forge + Studio) with byte-identical body + session-backed undo on block-forge. PARITY section added above; §7 "deliberate divergence" UNCHANGED pending Phase 3.5 Path B re-converge. No new files; arch-test stays at 499/0.
 
+## Discipline Confirmation (WP-028 Phase 3.5)
+
+Path B re-converge landed. `composeSrcDoc` single-wraps (`.slot-inner` only); `PreviewTriptych` calls `renderForPreview(block, { variants })` upstream so engine `wrapBlockHtml` emits the `<div data-block-shell="{slug}">…</div>` inner wrap + any `[data-variant]` descendants in one pass. PARITY §7 flipped to `✅ RE-CONVERGED` on both files. Iframe DOM byte-identical to pre-3.5 output (verified via live Playwright smoke); WHO-wraps changed, WHAT-emits unchanged. +2 new `preview-assets.test.ts` cases pin the single-wrap contract + pre-wrapped pass-through. Arch-test stays at 499/0.
+
 ## Discipline Confirmation (WP-026 Close)
 
 Across Phases 2–4 of WP-026, **zero open divergences** were observed against the portal theme-page block render contract:
@@ -86,31 +92,21 @@ Across Phases 2–4 of WP-026, **zero open divergences** were observed against t
 
 Block-forge is baseline-true vs the portal theme-page render as of the commit closing WP-026.
 
-## WP-027 Studio Responsive tab cross-reference
+## WP-027 Studio Responsive tab cross-reference — ✅ RE-CONVERGED at WP-028 Phase 3.5
 
-Studio's Responsive tab (WP-027) consumes `@cmsmasters/block-forge-core` directly via Path B — `renderForPreview(block, { variants })` absorbs composeVariants in one call. This yields a different iframe DOM shape from block-forge's:
+Both surfaces now use Path B: `renderForPreview(block, { variants })` emits the pre-wrapped `<div data-block-shell="{slug}">…</div>` upstream; each surface's composeSrcDoc adds ONLY the outer `.slot-inner` container. Identical iframe DOM shape:
 
-### block-forge (this tool) — double-wrap, deliberate
 ```
-<div class="slot-inner">              ← composeSrcDoc writes (outer)
-  <div data-block-shell="{slug}">     ← composeSrcDoc writes (inner)
-    {block.html}                      ← block content
-  </div>
-</div>
-```
-
-### Studio Responsive tab — single-wrap, deliberate
-```
-<div class="slot-inner">              ← Studio composeSrcDoc writes (outer only)
-  <div data-block-shell="{slug}">     ← renderForPreview engine wrote (already in block.html)
+<div class="slot-inner">              ← composeSrcDoc writes (outer only) — both surfaces
+  <div data-block-shell="{slug}">     ← renderForPreview writes upstream (engine wrapBlockHtml)
     {block.html content}
   </div>
 </div>
 ```
 
-**Why the divergence:** block-forge predates engine Path B (WP-025 shipped the convenience overload; block-forge Phase 2 was already wrapping). Studio started fresh with Path B so the engine does the inner wrap; Studio's composeSrcDoc drops its inner wrap to avoid triple-nest.
+**Historical note:** through WP-028 Phase 3, block-forge's composeSrcDoc double-wrapped (both outer `.slot-inner` AND inner `data-block-shell`) while Studio was already on Path B (WP-027 single-wrap). The deliberate divergence shipped as PARITY §7 "forward-compat" on the Studio side. Phase 3 landed Variant CRUD on top of that interim state via an inline `composeVariants` call in `PreviewTriptych`. Phase 3.5 replaced the inline call with `renderForPreview` + dropped the inner wrap in composeSrcDoc — single refactor pass, no behavior change (verified via byte-identical iframe DOM smoke).
 
-**Contract:** if block-forge ever migrates to Path B (Phase 6+ refactor), drop its inner wrap here AND in `preview-assets.ts`. Until then, do NOT "align Studio to block-forge" — you'll regress Studio to triple-nest and `@container slot` queries will silently evaluate against the wrong box. The divergence is NOT an "Open Divergence" against the portal (where both tools agree on the `@container slot` contract) — it is a surface-local delta between the two authoring tools.
+**Contract (current):** both surfaces expect the html flowing into `composeSrcDoc` to be PRE-WRAPPED by `renderForPreview`. Future edits to either composeSrcDoc that re-introduce a `data-block-shell` wrap are a regression — the engine wrap becomes double and `@container slot` queries evaluate against the wrong box.
 
 ### Phase 4 documented deviations (from `logs/wp-027/phase-4-result.md`)
 
@@ -135,7 +131,7 @@ As of Phase 3, block-forge ships a `VariantsDrawer` (`src/components/VariantsDra
 
 **Render-time variant composition (Phase 3 INTERIM — see Phase 3.5 below):** `PreviewTriptych.tsx` calls `composeVariants(base, variantList)` INLINE when `composedBlock.variants` is non-empty, then feeds the composed `{html, css}` into existing `PreviewPanel` → `composeSrcDoc` unchanged. The `composeSrcDoc` wrap (`<div class="slot-inner"><div data-block-shell="{slug}">{html}</div></div>`) is untouched this phase.
 
-**Phase 3.5 follow-up (scheduled):** `preview-assets.ts` drops the inner `<div data-block-shell>` wrap and `PreviewTriptych` switches from the inline `composeVariants` call to `renderForPreview(block, { variants })` — Path B re-converge with Studio. §7 "deliberate divergence" in `apps/studio/.../PARITY.md` flips to `✅ RE-CONVERGED` in that mini-phase. Scope boundary: Phase 3 preserves `preview-assets.ts` + its `.test.ts` + its `.snap` + Studio §7 UNTOUCHED.
+**Phase 3.5 follow-up (landed):** `preview-assets.ts` now emits only the outer `.slot-inner` wrap; `PreviewTriptych` calls `renderForPreview(block, { variants })` — the inline `composeVariants` helper was removed. §7 "deliberate divergence" flipped to `✅ RE-CONVERGED` on both PARITY.md files. Both surfaces byte-identical iframe DOM; confirmed via live smoke. No behavior change — WHO-wraps refactor only.
 
 ## Cross-contract test layers
 

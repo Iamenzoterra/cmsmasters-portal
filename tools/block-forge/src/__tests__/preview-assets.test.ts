@@ -20,22 +20,31 @@ describe('composeSrcDoc', () => {
     expect(firstBlockIdx).toBeGreaterThan(declIdx)
   })
 
-  it('(b) wraps body in two-level slot hierarchy: .slot-inner > [data-block-shell]', () => {
+  it('(b) wraps body in single `.slot-inner` (WP-028 Phase 3.5 Path B re-converge)', () => {
+    // Post Phase 3.5: composeSrcDoc emits ONLY the outer `.slot-inner` wrap.
+    // The inner `<div data-block-shell="{slug}">` comes pre-wrapped from
+    // `renderForPreview()` upstream (engine), NOT from composeSrcDoc.
     const out = composeSrcDoc({ ...MINIMAL, slug: 'kebab-slug', html: '<p id="inside">x</p>' })
     const parser = new DOMParser()
     const doc = parser.parseFromString(out, 'text/html')
     const slotInner = doc.querySelector('body > div.slot-inner')
     expect(slotInner).not.toBeNull()
-    const shell = slotInner?.querySelector(':scope > div[data-block-shell="kebab-slug"]')
-    expect(shell).not.toBeNull()
-    // And the block HTML is nested inside the shell.
-    const inside = shell?.querySelector('#inside')
+    // Raw html flows into slot-inner directly — no inner shell added here.
+    const inside = slotInner?.querySelector('#inside')
     expect(inside).not.toBeNull()
+    // Rule: composeSrcDoc NEVER adds `data-block-shell` on its own.
+    expect(out).not.toMatch(/<div data-block-shell=/)
   })
 
-  it('(c) reflects the slug verbatim in data-block-shell', () => {
+  it('(c) reflects the slug in postMessage handlers (not in DOM wrap)', () => {
+    // Phase 3.5: slug no longer appears as a `data-block-shell` attr emitted by
+    // composeSrcDoc. It remains the identity token for the ResizeObserver +
+    // element-click postMessage emissions — which is where it belongs.
     const out = composeSrcDoc({ ...MINIMAL, slug: 'kebab-slug' })
-    expect(out).toContain('data-block-shell="kebab-slug"')
+    // ResizeObserver height-sync carries slug.
+    expect(out).toContain("slug: \"kebab-slug\"")
+    // And composeSrcDoc adds no `data-block-shell` wrap of its own.
+    expect(out).not.toMatch(/<div data-block-shell=/)
   })
 
   it('(d) reflects width in meta viewport AND body rule', () => {
@@ -80,16 +89,45 @@ describe('composeSrcDoc', () => {
     expect(withJs).toContain('console.log("block-js");')
   })
 
-  it('(h) handles empty html and empty css without crashing', () => {
+  it('(h) handles empty html and empty css without crashing (single-wrap)', () => {
+    // Phase 3.5: empty html → empty `.slot-inner` only. No inner shell added.
     expect(() => composeSrcDoc({ ...MINIMAL, html: '', css: '' })).not.toThrow()
     const out = composeSrcDoc({ ...MINIMAL, html: '', css: '' })
-    expect(out).toContain('<div data-block-shell="test-block"></div>')
+    expect(out).toContain('<div class="slot-inner"></div>')
+    expect(out).not.toMatch(/<div data-block-shell=/)
   })
 
   it('(i) pins the postMessage type literal "block-forge:iframe-height"', () => {
     // Rename-guard: any rename forces a matching test update.
     const out = composeSrcDoc(MINIMAL)
     expect(out).toContain("type: 'block-forge:iframe-height'")
+  })
+
+  it('(j) single-wrap contract — raw html flows into .slot-inner verbatim (Phase 3.5)', () => {
+    // WP-028 Phase 3.5 pin: composeSrcDoc NEVER adds `data-block-shell`.
+    // The block body is `<div class="slot-inner">{html}</div>` — nothing else.
+    const out = composeSrcDoc({
+      html: '<h2>hello</h2>',
+      css: '',
+      width: 1440,
+      slug: 'test',
+    })
+    expect(out).toContain('<div class="slot-inner"><h2>hello</h2></div>')
+    expect(out).not.toMatch(/<div data-block-shell=/)
+  })
+
+  it('(k) preserves pre-wrapped html verbatim (Path B happy path)', () => {
+    // Real-world input post Phase 3.5: `renderForPreview.html` emits
+    // `<div data-block-shell="{slug}">…</div>` upstream; composeSrcDoc treats
+    // that as opaque content and flows it inside `.slot-inner` unchanged.
+    const preWrapped = '<div data-block-shell="test"><h2>hi</h2></div>'
+    const out = composeSrcDoc({
+      html: preWrapped,
+      css: '',
+      width: 1440,
+      slug: 'test',
+    })
+    expect(out).toContain(`<div class="slot-inner">${preWrapped}</div>`)
   })
 })
 

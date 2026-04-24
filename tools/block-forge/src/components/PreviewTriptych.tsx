@@ -1,13 +1,14 @@
 // Phase 2 — 3 fixed-width preview panels (1440 / 768 / 375) side-by-side.
 // Horizontal scroll expected on narrow viewports (~2623px combined).
 // Auto-scale-to-fit is a Phase 2.x polish if friction emerges.
-// WP-028 Phase 3 (interim) — when composedBlock.variants is non-empty, compose
-// inline via `composeVariants(base, variantsList)` to get the multi-variant html+css
-// with `data-variant` wrappers + `@container` reveal rules. Phase 3.5 replaces
-// this inline call with `renderForPreview` for Path B re-converge.
+// WP-028 Phase 3.5 — Path B re-converge: drop the inline `composeVariants` from
+// Phase 3; call `renderForPreview(block, { variants })` upstream. The engine
+// absorbs composeVariants + emits the `<div data-block-shell="{slug}">…</div>`
+// wrap via wrapBlockHtml. composeSrcDoc now receives pre-wrapped html and adds
+// only the outer `.slot-inner` container. Mirrors Studio ResponsivePreview.
 
 import { useMemo } from 'react'
-import { composeVariants } from '@cmsmasters/block-forge-core'
+import { renderForPreview, type Variant } from '@cmsmasters/block-forge-core'
 import type { BlockJson } from '../types'
 import { PreviewPanel } from './PreviewPanel'
 
@@ -22,23 +23,30 @@ type Props = {
 }
 
 export function PreviewTriptych({ block }: Props) {
-  // WP-028 Phase 3 — if variants present, compose once here; each PreviewPanel
-  // consumes the already-composed html+css. `composeSrcDoc` still double-wraps
-  // (<div class="slot-inner"><div data-block-shell>...</div></div>); Phase 3.5
-  // drops the inner wrap + switches to `renderForPreview`.
+  // WP-028 Phase 3.5 — Path B: engine single-call. composeVariants runs inside
+  // renderForPreview when variantList is non-empty; output html is pre-wrapped
+  // with `<div data-block-shell="{slug}">…</div>`. PreviewPanel's composeSrcDoc
+  // then adds only the outer `.slot-inner` wrap (single-wrap, matches Studio).
+  //
+  // Ruling 3.5-β — NO { width } option. WP-027 Ruling 3 flagged it as a
+  // triple-wrap hazard: composeSrcDoc already re-emits width per-panel, so
+  // letting renderForPreview wrap via width would duplicate the containment.
   const previewBlock = useMemo<BlockJson | null>(() => {
     if (!block) return null
-    if (!block.variants || Object.keys(block.variants).length === 0) return block
-    const variantList = Object.entries(block.variants).map(([name, v]) => ({
-      name,
-      html: v.html,
-      css: v.css,
-    }))
-    const composed = composeVariants(
+    const variantList: Variant[] = block.variants
+      ? Object.entries(block.variants).map(([name, v]) => ({
+          name,
+          html: v.html,
+          css: v.css,
+        }))
+      : []
+    const preview = renderForPreview(
       { slug: block.slug, html: block.html, css: block.css },
-      variantList,
+      { variants: variantList },
     )
-    return { ...block, html: composed.html, css: composed.css }
+    // preview.html is now pre-wrapped <div data-block-shell="{slug}">...</div>
+    // (+ data-variant="base"/"{name}" descendants when variants non-empty).
+    return { ...block, html: preview.html, css: preview.css }
   }, [block])
 
   if (!previewBlock) {

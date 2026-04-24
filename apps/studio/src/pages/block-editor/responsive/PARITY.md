@@ -59,9 +59,9 @@ Matches portal's `apps/portal/lib/hooks.ts:234` output + WP-024 slot wrapper. Th
 - Layout-maker slot grid rules — Studio doesn't reconstruct layout either.
 - Tweak sliders + variants drawer — WP-028 scope.
 
-### In scope (NEW vs tools/block-forge)
-- **Variant composition via Path B:** `renderForPreview(block, { variants })` — engine internally calls `composeVariants` when `variants.length > 0`. This phase (WP-027 Phase 2) wires it end-to-end. tools/block-forge defers variants to WP-028.
-- **Variant CRUD drawer (WP-028 Phase 3):** `VariantsDrawer` component landed on both surfaces (byte-identical body). Studio wires fork/rename/delete through `dispatchVariantToForm(form, action)` helper → `form.setValue('variants', next, { shouldDirty: true })`. Rendering still diverges on wrap LOCATION — §7 "deliberate divergence" remains until Phase 3.5 Path B re-converge.
+### In scope
+- **Variant composition via Path B:** `renderForPreview(block, { variants })` — engine internally calls `composeVariants` when `variants.length > 0`. Both surfaces now on Path B as of WP-028 Phase 3.5 (block-forge re-converged from double-wrap; see §7 below).
+- **Variant CRUD drawer (WP-028 Phase 3):** `VariantsDrawer` component landed on both surfaces (byte-identical body). Studio wires fork/rename/delete through `dispatchVariantToForm(form, action)` helper → `form.setValue('variants', next, { shouldDirty: true })`.
 
 ## Discipline (PARITY-LOG equivalent)
 
@@ -106,24 +106,22 @@ The following intentional deltas from `tools/block-forge/PARITY.md` apply only t
 6. **Block-type uniform applicability.** (forward reference — WP-027 Close)
    Responsive tab covers `/blocks/:id`, `/elements/:id`, `/global-elements/:id` identically — all three share the `.slot-inner` container-type context. Complex elements (tabs, dynamic content) are prime candidates; atomic elements gracefully show the empty state. Slot-context variance (content vs sidebar vs header widths) is pre-existing — acknowledge once and move on. Close phase finalizes this note.
 
-7. **`data-block-shell` wrap originates upstream, not in composeSrcDoc.** ✅ (resolved double-wrap blocker)
+7. **`data-block-shell` wrap originates upstream, not in composeSrcDoc.** ✅ **RE-CONVERGED at WP-028 Phase 3.5**
 
-   **tools/block-forge:** `composeSrcDoc` emits the two-level slot hierarchy inline:
+   **Both surfaces (post-WP-028 Phase 3.5):** `composeSrcDoc` on each surface emits ONLY the outer `.slot-inner` wrap:
    ```
-   <div class="slot-inner"><div data-block-shell="{slug}">{html}</div></div>
+   <div class="slot-inner">{pre-wrapped-html-from-renderForPreview}</div>
    ```
-   block-forge's MVP feeds RAW `block.html` into composeSrcDoc without engine pre-wrap, so this is the canonical wrap point for that surface.
+   The inner `<div data-block-shell="{slug}">…</div>` is emitted upstream by the engine's `wrapBlockHtml` (`packages/block-forge-core/src/lib/css-scoping.ts:26-28`) as part of `renderForPreview(block, { variants })`. Studio `ResponsivePreview.tsx` and block-forge `PreviewTriptych.tsx` both make the same engine single-call; neither surface double-wraps.
 
-   **Studio Responsive tab:** `ResponsivePreview` calls `renderForPreview(block, { variants })` per Brain ruling 1 (Path B single-call). The engine's `wrapBlockHtml` (`packages/block-forge-core/src/lib/css-scoping.ts`) emits the `<div data-block-shell="{slug}">...</div>` wrap upstream. Studio's composeSrcDoc therefore emits ONLY `<div class="slot-inner">{html}</div>` — the inner shell comes pre-wrapped from the engine. Double-wrapping is explicitly avoided.
+   **Why the re-converge landed in Phase 3.5:**
+   - Phase 3 introduced variant CRUD on both surfaces; block-forge compensated with an INLINE `composeVariants` call in `PreviewTriptych` while `composeSrcDoc` still double-wrapped. That was explicit interim scaffolding.
+   - Phase 3.5 (this one) replaced the inline call with `renderForPreview` + dropped the inner wrap in `composeSrcDoc`. No behavior change — iframe body DOM is byte-identical to pre-3.5 output; only the WHO-wraps refactor.
+   - Both surfaces now produce `body > div.slot-inner > div[data-block-shell="{slug}"] > content` — identical DOM.
 
-   **Why the divergence is acceptable:**
-   - Studio needs end-to-end variant composition from Phase 2 (composeVariants lives inside renderForPreview); block-forge defers variants to WP-028.
-   - Path B is the Brain-locked architecture decision for WP-027.
-   - The DOM output is byte-identical between the two surfaces: both produce `body > div.slot-inner > div[data-block-shell="{slug}"] > content`.
+   **Re-converge tracking:** tools/block-forge Phase 3.5 implementation SHA captured in `logs/wp-028/phase-3.5-result.md`; tools/block-forge PARITY.md §Discipline Confirmation (WP-028 Phase 3.5) mirrors this status.
 
-   **Forward-compatibility:** when WP-028 adds variants to tools/block-forge, that surface will also switch to calling `renderForPreview` upstream — at which point tools/block-forge's composeSrcDoc should adopt Studio's single-wrap pattern, re-converging PARITY. Until then, §7 marks the deliberate divergence.
-
-   **Anti-regression test:** `__tests__/preview-assets.test.ts` case `(studio-1)` pins the single-wrap contract — input html without `data-block-shell` produces output body without `data-block-shell`. Any future edit that accidentally re-adds the inner wrap in composeSrcDoc fails this test.
+   **Anti-regression test:** `__tests__/preview-assets.test.ts` case `(studio-1)` on Studio + cases `(b)` `(c)` `(h)` `(j)` `(k)` on block-forge pin the single-wrap contract — any edit that re-adds `<div data-block-shell` inside `composeSrcDoc` fails these tests.
 
 8. **Known corner: theme-page slot-block bypass.** (forward-risk acknowledgement, not fixed)
    `apps/portal/app/themes/[slug]/page.tsx:189` has a known `.slot-inner` bypass for theme-page slot-closure rendering (documented in app-portal SKILL). **Variant-bearing** blocks rendered through that path may differ from iframe preview output. For **non-variant** blocks the bypass does NOT affect output — theme-page is a valid parity surface in that case. Phase 2.8 parity check used theme-page against a non-variant block (`fast-loading-speed`) because that was the only published surface at the time. Composed-page parity (via `apps/portal/app/[[...slug]]/page.tsx`) remains the preferred surface and the MANDATORY one once variant-bearing blocks need parity verification.
@@ -155,7 +153,7 @@ Studio's `VariantsDrawer` (`./VariantsDrawer.tsx`) has a byte-identical body to 
 
 **Phase 3 render path:** Studio's `ResponsivePreview` already uses Path B (`renderForPreview(block, { variants })`) since WP-027 — variants flow straight through to iframe `srcdoc`. No PreviewTriptych changes this phase.
 
-**Phase 3.5 follow-up (scheduled):** tools/block-forge `composeSrcDoc` drops inner `<div data-block-shell>` wrap and `PreviewTriptych` switches from inline `composeVariants` to `renderForPreview`. At that point, §7 above flips from "deliberate divergence" to `✅ RE-CONVERGED`. Scope boundary: Phase 3 preserves `preview-assets.ts` + its `.test.ts` + its `.snap` + §7 UNTOUCHED.
+**Phase 3.5 follow-up (landed):** tools/block-forge `composeSrcDoc` now emits single `.slot-inner` wrap; `PreviewTriptych` calls `renderForPreview(block, { variants })` upstream. §7 above flipped to `✅ RE-CONVERGED`. Both surfaces byte-identical iframe DOM, confirmed via live Playwright smoke.
 
 ---
 

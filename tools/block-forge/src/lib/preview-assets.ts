@@ -1,4 +1,7 @@
 // Phase 2 — iframe srcdoc composition. Deterministic, unit-tested.
+// WP-028 Phase 3.5 — Path B re-converge: composeSrcDoc emits ONLY the outer
+// `.slot-inner` wrap; the inner `<div data-block-shell="{slug}">` comes
+// pre-wrapped via `renderForPreview()` upstream. Matches Studio surface.
 //
 // Contract lives in `tools/block-forge/PARITY.md` — any change to @layer order,
 // slot wrapper, injected assets, or postMessage shape MUST update that file in
@@ -66,9 +69,7 @@ export function composeSrcDoc(input: ComposeSrcDocInput): string {
   </style>
 </head>
 <body>
-  <div class="slot-inner">
-    <div data-block-shell="${slug}">${html}</div>
-  </div>
+  <div class="slot-inner">${html}</div>
   <script type="module">${animateUtilsJS}</script>
   ${jsBlock}
   <script>
