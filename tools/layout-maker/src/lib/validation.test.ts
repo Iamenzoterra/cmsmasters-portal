@@ -57,7 +57,7 @@ describe('validateConfig — rule 2: unknown token refs', () => {
     const config = baseConfig()
     config.slots.content.gap = '--spacing-not-real'
     const items = validateConfig(config, TOKENS)
-    const item = items.find((i) => i.id.startsWith('unknown-token:'))
+    const item = items.find((i) => i.id.startsWith('r2:'))
     expect(item).toBeDefined()
     expect(item).toMatchObject({
       severity: 'warning',
@@ -69,7 +69,7 @@ describe('validateConfig — rule 2: unknown token refs', () => {
     const config = baseConfig()
     config.slots.content.gap = '0'
     const items = validateConfig(config, TOKENS)
-    expect(items.filter((i) => i.id.startsWith('unknown-token'))).toHaveLength(0)
+    expect(items.filter((i) => i.id.startsWith('r2'))).toHaveLength(0)
   })
 })
 
@@ -80,7 +80,7 @@ describe('validateConfig — rule 3: grid overflow', () => {
     config.grid.desktop.columns = { content: '400px', extra: '400px' }
     config.slots.extra = {}
     const items = validateConfig(config, TOKENS)
-    const overflow = items.find((i) => i.id === 'grid-overflow:desktop')
+    const overflow = items.find((i) => i.id === 'r3:desktop')
     expect(overflow).toMatchObject({
       severity: 'warning',
       gridKey: 'desktop',
@@ -97,7 +97,7 @@ describe('validateConfig — rule 4: nested-slots', () => {
     expect(items).toHaveLength(1)
     expect(items[0]).toMatchObject({
       severity: 'warning',
-      id: 'nested-empty:content',
+      id: 'r4e:content',
       slotName: 'content',
     })
   })
@@ -106,7 +106,7 @@ describe('validateConfig — rule 4: nested-slots', () => {
     const config = baseConfig()
     config.slots.content['nested-slots'] = ['ghost']
     const items = validateConfig(config, TOKENS)
-    const err = items.find((i) => i.id.startsWith('nested-missing:'))
+    const err = items.find((i) => i.id.startsWith('r4m:'))
     expect(err).toMatchObject({
       severity: 'error',
       slotName: 'content',
@@ -119,7 +119,7 @@ describe('validateConfig — rule 4: nested-slots', () => {
     config.slots.parentB = { 'nested-slots': ['child'] }
     config.slots.child = {}
     const items = validateConfig(config, TOKENS)
-    const err = items.find((i) => i.id.startsWith('nested-multi-parent:'))
+    const err = items.find((i) => i.id.startsWith('r4p:'))
     expect(err).toMatchObject({
       severity: 'error',
       slotName: 'child',
@@ -131,7 +131,7 @@ describe('validateConfig — rule 4: nested-slots', () => {
     config.slots.a = { 'nested-slots': ['b'] }
     config.slots.b = { 'nested-slots': ['a'] }
     const items = validateConfig(config, TOKENS)
-    const err = items.find((i) => i.id.startsWith('nested-cycle:'))
+    const err = items.find((i) => i.id.startsWith('r4c:'))
     expect(err).toMatchObject({ severity: 'error' })
   })
 })
@@ -141,7 +141,7 @@ describe('validateConfig — rule 5: drawer breakpoint requires drawer-trigger',
     const config = baseConfig()
     config.grid.desktop.sidebars = 'drawer'
     const items = validateConfig(config, TOKENS)
-    const err = items.find((i) => i.id === 'drawer-no-trigger:desktop')
+    const err = items.find((i) => i.id === 'r5:desktop')
     expect(err).toMatchObject({
       severity: 'error',
       gridKey: 'desktop',
@@ -154,7 +154,7 @@ describe('validateConfig — rule 5: drawer breakpoint requires drawer-trigger',
     config.grid.desktop.sidebars = 'drawer'
     config.grid.desktop['drawer-trigger'] = 'hamburger'
     const items = validateConfig(config, TOKENS)
-    expect(items.find((i) => i.id.startsWith('drawer-no-trigger'))).toBeUndefined()
+    expect(items.find((i) => i.id.startsWith('r5'))).toBeUndefined()
   })
 })
 
@@ -164,7 +164,7 @@ describe('validateConfig — rule 6: per-slot visibility:drawer requires trigger
     config.slots.sidebar = {}
     config.grid.desktop.slots = { sidebar: { visibility: 'drawer' } }
     const items = validateConfig(config, TOKENS)
-    const err = items.find((i) => i.id.startsWith('per-slot-drawer-no-trigger'))
+    const err = items.find((i) => i.id.startsWith('r6:'))
     expect(err).toMatchObject({
       severity: 'error',
       gridKey: 'desktop',

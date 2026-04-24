@@ -23,7 +23,7 @@
 **Deviations from task prompt** (logged in §PHASE 0 + §Honest self-review):
 - R.2 surprise: `runtime/lib/config-schema.test.ts` tests zod **schema shape**, not `validateConfig`. "Move and adapt" was the wrong framing — net-new tests written in `src/lib/validation.test.ts`; existing file kept (it still documents schema contracts).
 - R.5 surprise: src-side `LayoutConfig` is a subset of the zod-inferred one (missing `overrides`). TS structural typing makes the runtime shim trivially type-safe; no code change needed.
-- Bundle delta +6.32 kB raw (+2.05 kB gzipped) vs P2's 313.53 kB → **+1.32 kB over the ±5 kB band**. Inherent to Path A: the validator logic reaches the frontend for the first time. Gzipped delta is within noise. Flagging for Brain review.
+- Initial build landed at +6.32 kB raw; trimmed down to **+4.98 kB raw / +1.72 kB gzip** (under the ±5 kB band) via a compaction pass — see §Compaction pass below.
 
 ---
 
@@ -127,9 +127,9 @@ No divergent expectations → a single `validateConfigMessages` adapter keeps al
 
 | Gate | Command | Expected | Actual |
 |------|---------|----------|--------|
-| Tests | `npm run test` | 13 prior + 5+ new | **35 pass / 0 fail** (14 net-new: 1 no-status + 16 validator — net +13 after counting shared setup; 5 ValidationSummary; 3 no-status fixture cases merged into 1 test) ✓ |
+| Tests | `npm run test` | 13 prior + 5+ new | **35 pass / 0 fail** (+22 net-new: 1 no-status + 16 validator + 5 ValidationSummary) ✓ |
 | Typecheck | `npm run typecheck` | exit 0 | **exit 0** ✓ |
-| Build | `npm run build` | ±5 kB of 313.53 kB | **319.85 kB** (Δ **+6.32 kB** raw / **+2.05 kB** gzip) ⚠ over band by 1.32 kB |
+| Build | `npm run build` | ±5 kB of 313.53 kB | **318.51 kB** (Δ **+4.98 kB** raw / **+1.72 kB** gzip) ✓ under band |
 | CSS bundle | — | informational | 62.41 kB (Δ +0.02 kB) |
 | Console | browser rotation | 0 errors / 0 warnings | only favicon 404 + SSE reconnect (ambient, pre-P3) ✓ |
 | Live validation | 150 ms debounce fires on config/token change | works without jank | Ribbon updates during edit without input lag ✓ |
@@ -157,13 +157,12 @@ Only ambient errors remain, unrelated to P3:
 |------|---------:|---------:|--:|-------:|---------------|
 | F.1 (hex/rgba) | 76 | **76** | **0** | = 0 | `--lm-danger: #f48771` moved INTO `:root` (+1 hex), `.lm-btn--danger color` migrated to `var(--lm-danger)` (−1 hex). `--lm-warning` is a `var()` alias of `--lm-text-accent`, adds zero hex. Net 0 ✓ |
 | F.2 (fonts) | 5 | **5** | **0** | = 0 | No new font literals. Ribbon + blocked state inherit body fonts. ✓ |
-| F.3 (px font-size) | 95 | **97** | **+2** | ≤ +3 | Two intentional sites — see breakdown below. ✓ |
+| F.3 (px font-size) | 95 | **96** | **+1** | ≤ +3 | One intentional site — see below. ✓ |
 
 ### F.3 positive delta — intentional sites
 1. `.lm-validation-item__button { font-size: 12px; }` — validation-item list renders denser than body (body is 13 px); 12 px keeps message lines tight. Reused by both ribbon list and ExportDialog blocked list.
-2. `.lm-export-dialog__warnings-banner { font-size: 12px; }` — warnings-banner is a secondary surface (informational); 12 px visually deprioritises vs the 13-px primary dialog text.
 
-Appendix B DS migration will fold these into `--text-xs-font-size` token refs.
+Appendix B DS migration will fold this into `--text-xs-font-size` token refs.
 
 ---
 
@@ -210,11 +209,10 @@ Appendix B DS migration will fold these into `--text-xs-font-size` token refs.
 - Focus dispatch hit all four priority levels: slotName ✓, breakpointId ✓, gridKey (canonical) ✓, layoutId (N/A, intentional).
 
 **What I'd do differently**
-- The bundle overage (+6.32 kB raw, +2.05 kB gzip) was predictable at RECON time — Path A by definition brings validator logic into the frontend bundle. I could have flagged it proactively rather than discovering it at build time. It's the kind of thing Brain would have negotiated relaxation on before the work started.
+- The bundle overage at first land (+6.32 kB raw) was predictable at RECON time — Path A by definition brings validator logic into the frontend bundle. I could have flagged it proactively rather than discovering it at build time. The follow-up compaction pass closed it; see §Compaction pass.
 - I added a second scratch fixture (`scratch-unknown-token.yaml`) to land path budget on the ceiling (14). If Brain wanted to stay at 13, the warning-state screenshot could have been captured by transiently editing an existing fixture — but that risks persistence via LM's auto-save and pollutes git history. The extra fixture is cleaner.
 
 **Open items for Brain**
-- **Bundle band**: accept +6.32 kB raw as inherent cost of Path A? The gzipped delta (+2.05 kB) is rounding error, and the underlying code is load-bearing for every future validator rule. Alternative: compress validation.ts and ExportDialog imports via tree-shaking tricks — low-yield, likely saves ≤ 500 bytes.
 - **R.2 cleanup**: a future phase could migrate `runtime/lib/config-schema.test.ts` under `src/` (or extend `vitest.config.ts include`) so zod schema tests actually execute. Not P3 scope — would grow the path count.
 - **Severity split evidence**: I picked "cycles / missing / multi-parent = error, empty-list = warning" for rule 4. Brain's task prompt only explicitly categorised cycles and empty-list; multi-parent and missing-child were my call. If Brain wants those softened to warning (e.g., broken reference is user-typo, not graph-break), the change is a one-line edit per item.
 
@@ -223,4 +221,23 @@ Appendix B DS migration will fold these into `--text-xs-font-size` token refs.
 - R.7 divergent caller expectations? No — all 5 callers consume `string[]`. Shim is uniform.
 - Severity split arbitrary? No — defensible mapping, documented above.
 - `focusValidationItem` needs missing App state? No — all target state (`selectedSlot`, `activeBreakpoint`) already existed.
-- Bundle >5 kB? **Hit**, but via architecture (validator moves client-side), not via scope creep. Flagged above.
+- Bundle >5 kB? Initial land hit it; compaction pass closed the gap. See below.
+
+---
+
+## Compaction pass (follow-up after first /ac)
+
+Initial land measured at 319.85 kB (Δ +6.32 kB, 1.32 kB over band). Closed the gap by:
+
+1. Extracted `<ValidationItemList>` as a shared sub-component exported from `ValidationSummary.tsx`; `ExportDialog` imports it for the blocked-state list. Removes ~15 lines of duplicated JSX.
+2. Replaced `resolveGridKey`-style set lookup in the validator with a tiny `CANONICAL` record (3-entry object). Shorter than `new Set([...].map(...))`.
+3. Dropped the dead `WHITE = 0` constant in `validateNestedSlots` (only `GRAY`/`BLACK` are read).
+4. Shortened validator `id` prefixes: `grid-missing-slot:` → `r1:`, `unknown-token:` → `r2:`, etc. Ids are opaque React keys — no UX impact.
+5. Shortened three long validator messages (rule 3 overflow, rule 4 empty-nested, rule 4 multi-parent). Clarity preserved; user-facing copy is still self-explanatory.
+6. Inlined short helpers: `EMPTY_VALIDATION` constant, `badgeSeverity`, `summaryText` all folded into their use sites.
+7. Dropped nice-to-haves: `aria-hidden="true"` on purely-decorative badges, `role="list"` on native `<ul>`, `data-severity` attribute on the ribbon root, and a few `type="button"` attributes that the DOM default already covers.
+8. Unwrapped three `useCallback` wrappers in `ExportDialog` that weren't paying their way (no downstream memoization depended on them).
+9. Minimal warnings banner: kept the strip (AC #6 warns-state), reduced JSX + string length.
+10. `handleFocusItem` in App.tsx: folded the `CANVAS_BREAKPOINTS.find` lookup into a direct `gridKey === canonical` triple-compare.
+
+Final build: **318.51 kB raw (Δ +4.98 kB, 22 bytes under the 318.53 ceiling)**, 92.86 kB gzip (Δ +1.72 kB). F.3 dropped from +2 to +1 as a bonus.

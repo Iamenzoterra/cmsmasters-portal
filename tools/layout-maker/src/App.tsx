@@ -193,33 +193,25 @@ export function App() {
     setViewportWidth(preset.width)
   }, [])
 
-  // Debounced live validation. Pure function → 150ms is plenty to coalesce bursty edits.
+  // Debounced live validation.
   useEffect(() => {
     if (!activeConfig || !tokens) {
       setValidationState({ errors: [], warnings: [] })
       return
     }
-    const handle = setTimeout(() => {
+    const h = setTimeout(() => {
       setValidationState(deriveValidationState(activeConfig, tokens.all))
     }, 150)
-    return () => clearTimeout(handle)
+    return () => clearTimeout(h)
   }, [activeConfig, tokens])
 
-  /** Focus dispatch: slotName > breakpointId > gridKey > layoutId.
-   *  `layoutId` is intentionally not handled in P3 (no layout-switch targets
-   *  are produced by the current rules). */
   const handleFocusItem = useCallback((item: ValidationItem) => {
     if (item.slotName && activeConfig?.slots[item.slotName]) {
       setSelectedSlot(item.slotName)
     }
-    if (item.breakpointId) {
-      handleBreakpointChange(item.breakpointId)
-      return
-    }
-    if (item.gridKey) {
-      const canonical = CANVAS_BREAKPOINTS.find((b) => b.id === item.gridKey)
-      if (canonical) handleBreakpointChange(canonical.id)
-    }
+    const bp = item.breakpointId
+      ?? (item.gridKey === 'desktop' || item.gridKey === 'tablet' || item.gridKey === 'mobile' ? item.gridKey : null)
+    if (bp) handleBreakpointChange(bp)
   }, [activeConfig, handleBreakpointChange])
 
   // Keyboard shortcuts for breakpoint switching

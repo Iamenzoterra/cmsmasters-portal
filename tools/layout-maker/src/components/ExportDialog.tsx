@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { api } from '../lib/api-client'
 import type { ExportResult } from '../lib/types'
 import type { ValidationItem, ValidationState } from '../lib/validation'
+import { ValidationItemList } from './ValidationSummary'
 
 interface Props {
   id: string
@@ -11,13 +12,11 @@ interface Props {
   onFocusItem?: (item: ValidationItem) => void
 }
 
-const EMPTY_VALIDATION: ValidationState = { errors: [], warnings: [] }
-
 export function ExportDialog({
   id,
   onClose,
   onShowToast,
-  validationState = EMPTY_VALIDATION,
+  validationState = { errors: [], warnings: [] },
   onFocusItem,
 }: Props) {
   const [result, setResult] = useState<ExportResult | null>(null)
@@ -31,33 +30,20 @@ export function ExportDialog({
   const blocked = errors.length > 0
 
   useEffect(() => {
-    // In blocked state we do not hit the backend — validation is the reason.
-    if (blocked) {
-      setLoading(false)
-      return
-    }
-    api
-      .exportLayout(id)
-      .then((res) => {
-        setResult(res)
-        setLoading(false)
-      })
-      .catch((e: Error & { details?: string[] }) => {
-        setError(e.message)
-        if (e.details) setDetails(e.details)
-        setLoading(false)
-      })
+    if (blocked) { setLoading(false); return }
+    api.exportLayout(id).then(setResult).catch((e: Error & { details?: string[] }) => {
+      setError(e.message)
+      if (e.details) setDetails(e.details)
+    }).finally(() => setLoading(false))
   }, [id, blocked])
 
-  const handleCopyPayload = useCallback(async () => {
+  const handleCopyPayload = async () => {
     if (!result) return
-    await navigator.clipboard.writeText(
-      JSON.stringify(result.payload, null, 2),
-    )
+    await navigator.clipboard.writeText(JSON.stringify(result.payload, null, 2))
     onShowToast('Payload copied to clipboard.')
-  }, [result, onShowToast])
+  }
 
-  const handleDownloadJson = useCallback(() => {
+  const handleDownloadJson = () => {
     if (!result) return
     const blob = new Blob([JSON.stringify(result.payload, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
@@ -67,25 +53,18 @@ export function ExportDialog({
     a.click()
     URL.revokeObjectURL(url)
     onShowToast('JSON downloaded.')
-  }, [result, onShowToast])
+  }
 
-  const handleOverlayClick = useCallback(
-    (e: React.MouseEvent) => {
-      if (e.target === e.currentTarget) onClose()
-    },
-    [onClose],
-  )
-
-  const handleItemClick = useCallback(
-    (item: ValidationItem) => {
-      onClose()
-      onFocusItem?.(item)
-    },
-    [onClose, onFocusItem],
-  )
+  const handleItemClick = (item: ValidationItem) => {
+    onClose()
+    onFocusItem?.(item)
+  }
 
   return (
-    <div className="lm-export-overlay" onClick={handleOverlayClick}>
+    <div
+      className="lm-export-overlay"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+    >
       <div className="lm-export-dialog">
         <div className="lm-export-dialog__header">
           <span>Export: {id}</span>
@@ -101,45 +80,21 @@ export function ExportDialog({
         {blocked ? (
           <div className="lm-export-dialog__body">
             <div className="lm-export-dialog__blocked-header">
-              <span className="lm-validation-badge lm-validation-badge--error" aria-hidden="true" />
+              <span className="lm-validation-badge lm-validation-badge--error" />
               <strong>
                 Export blocked: {errors.length} structural error
                 {errors.length === 1 ? '' : 's'} must be fixed first.
               </strong>
             </div>
-            <ul className="lm-validation-summary__list" role="list">
-              {[...errors, ...warnings].map((item) => (
-                <li
-                  key={item.id}
-                  className={`lm-validation-item lm-validation-item--${item.severity}`}
-                >
-                  <button
-                    type="button"
-                    className="lm-validation-item__button"
-                    onClick={() => handleItemClick(item)}
-                  >
-                    <span
-                      className={`lm-validation-badge lm-validation-badge--${item.severity}`}
-                      aria-hidden="true"
-                    />
-                    <span className="lm-validation-item__message">{item.message}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <ValidationItemList items={[...errors, ...warnings]} onFocusItem={handleItemClick} />
           </div>
         ) : (
           <>
             {warnings.length > 0 && (
               <div className="lm-export-dialog__warnings-banner">
-                <span className="lm-validation-badge lm-validation-badge--warning" aria-hidden="true" />
-                <span>
-                  {warnings.length} warning{warnings.length === 1 ? '' : 's'}: export
-                  is allowed, but review before shipping.
-                </span>
+                {warnings.length} warning(s) — review before shipping
               </div>
             )}
-
             {loading && (
               <div className="lm-export-dialog__loading">Generating export...</div>
             )}

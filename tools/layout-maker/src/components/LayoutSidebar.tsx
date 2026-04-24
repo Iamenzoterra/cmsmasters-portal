@@ -195,7 +195,7 @@ export function LayoutSidebar({
               disabled={!activeId}
               aria-describedby={errorCount > 0 ? 'lm-validation-summary' : undefined}
             >
-              {errorCount > 0 ? `Export (${errorCount} error${errorCount === 1 ? '' : 's'})` : 'Export'}
+              {errorCount > 0 ? `Export (${errorCount} errors)` : 'Export'}
             </button>
             <button className="lm-btn lm-btn--danger" onClick={handleDelete} disabled={!activeId}>Delete</button>
             <input

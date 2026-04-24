@@ -2287,12 +2287,8 @@ body {
   color: var(--lm-text-primary);
 }
 .lm-export-dialog__warnings-banner {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--lm-sp-4);
   padding: var(--lm-sp-4) var(--lm-sp-8);
-  background: var(--lm-bg-hover);
   border-left: 3px solid var(--lm-warning);
+  background: var(--lm-bg-hover);
   color: var(--lm-text-secondary);
-  font-size: 12px;
 }
