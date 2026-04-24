@@ -2470,3 +2470,36 @@ body {
   padding: var(--lm-sp-2) var(--lm-sp-8);
   font-style: italic;
 }
+
+/* ── P7: Focus-ring polish (Brain #6) ────────────────────────── */
+/* Shared :focus-visible rule for interactive controls that previously
+ * lacked a keyboard focus indicator. Uses the existing --lm-border-focus
+ * token; outline-offset keeps the ring clear of adjacent borders.
+ * Pre-P7 audit surfaced 8 gap sites — one rule covers them all. */
+.lm-btn:focus-visible,
+.lm-bp-btn:focus-visible,
+.lm-copy-btn:focus-visible,
+.lm-export-dialog__close:focus-visible,
+.lm-banner__close:focus-visible,
+.lm-utility-zone__header:focus-visible,
+.lm-preset-dropdown__trigger:focus-visible,
+.lm-preset-dropdown__item:focus-visible {
+  outline: 2px solid var(--lm-border-focus);
+  outline-offset: 2px;
+}
+
+/* ── P7: Reduced-motion safety (Brain #5) ────────────────────── */
+/* Global override for users who prefer reduced motion. Covers every
+ * P4-P6 animation (banner slide, chevron rotate, collapse, flash,
+ * toast-in) plus any future transition. !important is the idiomatic
+ * contract for this media query, not specificity escalation. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
