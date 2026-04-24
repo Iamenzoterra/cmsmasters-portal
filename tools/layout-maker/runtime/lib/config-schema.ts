@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { TokenMap } from './token-parser.js'
+import { validateConfigMessages } from '../../src/lib/validation.js'
 
 // --- Primitives ---
 
@@ -118,160 +119,11 @@ export type LayoutConfig = z.infer<typeof configSchema>
 
 // --- Cross-field validation ---
 
-// eslint-disable-next-line sonarjs/cognitive-complexity
+/** Runtime shim — preserves the legacy `string[]` return used by HTTP
+ *  error responses. Structured items live in `src/lib/validation.ts`. */
 export function validateConfig(
   config: LayoutConfig,
   knownTokens: TokenMap,
 ): string[] {
-  const errors: string[] = []
-
-  // 1. Grid columns must reference defined slots (content is implicit)
-  for (const [bp, grid] of Object.entries(config.grid)) {
-    for (const colName of Object.keys(grid.columns)) {
-      if (!config.slots[colName]) {
-        errors.push(
-          `Grid "${bp}" column "${colName}" has no slot definition`,
-        )
-      }
-    }
-  }
-
-  // 2. All spacing token references must exist in tokens.css
-  const tokenRefs = extractTokenRefs(config)
-  for (const ref of tokenRefs) {
-    if (ref !== '0' && !knownTokens[ref]) {
-      errors.push(`Unknown token: ${ref}`)
-    }
-  }
-
-  // 3. Grid overflow: fixed columns + gaps > max-width
-  for (const [bp, grid] of Object.entries(config.grid)) {
-    if (!grid['max-width']) continue
-    const maxWidth = parseInt(grid['max-width'], 10)
-    const colWidths = Object.values(grid.columns)
-    const fixedWidths = colWidths
-      .filter((w) => w.endsWith('px'))
-      .map((w) => parseInt(w, 10))
-
-    if (fixedWidths.length === colWidths.length) {
-      const gapToken = grid['column-gap']
-      const gapPx =
-        gapToken === '0'
-          ? 0
-          : parseInt(knownTokens[gapToken] ?? '0', 10)
-      const totalGaps = (colWidths.length - 1) * gapPx
-      const colTotal = fixedWidths.reduce((a, b) => a + b, 0)
-      const total = colTotal + totalGaps
-
-      if (total > maxWidth) {
-        errors.push(
-          `Grid "${bp}" overflow: columns (${colTotal}px) + gaps (${totalGaps}px) = ${total}px exceeds max-width (${maxWidth}px)`,
-        )
-      }
-    }
-  }
-
-  // 4. nested-slots cross-field validation
-  validateNestedSlots(config, errors)
-
-  // 5. Drawer breakpoint requires drawer-trigger
-  for (const [bp, grid] of Object.entries(config.grid)) {
-    if (grid.sidebars === 'drawer' && !grid['drawer-trigger']) {
-      errors.push(
-        `Grid "${bp}" has sidebars:drawer but no drawer-trigger`,
-      )
-    }
-  }
-
-  // 6. Per-slot drawer visibility requires drawer-trigger at grid level
-  for (const [bp, grid] of Object.entries(config.grid)) {
-    if (!grid.slots) continue
-    const hasPerSlotDrawer = Object.values(grid.slots).some(
-      (s) => s.visibility === 'drawer',
-    )
-    if (hasPerSlotDrawer && !grid['drawer-trigger'] && grid.sidebars !== 'drawer') {
-      errors.push(
-        `Grid "${bp}" has per-slot visibility:drawer but no drawer-trigger`,
-      )
-    }
-  }
-
-  return errors
-}
-
-/** nested-slots: existence + single-parent + no-cycles */
-function validateNestedSlots(config: LayoutConfig, errors: string[]): void {
-  const parentOf: Record<string, string> = {}
-
-  for (const [parent, slot] of Object.entries(config.slots)) {
-    const children = slot['nested-slots']
-    if (children !== undefined && children.length === 0) {
-      errors.push(
-        `slot '${parent}' has empty nested-slots: [] — remove the key if the slot has no children`,
-      )
-      continue
-    }
-    for (const child of children ?? []) {
-      if (!config.slots[child]) {
-        errors.push(
-          `slot '${parent}' references nested slot '${child}' which is not declared in slots`,
-        )
-        continue
-      }
-      if (parentOf[child] && parentOf[child] !== parent) {
-        errors.push(
-          `slot '${child}' is nested under both '${parentOf[child]}' and '${parent}' — a slot can only have one parent`,
-        )
-        continue
-      }
-      parentOf[child] = parent
-    }
-  }
-
-  // Cycle detection via DFS coloring
-  const WHITE = 0, GRAY = 1, BLACK = 2
-  const color: Record<string, number> = {}
-  const reported = new Set<string>()
-
-  function dfs(node: string, path: string[]): void {
-    if (color[node] === GRAY) {
-      const cycleStart = path.indexOf(node)
-      const cyclePath = [...path.slice(cycleStart), node]
-      const key = cyclePath.join('→')
-      if (!reported.has(key)) {
-        reported.add(key)
-        errors.push(`cycle detected in nested-slots: ${cyclePath.join(' → ')}`)
-      }
-      return
-    }
-    if (color[node] === BLACK) return
-    color[node] = GRAY
-    const children = config.slots[node]?.['nested-slots'] ?? []
-    for (const c of children) {
-      if (config.slots[c]) dfs(c, [...path, node])
-    }
-    color[node] = BLACK
-  }
-
-  for (const slot of Object.keys(config.slots)) {
-    if (color[slot] === undefined) dfs(slot, [])
-  }
-}
-
-/** Walk config and collect all --spacing-* token references */
-function extractTokenRefs(obj: unknown): string[] {
-  const refs: string[] = []
-
-  function walk(value: unknown) {
-    if (typeof value === 'string' && value.startsWith('--spacing-')) {
-      refs.push(value)
-    } else if (typeof value === 'object' && value !== null) {
-      for (const v of Object.values(value)) {
-        walk(v)
-      }
-    }
-  }
-
-  walk(obj)
-  return [...new Set(refs)]
+  return validateConfigMessages(config, knownTokens)
 }

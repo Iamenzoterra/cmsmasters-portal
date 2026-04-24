@@ -1,14 +1,25 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '../lib/api-client'
 import type { ExportResult } from '../lib/types'
+import type { ValidationItem, ValidationState } from '../lib/validation'
 
 interface Props {
   id: string
   onClose: () => void
   onShowToast: (message: string) => void
+  validationState?: ValidationState
+  onFocusItem?: (item: ValidationItem) => void
 }
 
-export function ExportDialog({ id, onClose, onShowToast }: Props) {
+const EMPTY_VALIDATION: ValidationState = { errors: [], warnings: [] }
+
+export function ExportDialog({
+  id,
+  onClose,
+  onShowToast,
+  validationState = EMPTY_VALIDATION,
+  onFocusItem,
+}: Props) {
   const [result, setResult] = useState<ExportResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [details, setDetails] = useState<string[]>([])
@@ -16,7 +27,15 @@ export function ExportDialog({ id, onClose, onShowToast }: Props) {
   const [htmlOpen, setHtmlOpen] = useState(false)
   const [cssOpen, setCssOpen] = useState(false)
 
+  const { errors, warnings } = validationState
+  const blocked = errors.length > 0
+
   useEffect(() => {
+    // In blocked state we do not hit the backend — validation is the reason.
+    if (blocked) {
+      setLoading(false)
+      return
+    }
     api
       .exportLayout(id)
       .then((res) => {
@@ -28,7 +47,7 @@ export function ExportDialog({ id, onClose, onShowToast }: Props) {
         if (e.details) setDetails(e.details)
         setLoading(false)
       })
-  }, [id])
+  }, [id, blocked])
 
   const handleCopyPayload = useCallback(async () => {
     if (!result) return
@@ -57,6 +76,14 @@ export function ExportDialog({ id, onClose, onShowToast }: Props) {
     [onClose],
   )
 
+  const handleItemClick = useCallback(
+    (item: ValidationItem) => {
+      onClose()
+      onFocusItem?.(item)
+    },
+    [onClose, onFocusItem],
+  )
+
   return (
     <div className="lm-export-overlay" onClick={handleOverlayClick}>
       <div className="lm-export-dialog">
@@ -71,95 +98,139 @@ export function ExportDialog({ id, onClose, onShowToast }: Props) {
           </button>
         </div>
 
-        {loading && (
-          <div className="lm-export-dialog__loading">Generating export...</div>
-        )}
-
-        {error && (
-          <div className="lm-export-dialog__errors">
-            <strong>Export failed:</strong> {error}
-            {details.length > 0 && (
-              <ul>
-                {details.map((d, i) => (
-                  <li key={i}>{d}</li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
-
-        {result && (
+        {blocked ? (
           <div className="lm-export-dialog__body">
-            <div className="lm-export-dialog__meta">
-              <div className="lm-export-dialog__meta-row">
-                <span className="lm-export-dialog__meta-label">slug</span>
-                <code>{result.payload.slug}</code>
-              </div>
-              <div className="lm-export-dialog__meta-row">
-                <span className="lm-export-dialog__meta-label">title</span>
-                <code>{result.payload.title}</code>
-              </div>
-              <div className="lm-export-dialog__meta-row">
-                <span className="lm-export-dialog__meta-label">scope</span>
-                <code>{result.payload.scope}</code>
-              </div>
+            <div className="lm-export-dialog__blocked-header">
+              <span className="lm-validation-badge lm-validation-badge--error" aria-hidden="true" />
+              <strong>
+                Export blocked: {errors.length} structural error
+                {errors.length === 1 ? '' : 's'} must be fixed first.
+              </strong>
             </div>
-
-            <div className="lm-export-dialog__section">
-              <button
-                className="lm-export-dialog__toggle"
-                onClick={() => setHtmlOpen(!htmlOpen)}
-              >
-                {htmlOpen ? '\u25BE' : '\u25B8'} HTML (
-                {result.payload.html.split('\n').length} lines)
-              </button>
-              {htmlOpen && (
-                <pre className="lm-export-dialog__preview">
-                  {result.payload.html}
-                </pre>
-              )}
-            </div>
-
-            <div className="lm-export-dialog__section">
-              <button
-                className="lm-export-dialog__toggle"
-                onClick={() => setCssOpen(!cssOpen)}
-              >
-                {cssOpen ? '\u25BE' : '\u25B8'} CSS (
-                {result.payload.css.split('\n').length} lines)
-              </button>
-              {cssOpen && (
-                <pre className="lm-export-dialog__preview">
-                  {result.payload.css}
-                </pre>
-              )}
-            </div>
-
-            {Object.keys(result.payload.slot_config).length > 0 && (
-              <div className="lm-export-dialog__section">
-                <div className="lm-export-dialog__section-title">
-                  slot_config
-                </div>
-                <pre className="lm-export-dialog__preview lm-export-dialog__preview--short">
-                  {JSON.stringify(result.payload.slot_config, null, 2)}
-                </pre>
+            <ul className="lm-validation-summary__list" role="list">
+              {[...errors, ...warnings].map((item) => (
+                <li
+                  key={item.id}
+                  className={`lm-validation-item lm-validation-item--${item.severity}`}
+                >
+                  <button
+                    type="button"
+                    className="lm-validation-item__button"
+                    onClick={() => handleItemClick(item)}
+                  >
+                    <span
+                      className={`lm-validation-badge lm-validation-badge--${item.severity}`}
+                      aria-hidden="true"
+                    />
+                    <span className="lm-validation-item__message">{item.message}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <>
+            {warnings.length > 0 && (
+              <div className="lm-export-dialog__warnings-banner">
+                <span className="lm-validation-badge lm-validation-badge--warning" aria-hidden="true" />
+                <span>
+                  {warnings.length} warning{warnings.length === 1 ? '' : 's'}: export
+                  is allowed, but review before shipping.
+                </span>
               </div>
             )}
 
-            <div className="lm-export-dialog__section">
-              <div className="lm-export-dialog__section-title">
-                Exported files
+            {loading && (
+              <div className="lm-export-dialog__loading">Generating export...</div>
+            )}
+
+            {error && (
+              <div className="lm-export-dialog__errors">
+                <strong>Export failed:</strong> {error}
+                {details.length > 0 && (
+                  <ul>
+                    {details.map((d, i) => (
+                      <li key={i}>{d}</li>
+                    ))}
+                  </ul>
+                )}
               </div>
-              <div className="lm-export-dialog__files">
-                <code>{result.files.html}</code>
-                <code>{result.files.css}</code>
+            )}
+
+            {result && (
+              <div className="lm-export-dialog__body">
+                <div className="lm-export-dialog__meta">
+                  <div className="lm-export-dialog__meta-row">
+                    <span className="lm-export-dialog__meta-label">slug</span>
+                    <code>{result.payload.slug}</code>
+                  </div>
+                  <div className="lm-export-dialog__meta-row">
+                    <span className="lm-export-dialog__meta-label">title</span>
+                    <code>{result.payload.title}</code>
+                  </div>
+                  <div className="lm-export-dialog__meta-row">
+                    <span className="lm-export-dialog__meta-label">scope</span>
+                    <code>{result.payload.scope}</code>
+                  </div>
+                </div>
+
+                <div className="lm-export-dialog__section">
+                  <button
+                    className="lm-export-dialog__toggle"
+                    onClick={() => setHtmlOpen(!htmlOpen)}
+                  >
+                    {htmlOpen ? '▾' : '▸'} HTML (
+                    {result.payload.html.split('\n').length} lines)
+                  </button>
+                  {htmlOpen && (
+                    <pre className="lm-export-dialog__preview">
+                      {result.payload.html}
+                    </pre>
+                  )}
+                </div>
+
+                <div className="lm-export-dialog__section">
+                  <button
+                    className="lm-export-dialog__toggle"
+                    onClick={() => setCssOpen(!cssOpen)}
+                  >
+                    {cssOpen ? '▾' : '▸'} CSS (
+                    {result.payload.css.split('\n').length} lines)
+                  </button>
+                  {cssOpen && (
+                    <pre className="lm-export-dialog__preview">
+                      {result.payload.css}
+                    </pre>
+                  )}
+                </div>
+
+                {Object.keys(result.payload.slot_config).length > 0 && (
+                  <div className="lm-export-dialog__section">
+                    <div className="lm-export-dialog__section-title">
+                      slot_config
+                    </div>
+                    <pre className="lm-export-dialog__preview lm-export-dialog__preview--short">
+                      {JSON.stringify(result.payload.slot_config, null, 2)}
+                    </pre>
+                  </div>
+                )}
+
+                <div className="lm-export-dialog__section">
+                  <div className="lm-export-dialog__section-title">
+                    Exported files
+                  </div>
+                  <div className="lm-export-dialog__files">
+                    <code>{result.files.html}</code>
+                    <code>{result.files.css}</code>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            )}
+          </>
         )}
 
         <div className="lm-export-dialog__actions">
-          {result && (
+          {!blocked && result && (
             <>
               <button
                 className="lm-btn lm-btn--primary"

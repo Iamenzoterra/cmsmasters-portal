@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import type { LayoutConfig, LayoutSummary, TokenMap, BlockData, ScopingWarning, CanvasBreakpointId, ScopeEntry, SlotConfig } from './lib/types'
 import { resolveGridKey, CANVAS_BREAKPOINTS, DEVICE_PRESETS } from './lib/types'
+import { deriveValidationState, type ValidationItem, type ValidationState } from './lib/validation'
 import { api } from './lib/api-client'
 import { LayoutSidebar } from './components/LayoutSidebar'
 import { BreakpointBar } from './components/BreakpointBar'
+import { ValidationSummary } from './components/ValidationSummary'
 import { Canvas } from './components/Canvas'
 import { Inspector } from './components/Inspector'
 import { ExportDialog } from './components/ExportDialog'
@@ -172,6 +174,7 @@ export function App() {
   const [blockWarnings, setBlockWarnings] = useState<ScopingWarning[]>([])
   const [scopes, setScopes] = useState<ScopeEntry[]>([])
   const [view, setView] = useState<'layouts' | 'settings'>('layouts')
+  const [validationState, setValidationState] = useState<ValidationState>({ errors: [], warnings: [] })
 
   const prevConfigRef = useRef<LayoutConfig | null>(null)
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -189,6 +192,35 @@ export function App() {
     setActiveBreakpoint(preset.breakpoint)
     setViewportWidth(preset.width)
   }, [])
+
+  // Debounced live validation. Pure function → 150ms is plenty to coalesce bursty edits.
+  useEffect(() => {
+    if (!activeConfig || !tokens) {
+      setValidationState({ errors: [], warnings: [] })
+      return
+    }
+    const handle = setTimeout(() => {
+      setValidationState(deriveValidationState(activeConfig, tokens.all))
+    }, 150)
+    return () => clearTimeout(handle)
+  }, [activeConfig, tokens])
+
+  /** Focus dispatch: slotName > breakpointId > gridKey > layoutId.
+   *  `layoutId` is intentionally not handled in P3 (no layout-switch targets
+   *  are produced by the current rules). */
+  const handleFocusItem = useCallback((item: ValidationItem) => {
+    if (item.slotName && activeConfig?.slots[item.slotName]) {
+      setSelectedSlot(item.slotName)
+    }
+    if (item.breakpointId) {
+      handleBreakpointChange(item.breakpointId)
+      return
+    }
+    if (item.gridKey) {
+      const canonical = CANVAS_BREAKPOINTS.find((b) => b.id === item.gridKey)
+      if (canonical) handleBreakpointChange(canonical.id)
+    }
+  }, [activeConfig, handleBreakpointChange])
 
   // Keyboard shortcuts for breakpoint switching
   useEffect(() => {
@@ -637,6 +669,7 @@ export function App() {
           activeId={activeId}
           scopes={scopes}
           view={view}
+          errorCount={validationState.errors.length}
           onSelect={setActiveId}
           onRefresh={refreshLayouts}
           onExport={() => setShowExportDialog(true)}
@@ -652,6 +685,11 @@ export function App() {
           <div className="lm-canvas-area">
             {activeConfig && tokens ? (
               <>
+                <ValidationSummary
+                  errors={validationState.errors}
+                  warnings={validationState.warnings}
+                  onFocusItem={handleFocusItem}
+                />
                 <BreakpointBar
                   config={activeConfig}
                   tokens={tokens}
@@ -711,8 +749,10 @@ export function App() {
       {showExportDialog && activeId && (
         <ExportDialog
           id={activeId}
+          validationState={validationState}
           onClose={() => setShowExportDialog(false)}
           onShowToast={showToast}
+          onFocusItem={handleFocusItem}
         />
       )}
 

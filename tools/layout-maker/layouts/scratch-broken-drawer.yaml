@@ -1,0 +1,31 @@
+version: 1
+name: scratch-broken-drawer
+scope: theme
+description: >-
+  Phase-3 scratch fixture — sidebar slot with `visibility: drawer` at tablet
+  but no `drawer-trigger` at the grid level. Exercises ValidationSummary's
+  error state (rule 6) + ExportDialog blocked-state gate.
+grid:
+  desktop:
+    min-width: 1440px
+    columns:
+      'sidebar-left': 360px
+      content: 1fr
+    column-gap: '0'
+  tablet:
+    min-width: 768px
+    columns:
+      'sidebar-left': 240px
+      content: 1fr
+    column-gap: '0'
+    slots:
+      'sidebar-left':
+        visibility: drawer
+slots:
+  'sidebar-left':
+    align: flex-start
+    min-height: 400px
+  content:
+    min-height: 400px
+    padding-top: '--spacing-xl'
+    padding-bottom: '--spacing-xl'

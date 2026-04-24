@@ -1,0 +1,24 @@
+version: 1
+name: scratch-unknown-token
+scope: theme
+description: >-
+  Phase-3 scratch fixture — intentionally references `--spacing-fake-xl`,
+  a token not declared in packages/ui/src/theme/tokens.css. Exercises
+  ValidationSummary's warning state (rule 2, unknown-token).
+grid:
+  desktop:
+    min-width: 1440px
+    columns:
+      content: 1fr
+    column-gap: '0'
+slots:
+  header:
+    position: top
+    min-height: 60px
+  content:
+    min-height: 400px
+    padding-top: '--spacing-fake-xl'
+    padding-bottom: '--spacing-xl'
+  footer:
+    position: bottom
+    min-height: 80px

@@ -35,6 +35,12 @@
   --lm-text-accent: #4fc1ff;
   --lm-text-inverse: #ffffff;
 
+  /* Severity (introduced in P3 for ValidationSummary + ExportDialog blocked state).
+   * --lm-danger keeps the hex originally inline in .lm-btn--danger (net 0 hex delta).
+   * --lm-warning aliases --lm-text-accent for now — a future DS sweep may split warn/info. */
+  --lm-danger: #f48771;
+  --lm-warning: var(--lm-text-accent);
+
   /* Fonts */
   --lm-font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
   --lm-font-mono: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', ui-monospace, monospace;
@@ -164,7 +170,7 @@ body {
 .lm-btn:hover { background: var(--lm-bg-hover); }
 .lm-btn--primary { background: var(--lm-bg-button); border-color: var(--lm-bg-button); color: var(--lm-text-inverse); }
 .lm-btn--primary:hover { background: var(--lm-bg-button-hover); }
-.lm-btn--danger { color: #f48771; }
+.lm-btn--danger { color: var(--lm-danger); }
 .lm-btn--danger:hover { background: rgba(244, 135, 113, 0.12); }
 
 /* ── Canvas Area ─────────────────────────────────────────────── */
@@ -2195,4 +2201,98 @@ body {
 }
 .lm-slot-zone--nested .lm-slot-zone__name {
   color: rgba(0, 0, 0, 0.55);
+}
+
+/* ── ValidationSummary ribbon (P3) ───────────────────────────── */
+.lm-validation-summary {
+  flex-shrink: 0;
+  background: var(--lm-bg-panel);
+  border-bottom: 1px solid var(--lm-border);
+  border-left: 3px solid transparent;
+}
+.lm-validation-summary--error { border-left-color: var(--lm-danger); }
+.lm-validation-summary--warning { border-left-color: var(--lm-warning); }
+
+.lm-validation-summary__header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--lm-sp-4);
+  padding: var(--lm-sp-4) var(--lm-sp-8);
+  background: transparent;
+  border: none;
+  color: var(--lm-text-primary);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.lm-validation-summary__header:hover:not(:disabled) {
+  background: var(--lm-bg-hover);
+}
+.lm-validation-summary__header:disabled {
+  cursor: default;
+  color: var(--lm-text-secondary);
+}
+.lm-validation-summary__text { flex: 1; }
+.lm-validation-summary__chev { color: var(--lm-text-muted); }
+
+.lm-validation-badge {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-block;
+  background: var(--lm-text-muted);
+}
+.lm-validation-badge--error { background: var(--lm-danger); }
+.lm-validation-badge--warning { background: var(--lm-warning); }
+
+.lm-validation-summary__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--lm-border-subtle);
+  max-height: 240px;
+  overflow-y: auto;
+}
+.lm-validation-item { border-bottom: 1px solid var(--lm-border-subtle); }
+.lm-validation-item:last-child { border-bottom: none; }
+
+.lm-validation-item__button {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--lm-sp-4);
+  padding: var(--lm-sp-4) var(--lm-sp-8);
+  background: transparent;
+  border: none;
+  color: var(--lm-text-primary);
+  font-family: inherit;
+  font-size: 12px; /* smaller-than-body for denser list */
+  text-align: left;
+  cursor: pointer;
+}
+.lm-validation-item__button:hover { background: var(--lm-bg-hover); }
+.lm-validation-item__button .lm-validation-badge { margin-top: 4px; }
+.lm-validation-item__message { line-height: 1.4; }
+
+/* ── ExportDialog blocked state (P3) ─────────────────────────── */
+.lm-export-dialog__blocked-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--lm-sp-4);
+  padding: var(--lm-sp-8);
+  background: var(--lm-bg-hover);
+  border-left: 3px solid var(--lm-danger);
+  color: var(--lm-text-primary);
+}
+.lm-export-dialog__warnings-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--lm-sp-4);
+  padding: var(--lm-sp-4) var(--lm-sp-8);
+  background: var(--lm-bg-hover);
+  border-left: 3px solid var(--lm-warning);
+  color: var(--lm-text-secondary);
+  font-size: 12px;
 }

@@ -7,6 +7,7 @@ interface Props {
   activeId: string | null
   scopes: ScopeEntry[]
   view: 'layouts' | 'settings'
+  errorCount?: number
   onSelect: (id: string) => void
   onRefresh: () => void
   onExport: () => void
@@ -24,6 +25,7 @@ export function LayoutSidebar({
   activeId,
   scopes,
   view,
+  errorCount = 0,
   onSelect,
   onRefresh,
   onExport,
@@ -187,7 +189,14 @@ export function LayoutSidebar({
             <button className="lm-btn" onClick={handleImportClick}>Import</button>
             <button className="lm-btn" onClick={handleRenameClick} disabled={!activeId}>Rename</button>
             <button className="lm-btn" onClick={handleCloneClick} disabled={!activeId}>Clone</button>
-            <button className="lm-btn" onClick={onExport} disabled={!activeId}>Export</button>
+            <button
+              className="lm-btn"
+              onClick={onExport}
+              disabled={!activeId}
+              aria-describedby={errorCount > 0 ? 'lm-validation-summary' : undefined}
+            >
+              {errorCount > 0 ? `Export (${errorCount} error${errorCount === 1 ? '' : 's'})` : 'Export'}
+            </button>
             <button className="lm-btn lm-btn--danger" onClick={handleDelete} disabled={!activeId}>Delete</button>
             <input
               ref={importInputRef}
