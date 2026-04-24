@@ -354,7 +354,9 @@ git commit -m "feat(lm): phase 2 — breakpoint truth surface [LM-reforge phase 
 
 Explicit pathspec — no filtered `git status` as scope gate (P0 lesson carried).
 
-Commit SHA will be embedded in a follow-up `chore(logs)` commit (P0/P1 precedent).
+Commit: **`e1ee5be4`** — `feat(lm): phase 2 — breakpoint truth surface [LM-reforge phase 2]` (11 files, +770 / −13 lines).
+
+SHA embedded in this result log via a follow-up `chore(logs)` commit (P0/P1 precedent).
 
 ---
 
