@@ -103,10 +103,6 @@ export function ExportDialog({ id, onClose, onShowToast }: Props) {
                 <span className="lm-export-dialog__meta-label">scope</span>
                 <code>{result.payload.scope}</code>
               </div>
-              <div className="lm-export-dialog__meta-row">
-                <span className="lm-export-dialog__meta-label">status</span>
-                <code>{result.payload.status}</code>
-              </div>
             </div>
 
             <div className="lm-export-dialog__section">
