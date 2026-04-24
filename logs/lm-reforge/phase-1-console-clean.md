@@ -68,3 +68,35 @@ The fix for the observed error was to hoist all six hooks above the early return
 The Phase 1 prompt explicitly gated this fix out: "**Do not touch `DrawerSettingsControl:300-306`.** It already uses the correct `useEffect` pattern and is the template we mirror. If you find a bug there, record it in `phase-1-result.md` under 'Open Questions' — do not fix it this phase." Per that directive, I did not touch DrawerSettingsControl. Logged as an Open Question in the result log. The prompt's premise ("already uses the correct pattern") is empirically incorrect — the pattern has the same bug the phase was set up to fix, just in a sibling component.
 
 **No console suppression, no try/catch, no filter.** The remaining error is a real invariant violation from a component the prompt fenced off. Brain decides whether Phase 1.5 gets the DrawerSettingsControl hook reorder or a later phase folds it into a broader cleanup.
+
+---
+
+## After (P1 follow-up)
+
+Date: 2026-04-24. Follow-up prompt: `phase-1-followup-task.md`. Fix: hoisted DrawerSettingsControl's `useState` + `useEffect` above both early returns with `grid?.` optional-chain access (Inspector.tsx:282–306 in the new layout). Added `export` to enable import by the new stability test.
+
+Sequence re-run after the follow-up edit landed:
+
+1. Hard reload (`navigate_page reload ignoreCache=true`)
+2. Click `theme-page-layout` → no new error
+3. Click `content` slot → no new error
+4. `Ctrl+2` (desktop → tablet) → **no new error** ← this was the residual that fired in the P1-initial run
+5. `Ctrl+3` (mobile canvas, resolves to tablet grid) → no new error
+6. `Ctrl+1` (back to desktop) → no new error
+7. `Ctrl+2` (tablet again) → no new error
+8. Click `sidebar-left (drawer)` at tablet → no new error
+
+Final console snapshot:
+
+```
+[error] Failed to load resource: the server responded with a status of 404 (Not Found)
+```
+
+**Counts:**
+- `Expected static flag was missing` — **0** occurrences
+- `Rendered (fewer|more) hooks` — **0** occurrences (checked via the follow-up's canary regex)
+- 404 — unrelated (pre-existing, not introduced by any phase)
+
+Evidence captured via `mcp__chrome-devtools__list_console_messages` after each step; final state saved as `logs/lm-reforge/visual-baselines/p1-console-clean-after-followup.png` (viewport at 1600×1000, drawer-mode `sidebar-left` selected, Inspector panel rendered cleanly). The `list_console_messages` output is the structured source-of-truth for the zero-count claim; the screenshot shows the UI state that used to trigger the residual.
+
+**No console filter, no suppression, no try/catch.** The fix is a real Rules-of-Hooks correction — hooks now register on every render regardless of early-return branch — and the invariant stops firing because hook count is stable.

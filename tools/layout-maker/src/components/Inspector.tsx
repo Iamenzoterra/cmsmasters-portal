@@ -279,7 +279,7 @@ function SidebarModeControl({ config, activeBreakpoint, gridKey, onBatchUpdateSl
   )
 }
 
-function DrawerSettingsControl({ config, activeBreakpoint, gridKey, onUpdateGridProp }: {
+export function DrawerSettingsControl({ config, activeBreakpoint, gridKey, onUpdateGridProp }: {
   config: LayoutConfig
   activeBreakpoint: string
   gridKey: string
@@ -290,20 +290,26 @@ function DrawerSettingsControl({ config, activeBreakpoint, gridKey, onUpdateGrid
   // need the Inspector controls (variant / side / width). Respects
   // grid-level `sidebars` AND per-slot `visibility` overrides.
   const grid = config.grid[gridKey]
+
+  // Hooks called unconditionally before the two early returns below so
+  // the hook count is stable across renders that toggle whether the
+  // component has an off-canvas sidebar (Rules-of-Hooks). Null-safe on
+  // `grid` because `config.grid[gridKey]` can be undefined at hook time
+  // (same branch the early return below handles for JSX).
+  const [widthDraft, setWidthDraft] = useState((grid?.['drawer-width'] ?? '').replace(/px$/, ''))
+
+  // Keep draft in sync when user switches BP.
+  useEffect(() => {
+    setWidthDraft((grid?.['drawer-width'] ?? '').replace(/px$/, ''))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gridKey, grid?.['drawer-width']])
+
   if (!grid) return null
 
   const isOffCanvas = (v: string | undefined) => v === 'drawer' || v === 'push'
   const perSlotOffCanvas = Object.values(grid.slots ?? {}).some((s) => isOffCanvas(s.visibility))
   const gridLevelOffCanvas = isOffCanvas(grid.sidebars)
   if (!perSlotOffCanvas && !gridLevelOffCanvas) return null
-
-  const [widthDraft, setWidthDraft] = useState((grid['drawer-width'] ?? '').replace(/px$/, ''))
-
-  // Keep draft in sync when user switches BP.
-  useEffect(() => {
-    setWidthDraft((grid['drawer-width'] ?? '').replace(/px$/, ''))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gridKey, grid['drawer-width']])
 
   // Inherited value from a wider BP — shown as placeholder so the
   // user sees what's actually live if they leave this BP unset.
