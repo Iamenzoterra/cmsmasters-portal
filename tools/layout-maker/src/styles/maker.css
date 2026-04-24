@@ -98,10 +98,17 @@ body {
   overflow: hidden;
 }
 
-/* Shared "tiny small-caps meta-label" treatment — used by the sidebar chrome
- * header and by Phase 5 action-group labels. Single rule covers both. */
+/* Shared "tiny small-caps meta-label" treatment — P7 extension of the P5
+ * sidebar pair to include Inspector / slot-toggle / reference-utility titles.
+ * All 7 sites had identical declarations (font-size + font-weight +
+ * text-transform + letter-spacing + color); consolidation shaves −4 from
+ * F.3 and locks the contract that these label treatments do not drift. */
 .lm-sidebar__header,
-.lm-sidebar__group-label {
+.lm-sidebar__group-label,
+.lm-slot-toggles__title,
+.lm-inspector__section-title,
+.lm-slot-ref__title,
+.lm-token-ref__title {
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
@@ -752,11 +759,6 @@ body {
 }
 
 .lm-slot-toggles__title {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: var(--lm-text-secondary);
   margin-bottom: var(--lm-sp-3);
 }
 
@@ -937,11 +939,6 @@ body {
 .lm-inspector__section:last-child { border-bottom: none; }
 
 .lm-inspector__section-title {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: var(--lm-text-secondary);
   margin-bottom: var(--lm-sp-3);
   display: flex;
   align-items: center;
@@ -1624,11 +1621,6 @@ body {
 }
 
 .lm-slot-ref__title {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: var(--lm-text-secondary);
   margin-bottom: var(--lm-sp-3);
 }
 
@@ -1703,11 +1695,6 @@ body {
 }
 
 .lm-token-ref__title {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: var(--lm-text-secondary);
   margin-bottom: var(--lm-sp-3);
 }
 
@@ -2483,7 +2470,10 @@ body {
 .lm-banner__close:focus-visible,
 .lm-utility-zone__header:focus-visible,
 .lm-preset-dropdown__trigger:focus-visible,
-.lm-preset-dropdown__item:focus-visible {
+.lm-preset-dropdown__item:focus-visible,
+.lm-sidebar__nav-btn:focus-visible,
+.lm-slot-zone:focus-visible,
+.lm-slot-zone--nested:focus-visible {
   outline: 2px solid var(--lm-border-focus);
   outline-offset: 2px;
 }
