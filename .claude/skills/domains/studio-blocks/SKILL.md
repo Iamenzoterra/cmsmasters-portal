@@ -66,3 +66,29 @@ const hsl = hexToHsl('#218721') // { h: 120, s: 61, l: 33 }
 *From domain-manifest.ts — do not edit manually.*
 - **important:** block-processor depends on token-map — if tokens.css changes, token-map may need updates
 - **note:** processing is 100% client-side — no API calls for token analysis
+
+## Tweaks + Variants integration (WP-028, ADR-025 Layer 2 + Layer 4)
+
+### Invariants (WP-028)
+- **RHF form fields:** `code` (html+css merged string) + `variants: BlockVariants | null`. Both trigger `formState.isDirty` on mutation; Save footer consumes `formState.isDirty` as canonical save-enabling signal.
+- **Dispatch helpers:**
+  - `dispatchTweakToForm(form, tweak)` (`ResponsiveTab.tsx:138`) — reads LIVE `form.code` at dispatch time (**live-read invariant** — no stale closure), runs `emitTweak` PostCSS mutation, writes result via `setValue('code', ..., { shouldDirty: true })`.
+  - `dispatchVariantToForm(form, action)` (`ResponsiveTab.tsx`) — mirrors dispatchTweakToForm pattern for variant CRUD + update-content.
+- **OQ5 zero-touch (Studio side):** `emitTweak` lands in `form.code` at dispatch time; save serializes `form.code` verbatim (no composeTweakedCss step needed). Studio path SYMMETRIC with block-forge post-Phase-6. Contrast with block-forge: OQ5 affected block-forge only because its handleSave operated on raw `block.css`.
+- **Empty variants emit `null` payload.** `formDataToPayload` (`block-editor.tsx:163`) emits `variants: populated-map` when `Object.keys(data.variants).length > 0`, else `null`. `null` sentinel is OQ2 clear-signal (WP-028 Phase 5 Ruling HH); validator accepts `variantsSchema.nullable().optional()`.
+
+### Traps & Gotchas (WP-028)
+- **`block-editor.tsx` LOC deviation 33/40.** Phase 5 left `block-editor.tsx` at 33 LOC over the 40-cap deviation baseline (export keyword on formDataToPayload + JSDoc refresh). Phase 6 zero-touch held this at 33/40. If future edits push above 40, refactor extraction required before landing.
+- **OQ4 carry-forward to WP-029 Task A.** Studio-side variant CSS scoping validator (warn at edit time when variant CSS lacks `[data-variant="NAME"]` or `@container` reveal) is deferred to WP-029. If an author gets bitten by un-scoped variant CSS leaking to base variant (like WP-028 Phase 4 smoke caught), that's expected until WP-029 ships. Reference: `logs/wp-028/parked-oqs.md` §OQ4.
+- **`VariantsDrawer.tsx` byte-identical body with block-forge.** Studio mirror is 1:1 except header + `composeSrcDoc` import path (`./preview-assets` vs block-forge `../lib/preview-assets`). Cross-surface sync-edit discipline enforced by `apps/studio/src/pages/block-editor/responsive/PARITY.md`.
+- **`handleSave` revalidates cache-wide via `{}`.** `/api/content/revalidate` body is `{}` (WP-027 ≤15 LOC extension); invalidates every tag. Block CSS changes cascade to every theme using the block. Memory `feedback_revalidate_default.md` enforces this — do NOT default to `{ slug, type: 'block' }`.
+
+### Blast Radius (WP-028)
+- **Changing `formDataToPayload`** — breaks OQ2 clear-signal flow (null vs undefined emission). Studio integration pins in `responsive/__tests__/integration.test.tsx` + `block-editor/__tests__/formDataToPayload.test.ts` guard the null contract.
+- **Changing `dispatchTweakToForm`** — affects TweakPanel → form.code bridge. TweakPanel.test.ts pins include LIVE-read semantics (3 tests: dispatch reads getValues at call time, no stale closure, handles missing style tag).
+- **Changing `dispatchVariantToForm`** — affects VariantsDrawer CRUD + VariantEditor update-content → form.variants bridge. Integration tests cover rename-race safety + update-content flush.
+- **Tightening `variants` schema to non-nullable** — silently breaks "delete all variants" save (regresses OQ2). Phase 5 Ruling HH: stay `nullable().optional()`.
+
+### Recipes (WP-028)
+1. **Add a new form field exposed via dispatch helper** — mirror the `dispatchTweakToForm` pattern: read LIVE via `form.getValues`, mutate, write via `setValue(..., { shouldDirty: true })`. Integration pin: assert `form.getValues()` reflects the dispatch call immediately.
+2. **Debug "Save button doesn't enable after Accept/Tweak"** — check `onApplyToForm` callback is wired when mounting `ResponsiveTab` (optional but required for save-enabling). Verify `shouldDirty: true` flag on every setValue call inside dispatch helpers.

@@ -222,6 +222,31 @@ this without auditing all app consumers.
 
 See `logs/wp-028/parked-oqs.md` §OQ3 for the Phase 4 symptom + Phase 6 fix.
 
+### Extract-vs-reimplement empirical metric (WP-028 Phase 0)
+
+WP-028 validated the **reimplement-in-both** cross-surface discipline at 10× complexity vs WP-026/027. Phase 0 RECON measured non-cosmetic diff counts between surface bodies; threshold for "extract to shared package" kicks in at **~15 non-cosmetic diffs**. WP-028 stayed REIMPLEMENT at ~4 diffs post-close (cross-surface bodies byte-identical modulo 3-line header + surface-specific `composeSrcDoc` import path per Ruling GG).
+
+**Rule:** if adding a new UI pattern would push the diff count above ~15, extract to `packages/block-forge-ui/` instead. Below that, byte-identical reimplement is cheaper than the package overhead (install dance, build step, version churn).
+
+Reference: `logs/wp-028/phase-0-result.md` empirical metric section + `tools/block-forge/PARITY.md` §Variant Editor discipline note.
+
+### Byte-identical cross-surface component body discipline
+
+When a component ships on both `tools/block-forge` and `apps/studio/src/pages/block-editor/responsive`, the `.tsx` body MUST be byte-identical modulo:
+
+1. **3-line JSDoc header** — references each surface's wiring context
+2. **Surface-specific imports only** — e.g. block-forge `../lib/preview-assets` vs Studio `./preview-assets` (Ruling GG explicit exception)
+
+Any divergence beyond these two axes = drift. The PARITY.md files (both surfaces) track this contract; cross-commit discipline requires byte-identical body landings in the same commit (same-commit discipline).
+
+Reference: `tools/block-forge/PARITY.md` + `apps/studio/src/pages/block-editor/responsive/PARITY.md` (cross-mirror files).
+
+### Cross-tab concurrency (block-editor surfaces)
+
+Studio's `block-editor.tsx` integrates 3 editing surfaces (Editor textarea, Responsive suggestion list, Responsive tweak/variant drawer) against one RHF form instance. **Last-write-wins semantics** — no per-tab isolation, no conflict UI. Enumerated in both PARITY.md files §Cross-tab concurrency.
+
+No new logic added unless real data loss is observed. WP-028 Phase 4 smoke + Phase 5 integration pins confirmed no data loss; the contract is documentation-only.
+
 ### Next.js Portal (.env.local)
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co

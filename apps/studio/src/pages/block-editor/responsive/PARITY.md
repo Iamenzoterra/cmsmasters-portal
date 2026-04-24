@@ -225,7 +225,7 @@ Authoritative enumeration of dirty signals + save-enabling sources across both s
 4. `.bak` written iff `!session.backedUp` (first save per session).
 5. `clearAfterSave(session, refreshed.variants ?? {})` — session aligns to post-save disk state.
 
-**Pre-existing save-path gap (Phase 5 result-log OQ5 candidate for Phase 6+):** `composeTweakedCss` runs in the render-time `composedBlock` memo (App.tsx L146-153) but is NOT called inside `handleSave`. A tweak-only save therefore writes the base CSS, not the tweak-composed CSS. Phase 4 carve-outs fixed the "save proceeds at all" bug; tweak-composition at save time was never in scope and is logged here for transparency. Phase 5 integration pins cover the save-happens half only.
+**Tweak-compose-on-save ✅ RESOLVED at WP-028 Phase 6 Commit 1 `fc8ed555`:** `composeTweakedCss` now runs in `handleSave` BEFORE `applySuggestions` when `session.tweaks.length > 0` (App.tsx L271-281). Tweak-only saves persist composed CSS. Regression pin in `src/__tests__/integration.test.tsx` `Phase 6 — OQ5 tweak-compose-on-save regression pin` describe block asserts `@container slot (max-width: 480px)` chunk + property:value in saved css. Studio path SYMMETRIC (no fix needed) — `ResponsiveTab.tsx:151-152` lands `emitTweak` output in `form.code` at dispatch time; save serializes verbatim.
 
 ### Cross-tab concurrency — last-write-wins semantics
 
@@ -235,3 +235,9 @@ Both surfaces follow last-write-wins — no per-tab isolation, no explicit confl
 2. **block-forge:** Accept suggestion → tweak element → variant fork. All three land in `session` (each via a distinct reducer path); `handleSave` writes all in one fs round-trip.
 
 Transparent last-write-wins is acceptable per the WP-028 workplan §5 directive: "document last-write-wins behaviour. No new logic unless real data loss." Phase 4 live-smoke confirmed no data loss on either surface. This section is the canonical documentation; Phase 6 Close cross-references it without duplication.
+
+## Discipline Confirmation (WP-028 Close — Studio mirror)
+
+Studio Responsive tab surface closed WP-028 with byte-identical cross-surface body discipline across TweakPanel + VariantsDrawer + VariantEditor. OQ5 Studio zero-touch confirmed via Phase 6 pre-flight: `ResponsiveTab.tsx:151-152` emits `emitTweak` output into `form.code` at dispatch time; save serializes `form.code` verbatim with no compose-on-save step required. Contrast with block-forge which shipped Ruling MM compose-in-handleSave fix at Phase 6 Commit 1 `fc8ed555` (asymmetric fix pattern — data path differs, dirty-state contract identical).
+
+`block-editor.tsx` LOC deviation held at 33/40 through Phase 6 (Phase 5 exit). Cross-reference: `tools/block-forge/PARITY.md` §Discipline Confirmation (WP-028 Close).

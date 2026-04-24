@@ -84,3 +84,34 @@ status: full
 3. **Debug save not landing:** DevTools → Network tab → POST `/api/blocks/:slug` → check status + response body (`{ ok: true, slug, backupCreated }`). Check disk for `.bak` + modified `.json`.
 4. **Regenerate preview parity:** after a token or portal render change, update `src/lib/preview-assets.ts` AND `tools/block-forge/PARITY.md` in the same commit. Run `npm run block-forge` + DevTools-check the iframe DOM matches the new contract.
 5. **Install fresh:** follow the install dance (strip `@cmsmasters/*` → `npm install` → restore). Root `block-forge:*` aliases still work post-dance.
+
+## Tweaks + Variants authoring (WP-028, ADR-025 Layer 2 + Layer 4)
+
+### Start Here (WP-028)
+1. `tools/block-forge/src/App.tsx` handleSave L256-311 — save orchestration post-OQ5 (composeTweakedCss BEFORE applySuggestions)
+2. `tools/block-forge/src/lib/session.ts` — session reducer: `tweaks`, `variants`, `history`
+3. `tools/block-forge/src/components/VariantsDrawer.tsx` — variant CRUD + VariantEditor (tabbed UI)
+4. `tools/block-forge/PARITY.md` §Dirty-state contract — authoritative cross-surface dirty signal enumeration
+
+### Invariants (WP-028)
+- **`composeTweakedCss` runs in BOTH render-time memo (App.tsx L149) AND handleSave (L271-281).** Pre-Phase-6 handleSave used raw `block.css` and silently dropped tweaks on save (OQ5). Ruling MM fix: compose first, then applySuggestions. Regression pin in `integration.test.tsx` asserts `@container` chunk in saved css.
+- **Session reducer shape:** `{ pending, rejected, history, backedUp, lastSavedAt, tweaks: Tweak[], variants: BlockVariants }`. `isDirty(session)` returns true if any of: pending/rejected non-empty, tweaks non-empty, variants mutated from baseline, history carries variant-* or variant-update actions.
+- **Variants save emits `null` on empty.** `handleSave` payload: `variants: hasVariants ? session.variants : null`. `null` sentinel (Ruling LL) preserves JSON.stringify key for disk/DB parity with Studio's PUT payload.
+- **Path B re-converge (Phase 3.5):** `composeSrcDoc` single-wraps (`.slot-inner` only); `renderForPreview` emits pre-wrapped `<div data-block-shell="{slug}">` via engine `wrapBlockHtml`. Both surfaces structurally identical iframe DOM. Future `composeSrcDoc` edits MUST NOT re-introduce inner wrap.
+- **VariantEditor mini-preview iframe uses reserved slug `'variant-preview'`** — TweakPanel listener filters by `currentSlug`, so cross-iframe element-click postMessages from variant preview are silently dropped.
+
+### Traps & Gotchas (WP-028)
+- **Tweak-only save data-loss (OQ5 pre-fix).** Fixed at Phase 6 Commit 1 `fc8ed555`; if anyone reverts the `composedCss` step in handleSave, the OQ5 regression pin in `integration.test.tsx` fires with `@container` chunk missing assertion. Do NOT remove the pin.
+- **`session.variants` vs `block.variants` on slug change.** Ruling P' seeds `session.variants` from `block.variants ?? {}` via useEffect spread (createSession stays zero-arg). Any slug-change regression causes stale variants from prior block to leak into current session.
+- **`VariantsDrawer.tsx` cross-surface body discipline.** Byte-identical between surfaces modulo header + `composeSrcDoc` import. Adding logic that diverges requires extracting to shared package OR sync-edit both files in same commit.
+- **Debounced update-content flush-on-unmount.** 300ms debounce on textarea → `onAction` dispatch. Empty-deps cleanup effect reading latest-values via ref guarantees close-drawer-mid-edit never drops content (Ruling BB). Do NOT convert to regular state ref — will flush stale values.
+
+### Blast Radius (WP-028)
+- **`tools/block-forge/src/App.tsx` handleSave** — OQ5 fix site. Removing composeTweakedCss step silently regresses tweak-only save. Regression pin guards: `Phase 6 — OQ5 tweak-compose-on-save regression pin` describe block.
+- **`tools/block-forge/src/lib/session.ts`** — full state machine including variant actions + variant-update. 25+ tests in `session.test.ts`; new transitions require test additions.
+- **`tools/block-forge/src/components/VariantsDrawer.tsx` + `VariantEditor` tabs** — byte-identical with Studio mirror. Diverging edits require cross-surface sync OR extract.
+- **`packages/validators/src/block.ts` variants schema** — `nullable().optional()` (WP-028 Phase 5 OQ2 Ruling HH). Tightening to non-nullable silently breaks "delete all variants" clear-signal flow.
+
+### Recipes (WP-028)
+1. **Add a new tweak property** — extend `CLICKABLE_TAGS` in preview-assets element-click handler (both surfaces), add property to TweakPanel slider UI (both surfaces byte-identical), add PostCSS emit path in `packages/block-forge-core/src/lib/tweaks.ts` `emitTweak`. Snapshot test in core engine pins new property; integration pin in both surfaces pins @container chunk emission.
+2. **Debug tweak-save regression** — run `npm -w tools/block-forge test -- integration` and check `Phase 6 — OQ5 tweak-compose-on-save regression pin` result. Pin asserts `@container slot (max-width: 480px)` in saved css + property:value chunk. If green, save path is correct; if red, composeTweakedCss step missing from handleSave.
