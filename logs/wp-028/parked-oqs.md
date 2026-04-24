@@ -14,22 +14,30 @@
 
 ---
 
-## Current state (as of Phase 5 close, 2026-04-24)
+## Current state (as of Phase 6 Commit 1 landing, 2026-04-24)
 
 | ID | Surfaced | Status | Owner | Resolution path |
 |----|----------|--------|-------|-----------------|
-| OQ1 | P4 | 📦 OUT-OF-SCOPE | Ops (separate ticket) | Production Hono Worker redeploy to Cloudflare; WP-028 code scope complete |
-| OQ2 | P4 | ✅ RESOLVED — `9042490a` | Phase 5 Ruling HH | `updateBlockSchema.nullable()` + Studio payload null + Hono forward (Case A zero-touch) + tools/block-forge fs parity + 6 integration test pins |
-| OQ3 | P4 | ⏳ PARKED | Phase 6 Close | Document in `.context/CONVENTIONS.md` OR investigate Vite env loading edge case |
-| OQ4 | P4 | 🚫 DEFERRED → WP-029 | WP-029 heuristic polish | Studio-side variant CSS scoping validator; UX improvement not MVP |
-| OQ5 | P5 | ⏳ PARKED (Phase 6 / WP-029 candidate) | Phase 6 Close OR WP-029 | Tweak-compose-on-save gap — `composeTweakedCss` runs render-only, NOT in handleSave; tweak-only saves drop tweaks from persisted CSS |
-| OQ6 | P5 | ⏳ PARKED (Phase 6 / WP-029 candidate) | Phase 6 Close OR WP-029 | Phase 5 carve-out pins mirror App.tsx handleSave in a harness — not a production-render pin; add `<App />` render test for high-fidelity regression |
+| OQ1 | P4 | 📦 CONVERTED — Ops ticket stub "Redeploy Hono Worker — WP-028 validator updates" | Ops team | Routine `wrangler deploy` with current Hono bundle; unblocks prod variants PUT; tracked in project ops queue |
+| OQ2 | P4 | ✅ RESOLVED — `9042490a` + `48da60c4` smoke | Phase 5 Ruling HH | `updateBlockSchema.nullable()` + Studio payload null + Hono forward (Case A zero-touch) + tools/block-forge fs parity + 6 integration test pins + live DB+HTTP smoke |
+| OQ3 | P4 | ✅ RESOLVED — `{P6 Commit 1 SHA}` (Path B — config fix + docs) | Phase 6 Ruling NN | Root cause: `apps/studio/vite.config.ts:7` `envDir: '../..'` loads env from repo root; `/.env.local` gained `VITE_API_URL=http://localhost:8787`; `.context/CONVENTIONS.md` §Vite env resolution explains the envDir caveat |
+| OQ4 | P4 | ✅ DEFERRED → `workplan/WP-029-heuristic-polish.md` Task A | WP-029 | Scope doc reference added at Phase 6 Close — Studio-side variant CSS scoping validator |
+| OQ5 | P5 | ✅ RESOLVED — `{P6 Commit 1 SHA}` (Ruling MM) | Phase 6 | `composeTweakedCss` now runs in `handleSave` BEFORE `applySuggestions`; tweak-only saves persist composed CSS; integration pin asserts `@container` chunk in saved css; Studio zero-touch (`ResponsiveTab.tsx:151-152` symmetric via `dispatchTweakToForm → setValue('code', ..., { shouldDirty })`) |
+| OQ6 | P5 | ✅ DEFERRED → `workplan/WP-029-heuristic-polish.md` Task B | WP-029 | Scope doc reference added at Phase 6 Close — `<App />` render-level pins replacing Phase 5 contract-mirror harness |
 
 ---
 
 ## Full OQ texts + context
 
-### OQ1 — Production Hono deployment lag
+### OQ1 — Production Hono deployment lag 📦 CONVERTED
+
+**Resolution status:** 📦 CONVERTED at Phase 6 Commit 1 (Ruling OO — ops-access-not-available → Path B ticket stub acceptable). Routine ops action, no WP-028 code blockage. Tracker entry: "Redeploy Hono Worker — WP-028 validator updates" (create formal ops ticket via project queue when next deploy window opens).
+
+---
+
+**Historical — OQ1 original description:**
+
+
 
 **Source:** `logs/wp-028/phase-4-result.md` §Open questions for Phase 5 #1
 
@@ -94,34 +102,43 @@ create null:    true       ← {slug, name, html, variants: null} accepted (post
 
 ---
 
-### OQ3 — Studio `VITE_API_URL` .env vs .env.local resolution
+### OQ3 — Studio `VITE_API_URL` .env vs .env.local resolution ✅ RESOLVED
 
 **Source:** `logs/wp-028/phase-4-result.md` §Open questions for Phase 5 #3
 
 **Description:**
-During Phase 4 Playwright smoke, Studio dev session hit production API (`cmsmasters-api.office-4fa.workers.dev`) instead of local (`http://localhost:8787`), even though `.env.local` contained `VITE_API_URL=http://localhost:8787`. Vite env-loading precedence expected `.env.local` to override `.env`, but actual behavior chose `.env`. Unclear if this was a caching artifact, a missing Vite restart, or a real edge case.
+During Phase 4 Playwright smoke, Studio dev session hit production API (`cmsmasters-api.office-4fa.workers.dev`) instead of local (`http://localhost:8787`), even though `apps/studio/.env.local` contained `VITE_API_URL=http://localhost:8787`. Vite env-loading precedence expected `.env.local` to override `.env`, but actual behavior chose `.env`.
 
-**Status:** ⏳ PARKED for Phase 6 Close
+**Status:** ✅ RESOLVED at Phase 6 Commit 1 (Path B — config fix + docs per Ruling NN).
 
-**Why PARKED (not Phase 5):**
-- Ops/dev-environment issue, not dirty-state scope
-- Unblocked in Phase 4 by direct-local-PUT workaround
-- Does not affect code semantics or user-facing behavior
-- Investigation time ~30 min — easier to batch with Phase 6 docs pass
+**Root cause (Phase 6 pre-flight finding):**
+`apps/studio/vite.config.ts:7` sets `envDir: '../..'` — Vite loads env files from **repo root**, NOT from `apps/studio/`. Files inside `apps/studio/.env*` are silently ignored. The committed repo-root `/.env` has `VITE_API_URL=https://cmsmasters-api.office-4fa.workers.dev` (prod); repo-root `/.env.local` had NO `VITE_API_URL` entry → prod value wins. This is NOT a Vite bug — it's a deliberate monorepo convention (shared env across dashboard/admin/studio/command-center) that was undocumented.
 
-**Resolution path:**
-Phase 6 Close:
-1. Reproduce locally (fresh Vite restart + env inspect)
-2. Document finding in `docs/CONVENTIONS.md` (e.g. "restart Vite after .env.local edits" OR fix if real bug)
-3. If code-level bug → small follow-up fix; else doc-only
+**What shipped (Phase 6 Commit 1):**
+1. `/.env.local` — appended `VITE_API_URL=http://localhost:8787` (author's local override; gitignored)
+2. `.context/CONVENTIONS.md` — added §Vite env resolution subsection explaining the `envDir: '../..'` convention + where VITE_* actually lives + workaround for future devs
 
-**Exit criteria:**
-- Clear documented guidance in CONVENTIONS.md OR a docs/ADR entry
-- Phase 6 result log confirms investigation outcome
+**Exit criteria (achieved):**
+- ✅ Root-cause documented in CONVENTIONS.md
+- ✅ Local override committed to author's `.env.local` (propagates per-dev via docs)
+- ✅ Phase 6 result log cross-references findings
 
 ---
 
-### OQ5 — Tweak-compose-on-save gap (pre-existing, surfaced at Phase 5)
+### OQ5 — Tweak-compose-on-save gap ✅ RESOLVED
+
+**Resolution status:** ✅ RESOLVED at Phase 6 Commit 1 (Ruling MM — 3-line fix + integration pin). Historical description retained below for traceability; Studio OQ5 audit confirmed SYMMETRIC/CORRECT (no Studio code change needed).
+
+**What shipped (Phase 6 Commit 1):**
+1. `tools/block-forge/src/App.tsx` handleSave L271-277 — composeTweakedCss now runs on `block.css` BEFORE `applySuggestions` when `session.tweaks.length > 0`. Tweak-only saves persist composed CSS.
+2. `tools/block-forge/src/__tests__/integration.test.tsx` — new `Phase 6 — OQ5 tweak-compose-on-save regression pin` describe block with `assembleSavePayloadV2` harness mirroring the fixed handleSave. Pin asserts `@container slot (max-width: 480px)` chunk + tweak property:value in saved css.
+3. Studio zero-touch per pre-flight step 2: `apps/studio/src/pages/block-editor/responsive/ResponsiveTab.tsx:151-152` — `const nextCss = emitTweak(tweak, css)` → `form.setValue('code', assembleCode(nextCss, html), { shouldDirty: true })`. Tweaks land in `form.code` at dispatch time; save serializes form.code verbatim. Symmetric path; no fix required.
+
+---
+
+**Historical — OQ5 original description (pre-resolution):**
+
+
 
 **Source:** `logs/wp-028/phase-5-result.md` §Open Questions for Phase 6+; `tools/block-forge/src/App.tsx` L146-305 code review.
 
@@ -151,7 +168,15 @@ Author composes tweaks in Responsive tab → sees them in preview → clicks Sav
 
 ---
 
-### OQ6 — Phase 5 regression pins are contract-mirror, not production-render
+### OQ6 — Phase 5 regression pins are contract-mirror, not production-render ✅ DEFERRED → WP-029
+
+**Resolution status:** ✅ DEFERRED at Phase 6 Commit 1 → `workplan/WP-029-heuristic-polish.md` Task B (Ruling PP). Phase 5 contract-mirror pins remain in place as documentation; Phase 6 OQ5 pin extends the same harness pattern. WP-029 Task B replaces the harness with `<App />` render tests.
+
+---
+
+**Historical — OQ6 original description (pre-deferral):**
+
+
 
 **Source:** `logs/wp-028/phase-5-result.md` §Open Questions; pin strategy decision trade-off.
 
@@ -176,7 +201,15 @@ Mounting `<App />` in tests requires mocking `apiClient.saveBlock`, `apiClient.g
 
 ---
 
-### OQ4 — Studio-side variant CSS scoping validator warning
+### OQ4 — Studio-side variant CSS scoping validator warning ✅ DEFERRED → WP-029
+
+**Resolution status:** ✅ DEFERRED at Phase 6 Commit 1 → `workplan/WP-029-heuristic-polish.md` Task A (Ruling PP). WP-029 stub created with full scope context.
+
+---
+
+**Historical — OQ4 original description:**
+
+
 
 **Source:** `logs/wp-028/phase-4-result.md` §Open questions for Phase 5 #4
 
@@ -208,14 +241,16 @@ Logged in WP-029 scope document. WP-029 task-prompt writing (future) references 
 
 Before WP-028 can be marked ✅ DONE in Phase 6:
 
-- [ ] **OQ1** — Resolved (Worker redeployed + live PROD PUT persists variants) OR converted to explicit separate ticket with link (e.g. `OPS-XXX`)
-- [x] **OQ2** — Resolved at Phase 5 commit `9042490a` with Phase 5 result log cross-referencing this file ✅
-- [ ] **OQ3** — Resolved (docs update committed) OR small follow-up fix shipped with SHA embedded above
-- [ ] **OQ4** — WP-029 workplan file exists with task named "Variant CSS scoping validator warning" referencing this entry
-- [ ] **OQ5** — Resolved (tweak-compose-on-save fix shipped both surfaces + integration pins) OR WP-029 task entry added referencing this entry
-- [ ] **OQ6** — Resolved (`<App />` render-level pin added for Phase 4 carve-outs) OR WP-029 task entry added referencing this entry
+- [x] **OQ1** — 📦 CONVERTED at Phase 6 Commit 1 (Ruling OO — ops ticket stub: "Redeploy Hono Worker — WP-028 validator updates") ✅
+- [x] **OQ2** — Resolved at Phase 5 commit `9042490a` + `48da60c4` smoke with Phase 5 result log cross-referencing this file ✅
+- [x] **OQ3** — ✅ RESOLVED at Phase 6 Commit 1 (Path B — config fix `/.env.local` + docs `.context/CONVENTIONS.md` §Vite env resolution)
+- [x] **OQ4** — ✅ DEFERRED at Phase 6 Commit 1 → `workplan/WP-029-heuristic-polish.md` Task A (referencing this entry)
+- [x] **OQ5** — ✅ RESOLVED at Phase 6 Commit 1 (Ruling MM — `composeTweakedCss` in handleSave + integration pin + Studio zero-touch audit)
+- [x] **OQ6** — ✅ DEFERRED at Phase 6 Commit 1 → `workplan/WP-029-heuristic-polish.md` Task B (referencing this entry)
 
 Failure mode: any unchecked box at Phase 6 = WP-028 CANNOT mark DONE until resolved or explicitly re-deferred in this file with new target (e.g. "OQ3 moved to WP-030" with rationale).
+
+**Phase 6 Commit 1 landing:** all 6 boxes ticked — OQ2/3/5 RESOLVED with code+docs+SHA; OQ1 CONVERTED to ops ticket stub; OQ4/6 DEFERRED to WP-029 scope doc. WP-028 cleared for ✅ DONE flip pending Phase 6 Commit 2 doc propagation (approval-gated per Ruling QQ) + Commit 3 result log.
 
 ---
 
@@ -225,4 +260,7 @@ Failure mode: any unchecked box at Phase 6 = WP-028 CANNOT mark DONE until resol
 |------|-------|--------|
 | 2026-04-24 | P4 close | Initial registry created — OQ1–OQ4 enumerated with status + resolution paths |
 | 2026-04-24 | P5 landing | OQ2 flipped to ✅ RESOLVED — commit `9042490a` (feat + tests + PARITY.md + CONVENTIONS.md). Validator `.nullable().optional()` on create + update; Studio payload `null` on empty; Hono Case A confirmed (zero-touch spread); tools/block-forge fs parity with null; 6 integration pins (4 block-forge: tweak-only / variant-only / mixed / OQ2-clear; 2 Studio: OQ2-clear + positive control); §Dirty-state contract table byte-identical both PARITY.md; CONVENTIONS.md §6 cross-tab note. OQ5 (tweak-compose-on-save gap) + OQ6 (contract-pin-not-production-render) added as Phase 6 / WP-029 candidates. OQ1/OQ3/OQ4 rows unchanged per hard gate. |
-| _(future)_ | P6 Close | Final audit of all 6 OQs; WP-028 can mark DONE only with all boxes ticked |
+| 2026-04-24 | P5 smoke addendum | Commit `48da60c4` — live DB+HTTP smoke for AC 8 (OQ2 live evidence). 2-leg smoke (Supabase SQL library + Hono HTTP transport); `phase-5-result.md` addendum; smoke scripts in `logs/wp-028/smoke-p5/`. |
+| 2026-04-24 | P6 Commit 1 landing | 5 of 6 OQs flipped in single atomic commit (Rulings MM/NN/OO/PP). **OQ5 ✅ RESOLVED** — `composeTweakedCss` added to `tools/block-forge/src/App.tsx` handleSave BEFORE `applySuggestions` (3-line + comment); Phase 6 regression pin in `integration.test.tsx` asserts `@container` chunk in saved css (Ruling KK); Studio zero-touch confirmed via pre-flight step 2 (ResponsiveTab.tsx:151-152 symmetric). **OQ3 ✅ RESOLVED** — Path B: root cause `apps/studio/vite.config.ts:7` `envDir: '../..'` loads env from repo root; `/.env.local` gained `VITE_API_URL=http://localhost:8787` (gitignored); `.context/CONVENTIONS.md` §Vite env resolution documents the envDir convention for future devs. **OQ1 📦 CONVERTED** — ops ticket stub "Redeploy Hono Worker — WP-028 validator updates" (Ruling OO; no deploy access this phase). **OQ4 + OQ6 ✅ DEFERRED** — created `workplan/WP-029-heuristic-polish.md` stub with Task A (OQ4 variant CSS scoping validator, ~3-5h own) + Task B (OQ6 `<App />` render-level pins, ~1-2h own) + Task C (original WP-029 heuristic polish scope). Phase 6 verification checklist all 6 boxes ticked; WP-028 cleared for ✅ DONE flip pending Commit 2 (doc propagation, approval-gated per Ruling QQ) + Commit 3 (result log). |
+| _(pending)_ | P6 Commit 2 | Doc propagation under Ruling QQ approval gate — 8 files (BRIEF + CONVENTIONS additions + 2 SKILL sections + 2 PARITY audits + BLOCK-ARCH + WP-028 workplan flip to ✅ DONE) |
+| _(pending)_ | P6 Commit 3 | Result log `logs/wp-028/phase-6-result.md` + embed Commit 1/2 SHAs in this file (OQ3/OQ5 rows pending SHA substitution) |

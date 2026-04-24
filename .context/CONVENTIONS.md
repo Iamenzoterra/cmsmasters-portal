@@ -203,6 +203,25 @@ VITE_SUPABASE_ANON_KEY=eyJ...
 VITE_API_URL=http://localhost:8787
 ```
 
+### Vite env file resolution (WP-028 Phase 6 / OQ3)
+
+**`apps/studio/vite.config.ts:7` sets `envDir: '../..'`** — Vite loads env
+files from REPO ROOT, not from `apps/studio/`. Putting `.env` or `.env.local`
+inside `apps/studio/` has NO EFFECT; those files are silently ignored.
+
+All Studio env vars (`VITE_API_URL`, `VITE_SUPABASE_URL`, etc.) live in:
+- `/.env` — committed defaults (prod URLs)
+- `/.env.local` — gitignored local overrides (localhost URLs)
+
+**Workaround for local dev:** append `VITE_API_URL=http://localhost:8787` to
+`/.env.local` (already contains Supabase dev keys etc.).
+
+**Why `envDir: '../..'`:** shared monorepo env across apps (dashboard, admin,
+studio, command-center) — single source of truth at repo root. Do NOT change
+this without auditing all app consumers.
+
+See `logs/wp-028/parked-oqs.md` §OQ3 for the Phase 4 symptom + Phase 6 fix.
+
 ### Next.js Portal (.env.local)
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co

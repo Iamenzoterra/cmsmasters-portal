@@ -675,3 +675,73 @@ describe('Phase 5 — Carve-out regression pins + OQ2 clear-signal', () => {
     expect(parsed.variants).toBeNull()
   })
 })
+
+// ─────────────────────────────────────────────────────────────────────────
+// PHASE 6 REGRESSION PINS — OQ5 tweak-compose-on-save (Ruling MM)
+//
+// Pre-Phase-6 handleSave used raw `block.css` in the save payload; the
+// render-time `composedBlock` memo (App.tsx L149) called composeTweakedCss
+// only for the preview iframe. Tweak-only saves therefore persisted base
+// CSS without the author's tweak — silent data loss on next reload.
+//
+// Phase 6 Ruling MM adds composeTweakedCss into handleSave BEFORE
+// applySuggestions. The pin below asserts the SAVED css contains the
+// @container chunk with the tweak's decl, not just that save happens.
+// Harness V2 mirrors post-fix handleSave so if production regresses away
+// from the compose-on-save order, the pin fires.
+// ─────────────────────────────────────────────────────────────────────────
+describe('Phase 6 — OQ5 tweak-compose-on-save regression pin', () => {
+  let baseBlock: BlockJson
+
+  beforeAll(async () => {
+    baseBlock = await loadFixture('block-spacing-font')
+  })
+
+  function assembleSavePayloadV2(
+    block: BlockJson,
+    session: SessionState,
+    suggestions: import('@cmsmasters/block-forge-core').Suggestion[],
+  ): BlockJson | null {
+    if (!isDirty(session)) return null
+    const accepted = pickAccepted(session, suggestions)
+    const composedCss =
+      session.tweaks.length > 0
+        ? composeTweakedCss(block.css, session.tweaks)
+        : block.css
+    const applied =
+      accepted.length > 0
+        ? applySuggestions(
+            { slug: block.slug, html: block.html, css: composedCss },
+            accepted,
+          )
+        : { html: block.html, css: composedCss }
+    const hasVariants = Object.keys(session.variants).length > 0
+    return {
+      ...block,
+      html: applied.html,
+      css: applied.css,
+      variants: hasVariants ? session.variants : null,
+    }
+  }
+
+  it('tweak-only save persists composed CSS to disk [OQ5 regression pin]', () => {
+    const tweak = {
+      selector: '.block-spacing-font',
+      bp: 480 as const,
+      property: 'padding',
+      value: '8px',
+    }
+    let s = createSession()
+    s = addTweak(s, tweak)
+    expect(isDirty(s)).toBe(true)
+
+    const payload = assembleSavePayloadV2(baseBlock, s, [])
+    expect(payload).not.toBeNull()
+    // OQ5 assertions — persisted CSS must contain the @container chunk with
+    // the tweak's property:value. Pre-Phase-6 the saved css was raw block.css
+    // (no @container chunk) → assertion fires.
+    expect(payload!.css).toMatch(/@container slot \(max-width: 480px\)/)
+    expect(payload!.css).toContain(`${tweak.property}:`)
+    expect(payload!.css).toContain(tweak.value)
+  })
+})

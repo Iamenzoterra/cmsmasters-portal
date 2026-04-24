@@ -268,13 +268,21 @@ export function App() {
       // {slug, html, css, variants?} (BlockOutput). When no suggestions are
       // accepted, skip the call and keep base html/css verbatim — variant /
       // tweak edits still reach disk through updatedBlock below.
+      // WP-028 Phase 6 (Ruling MM / OQ5) — compose session.tweaks into CSS
+      // before applySuggestions so tweak-only saves persist. Pre-Phase-6,
+      // composeTweakedCss ran only at render-time (L149 memo); handleSave
+      // used raw block.css and silently dropped tweaks on save.
+      const composedCss =
+        session.tweaks.length > 0
+          ? composeTweakedCss(block.css, session.tweaks)
+          : block.css
       const applied =
         accepted.length > 0
           ? applySuggestions(
-              { slug: block.slug, html: block.html, css: block.css },
+              { slug: block.slug, html: block.html, css: composedCss },
               accepted,
             )
-          : { html: block.html, css: block.css }
+          : { html: block.html, css: composedCss }
       // Merge applied html/css back into the full BlockJson so we preserve
       // non-engine fields (name, id, block_type, hooks, metadata, etc.).
       // WP-028 Phase 3 — serialize session.variants; emit the non-populated
