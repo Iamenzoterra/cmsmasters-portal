@@ -3,7 +3,7 @@
 > Task: `logs/lm-reforge/phase-5-task.md`
 > Date: 2026-04-24
 > Role: Hands
-> Commit: `<embedded below after landing>`
+> Commit: `0183b6df` — feat(lm): phase 5 — sidebar workflow groups + scopes rename
 
 ---
 
