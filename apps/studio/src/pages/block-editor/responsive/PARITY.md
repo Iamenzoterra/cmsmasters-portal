@@ -116,7 +116,7 @@ The following intentional deltas from `tools/block-forge/PARITY.md` apply only t
 
    **Why the re-converge landed in Phase 3.5:**
    - Phase 3 introduced variant CRUD on both surfaces; block-forge compensated with an INLINE `composeVariants` call in `PreviewTriptych` while `composeSrcDoc` still double-wrapped. That was explicit interim scaffolding.
-   - Phase 3.5 (this one) replaced the inline call with `renderForPreview` + dropped the inner wrap in `composeSrcDoc`. No behavior change — iframe body DOM is byte-identical to pre-3.5 output; only the WHO-wraps refactor.
+   - Phase 3.5 (this one) replaced the inline call with `renderForPreview` + dropped the inner wrap in `composeSrcDoc`. No behavior change — iframe body DOM is structurally identical to pre-3.5 output (verified via live Playwright DOM queries, not a literal HTML-byte diff); only the WHO-wraps refactor.
    - Both surfaces now produce `body > div.slot-inner > div[data-block-shell="{slug}"] > content` — identical DOM.
 
    **Re-converge tracking:** tools/block-forge Phase 3.5 implementation SHA captured in `logs/wp-028/phase-3.5-result.md`; tools/block-forge PARITY.md §Discipline Confirmation (WP-028 Phase 3.5) mirrors this status.
@@ -153,7 +153,7 @@ Studio's `VariantsDrawer` (`./VariantsDrawer.tsx`) has a byte-identical body to 
 
 **Phase 3 render path:** Studio's `ResponsivePreview` already uses Path B (`renderForPreview(block, { variants })`) since WP-027 — variants flow straight through to iframe `srcdoc`. No PreviewTriptych changes this phase.
 
-**Phase 3.5 follow-up (landed):** tools/block-forge `composeSrcDoc` now emits single `.slot-inner` wrap; `PreviewTriptych` calls `renderForPreview(block, { variants })` upstream. §7 above flipped to `✅ RE-CONVERGED`. Both surfaces byte-identical iframe DOM, confirmed via live Playwright smoke.
+**Phase 3.5 follow-up (landed):** tools/block-forge `composeSrcDoc` now emits single `.slot-inner` wrap; `PreviewTriptych` calls `renderForPreview(block, { variants })` upstream. §7 above flipped to `✅ RE-CONVERGED`. Both surfaces structurally identical iframe DOM (DOM-query-level verification via live Playwright smoke + snapshot pins on composeSrcDoc body region).
 
 ---
 

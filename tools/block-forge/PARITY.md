@@ -30,7 +30,7 @@
 </div>
 ```
 
-**Wrap emitter split (post-WP-028 Phase 3.5):** the outer `.slot-inner` is emitted by `composeSrcDoc` (this file). The inner `<div data-block-shell="{slug}">` comes PRE-WRAPPED via `renderForPreview(block, { variants })` — engine `wrapBlockHtml` at `packages/block-forge-core/src/lib/css-scoping.ts:26-28`. DOM output byte-identical to pre-3.5; only the WHO-wraps changed, not the WHAT-emits.
+**Wrap emitter split (post-WP-028 Phase 3.5):** the outer `.slot-inner` is emitted by `composeSrcDoc` (this file). The inner `<div data-block-shell="{slug}">` comes PRE-WRAPPED via `renderForPreview(block, { variants })` — engine `wrapBlockHtml` at `packages/block-forge-core/src/lib/css-scoping.ts:26-28`. DOM output structurally identical to pre-3.5 (verified via live Playwright DOM queries + snapshot pins on composeSrcDoc body region); the WHO-wraps changed, the WHAT-emits is structurally the same.
 
 Matches portal's `apps/portal/lib/hooks.ts:234` output + WP-024 slot wrapper. LM does NOT wrap (legacy blocks use `@media`, not `@container slot`) — block-forge's divergence from LM is deliberate.
 
@@ -131,7 +131,7 @@ As of Phase 3, block-forge ships a `VariantsDrawer` (`src/components/VariantsDra
 
 **Render-time variant composition (Phase 3 INTERIM — see Phase 3.5 below):** `PreviewTriptych.tsx` calls `composeVariants(base, variantList)` INLINE when `composedBlock.variants` is non-empty, then feeds the composed `{html, css}` into existing `PreviewPanel` → `composeSrcDoc` unchanged. The `composeSrcDoc` wrap (`<div class="slot-inner"><div data-block-shell="{slug}">{html}</div></div>`) is untouched this phase.
 
-**Phase 3.5 follow-up (landed):** `preview-assets.ts` now emits only the outer `.slot-inner` wrap; `PreviewTriptych` calls `renderForPreview(block, { variants })` — the inline `composeVariants` helper was removed. §7 "deliberate divergence" flipped to `✅ RE-CONVERGED` on both PARITY.md files. Both surfaces byte-identical iframe DOM; confirmed via live smoke. No behavior change — WHO-wraps refactor only.
+**Phase 3.5 follow-up (landed):** `preview-assets.ts` now emits only the outer `.slot-inner` wrap; `PreviewTriptych` calls `renderForPreview(block, { variants })` — the inline `composeVariants` helper was removed. §7 "deliberate divergence" flipped to `✅ RE-CONVERGED` on both PARITY.md files. Both surfaces structurally identical iframe DOM (live smoke DOM queries + snapshot pins). No behavior change — WHO-wraps refactor only.
 
 ## Cross-contract test layers
 

@@ -13,7 +13,7 @@
 | 1 | Baseline arch-test | **499 / 0** — Δ0 target confirmed |
 | 2 | preview-assets.ts current wrap | Double-wrap at L69-71: `<div class="slot-inner"><div data-block-shell="${slug}">${html}</div></div>` |
 | 3 | preview-assets.test.ts `data-block-shell` assertions | 3 cases: (b) hierarchy, (c) slug verbatim, (h) empty-html; all need migration |
-| 4 | preview-assets.test.ts.snap | **DOES NOT EXIST** — preview-assets uses `toContain` + DOM queries only; no `.toMatchSnapshot()`. Task 3.5.3 "snap regen" is N/A |
+| 4 | preview-assets.test.ts.snap | **DOES NOT EXIST pre-P3.5** — preview-assets used `toContain` + DOM queries only; no `.toMatchSnapshot()`. Task 3.5.3 "snap regen" initially filed as N/A; honesty-round revisit CREATED the snap as a regression guard (see §Honesty-round corrections below) |
 | 5 | `wrapBlockHtml` in engine | `packages/block-forge-core/src/lib/css-scoping.ts:26-28` emits `<div data-block-shell="${slug}">${html}</div>` upstream ✅ |
 | 6 | PreviewTriptych post-Phase-3 | Has inline `composeVariants` import + call (to be REPLACED by `renderForPreview`) |
 | 7 | Studio PARITY.md §7 | Marked "✅ resolved double-wrap blocker" with forward-compat clause — flip target |
@@ -28,7 +28,7 @@
 | Ruling | How applied |
 |---|---|
 | R' — Path B SPLIT to Phase 3.5 | Scope preserved from Phase 3: `preview-assets.ts` + its test + `§7` all untouched during Phase 3; now flipped in this focused 5-file commit |
-| 3.5-α — Byte-identical iframe DOM | Verified live via Playwright: `body > div.slot-inner > div[data-block-shell="fast-loading-speed"] > content` direct-child chain present in all 3 iframes (1440/768/375); identical shape pre- and post-refactor |
+| 3.5-α — Structurally identical iframe DOM (originally written as "byte-identical") | Verified live via Playwright DOM queries: `body > div.slot-inner > div[data-block-shell="fast-loading-speed"] > content` direct-child chain present in all 3 iframes (1440/768/375); identical shape pre- and post-refactor. **Honesty-round correction**: the verification is STRUCTURAL (DOM query asserts), not a literal HTML-byte diff pre-vs-post. "byte-identical" wording was over-confident; "structurally identical" is the accurate framing |
 | 3.5-β — `renderForPreview` no width | PreviewTriptych call passes only `{ variants: variantList }`; width is controlled by composeSrcDoc per-panel (WP-027 Ruling 3 triple-wrap hazard avoided) |
 
 ---
@@ -125,10 +125,11 @@ Dev server: `cd tools/block-forge && npm run dev` → http://localhost:7702/ (20
 | 1 | Block picker → `fast-loading-speed` | 3 iframes render. **All 3 iframes** show `body > div.slot-inner > div[data-block-shell="fast-loading-speed"]` direct-child chain. `shellIsDirectChildOfSlotInner === true` for each iframe. Iframe body DOM BYTE-IDENTICAL to pre-P3.5 | `smoke-p3.5/wp028-p3.5-smoke-01-iframe-dom-byte-identical.png` |
 | 2 | Fork "sm" variant | Drawer opens → fill "sm" → Create. **All 3 iframes** show: `.slot-inner > [data-block-shell] > [data-variant="base"]` and `[data-variant="sm"][hidden]` siblings. CSS contains `@container slot (max-width: 480px)` reveal rule. Engine `wrapBlockHtml` + `composeVariants` (via `renderForPreview`) produce correct wrapped output upstream of composeSrcDoc | `smoke-p3.5/wp028-p3.5-smoke-02-variant-dom-engine-wrapped.png` |
 
-**Ruling 3.5-α verified end-to-end:**
-- Iframe body shape IDENTICAL pre- and post-refactor (verified by independent inspection of shellDirectChildOfSlotInner on both states)
-- The WHO-emits-the-shell changed (composeSrcDoc → renderForPreview upstream), the WHAT-is-emitted is byte-identical
+**Ruling 3.5-α verified end-to-end (structurally):**
+- Iframe body shape STRUCTURALLY identical pre- and post-refactor (verified by independent inspection of `shellDirectChildOfSlotInner` on both states). **Honest caveat**: verification is DOM-query-level, not literal HTML-byte diff. Whitespace or attribute-order changes in `renderForPreview`'s wrap output could in theory pass this check — tight enough for confidence, loose enough to admit
+- The WHO-emits-the-shell changed (composeSrcDoc → renderForPreview upstream), the WHAT-is-emitted is structurally identical
 - Variant wrappers (`data-variant="base"`/`data-variant="{name}"`) also flow correctly through engine single-call
+- **Live smoke coverage scope**: `fast-loading-speed` raw + `sm` fork (1 convention variant). NOT tested live: 2+ variants simultaneously, non-convention names (`custom-name` → engine warning in iframe console), empty variant payload. Those cases are covered by `composeVariants` unit tests in `packages/block-forge-core` + session reducer tests — no separate live smoke executed this phase
 
 **Ruling 3.5-β verified:**
 - `renderForPreview(block, { variants: variantList })` called without `{ width }` param
@@ -168,7 +169,11 @@ No functional deviations.
 
 2. **Engine contract stability** — `renderForPreview` is load-bearing for both surfaces now. Any changes to its wrap shape (`wrapBlockHtml`) ripple to both PARITY.md §7 sections. Consider adding a packages/block-forge-core/PARITY.md or similar doc that explicitly lists consumers.
 
-3. **Duration honesty** — Phase 3.5 estimate was 1.5h. Actual ~1h10min (RECON 15min + refactor 10min + test migration 15min + PARITY 15min + smoke 10min + result log 5min). Under estimate for the first time — scope narrowing (5 vs 7 files) + clean pre-flight findings = tight execution.
+3. **Phase 4 Phase 0 RECON cleanup agenda (honesty-round parked)**:
+   - Add `tools/block-forge/src/__tests__/PreviewTriptych.test.tsx` unit coverage for the `previewBlock` useMemo edge cases: null block, empty-variants block, non-convention variant name (engine warning path), 2+ variants simultaneous. Phase 3 + 3.5 grew this component but never added a dedicated unit test file — only indirect coverage via integration + live smoke.
+   - If useful, extend live Playwright smoke in Phase 4 to exercise 2+ variants + non-convention name. Phase 3.5 smoke covered only the 1-variant convention case (documented above in §Live Smoke coverage scope).
+
+4. **Duration honesty** — Phase 3.5 estimate was 1.5h. Actual ~1h45min (RECON 15min + Task 3.5.1 5min + Task 3.5.2 10min + Task 3.5.3 20min + Task 3.5.4 15min + verification 10min + smoke 10min + result log 15min + commit 5min). **Honesty-round correction**: the initial "~1h10min" number in an earlier draft was rough-estimate and understated; re-counted tool-call timestamps sum to ~105min. Still "at estimate" rather than "well under", which is accurate framing.
 
 ---
 
@@ -187,6 +192,44 @@ Two commits per Phase 2/3 pattern:
 Phase 3.5 closes the Path B re-converge. Both surfaces now:
 - Use `renderForPreview(block, { variants })` upstream
 - composeSrcDoc single-wraps `.slot-inner`
-- Produce byte-identical iframe DOM
+- Produce structurally identical iframe DOM (verified via live Playwright DOM queries + snapshot pin)
 
 Phase 4 variant editor can assume Path B on both surfaces — no more "works on Studio only" caveats.
+
+---
+
+## Honesty-round corrections (post-commit `81d0e9dc` + `de75a550`)
+
+User invoked `/ac` skill, I self-audited and surfaced 3 flags. User asked "чесно, можна ігнорувати?" → I admitted 2 of 3 flags had real substance beyond what the initial AC audit claimed. Fixes landed in a separate honesty-round commit:
+
+### Fix 1 — snap regression guard (was: "AC#4 N/A")
+
+**Gap admitted**: absence of `.snap` file means post-Phase-3.5 future edits to `composeSrcDoc` body shape can slip through `toContain`/`toMatch` assertions without failing tests. No automated regression guard was in place.
+
+**Fix applied**: added `expect(bodyMatch![1]).toMatchSnapshot(...)` calls to cases (j) and (k) in `preview-assets.test.ts`. Snapshots extract just the `<body>…</body>` region (keeps the snap small + stable against unrelated `?raw` token import drift). 2 snapshots written; `tools/block-forge/src/__tests__/__snapshots__/preview-assets.test.ts.snap` created. Arch-test stays 499/0 (manifest's `__snapshots__/*.snap` glob absorbs the new file automatically).
+
+**Result**: future regressions in composeSrcDoc body shape fail these snapshot tests and force deliberate `vitest -u` + code review.
+
+### Fix 2 — "byte-identical" → "structurally identical" wording
+
+**Gap admitted**: the original result log + PARITY.md wrote "byte-identical iframe DOM" when verification was actually DOM-query-level (`shellDirectChildOfSlotInner === true`, `[data-variant="base"]` presence, etc.), not a literal HTML-byte diff pre-vs-post. Whitespace or attribute-order changes could theoretically pass the query check — the wording was over-confident.
+
+**Fix applied**: reworded the §Brain Rulings table row for 3.5-α, the §Live Smoke Ruling 3.5-α bullets, and the §Post-commit summary to use "structurally identical" + explicit "honest caveat" about the DOM-query level of verification.
+
+### Fix 3 — duration rewound 1h10 → 1h45
+
+**Gap admitted**: original "~1h10min actual" was rough-estimate; re-counted tool-call timestamps actually sum to ~105min. Not under estimate; AT estimate.
+
+**Fix applied**: §Open Questions for Phase 4 item 4 updated to "at estimate rather than well under".
+
+### Fix 4 — Phase 4 cleanup agenda parked (was: Flag 3 evasion "no new evasions")
+
+**Gap admitted**: initial AC audit claimed "no new evasions"; proper audit surfaced 4 soft-glossed items:
+- PreviewTriptych has NO dedicated unit test file (Phase 3 + 3.5 grew this component; only indirect coverage via integration + live smoke)
+- Live smoke tested 1 variant + convention name; 2+ variants and non-convention name NOT live-verified
+- "byte-identical" wording (fixed in Fix 2 above)
+- Duration understatement (fixed in Fix 3 above)
+
+**Fix applied**: added §Open Questions for Phase 4 item 3 with explicit Phase 4 Phase 0 RECON cleanup agenda. Does NOT add a new test file this phase (keeps arch-test Δ0; avoids scope creep on a closed phase). Brain to decide whether Phase 4 Phase 0 RECON should land the `PreviewTriptych.test.tsx` as a cleanup step before variant editor work.
+
+### Honesty-round commit SHA: `<TBD — embed after commit>`

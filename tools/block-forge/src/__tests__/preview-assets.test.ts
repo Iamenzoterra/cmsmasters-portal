@@ -114,6 +114,15 @@ describe('composeSrcDoc', () => {
     })
     expect(out).toContain('<div class="slot-inner"><h2>hello</h2></div>')
     expect(out).not.toMatch(/<div data-block-shell=/)
+    // WP-028 Phase 3.5 honesty-round follow-up: snapshot pin guards against
+    // shape-drift beyond the single assertions above. If `@layer` order, token
+    // injection, body width rule, or wrap layout changes unexpectedly, this
+    // snap fails and forces a deliberate update (`vitest -u`) + review.
+    // Extract JUST the body region (`<body>…</body>`) to keep the snap small
+    // and stable against unrelated `?raw` imports (tokens.css changes etc.).
+    const bodyMatch = out.match(/<body>([\s\S]*?)<\/body>/)
+    expect(bodyMatch).not.toBeNull()
+    expect(bodyMatch![1]).toMatchSnapshot('body-region-raw-single-wrap')
   })
 
   it('(k) preserves pre-wrapped html verbatim (Path B happy path)', () => {
@@ -128,6 +137,10 @@ describe('composeSrcDoc', () => {
       slug: 'test',
     })
     expect(out).toContain(`<div class="slot-inner">${preWrapped}</div>`)
+    // Snapshot pin for the pre-wrapped happy path — mirrors case (j) guard.
+    const bodyMatch = out.match(/<body>([\s\S]*?)<\/body>/)
+    expect(bodyMatch).not.toBeNull()
+    expect(bodyMatch![1]).toMatchSnapshot('body-region-pre-wrapped-passthrough')
   })
 })
 

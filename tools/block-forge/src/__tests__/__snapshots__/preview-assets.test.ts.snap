@@ -1,0 +1,405 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`composeSrcDoc > (j) single-wrap contract — raw html flows into .slot-inner verbatim (Phase 3.5) > body-region-raw-single-wrap 1`] = `
+"
+  <div class="slot-inner"><h2>hello</h2></div>
+  <script type="module">/**
+ * animate-utils.js — Shared behavioral animation utilities for Portal blocks.
+ * ES module, browser-native APIs only, compositor-safe (transform + opacity only).
+ * ADR-023: Block Animation Architecture — Layer 2.
+ */
+
+/**
+ * Mouse-tracking parallax on child elements.
+ * @param {HTMLElement} container
+ * @param {NodeList|HTMLElement[]} targets
+ * @param {{ strength?: number, resetOnLeave?: boolean }} [opts]
+ */
+export function trackMouse(container, targets, opts = {}) {
+  const { strength = 20, resetOnLeave = true } = opts
+  const elems = Array.from(targets)
+
+  container.addEventListener('mousemove', (e) => {
+    const rect = container.getBoundingClientRect()
+    const x = (e.clientX - rect.left) / rect.width - 0.5
+    const y = (e.clientY - rect.top) / rect.height - 0.5
+    for (const el of elems) {
+      const s = parseFloat(el.dataset.parallax || String(strength))
+      el.style.transform = \`translate(\${x * s}px, \${y * s}px)\`
+    }
+  })
+
+  if (resetOnLeave) {
+    container.addEventListener('mouseleave', () => {
+      for (const el of elems) el.style.transform = ''
+    })
+  }
+}
+
+/**
+ * Magnetic attraction — element shifts toward cursor on hover, snaps back on leave.
+ * @param {HTMLElement} element
+ * @param {{ strength?: number }} [opts]
+ */
+export function magnetic(element, opts = {}) {
+  const { strength = 0.3 } = opts
+
+  element.addEventListener('mousemove', (e) => {
+    const rect = element.getBoundingClientRect()
+    const x = e.clientX - rect.left - rect.width / 2
+    const y = e.clientY - rect.top - rect.height / 2
+    element.style.transform = \`translate(\${x * strength}px, \${y * strength}px)\`
+  })
+
+  element.addEventListener('mouseleave', () => {
+    element.style.transform = ''
+  })
+}
+
+/**
+ * Stagger animation via Web Animations API.
+ * @param {HTMLElement[]|NodeList} elements
+ * @param {Keyframe[]} keyframes
+ * @param {{ duration?: number, delay?: number, easing?: string, fill?: string }} [opts]
+ */
+export function stagger(elements, keyframes, opts = {}) {
+  const {
+    duration = 600,
+    delay = 80,
+    easing = 'cubic-bezier(0.16, 1, 0.3, 1)',
+    fill = 'forwards',
+  } = opts
+
+  Array.from(elements).forEach((el, i) => {
+    el.animate(keyframes, { duration, delay: i * delay, easing, fill })
+  })
+}
+
+/**
+ * Spring physics interpolation. Calls callback each frame until settled.
+ * @param {number} from
+ * @param {number} to
+ * @param {(value: number) => void} callback
+ * @param {{ stiffness?: number, damping?: number }} [opts]
+ * @returns {{ stop: () => void }}
+ */
+export function spring(from, to, callback, opts = {}) {
+  const { stiffness = 0.15, damping = 0.8 } = opts
+  let value = from
+  let velocity = 0
+  let raf = 0
+
+  function tick() {
+    velocity = (velocity + (to - value) * stiffness) * damping
+    value += velocity
+    callback(value)
+    if (Math.abs(velocity) > 0.01 || Math.abs(to - value) > 0.01) {
+      raf = requestAnimationFrame(tick)
+    } else {
+      callback(to)
+    }
+  }
+
+  raf = requestAnimationFrame(tick)
+  return { stop: () => cancelAnimationFrame(raf) }
+}
+
+/**
+ * Fire callback when element enters viewport. Once by default.
+ * @param {HTMLElement} element
+ * @param {(el: HTMLElement) => void} callback
+ * @param {{ threshold?: number, rootMargin?: string, once?: boolean }} [opts]
+ * @returns {{ disconnect: () => void }}
+ */
+export function onVisible(element, callback, opts = {}) {
+  const { threshold = 0.15, rootMargin = '0px', once = true } = opts
+  const observer = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (entry.isIntersecting) {
+        callback(entry.target)
+        if (once) observer.unobserve(entry.target)
+      }
+    }
+  }, { threshold, rootMargin })
+  observer.observe(element)
+  return { disconnect: () => observer.disconnect() }
+}
+</script>
+  
+  <script>
+    // ResizeObserver → postMessage parent for iframe height sync
+    const ro = new ResizeObserver((entries) => {
+      const h = Math.ceil(entries[0].contentRect.height);
+      parent.postMessage({ type: 'block-forge:iframe-height', slug: "test", width: 1440, height: h }, '*');
+    });
+    ro.observe(document.body);
+  </script>
+  <script>
+    // WP-028 Phase 2 — element-click selection for TweakPanel (Ruling E: strictly additive).
+    // Delegates clicks on document.body; derives a stable selector (Ruling H: id > stable
+    // class > nth-of-type, max depth 5); emits 'block-forge:element-click' postMessage with
+    // selector, rect, and computedStyle seeds for the parent TweakPanel to consume.
+    (function () {
+      const CLICKABLE_TAGS = ['DIV','SECTION','ARTICLE','ASIDE','HEADER','FOOTER','NAV','MAIN',
+                              'H1','H2','H3','H4','H5','H6','P','SPAN','A','BUTTON','UL','OL','LI','IMG'];
+      const UTILITY_PREFIXES = ['hover:','focus:','active:','animate-','group-','peer-'];
+
+      function stableClass(el) {
+        if (!el.className || typeof el.className !== 'string') return null;
+        // NOTE: this script lives inside a template literal — s must be double-
+        // escaped so the emitted source keeps the regex meaning. (Caught by
+        // WP-028 Phase 2 live smoke: /s+/ truncated class names at "s" chars.)
+        const classes = el.className.split(/\\s+/).filter(Boolean);
+        return classes.find((c) => !UTILITY_PREFIXES.some((p) => c.startsWith(p))) || null;
+      }
+
+      function deriveSelector(el) {
+        if (!el || el === document.body) return 'body';
+        if (el.id) return '#' + CSS.escape(el.id);
+
+        const path = [];
+        let cur = el;
+        let depth = 0;
+        while (cur && cur !== document.body && depth < 5) {
+          if (cur.id) { path.unshift('#' + CSS.escape(cur.id)); break; }
+          const cls = stableClass(cur);
+          if (cls) {
+            path.unshift(cur.tagName.toLowerCase() + '.' + CSS.escape(cls));
+          } else {
+            const parent = cur.parentElement;
+            const siblings = parent ? Array.from(parent.children).filter((c) => c.tagName === cur.tagName) : [];
+            const idx = siblings.indexOf(cur) + 1;
+            path.unshift(cur.tagName.toLowerCase() + ':nth-of-type(' + idx + ')');
+          }
+          cur = cur.parentElement;
+          depth += 1;
+        }
+        return path.join(' > ');
+      }
+
+      document.body.addEventListener('click', (e) => {
+        const el = e.target;
+        if (!el || !CLICKABLE_TAGS.includes(el.tagName)) return;
+        e.preventDefault(); e.stopPropagation();
+
+        const rect = el.getBoundingClientRect();
+        const cs = getComputedStyle(el);
+
+        parent.postMessage({
+          type: 'block-forge:element-click',
+          slug: "test",
+          selector: deriveSelector(el),
+          rect: { x: rect.x, y: rect.y, w: rect.width, h: rect.height },
+          computedStyle: {
+            padding: cs.padding, paddingTop: cs.paddingTop, paddingRight: cs.paddingRight,
+            paddingBottom: cs.paddingBottom, paddingLeft: cs.paddingLeft,
+            fontSize: cs.fontSize, gap: cs.gap, display: cs.display,
+          },
+        }, '*');
+      }, true);
+    })();
+  </script>
+"
+`;
+
+exports[`composeSrcDoc > (k) preserves pre-wrapped html verbatim (Path B happy path) > body-region-pre-wrapped-passthrough 1`] = `
+"
+  <div class="slot-inner"><div data-block-shell="test"><h2>hi</h2></div></div>
+  <script type="module">/**
+ * animate-utils.js — Shared behavioral animation utilities for Portal blocks.
+ * ES module, browser-native APIs only, compositor-safe (transform + opacity only).
+ * ADR-023: Block Animation Architecture — Layer 2.
+ */
+
+/**
+ * Mouse-tracking parallax on child elements.
+ * @param {HTMLElement} container
+ * @param {NodeList|HTMLElement[]} targets
+ * @param {{ strength?: number, resetOnLeave?: boolean }} [opts]
+ */
+export function trackMouse(container, targets, opts = {}) {
+  const { strength = 20, resetOnLeave = true } = opts
+  const elems = Array.from(targets)
+
+  container.addEventListener('mousemove', (e) => {
+    const rect = container.getBoundingClientRect()
+    const x = (e.clientX - rect.left) / rect.width - 0.5
+    const y = (e.clientY - rect.top) / rect.height - 0.5
+    for (const el of elems) {
+      const s = parseFloat(el.dataset.parallax || String(strength))
+      el.style.transform = \`translate(\${x * s}px, \${y * s}px)\`
+    }
+  })
+
+  if (resetOnLeave) {
+    container.addEventListener('mouseleave', () => {
+      for (const el of elems) el.style.transform = ''
+    })
+  }
+}
+
+/**
+ * Magnetic attraction — element shifts toward cursor on hover, snaps back on leave.
+ * @param {HTMLElement} element
+ * @param {{ strength?: number }} [opts]
+ */
+export function magnetic(element, opts = {}) {
+  const { strength = 0.3 } = opts
+
+  element.addEventListener('mousemove', (e) => {
+    const rect = element.getBoundingClientRect()
+    const x = e.clientX - rect.left - rect.width / 2
+    const y = e.clientY - rect.top - rect.height / 2
+    element.style.transform = \`translate(\${x * strength}px, \${y * strength}px)\`
+  })
+
+  element.addEventListener('mouseleave', () => {
+    element.style.transform = ''
+  })
+}
+
+/**
+ * Stagger animation via Web Animations API.
+ * @param {HTMLElement[]|NodeList} elements
+ * @param {Keyframe[]} keyframes
+ * @param {{ duration?: number, delay?: number, easing?: string, fill?: string }} [opts]
+ */
+export function stagger(elements, keyframes, opts = {}) {
+  const {
+    duration = 600,
+    delay = 80,
+    easing = 'cubic-bezier(0.16, 1, 0.3, 1)',
+    fill = 'forwards',
+  } = opts
+
+  Array.from(elements).forEach((el, i) => {
+    el.animate(keyframes, { duration, delay: i * delay, easing, fill })
+  })
+}
+
+/**
+ * Spring physics interpolation. Calls callback each frame until settled.
+ * @param {number} from
+ * @param {number} to
+ * @param {(value: number) => void} callback
+ * @param {{ stiffness?: number, damping?: number }} [opts]
+ * @returns {{ stop: () => void }}
+ */
+export function spring(from, to, callback, opts = {}) {
+  const { stiffness = 0.15, damping = 0.8 } = opts
+  let value = from
+  let velocity = 0
+  let raf = 0
+
+  function tick() {
+    velocity = (velocity + (to - value) * stiffness) * damping
+    value += velocity
+    callback(value)
+    if (Math.abs(velocity) > 0.01 || Math.abs(to - value) > 0.01) {
+      raf = requestAnimationFrame(tick)
+    } else {
+      callback(to)
+    }
+  }
+
+  raf = requestAnimationFrame(tick)
+  return { stop: () => cancelAnimationFrame(raf) }
+}
+
+/**
+ * Fire callback when element enters viewport. Once by default.
+ * @param {HTMLElement} element
+ * @param {(el: HTMLElement) => void} callback
+ * @param {{ threshold?: number, rootMargin?: string, once?: boolean }} [opts]
+ * @returns {{ disconnect: () => void }}
+ */
+export function onVisible(element, callback, opts = {}) {
+  const { threshold = 0.15, rootMargin = '0px', once = true } = opts
+  const observer = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (entry.isIntersecting) {
+        callback(entry.target)
+        if (once) observer.unobserve(entry.target)
+      }
+    }
+  }, { threshold, rootMargin })
+  observer.observe(element)
+  return { disconnect: () => observer.disconnect() }
+}
+</script>
+  
+  <script>
+    // ResizeObserver → postMessage parent for iframe height sync
+    const ro = new ResizeObserver((entries) => {
+      const h = Math.ceil(entries[0].contentRect.height);
+      parent.postMessage({ type: 'block-forge:iframe-height', slug: "test", width: 1440, height: h }, '*');
+    });
+    ro.observe(document.body);
+  </script>
+  <script>
+    // WP-028 Phase 2 — element-click selection for TweakPanel (Ruling E: strictly additive).
+    // Delegates clicks on document.body; derives a stable selector (Ruling H: id > stable
+    // class > nth-of-type, max depth 5); emits 'block-forge:element-click' postMessage with
+    // selector, rect, and computedStyle seeds for the parent TweakPanel to consume.
+    (function () {
+      const CLICKABLE_TAGS = ['DIV','SECTION','ARTICLE','ASIDE','HEADER','FOOTER','NAV','MAIN',
+                              'H1','H2','H3','H4','H5','H6','P','SPAN','A','BUTTON','UL','OL','LI','IMG'];
+      const UTILITY_PREFIXES = ['hover:','focus:','active:','animate-','group-','peer-'];
+
+      function stableClass(el) {
+        if (!el.className || typeof el.className !== 'string') return null;
+        // NOTE: this script lives inside a template literal — s must be double-
+        // escaped so the emitted source keeps the regex meaning. (Caught by
+        // WP-028 Phase 2 live smoke: /s+/ truncated class names at "s" chars.)
+        const classes = el.className.split(/\\s+/).filter(Boolean);
+        return classes.find((c) => !UTILITY_PREFIXES.some((p) => c.startsWith(p))) || null;
+      }
+
+      function deriveSelector(el) {
+        if (!el || el === document.body) return 'body';
+        if (el.id) return '#' + CSS.escape(el.id);
+
+        const path = [];
+        let cur = el;
+        let depth = 0;
+        while (cur && cur !== document.body && depth < 5) {
+          if (cur.id) { path.unshift('#' + CSS.escape(cur.id)); break; }
+          const cls = stableClass(cur);
+          if (cls) {
+            path.unshift(cur.tagName.toLowerCase() + '.' + CSS.escape(cls));
+          } else {
+            const parent = cur.parentElement;
+            const siblings = parent ? Array.from(parent.children).filter((c) => c.tagName === cur.tagName) : [];
+            const idx = siblings.indexOf(cur) + 1;
+            path.unshift(cur.tagName.toLowerCase() + ':nth-of-type(' + idx + ')');
+          }
+          cur = cur.parentElement;
+          depth += 1;
+        }
+        return path.join(' > ');
+      }
+
+      document.body.addEventListener('click', (e) => {
+        const el = e.target;
+        if (!el || !CLICKABLE_TAGS.includes(el.tagName)) return;
+        e.preventDefault(); e.stopPropagation();
+
+        const rect = el.getBoundingClientRect();
+        const cs = getComputedStyle(el);
+
+        parent.postMessage({
+          type: 'block-forge:element-click',
+          slug: "test",
+          selector: deriveSelector(el),
+          rect: { x: rect.x, y: rect.y, w: rect.width, h: rect.height },
+          computedStyle: {
+            padding: cs.padding, paddingTop: cs.paddingTop, paddingRight: cs.paddingRight,
+            paddingBottom: cs.paddingBottom, paddingLeft: cs.paddingLeft,
+            fontSize: cs.fontSize, gap: cs.gap, display: cs.display,
+          },
+        }, '*');
+      }, true);
+    })();
+  </script>
+"
+`;
