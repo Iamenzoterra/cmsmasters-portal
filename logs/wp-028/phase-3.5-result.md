@@ -232,4 +232,4 @@ User invoked `/ac` skill, I self-audited and surfaced 3 flags. User asked "че�
 
 **Fix applied**: added §Open Questions for Phase 4 item 3 with explicit Phase 4 Phase 0 RECON cleanup agenda. Does NOT add a new test file this phase (keeps arch-test Δ0; avoids scope creep on a closed phase). Brain to decide whether Phase 4 Phase 0 RECON should land the `PreviewTriptych.test.tsx` as a cleanup step before variant editor work.
 
-### Honesty-round commit SHA: `<TBD — embed after commit>`
+### Honesty-round commit SHA: `80ac5930` (5 files, +472 / −11; lint-ds clean; snap 2 entries written)
