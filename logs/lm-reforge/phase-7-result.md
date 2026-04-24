@@ -514,8 +514,9 @@ Under ≤ 13 budget. ✅
 
 - **Cut A:** `33db8141e37843dc8a4bcdc9c3cc91f53d448e2e`
   `feat(lm): phase 7 cut A — polish (focus rings + motion safety + iconography + canvas hint backfill) [LM-reforge phase 7]`
-- **Cut B:** _(to be embedded after commit)_
-- **Optional SHA embed commit:** _(to be embedded if applied)_
+- **Cut B:** `59279e178640d93be224a82ffcbd4c8d56b10878`
+  `chore(lm): phase 7 cut B — close ceremony (acceptance tick + parity confirm + workplan reconcile + readme bump + final baselines) [LM-reforge phase 7]`
+- **SHA embed commit:** _(this commit)_
 
 ---
 
