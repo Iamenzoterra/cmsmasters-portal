@@ -104,6 +104,21 @@ Chose (current): lift dispatch into block-editor via the exported helper. Smalle
 
 **Risk:** Future Phase 3+ edits to block-editor.tsx should keep the `handleTweakDispatch` callback pattern stable; if a bigger refactor lands, OQ4 helper call-site moves too.
 
+### Issue #4 — POST-CLOSE SMOKE CAUGHT: template-literal `\s+` escape mangling
+
+**What:** User requested Playwright smoke (saved memory `feedback_visual_check_mandatory.md`). First click inside iframe produced selector `div.lot-inner > ... > section.block-fa > h2.heading\ reveal` instead of `div.slot-inner > ... > section.block-fast-loading-speed > h2.heading`. Class names truncated at "s" chars; multi-class names treated as one string with space-escape.
+
+**Root cause:** The injected click-handler script lives inside a JS template literal (srcdoc). Source had `el.className.split(/\s+/)` — but `\s` inside a template literal is interpreted as an unknown escape sequence, and the emitted source had `/s+/` (literal letter "s"). Iframe runtime split on the letter "s" instead of whitespace, so:
+  - `"slot-inner".split(/s+/)` → `["", "lot-inner"]` → `"lot-inner"` (first "s" ate the prefix)
+  - `"block-fast-loading-speed".split(/s+/)` → `["block-fa", "t-loading-", "peed"]` → `"block-fa"`
+  - `"heading reveal"` (no "s") → unchanged single entry → CSS.escape'd as `heading\ reveal`
+
+**Fix:** Double-escape → `/\\s+/` in both preview-assets.ts. Added inline warning comment citing the smoke catch. Commit `53c9ffd1`.
+
+**Why tests missed it:** Integration tests in both surfaces mock the postMessage directly with pre-built `{selector: '.hero-cta', ...}` payloads — never actually exercise the injected script. Unit tests for TweakPanel pass `TweakSelection` objects directly. The selector derivation logic was only exercised live via Playwright.
+
+**Lesson:** Injected-script logic NEEDS a live smoke pass (or a DOM harness that executes the srcdoc script). Adding this to Phase 3 pre-flight checklist.
+
 ### Issue #3 — React dedupe required for tools/block-forge tests
 
 **What:** Radix Slider rendered inside block-forge tests hit `TypeError: Cannot read properties of null (reading 'useRef')` — classic duplicate-React. Block-forge's local `tools/block-forge/node_modules/react` (19.2.5) differed from hoisted root `node_modules/react` (19.2.4). `@cmsmasters/ui` consumers resolved React via the workspace tree, Radix through block-forge local.
@@ -133,9 +148,30 @@ Chose (current): lift dispatch into block-editor via the exported helper. Smalle
 | Zero-touch list (packages/block-forge-core, arch, SKILL, workplan, primitives) | ✅ no touches |
 | No new files | ⚠️ 18 modifications + 0 new files; BUT `packages/ui/index.ts` gained 1 barrel re-export line (not in task prompt but required for Slider consumption; not a "new file") |
 
-## Manual Smoke (not performed this session)
+## Manual Smoke — EXECUTED post-close via Playwright (block-forge surface, port 7702)
 
-Manual click-in-iframe → slider → preview reflow → save round-trip was NOT performed live this session (auto-mode, no browser). The test-level integration suite covers the wiring via `MessageEvent` dispatch + timer advancement. **Recommended next-session action:** open `npm run block-forge` or `apps/studio` dev server, click an element in the preview, move padding slider, verify preview updates within ~500ms of slider release, save (block-forge: file; Studio: DB), verify the `@container` chunk persists on disk / in DB.
+Live browser smoke was performed on user request after the initial Phase 2 commit trio. The smoke **caught one real bug** that unit/integration tests had missed (template-literal `\s` escape mangling in the injected click-handler regex — see §Issue #4 below). Fix committed as `53c9ffd1`.
+
+### Smoke flow executed
+
+1. **Dev server up** — `npm run dev` in `tools/block-forge`, port 7702 → 200 OK.
+2. **Block selection** — programmatic `<select>` change to `fast-loading-speed`. 3 iframes (1440 / 768 / 375) render with srcdoc; 3 suggestions shown; TweakPanel empty-state renders "Click an element in the preview to start tweaking." ✅
+3. **Injected script present** — querySelectorAll('script') inside iframe returns 4 scripts, last one starts with `// WP-028 Phase 2 — element-click selection for TweakPanel`. ✅
+4. **Element click → postMessage → selection** — dispatched native `MouseEvent('click')` on `h2.heading` inside the 768px iframe. TweakPanel populated: `data-selector="div.slot-inner > div:nth-of-type(1) > section.block-fast-loading-speed > h2.heading"`, `data-bp="1440"` (default currentBp). ✅ — *after fix*. Before fix, selector was garbled.
+5. **BP switch 1440→768** — `[data-testid="tweak-panel-bp-768"]` click → `data-bp="768"`. Visual: 768 button turned black/active, 1440 transparent. ✅
+6. **Hide dispatch → composed CSS** — `[data-testid="tweak-panel-visibility-hide"]` click → after 300ms debounce, iframe `<style>` contains `@container slot (max-width: 768px) { div.slot-inner > ... > h2.heading { display: none } }`. ✅
+7. **Per-BP scoping verified** — h2 computedStyle.display: `block` @ 1440, `none` @ 768, `none` @ 375 (375 inherits max-width: 768). ✅
+8. **Reset → tweak removed** — `[data-testid="tweak-panel-reset"]` click → `@container slot (max-width: 768px)` gone from iframe CSS; h2 `block` on all 3 bps. ✅
+
+### Screenshots (`logs/wp-028/smoke-p2/`)
+
+- `wp028-p2-smoke-1-block-loaded.png` — block loaded, TweakPanel empty state
+- `wp028-p2-smoke-2-panel-populated.png` — after element click, panel fully populated (selector header, BP picker, 3 sliders, hide/show, Reset)
+- `wp028-p2-smoke-3-hide-applied.png` — after Hide at 768 bp (visible state: bp picker switched to 768, Show/Hide toggle state, CSS verified via dev console)
+
+### Minor UX issue found (not a bug — Phase 2.5 polish)
+
+After Hide dispatched, the `aria-pressed` state on the Show/Hide buttons DOES NOT update because `selection.computedStyle.display` stays at the original-click seed (`"block"`). The CSS rule is correctly applied and the element IS hidden in the iframe — visual feedback is correct — but the button "active" outline lags. Fix is a small local state update on `onTweak`, recorded as Phase 2.5 follow-up.
 
 ## Open Questions (Phase 3 inputs)
 
@@ -162,4 +198,5 @@ Manual click-in-iframe → slider → preview reflow → save round-trip was NOT
 
 - Task-prompt commit: `0c26ba1a` — `chore(logs): WP-028 Phase 2 task prompt`
 - Implementation commit: `70a09ae9` — `feat(studio+tools): WP-028 Phase 2 — Tweak panel + element-click postMessage + emitTweak dispatch [WP-028 phase 2]` (20 files; +1780 / −151)
-- SHA-embed: _(this commit — updates result log with implementation SHA)_
+- SHA-embed: `fdebb5b5` — `chore(logs): WP-028 Phase 2 SHA embed — link result log to implementation 70a09ae9 [WP-028 phase 2]`
+- Post-close smoke fix: `53c9ffd1` — `fix(preview-assets): WP-028 Phase 2 — escape \s+ in injected click-handler regex (both surfaces) [WP-028 phase 2]` (2 files; +8 / −2)
