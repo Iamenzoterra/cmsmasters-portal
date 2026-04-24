@@ -1,13 +1,15 @@
-# WP-028 Phase 3: Variants Drawer — fork/rename/delete + Path B re-converge
+# WP-028 Phase 3: Variants Drawer — fork/rename/delete
 
 > Workplan: WP-028 Tweaks + Variants UI — cross-surface lockstep
-> Phase: 3 of 7
+> Phase: 3 of 7 (+ mini-phase 3.5 — Path B re-converge split out per Hands review → separate `phase-3.5-task.md`)
 > Priority: P0
-> Estimated: 4.5h (3h drawer CRUD + tests + 1h Path B re-converge in tools/block-forge + 0.5h PARITY/verification)
+> Estimated: 3h (3h drawer CRUD + tests + 0h Path B — moved to Phase 3.5)
 > Type: Frontend
 > Previous: Phase 2 + 2a ✅ (Tweak panel complete, honest corrections landed — postcss rule-removal, aria-pressed sync, DOM harness, byte-identical parity)
-> Next: Phase 4 — Variant editor side-by-side + first real variants DB write
+> Next: Phase 3.5 — Path B re-converge in tools/block-forge (~1.5h, own focused commit); then Phase 4 — Variant editor side-by-side + first real variants DB write
 > Affected domains: infra-tooling, studio-blocks, pkg-ui (one barrel line), pkg-block-forge-core (consume-only)
+
+> **Scope adjustment (Brain ruling R' — supersedes original R):** Path B re-converge in tools/block-forge composeSrcDoc has been split out of Phase 3 into a focused mini-phase 3.5. Rationale: (1) Phase 2a empirically showed 1.8× time multiplier — bundling Path B into Phase 3 would overshoot the 6h hard cap and replicate Phase 2 shortcut risk profile; (2) ortogonality — variant CRUD works fine with composeVariants → existing double-wrap composeSrcDoc, Path B is cosmetic PARITY cleanup not a functional dependency; (3) Phase 4 re-touches PreviewTriptych for side-by-side editor preview anyway — Phase 3.5 re-converge + Phase 4 refactor are a cleaner split than double-refactor. Phase 3 exit leaves PARITY §7 "deliberate divergence" still marked; Phase 3.5 flips it to "✅ RE-CONVERGED."
 
 ---
 
@@ -24,7 +26,7 @@ CURRENT (entering Phase 3):
   packages/ui/index.ts — Slider exported; Drawer NOT yet                             ❌
   block-editor.tsx BlockFormData — `variants: BlockVariants` field registered L84   ✅
   apps/studio ResponsivePreview — Path B (renderForPreview + variants) end-to-end   ✅
-  tools/block-forge composeSrcDoc — STILL double-wraps <div data-block-shell=...>   ⚠️ (PARITY §7 divergence since WP-027)
+  tools/block-forge composeSrcDoc — STILL double-wraps <div data-block-shell=...>   ⚠️ (PARITY §7 divergence; Phase 3.5 re-converges)
   tools/block-forge session.ts — tweaks: Tweak[] + undo (Phase 2 Ruling D)          ✅
   tools/block-forge BlockJson type (src/types.ts) — NO `variants` field             ❌
   validator regex — /^[a-z0-9-]+$/ permissive kebab-case                            ✅
@@ -36,10 +38,16 @@ MISSING (Phase 3 adds):
   Studio RHF integration — form.setValue('variants', nextRecord, { shouldDirty })  ❌
   block-forge App.tsx — variant state + session CRUD + drawer wiring               ❌
   block-forge BlockJson — `variants?: BlockVariants` + save round-trip             ❌
-  Path B re-converge — drop double-wrap in block-forge composeSrcDoc;              ❌
-    switch PreviewTriptych to renderForPreview(block, { variants })
-  PARITY.md §7 — "Fixed" entry replacing the forward-compat clause                 ❌
+  PARITY.md — new §Variant CRUD section on both files (symmetric)                  ❌
+
+DEFERRED to Phase 3.5 (NOT in Phase 3 scope):
+  Path B re-converge — drop double-wrap in block-forge composeSrcDoc                → P3.5
+  PreviewTriptych → renderForPreview(block, { variants }) in block-forge            → P3.5
+  PARITY.md §7 — "Fixed" entry flip (stays "deliberate divergence" at P3 exit)      → P3.5
 ```
+
+**Phase 3 render path for block-forge variants (interim, until P3.5):**
+Variants flow through existing `composeVariants(baseBlock, variantList)` → feed `{html, css}` to current double-wrap `composeSrcDoc`. DOM shape: `slot-inner > data-block-shell > data-variant="base" + data-variant="{name}" hidden> + @container reveal rules in CSS`. Works correctly because `@container slot` evaluates against `.slot-inner` box; data-block-shell is a descendant that doesn't break the query. Post-fork (variant HTML === base HTML), visual is unchanged until Phase 4 editor diverges them.
 
 This WP's cross-surface stress test enters its second high-complexity phase. Phase 2 metric was 11 non-cosmetic diffs across 5 file pairs — the REIMPLEMENT ruling stood. Phase 3 adds a NEW file pair (VariantsDrawer content); Brain locks REIMPLEMENT again (Ruling X below). If Phase 3 metric exceeds +5 new diffs, Phase 4 re-opens the extract question.
 
@@ -110,20 +118,20 @@ grep -n "variants" apps/studio/src/pages/block-editor.tsx
 # 7. block-forge BlockJson — verify `variants` MISSING (adding in 3.6)
 grep -A 15 "export type BlockJson" tools/block-forge/src/types.ts
 
-# 8. block-forge composeSrcDoc current wrap (the Path B target)
-grep -A 4 "slot-inner" tools/block-forge/src/lib/preview-assets.ts | head -10
-
-# 9. preview-assets.test.ts cases that pin current double-wrap
-grep -n "data-block-shell" tools/block-forge/src/__tests__/preview-assets.test.ts
-
-# 10. session.ts existing action type discriminant (for adding variant-* types)
+# 8. session.ts existing action type discriminant (for adding variant-* types)
 grep -A 4 "export type SessionAction" tools/block-forge/src/lib/session.ts
 
-# 11. session-state.ts Studio mirror — confirm parallel shape
+# 9. session-state.ts Studio mirror — confirm parallel shape
 grep -A 20 "SessionAction\|SessionState" apps/studio/src/pages/block-editor/responsive/session-state.ts | head -40
 
-# 12. Native confirm availability in test env (jsdom may need mock)
+# 10. Native confirm availability in test env (jsdom may need mock)
 grep -rn "window.confirm\|global.confirm" apps/studio/src/pages/block-editor/ tools/block-forge/src/ 2>&1 | head -5
+
+# 11. clearAfterSave callsites (all must accept optional savedVariants param per Task 3.4)
+grep -rn "clearAfterSave" tools/block-forge/src --include="*.ts" --include="*.tsx"
+
+# 12. Existing createSession() call sites (backward-compat mandatory for zero-arg calls)
+grep -rn "createSession(" tools/block-forge/src --include="*.ts" --include="*.tsx"
 
 # 13. arch-test one more time after reads — confirm nothing drifted
 npm run arch-test
@@ -132,9 +140,10 @@ npm run arch-test
 **Document findings before writing any code. Especially:**
 - (a) Drawer primitive exports verbatim
 - (b) composeVariants empty-variants behavior (`variants: {}` even when list is []); downstream must treat as "no variants"
-- (c) preview-assets.test.ts current `data-block-shell` assertions that will flip during Path B re-converge (Phase 3.6)
-- (d) Studio session-state action types — variant-* type names must not collide with existing `accept`/`reject`/`tweak`
-- (e) block-editor.tsx current deviation LOC count (Phase 2a parked at 18) — Phase 3 budget + ~10 lines = final ~28 lines; flag if plan overshoots
+- (c) Studio session-state action types — variant-* type names must not collide with existing `accept`/`reject`/`tweak`
+- (d) block-editor.tsx current deviation LOC count (Phase 2a parked at 18) — Phase 3 budget + ~10 lines = final ~28 lines (cap 40); 12 lines slack for Phase 4+5+6 combined. If plan overshoots, surface as an Open Question for "extract dispatch layer to own module" refactor (parked — not Phase 3 scope).
+- (e) clearAfterSave callsites — enumerate BEFORE extending signature; if >3 callsites, escalate
+- (f) createSession() call sites — enumerate BEFORE extending signature; confirm all zero-arg uses stay compatible OR use the useEffect seed alternative (preferred per Ruling P')
 
 **IMPORTANT gotchas:**
 - `composeVariants(base, [])` returns `{ slug, html: base.html, css: base.css }` WITHOUT `variants` key. Downstream `block.variants ?? {}` normalizes to `{}`. Fork logic must handle both shapes.
@@ -685,9 +694,11 @@ import {
 // After existing state:
 const [drawerOpen, setDrawerOpen] = useState(false)
 
-// Seed session.variants from block on block change (inside existing slug-change effect):
-// After `setSession(createSession())`:
+// Seed session.variants from block on block change (Ruling P' — useEffect seed preferred):
+// Inside existing slug-change effect, AFTER `setSession(createSession())`, add:
 //   setSession((s) => ({ ...s, variants: block?.variants ?? {} }))
+// This preserves `createSession()` zero-arg signature — all existing callsites
+// continue to work unchanged. Signature-extension fallback only if TS breaks elsewhere.
 // OR better — extend createSession to accept initial variants and call with block.variants.
 // Pick whichever keeps reducer purity (option A: extend createSession signature).
 
@@ -724,7 +735,7 @@ const handleVariantAction = useCallback(
 //     onAction={handleVariantAction}
 //   />
 
-// composedBlock now also carries session.variants (Task 3.5 uses this for render):
+// composedBlock carries session.tweaks + session.variants (Phase 3.5 Path B consumes):
 const composedBlock = useMemo<BlockJson | null>(() => {
   if (!block) return null
   const css = session.tweaks.length > 0
@@ -733,98 +744,39 @@ const composedBlock = useMemo<BlockJson | null>(() => {
   return { ...block, css, variants: session.variants }
 }, [block, session.tweaks, session.variants])
 
-// Save path — serialize session.variants into BlockJson (Task 3.6):
+// Save path — serialize session.variants into BlockJson (Task 3.5 [renumbered]):
 const updatedBlock: BlockJson = {
   ...block,
   html: applied.html,
   css: applied.css,
   variants: Object.keys(session.variants).length > 0 ? session.variants : undefined,
 }
+
+// PreviewTriptych rendering path (Phase 3 interim, STILL double-wrap until P3.5):
+// - Pass composedBlock to <PreviewTriptych block={composedBlock} /> unchanged.
+// - PreviewTriptych's internal composeVariants call path is NOT introduced this phase;
+//   the existing renderer receives {html, css} directly. To display variants in the
+//   preview iframes this phase, add ONE inline call: if composedBlock.variants has
+//   keys, feed the block through composeVariants (imported from @cmsmasters/block-forge-core)
+//   inside PreviewTriptych's existing memo, BEFORE composeSrcDoc. Do NOT switch to
+//   renderForPreview (that's Phase 3.5 scope). Example:
+//     const variantArr = block.variants ? Object.entries(block.variants).map(([name, v]) => ({name, ...v})) : []
+//     const toRender = variantArr.length ? composeVariants({slug, html, css}, variantArr) : {html, css}
+//     ...composeSrcDoc({html: toRender.html, css: toRender.css, ...})
+// This is the ONLY block-forge render-path change in Phase 3. Wrap structure unchanged.
 ```
 
 ### Domain Rules
 
 - Reducer purity maintained — no state.variants mutation; always spread.
-- `createSession()` extended signature: `createSession(initialVariants?: BlockVariants)` — backward-compatible (all existing tests pass `createSession()` with zero args).
+- `createSession()` signature stays zero-arg; variants seed via `setSession((s) => ({ ...s, variants: ... }))` in the block-change useEffect (Ruling P' — lower TS fragility, smaller diff surface).
 - Delete stores `prev: BlockVariant` in history so undo can resurrect the full payload (not just the name).
-- `clearAfterSave` — EITHER reset variants to `{}` (session is a clean slate) OR take `savedVariants` param to align session with post-save disk state. **Pick option (b)** to match Phase 2 Reset semantics (clear-only-on-successful-save).
+- `clearAfterSave` — extend with OPTIONAL `savedVariants?: BlockVariants` param defaulting to `{}`. All existing callsites (enumerate in Pre-flight step 11) continue to work unchanged with the default. When save succeeds, pass the refetched block's variants so session aligns with disk state.
+- Audit clearAfterSave + createSession call sites in pre-flight (steps 11-12); if either exceeds 3 callsites, escalate before writing code.
 
 ---
 
-## Task 3.5: block-forge Path B re-converge — single-wrap + renderForPreview
-
-### What to Build
-
-Drop the `<div data-block-shell="${slug}">` wrap from `tools/block-forge/src/lib/preview-assets.ts` composeSrcDoc. Consumers (PreviewTriptych → App.tsx) now call `renderForPreview(block, { variants })` upstream and pass `preview.html` (already wrapped) into composeSrcDoc. Mirrors the Studio pattern exactly.
-
-```typescript
-// tools/block-forge/src/lib/preview-assets.ts — composeSrcDoc body (~L69):
-// BEFORE:
-//   <div class="slot-inner">
-//     <div data-block-shell="${slug}">${html}</div>
-//   </div>
-// AFTER:
-//   <div class="slot-inner">${html}</div>
-
-// Update file-head comment block to reflect re-convergence (~L1-8):
-// "Phase 2 — iframe srcdoc composition..." → add Phase 3 note:
-//   "WP-028 Phase 3 — Path B re-converge: composeSrcDoc emits only the outer
-//    .slot-inner wrap; the inner <div data-block-shell="{slug}"> comes
-//    pre-wrapped via renderForPreview() upstream. Matches Studio surface."
-```
-
-```typescript
-// tools/block-forge/src/components/PreviewTriptych.tsx — switch to Path B:
-
-import { renderForPreview, type Variant } from '@cmsmasters/block-forge-core'
-
-// Inside component:
-const srcdocs = useMemo(() => {
-  if (!block) return null
-
-  const variantList: Variant[] = block.variants
-    ? Object.entries(block.variants).map(([name, v]) => ({
-        name,
-        html: v.html,
-        css: v.css,
-      }))
-    : []
-
-  // Path B: engine single-call; composeVariants runs internally when variantList non-empty.
-  // NO { width } option — triple-wrap hazard (per WP-027 Ruling 3).
-  const preview = renderForPreview(
-    { slug: block.slug, html: block.html, css: block.css },
-    { variants: variantList },
-  )
-
-  return BREAKPOINTS.map((w) => ({
-    width: w,
-    srcdoc: composeSrcDoc({
-      html: preview.html,  // already wrapped with <div data-block-shell="{slug}">...
-      css: preview.css,
-      js: block.js,
-      width: w,
-      slug: block.slug,
-    }),
-  }))
-}, [block?.id, block?.slug, block?.html, block?.css, block?.variants])
-```
-
-### Integration
-
-- `tools/block-forge/src/__tests__/preview-assets.test.ts` — flip case `(c)` assertions: `data-block-shell` NO LONGER appears in composeSrcDoc output for raw input; ADD a `(c-equivalent)` case mirroring Studio `(studio-1)` — raw html without `data-block-shell` produces body without `data-block-shell`.
-- `tools/block-forge/src/__tests__/integration.test.tsx` — if any test asserts `data-block-shell` appears, update to `renderForPreview(...).html` pre-wrap or drop the assertion.
-- `tools/block-forge/src/__tests__/__snapshots__/preview-assets.test.ts.snap` — regenerate snap (body line drops one nested `<div>`).
-
-### Domain Rules
-
-- PARITY.md BOTH FILES updated in same commit — §7 migrates from "forward-compat deliberate divergence" to "Fixed — re-converged at WP-028 Phase 3".
-- Pin the new wrap contract with a preview-assets.test.ts case: `composeSrcDoc({ html: '<h2>x</h2>' })` output body contains `<div class="slot-inner"><h2>x</h2></div>` — NO `data-block-shell` wrapper added by composeSrcDoc.
-- renderForPreview's `preview.html` is the SOURCE of `data-block-shell` upstream — confirmed via engine test `render-preview.test.ts` (pre-existing).
-
----
-
-## Task 3.6: block-forge BlockJson variants + save round-trip
+## Task 3.5: block-forge BlockJson variants + save round-trip
 
 ### What to Build
 
@@ -863,28 +815,31 @@ export type BlockJson = {
 
 ---
 
-## Task 3.7: PARITY.md updates — both files
+## Task 3.6: PARITY.md updates — Variant CRUD section (both files, symmetric)
 
 ### Changes
 
 **`tools/block-forge/PARITY.md`:**
-- §"DOM hierarchy in iframe body" — update block diagram: now single-wrap `<div class="slot-inner">{pre-wrapped html}</div>`.
-- §"WP-027 Studio Responsive tab cross-reference" — new subsection "WP-028 Phase 3 re-convergence": drop the "double-wrap, deliberate" block; add "as of Phase 3 both surfaces single-wrap; `data-block-shell` comes from `renderForPreview` upstream".
-- §Out of scope — remove "Variants — composeVariants output is Phase 3+ territory" (Phase 3 landed variants).
-- §Discipline Confirmation — append Phase 3: "Variants drawer + Path B adoption — PARITY re-converged with Studio."
+- §Out of scope — remove "Variants — `composeVariants` output is Phase 3+ territory" line (Phase 3 lands variant CRUD + composition in render path).
+- §Discipline Confirmation — append Phase 3 entry: "Variants drawer — fork/rename/delete + composeVariants integration at render time — PARITY additive."
+- §WP-027 Studio Responsive tab cross-reference — keep current §"block-forge (this tool) — double-wrap, deliberate" unchanged. Explicitly note: "Phase 3 lands variant CRUD while preserving the double-wrap pattern; Path B re-converge scheduled for mini-phase 3.5."
+- DO NOT touch DOM hierarchy block diagram (stays double-wrap until Phase 3.5).
 
 **`apps/studio/src/pages/block-editor/responsive/PARITY.md`:**
-- §7 — move from "forward-compatibility: when WP-028 adds variants to tools/block-forge, that surface will also switch..." to "Fixed at WP-028 Phase 3 (commit SHA)" with the §7 header marked `✅ RE-CONVERGED`.
-- §"In scope (NEW vs tools/block-forge)" — REMOVE the "NEW vs tools/block-forge" qualifier from the Path B line (no longer Studio-only).
-- Add §"Variant CRUD (Phase 3)" — note the VariantsDrawer component lives on both surfaces; RHF dispatch via `dispatchVariantToForm` (Studio) / session reducer `createVariant/renameVariant/deleteVariant` (block-forge); name convention per engine `variantCondition`.
+- Add new §"Variant CRUD (Phase 3)" section after §7 (do NOT modify §7 itself — that's Phase 3.5 territory):
+  - VariantsDrawer component lives on both surfaces; byte-identical body
+  - RHF dispatch via `dispatchVariantToForm(form, action)` — reads form.getValues('variants') at dispatch time (OQ4 invariant preserved)
+  - block-forge equivalent: session reducer `createVariant/renameVariant/deleteVariant`
+  - Name convention validation mirrors engine `variantCondition` — warnings on non-convention names but submit allowed
+- §"In scope (NEW vs tools/block-forge)" — ADD bullet: "Variant CRUD drawer — landed both surfaces via WP-028 Phase 3; rendering still diverges on wrap location until Phase 3.5 Path B re-converge." (Keep §7 divergence note in place.)
 
 ### Discipline
 
-Per PARITY §5 — any edit to one file MUST mirror in the other in the same commit. Verification: `diff` the contract section line-counts after edit to confirm symmetric update.
+Per PARITY §5 — any edit to one file MUST mirror in the other in the same commit. Verification: `diff` the contract section line-counts after edit to confirm symmetric update. §7 itself stays untouched this phase.
 
 ---
 
-## Task 3.8: Tests
+## Task 3.7: Tests
 
 ### Studio (`apps/studio/src/pages/block-editor/responsive/__tests__/`):
 
@@ -903,11 +858,11 @@ Per PARITY §5 — any edit to one file MUST mirror in the other in the same com
 
 **`__snapshots__/VariantsDrawer.test.tsx.snap`** — regen. Must be byte-identical to block-forge snap (Phase 2 parity discipline).
 
-**Behavioral test for `dispatchVariantToForm`** (new test file `__tests__/variant-helpers.test.ts`):
+**Behavioral tests for `dispatchVariantToForm`** — Ruling T: inline in existing `__tests__/integration.test.tsx`; do NOT create new `variant-helpers.test.ts` file (preserves arch-test Δ0):
 - Mock `form.getValues` + `form.setValue`; dispatch each kind; assert correct next state + prev returned.
 - OQ4 invariant: set form to have variants={a:{html,css}}, dispatch create name=b, assert setValue called with {a,b} (reads LIVE, not cached).
 
-**Integration test addition** (`__tests__/integration.test.tsx`):
+**Additional integration test** (same file):
 - `it('variants drawer → fork → form.variants reflects deep-copy of base', ...)` — mount ResponsiveTab with form, click variant trigger, fill name, submit, assert `form.getValues('variants').sm === { html, css }` matching baseHtml/baseCss.
 
 ### block-forge (`tools/block-forge/src/__tests__/`):
@@ -922,21 +877,16 @@ Per PARITY §5 — any edit to one file MUST mirror in the other in the same com
 - isDirty extended — true iff variants mutated OR pending OR tweaks
 - clearAfterSave with savedVariants param — state.variants aligns to saved snapshot
 
-**`preview-assets.test.ts`** — Path B contract:
-- Update case `(c)` — composeSrcDoc output body contains `<div class="slot-inner">{html}</div>` only (no `data-block-shell` wrapper). Add assertion: `!composeSrcDoc(input).includes('<div data-block-shell=')` when input.html has no shell wrapper.
-- Keep case `(a)`, `(b)`, `(i)` — token layers + postMessage contract unchanged.
-
-**`preview-assets.test.ts.snap`** — regen to drop the nested `<div data-block-shell>` line.
-
-**`integration.test.tsx`** — new:
+**`integration.test.tsx`** — new cases:
 - `it('fork variant → composedBlock.variants reflects session.variants', ...)`
-- `it('rename variant → renderForPreview sees new name → iframe CSS contains @container reveal for new name', ...)` — verify via composedBlock → PreviewTriptych iframe srcdoc contains variant name in reveal CSS.
-- Update any existing `data-block-shell` assertions to check `renderForPreview.html` emits them (or drop).
+- `it('fork variant → composeVariants output contains data-variant wrappers in iframe srcdoc', ...)` — assert the inline composeVariants call path (Task 3.4) produces `data-variant="base"` + `data-variant="{name}"` in the rendered HTML fed to composeSrcDoc. This verifies the Phase 3 interim rendering without touching Path B.
+- `it('save round-trip preserves variants field in BlockJson', ...)` — write block with variants → re-fetch → variants field intact.
 
 ### Domain Rules
 
 - Native `window.confirm` MUST be mocked in jsdom tests (no browser). Use `beforeEach(() => { vi.spyOn(window, 'confirm').mockReturnValue(true) })` with per-test overrides.
 - Snap byte-identity between surfaces: use generic describe names (`'VariantsDrawer — empty state'`, `'VariantsDrawer — populated state'`) — no surface-specific tokens.
+- Zero touch on `preview-assets.test.ts` / its snap file / any `data-block-shell` assertions — those are Phase 3.5 scope.
 
 ---
 
@@ -947,24 +897,20 @@ Per PARITY §5 — any edit to one file MUST mirror in the other in the same com
 - `apps/studio/src/pages/block-editor/responsive/VariantsDrawer.tsx` — placeholder → real UI
 - `apps/studio/src/pages/block-editor/responsive/__tests__/VariantsDrawer.test.tsx` — rewrite 10+ cases
 - `apps/studio/src/pages/block-editor/responsive/__tests__/__snapshots__/VariantsDrawer.test.tsx.snap` — regen
-- `apps/studio/src/pages/block-editor/responsive/__tests__/variant-helpers.test.ts` — NEW (dispatchVariantToForm unit tests) — BUT: keep helpers inline in ResponsiveTab.tsx → test file targets the export; manifest already covers `__tests__/` dir glob if that rule exists; else **rule: inline the helper tests inside existing `__tests__/integration.test.tsx`** to avoid new-file arch-test delta. **(Ruling T — inline)**
 - `apps/studio/src/pages/block-editor/responsive/ResponsiveTab.tsx` — +dispatchVariantToForm export + drawer wiring + new props
-- `apps/studio/src/pages/block-editor/responsive/__tests__/integration.test.tsx` — +variant drawer integration cases
-- `apps/studio/src/pages/block-editor.tsx` — +handleVariantDispatch callback + useWatch(variants) + useWatch(code)-split + drawer props wire
+- `apps/studio/src/pages/block-editor/responsive/__tests__/integration.test.tsx` — +variant drawer integration cases + dispatchVariantToForm behavioral unit tests (Ruling T — inline, do NOT create `variant-helpers.test.ts`)
+- `apps/studio/src/pages/block-editor.tsx` — +handleVariantDispatch callback + useWatch(variants) + useWatch(code)-split + drawer props wire (~10 lines; cap at 40 total deviation)
 - `tools/block-forge/src/components/VariantsDrawer.tsx` — placeholder → real UI (byte-identical body to Studio)
 - `tools/block-forge/src/__tests__/VariantsDrawer.test.tsx` — rewrite mirroring Studio
 - `tools/block-forge/src/__tests__/__snapshots__/VariantsDrawer.test.tsx.snap` — regen (byte-identical to Studio)
-- `tools/block-forge/src/lib/session.ts` — +variants state + createVariant/renameVariant/deleteVariant + undo extensions + clearAfterSave param
+- `tools/block-forge/src/lib/session.ts` — +variants state + createVariant/renameVariant/deleteVariant + undo extensions + clearAfterSave savedVariants optional param
 - `tools/block-forge/src/__tests__/session.test.ts` — +15 variant cases + isDirty extension + clearAfterSave param
-- `tools/block-forge/src/App.tsx` — drawer mount + handleVariantAction + session.variants seed + composedBlock.variants pass-through + save payload
+- `tools/block-forge/src/App.tsx` — drawer mount + handleVariantAction + session.variants seed via useEffect + composedBlock.variants pass-through + save payload
 - `tools/block-forge/src/types.ts` — +variants?: BlockVariants on BlockJson
-- `tools/block-forge/src/lib/preview-assets.ts` — drop inner `<div data-block-shell>` wrap; update head comment
-- `tools/block-forge/src/components/PreviewTriptych.tsx` — switch to renderForPreview + variants
-- `tools/block-forge/src/__tests__/preview-assets.test.ts` — update case (c) for single-wrap; add Path B assertion
-- `tools/block-forge/src/__tests__/__snapshots__/preview-assets.test.ts.snap` — regen
-- `tools/block-forge/src/__tests__/integration.test.tsx` — variant flow + Path B wrap assertion
-- `tools/block-forge/PARITY.md` — §DOM hierarchy + §cross-reference re-converge + §Out of scope removal
-- `apps/studio/src/pages/block-editor/responsive/PARITY.md` — §7 `✅ RE-CONVERGED` + §In scope qualifier drop + new §Variant CRUD
+- `tools/block-forge/src/components/PreviewTriptych.tsx` — add inline composeVariants call when composedBlock.variants non-empty (Phase 3 interim; Phase 3.5 replaces with renderForPreview)
+- `tools/block-forge/src/__tests__/integration.test.tsx` — variant flow + save round-trip + composeVariants-in-iframe assertion
+- `tools/block-forge/PARITY.md` — §Out of scope removal + §Discipline Confirmation Phase 3 entry + §cross-reference note about interim double-wrap preservation
+- `apps/studio/src/pages/block-editor/responsive/PARITY.md` — new §Variant CRUD section + §In scope additive bullet (do NOT touch §7)
 
 **Zero touch (VERIFY in verification step):**
 - `packages/block-forge-core/**` — engine frozen
@@ -975,6 +921,9 @@ Per PARITY §5 — any edit to one file MUST mirror in the other in the same com
 - `packages/validators/src/block.ts` — already permissive; regex reused inline in VariantsDrawer
 - Vite middleware (`tools/block-forge/vite.config.ts`) — round-trips unknown fields
 - Apps/studio `block-api.ts` — already handles `variants` since WP-027 Phase 4
+- **`tools/block-forge/src/lib/preview-assets.ts`** — Phase 3.5 territory (wrap change stays out of Phase 3)
+- **`tools/block-forge/src/__tests__/preview-assets.test.ts`** + **its `.snap`** — Phase 3.5 territory (case c flip + snap regen there)
+- **`apps/studio/src/pages/block-editor/responsive/PARITY.md` §7** — Phase 3.5 territory (`✅ RE-CONVERGED` marker added there)
 
 ---
 
@@ -983,19 +932,19 @@ Per PARITY §5 — any edit to one file MUST mirror in the other in the same com
 - [ ] Drawer barrel re-export landed in `packages/ui/index.ts` (matches Phase 2 Slider pattern)
 - [ ] VariantsDrawer real UI landed on both surfaces; body byte-identical from line 4 onwards (3-line header + diff markers = exactly 8-line diff)
 - [ ] `.snap` byte-identical between surfaces (0-line diff)
-- [ ] Fork / rename / delete work end-to-end in block-forge: drawer → session → composedBlock → preview iframe re-renders with new variant (post-fork: @container reveal emits but base===variant HTML so visual unchanged — Phase 4 visual divergence lands with editor)
+- [ ] Fork / rename / delete work end-to-end in block-forge: drawer → session → composedBlock → preview iframe re-renders with new variant (post-fork: variant HTML === base HTML, so visual unchanged until Phase 4 editor diverges them)
 - [ ] Fork / rename / delete work end-to-end in Studio: drawer → dispatchVariantToForm → RHF `form.variants` updated with `shouldDirty: true` → Save footer dirty-indicator fires
 - [ ] Name validation enforced: regex `/^[a-z0-9-]+$/`, 2-50 char, unique; convention warning (sm|md|lg|4**|6**|7**) shown but not blocking
 - [ ] Delete native-confirm prompt respected; rejected confirm → no action
 - [ ] Session undo in block-forge handles variant-create / variant-rename / variant-delete (Phase 2 undo uniformity extended)
-- [ ] Path B re-converge lands: tools/block-forge composeSrcDoc emits single `.slot-inner` wrap; `data-block-shell` comes from `renderForPreview` upstream; preview-assets.test.ts pins the new contract
-- [ ] PARITY.md §7 updated on BOTH files in the same commit — `✅ RE-CONVERGED` marker; Studio-only qualifiers dropped
 - [ ] block-forge BlockJson type includes optional `variants?: BlockVariants`; save round-trip writes JSON verbatim to disk; re-read loads it back intact
+- [ ] PARITY.md updated on both files symmetrically (Variant CRUD section additive); §7 NOT touched this phase (Phase 3.5 territory)
 - [ ] `npm run arch-test` = 499 / 0 (Δ0 preserved — no new owned_files)
 - [ ] `npx tsc --noEmit` green (both root + tools/block-forge)
-- [ ] `npm -w @cmsmasters/studio test` green; baseline 77 → +~12 = ~89+
-- [ ] `npm -w block-forge-tool test` green (or whatever block-forge's test script is); baseline 80 → +~17 = ~97+
+- [ ] `npm -w @cmsmasters/studio test` green; baseline 77 → +~15 variant cases = ~92+
+- [ ] `npm -w block-forge-tool test` green (or whatever block-forge's test script is); baseline 80 → +~18 variant cases = ~98+
 - [ ] Live smoke via Playwright on `tools/block-forge` port 7702: open block → click + Variant trigger → drawer opens → fork "sm" from base → variant appears in list → rename "sm" to "mobile" → list updates → delete "mobile" with confirm=true → list empty → drawer close via ESC works
+- [ ] Phase 3.5 scope preserved untouched: `preview-assets.ts` + `preview-assets.test.ts` + its snap + PARITY.md §7 — ZERO edits this phase
 
 ---
 
@@ -1006,21 +955,21 @@ echo "=== Phase 3 Verification ==="
 
 # 1. Arch-test baseline
 npm run arch-test
-echo "(expect: 499 / 0 — Δ0 preserved; new files inline-only or already registered)"
+echo "(expect: 499 / 0 — Δ0 preserved; no new owned_files)"
 
 # 2. Typecheck both surfaces
 npx tsc --noEmit
 npm -w block-forge-tool run typecheck 2>&1 || npm --prefix tools/block-forge run typecheck
 echo "(expect: clean both)"
 
-# 3. Studio tests — target 77 + ~12 variant drawer + integration + helpers = 89+
+# 3. Studio tests — target 77 + ~15 variant drawer + integration + dispatchVariantToForm = 92+
 npm -w @cmsmasters/studio test 2>&1 | tail -20
-echo "(expect: all green, count ≥ 89)"
+echo "(expect: all green, count ≥ 92)"
 
-# 4. block-forge tests — target 80 + ~15 session-variant + ~8 drawer + ~5 Path B = 100+
+# 4. block-forge tests — target 80 + ~15 session-variant + ~3 save-round-trip = 98+ (Path B test bump moved to P3.5)
 cd tools/block-forge && npm test 2>&1 | tail -20
 cd ../..
-echo "(expect: all green, count ≥ 100)"
+echo "(expect: all green, count ≥ 98)"
 
 # 5. VariantsDrawer body byte-identical parity
 diff -u \
@@ -1038,14 +987,13 @@ echo "(expect: 0 lines — byte-identical)"
 grep -n "data-block-shell" tools/block-forge/src/lib/preview-assets.ts
 echo "(expect: 0 matches — only comment references allowed, no literal <div data-block-shell=)"
 
-# 8. preview-assets.test.ts pins single-wrap
-grep -n "single-wrap\|data-block-shell" tools/block-forge/src/__tests__/preview-assets.test.ts
-echo "(expect: assertion that composeSrcDoc output does NOT add the wrapper)"
+# 8. Phase 3.5 scope preserved — preview-assets.ts untouched
+git diff --stat tools/block-forge/src/lib/preview-assets.ts tools/block-forge/src/__tests__/preview-assets.test.ts
+echo "(expect: empty — these files are Phase 3.5 territory)"
 
-# 9. PARITY.md re-converge markers
-grep -n "RE-CONVERGED\|Phase 3" tools/block-forge/PARITY.md
-grep -n "RE-CONVERGED\|Phase 3" apps/studio/src/pages/block-editor/responsive/PARITY.md
-echo "(expect: both files have Phase 3 re-converge marker)"
+# 9. PARITY.md — Variant CRUD additive section present; §7 untouched
+grep -n "Variant CRUD\|Phase 3" tools/block-forge/PARITY.md apps/studio/src/pages/block-editor/responsive/PARITY.md
+echo "(expect: both files have Variant CRUD section; §7 diff reads zero changes to the §7 block itself)"
 
 # 10. Manifest zero-touch
 git diff --stat src/__arch__/domain-manifest.ts
@@ -1074,13 +1022,14 @@ echo "=== Verification complete ==="
 ## MANDATORY: Write Execution Log (do NOT skip)
 
 After verification (before committing), create `logs/wp-028/phase-3-result.md` with all template sections filled. Must include:
-- Pre-flight findings (13-step audit + any stale-assumption escalations)
-- Brain Rulings Applied table (L–V below)
+- Pre-flight findings (13-step audit + any stale-assumption escalations); explicit counts from steps 11-12 (clearAfterSave + createSession callsites)
+- Brain Rulings Applied table (L, M, N, O, P, P', Q, R', S, T, X)
 - Test Counts table (baseline + exit + delta for arch-test / studio / block-forge)
-- Parity diffs (VariantsDrawer body + snap + PARITY.md symmetric edits)
-- Path B re-converge verification (grep + test assertion + snap diff)
+- Parity diffs (VariantsDrawer body + snap + PARITY.md symmetric edits — keep §7 zero-diff)
+- Phase 3.5 scope preservation evidence (git diff preview-assets.ts + its test + snap → all empty)
+- block-editor.tsx LOC deviation running total (Phase 2+2a ~18, Phase 3 add ~10, current ~28; cap 40)
 - Live smoke steps (with screenshots saved to `logs/wp-028/smoke-p3/`)
-- Open Questions for Phase 4 (variant editor side-by-side scope)
+- Open Questions for Phase 3.5 (Path B re-converge discovery if any) + Phase 4 (variant editor side-by-side scope)
 
 ---
 
@@ -1099,21 +1048,20 @@ git add \
   tools/block-forge/src/components/VariantsDrawer.tsx \
   tools/block-forge/src/components/PreviewTriptych.tsx \
   tools/block-forge/src/lib/session.ts \
-  tools/block-forge/src/lib/preview-assets.ts \
   tools/block-forge/src/App.tsx \
   tools/block-forge/src/types.ts \
   tools/block-forge/src/__tests__/VariantsDrawer.test.tsx \
   tools/block-forge/src/__tests__/__snapshots__/VariantsDrawer.test.tsx.snap \
   tools/block-forge/src/__tests__/session.test.ts \
-  tools/block-forge/src/__tests__/preview-assets.test.ts \
-  tools/block-forge/src/__tests__/__snapshots__/preview-assets.test.ts.snap \
   tools/block-forge/src/__tests__/integration.test.tsx \
   tools/block-forge/PARITY.md
 
-git commit -m "feat(studio+tools): WP-028 Phase 3 — VariantsDrawer CRUD + Path B re-converge [WP-028 phase 3]"
+git commit -m "feat(studio+tools): WP-028 Phase 3 — VariantsDrawer CRUD [WP-028 phase 3]"
 ```
 
 Then embed the implementation SHA into `logs/wp-028/phase-3-result.md` and commit the log separately (Phase 2 pattern).
+
+**Note:** Path B re-converge files (`preview-assets.ts` + its test + snap, PARITY.md §7) are NOT in this commit — Phase 3.5 landing is a separate focused commit per `logs/wp-028/phase-3.5-task.md`.
 
 ---
 
@@ -1123,83 +1071,82 @@ Then embed the implementation SHA into `logs/wp-028/phase-3-result.md` and commi
 - **`.snap` is ground truth** — memory `feedback_fixture_snapshot_ground_truth.md`; regen BOTH surfaces; confirm byte-identity via `diff`.
 - **No hardcoded styles** — all colors via `hsl(var(--...))`, all font sizes via `text-[length:var(--...)]`, spacing via `var(--spacing-*)` or Tailwind scale. Never `#hex` or raw px in `style={}`.
 - **Visual check MANDATORY** — memory `feedback_visual_check_mandatory.md`; Playwright smoke at Verification step 11; screenshots to `logs/wp-028/smoke-p3/`.
-- **block-editor.tsx deviation accounting** — Phase 2+2a left ~18 lines net deviation. Phase 3 adds ~10 (handleVariantDispatch + useWatch + split-code memo + VariantAction import). Final ~28 lines. If >40, ESCALATE for broader refactor (own WP).
-- **No new files** — all new test cases go into existing `__tests__/integration.test.tsx` / `variant-helpers.test.ts` is inline with session.test.ts; keeps arch-test at 499/0.
+- **block-editor.tsx deviation accounting** — Phase 2+2a left ~18 lines net deviation. Phase 3 adds ~10 (handleVariantDispatch + useWatch + split-code memo + VariantAction import). Final ~28 lines. If >40, ESCALATE for broader refactor (own WP); surface as Open Question for Phase 5.5 "extract dispatch layer".
+- **No new files** — all new test cases go into existing `__tests__/integration.test.tsx`; DO NOT create `variant-helpers.test.ts` (Ruling T); keeps arch-test at 499/0.
 - **Native confirm in tests** — mock `window.confirm` with `vi.spyOn`. Don't add `jsdom-confirm` polyfill.
-- **PARITY.md single-commit rule** — both files edited in SAME commit as code; §5 discipline enforced.
+- **PARITY.md single-commit rule** — both files edited in SAME commit as code; §5 discipline enforced. §7 untouched this phase.
+- **Phase 3.5 boundary discipline** — `preview-assets.ts` + its test + snap + PARITY.md §7 are OFF-LIMITS this phase. Mini-phase 3.5 task prompt exists as separate handoff.
 
 ---
 ---
 
 # BRAIN → OPERATOR HANDOFF SUMMARY
 
-Phase 3 промпт готовий: `logs/wp-028/phase-3-task.md`.
+Phase 3 промпт готовий: `logs/wp-028/phase-3-task.md`. Path B винесено у окрему mini-phase: `logs/wp-028/phase-3.5-task.md`.
 
-## Структура
+## Структура Phase 3
 
-**8 tasks, ~4.5h budget:**
+**7 tasks, ~3h budget:**
 
 | # | Task | Scope |
 |---|------|-------|
 | 3.1 | `packages/ui/index.ts` +Drawer barrel | 1-line re-export block — mirror Phase 2 Slider pattern |
 | 3.2 | `VariantsDrawer.tsx` rewrite both surfaces | Real UI: list + empty + fork + rename + delete + validation; byte-identical body mod 3-line header |
 | 3.3 | Studio RHF wiring | `dispatchVariantToForm(form, action)` helper + `useWatch('variants')` + `useWatch('code')` split + block-editor.tsx +~10 lines |
-| 3.4 | block-forge session.ts + App.tsx | `createVariant/renameVariant/deleteVariant` reducers + undo extension + drawer mount + composedBlock passthrough |
-| 3.5 | **block-forge Path B re-converge** | Drop `<div data-block-shell>` wrap in composeSrcDoc; PreviewTriptych → `renderForPreview(block, { variants })`; preview-assets.test.ts pins new single-wrap contract |
-| 3.6 | block-forge BlockJson +variants | `variants?: BlockVariants` on type; save round-trip verbatim; `.bak` unchanged |
-| 3.7 | PARITY.md both files symmetric | §7 `✅ RE-CONVERGED`; Studio-only qualifiers dropped; new §Variant CRUD section |
-| 3.8 | Tests + Gates | arch-test 499/0 unchanged; studio 77→~89; block-forge 80→~100; snap byte-identical diff=0; Playwright live smoke on block-forge |
+| 3.4 | block-forge session.ts + App.tsx | `createVariant/renameVariant/deleteVariant` reducers + undo extension + drawer mount + composedBlock passthrough + inline composeVariants at render time |
+| 3.5 | block-forge BlockJson +variants | `variants?: BlockVariants` on type; save round-trip verbatim; `.bak` unchanged |
+| 3.6 | PARITY.md both files additive | New §Variant CRUD section on both files (symmetric); §7 UNTOUCHED (Phase 3.5 territory) |
+| 3.7 | Tests + Gates | arch-test 499/0; studio 77→~92; block-forge 80→~98; snap diff=0; Playwright live smoke |
 
-## 10 Brain rulings locked
+## 11 Brain rulings locked
 
-1. **Drawer consumption** (L) — imported from `@cmsmasters/ui` barrel; primitive file zero-touch; linear transitions permanent (inherits Phase 1 Ruling B; tailwindcss-animate still absent).
-2. **Name validation** (M) — regex `/^[a-z0-9-]+$/` (matches validator L39) + 2-50 char + unique; convention (sm|md|lg|4\d\d|6\d\d|7\d\d) is a WARNING not a BLOCK — parent engine's `composeVariants` warns at render time; drawer shows inline hint but allows submit.
-3. **Fork semantics** (N) — deep copy of CURRENT base `{html, css}` at fork time. Studio: split `form.getValues('code')` via existing `splitCode()` helper. block-forge: `block.html` / `block.css` from current loaded block. Drawer passes `baseHtml/baseCss` props; component itself does not re-read form or block.
-4. **Delete confirm** (O) — native `window.confirm()` for MVP. AlertDialog primitive is deferred (would expand pkg-ui scope). Tests mock via `vi.spyOn(window, 'confirm')`. Phase 4+ can swap to AlertDialog if UX feedback warrants.
-5. **Variant undo** (P) — block-forge session.ts extended with `variant-create / variant-rename / variant-delete` action types; `delete` action payload carries `prev: BlockVariant` for restore-on-undo. Studio side: no variant undo in Phase 3 — RHF `formState.isDirty` is the canonical dirty signal; "undo within session" maps to RHF `reset()` which is Close-phase territory.
-6. **Studio RHF integration** (Q) — `dispatchVariantToForm(form, action)` helper exported from ResponsiveTab.tsx; mirrors Phase 2 `dispatchTweakToForm` pattern. Reads `form.getValues('variants')` at dispatch time (OQ4 invariant preserved). `form.setValue('variants', next, { shouldDirty: true })` — field already registered in BlockFormData (L84, Phase 1).
-7. **Path B re-converge IN PHASE 3** (R) — tools/block-forge composeSrcDoc drops inner `<div data-block-shell>` wrap; PreviewTriptych switches to `renderForPreview(block, { variants })`. Rationale: Phase 3 already touches both surfaces + PARITY.md + tests; deferring to Phase 4 creates a "half-variants-half-PathB" state. ~30min refactor with its own test cases; cleaner than cross-phase migration.
-8. **Barrel edit minimal** (S) — `packages/ui/index.ts` gains ONE block of re-exports (Drawer + 7 sub-components). Pattern mirrors Phase 2 Slider line. Primitive file (`drawer.tsx`) stays zero-touch.
-9. **No new files** (T) — helpers inline in VariantsDrawer.tsx + ResponsiveTab.tsx + session.ts. New test cases go into existing `integration.test.tsx` / `session.test.ts` / `VariantsDrawer.test.tsx` (already registered placeholders). Arch-test Δ0 preserved.
-10. **Lockstep REIMPLEMENT continues** (X) — metric from Phase 2: 11 non-cosmetic diffs total. Phase 3 adds VariantsDrawer pair (+1) + session.ts variant reducers (+3 reducers, same surface-pattern as tweaks). Projected Phase 3 exit: ~14-15 diffs. Still ≤15 threshold; REIMPLEMENT stands. Phase 4 variant editor is the next pressure test.
+1. **Drawer consumption** (L) — imported from `@cmsmasters/ui` barrel; primitive zero-touch; linear transitions permanent (Ruling B carryover).
+2. **Name validation** (M) — regex `/^[a-z0-9-]+$/` + 2-50 char + unique; convention is WARNING not BLOCK.
+3. **Fork semantics** (N) — deep copy of CURRENT base `{html, css}` at fork time. Studio splits form.code; block-forge reads block. Drawer gets baseHtml/baseCss as props.
+4. **Delete confirm** (O) — native `window.confirm()` MVP; AlertDialog primitive deferred.
+5. **Variant undo** (P) — block-forge session.ts extended with variant-\* action types; Studio defers undo to RHF (Close territory).
+6. **createSession backward-compat** (P') — zero-arg signature preserved; variants seed via useEffect inside App.tsx slug-change effect, not signature extension. Lower TS fragility, smaller diff surface. Fallback to signature extension only if TS breaks elsewhere.
+7. **Studio RHF integration** (Q) — `dispatchVariantToForm(form, action)` helper, дзеркало Phase 2 `dispatchTweakToForm`; OQ4 invariant preserved via live `form.getValues('variants')`.
+8. **Path B DEFERRED** (R' — supersedes original R) — Path B re-converge moves to mini-phase 3.5 per Hands' critical review. Rationale: (a) Phase 2a empirical 1.8× time multiplier makes Phase 3 realistic ~6h without Path B, ~8h with — overshoots hard cap; (b) ortogonality — variants work fine via `composeVariants → composeSrcDoc` double-wrap; Path B is PARITY cosmetic not functional; (c) Phase 4 re-touches PreviewTriptych for side-by-side preview column anyway — Phase 3.5 re-converge + Phase 4 refactor = cleaner than double-refactor. Phase 3 exit leaves PARITY §7 "deliberate divergence" untouched; Phase 3.5 flips it.
+9. **Barrel edit minimal** (S) — 1 re-export block; primitive zero-touch.
+10. **No new files** (T) — Ruling T confirmed explicit: DO NOT create `variant-helpers.test.ts`. All new tests inline in existing `__tests__/integration.test.tsx` + `session.test.ts`. Arch-test Δ0.
+11. **Lockstep REIMPLEMENT continues** (X) — Phase 2 metric 11 diffs; Phase 3 adds ~3 (VariantsDrawer pair + session variant reducers same-pattern-as-tweaks). Projected exit ~14. Threshold 15 still holds.
 
 ## Hard gates (inherited + Phase 3 additions)
 
-- Zero touch: `packages/block-forge-core/**` (engine frozen), `src/__arch__/domain-manifest.ts` (all files pre-registered), `.claude/skills/domains/**/SKILL.md` (Close territory), `workplan/WP-028-*.md` body, `packages/validators/src/block.ts` (validator already permissive), `packages/ui/src/primitives/{drawer,slider,button}.tsx` (consumed, not edited), Vite middleware `tools/block-forge/vite.config.ts` (round-trips unknown fields).
+- Zero touch: `packages/block-forge-core/**`, `src/__arch__/domain-manifest.ts`, `.claude/skills/domains/**/SKILL.md`, `workplan/WP-028-*.md` body, `packages/validators/src/block.ts`, `packages/ui/src/primitives/{drawer,slider,button}.tsx`, Vite middleware.
+- **Phase 3.5 boundary**: `preview-assets.ts` + `preview-assets.test.ts` + its `.snap` + PARITY.md §7 — OFF-LIMITS this phase.
 - Zero new files — arch-test Δ0 preserved.
-- Zero new primitive dependencies (no AlertDialog in Phase 3).
-- Zero tailwindcss-animate touches — Ruling B carryover; plugin still absent.
-- Zero workplan body edits — WP text stays frozen until Phase 6 Close.
-- Zero `@radix-ui/react-dialog` imports in consumers — routed through pkg-ui Drawer primitive.
-- VariantsDrawer body diff between surfaces = EXACTLY 8 lines (3-line header content + diff markers). Snap diff = 0.
-- PARITY.md edits land in SAME commit as code (§5 discipline).
+- Zero new primitive dependencies (no AlertDialog).
+- Zero tailwindcss-animate touches.
+- VariantsDrawer body diff = EXACTLY 8 lines; snap diff = 0.
+- PARITY.md edits same commit as code (§5); §7 block itself diff=0 (Phase 3 scope).
 
 ## Escalation triggers
 
-Written to catch load-bearing-assumption drift + architectural surprises up-front:
-- **composeVariants empty-variants shape** — pre-flight step 4 confirms `variants:[]` returns `{slug, html, css}` without `variants` key; if engine has changed to return `{variants: {}}`, adapt downstream `block.variants ?? {}` normalization; surface to Brain.
-- **Radix Dialog ESC/backdrop dual-wiring** — if testing reveals double-close (ESC + explicit onOpenChange both fire), rely ONLY on `onOpenChange` prop; do NOT add separate document keydown listener.
-- **block-editor.tsx touch >10 lines for Phase 3** — if useWatch/split-code/dispatch wiring overshoots ~10 lines, STOP, escalate to Brain; total deviation cap after Phase 3 = 40 lines.
-- **preview-assets.test.ts case (c) failure mode** — if the existing case asserts presence of `data-block-shell` via `composeSrcDoc` output, update to `renderForPreview(input).html` contains it (moved responsibility). Do NOT restore the wrap to silence the test.
-- **`.bak` round-trip with variants** — if tools/block-forge save-then-refetch loses `variants` field (JSON.parse round-trip), escalate — the fs middleware expected verbatim round-trip; add a test case in `integration.test.tsx`.
-- **Native `window.confirm` in Playwright smoke** — Playwright auto-accepts by default unless `page.on('dialog')` registered. Confirm test flow (e) works; if not, add `page.on('dialog', d => d.accept())`.
-- **Session variant seed race** — extended createSession signature `createSession(initialVariants?)` must be backward-compat; every existing test calls `createSession()` with 0 args. If TypeScript breaks, revert to separate seed call (`setSession((s) => ({ ...s, variants: block.variants ?? {} }))` inside useEffect).
+- **composeVariants empty-variants shape** drift from pre-flight step 4 expectation → adapt normalization, surface to Brain.
+- **Radix Dialog dual-close** if ESC + onOpenChange both fire → rely only on onOpenChange; no separate keydown handler.
+- **block-editor.tsx touch >10 lines** → STOP, escalate; cap 40 total after Phase 3. If at cap, park as "Phase 5.5 extract dispatch layer" in Open Questions.
+- **`.bak` round-trip loses variants** → add integration test case; surface fs middleware bug if JSON.parse round-trip drops the field.
+- **Playwright native confirm** — register `page.on('dialog', d => d.accept())` if test flow (e) fails.
+- **clearAfterSave / createSession callsites >3** (pre-flight steps 11-12) → escalate; signature extension may need broader refactor.
+- **PreviewTriptych inline composeVariants regression** — if adding the composeVariants call breaks existing Phase 2 tweak tests (@container slot query evaluation), surface; maybe requires Path B split order reversal.
 
 ## Arch-test target
 
-**499 / 0** — unchanged. All affected files already registered in manifest (VariantsDrawer + tests + snapshots + session.ts + preview-assets.ts + App.tsx + ResponsiveTab.tsx + block-editor.tsx all in existing domain owned_files). No new file paths land; helpers stay inline. PARITY.md files + index.ts barrel are in manifest or infra-tooling/studio-blocks Markdown globs.
+**499 / 0** — unchanged. All affected paths pre-registered; no new files; helpers inline.
 
 ## Git state
 
-- `logs/wp-028/phase-3-task.md` — new untracked (this file)
-- `logs/wp-028/phase-2-result.md` — last Phase 2 doc (unchanged; Phase 2a corrections already landed in commit `6b2385c3`)
+- `logs/wp-028/phase-3-task.md` — UPDATED (task prompt narrowed scope)
+- `logs/wp-028/phase-3.5-task.md` — NEW (Path B re-converge mini-phase)
 - Workplan body unchanged (Close-phase territory)
-- Nothing staged, nothing committed
+- Nothing staged, nothing committed yet
 
 ## Next
 
-1. Review → commit task prompt → handoff Hands
-2. АБО правки (найімовірніше — Ruling R "Path B re-converge in Phase 3" — якщо вважаєш що це мало б бути Phase 4)
-3. АБО self-commit if workflow permits
+1. Review → commit Phase 3 + 3.5 task prompts → handoff Hands (Phase 3 first, Phase 3.5 after)
+2. АБО правки (напр. якщо хочеш Ruling R' reversal — Path B back у Phase 3; або hint щодо Phase 3.5 scope)
+3. Brain паркується до наступного сигналу
 
 Чекаю.
