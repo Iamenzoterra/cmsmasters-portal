@@ -3,15 +3,22 @@ import type { LayoutConfig, TokenMap, ScopingWarning, PerBpSlotField, CanvasBrea
 import { resolveSlotConfig, getBaseGridKey, isFieldOverridden } from '../lib/types'
 import { deriveBreakpointTruth } from '../lib/breakpoint-truth'
 import { resolveToken, resolveTokenPx, hslTripletToHex } from '../lib/tokens'
-import { SLOT_DEFINITIONS } from '@cmsmasters/db/slots'
+import {
+  canShow,
+  getFieldScope,
+  getSlotBadges,
+  getSlotTraits,
+  type ScopeCtx,
+} from '../lib/inspector-capabilities'
 import { CopyButton } from './CopyButton'
 import { SlotToggles } from './SlotToggles'
 import { SlotReference } from './SlotReference'
 import { TokenReference } from './TokenReference'
 import { CreateSlotModal } from './CreateSlotModal'
 import { DRAWER_ICONS } from '../../../../packages/ui/src/portal/drawer-icons'
-
-const GLOBAL_SLOT_NAMES_SET: Set<string> = new Set(SLOT_DEFINITIONS.map(s => s.name))
+// GLOBAL_SLOT_NAMES_SET removed — `traits.isGlobalSlot` from
+// inspector-capabilities.ts is now the single source of truth, and the
+// `canShow('allowed-block-types', ...)` dispatch internalizes the check.
 
 function BreakpointFooter({ config, activeBreakpoint }: {
   config: LayoutConfig
@@ -683,6 +690,45 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
   const isContainer = hasPersistedNested || isPendingContainer
   const effectiveChildren: string[] = hasPersistedNested ? nestedChildren! : []
 
+  // Capability dispatcher — every gate below now routes through this one
+  // source of truth. A "pending container" (user clicked Convert but hasn't
+  // added a child yet) must show the container panel, so we override the
+  // trait vector in that edge case — validator still rejects persisting an
+  // empty `nested-slots` array.
+  const traits = {
+    ...getSlotTraits(selectedSlot, baseSlot, config, activeBreakpoint as CanvasBreakpointId),
+    isContainer,
+    isLeaf: !isContainer,
+    supportsPerBreakpoint: !isContainer,
+    supportsRoleLevelOnly: isContainer,
+  }
+  const scope: ScopeCtx = {
+    currentBp: activeBreakpoint as CanvasBreakpointId,
+    hasOverride: false,
+    isGridField: false,
+  }
+  // Any per-BP field overridden on this slot at the current BP?
+  // Controls scope-chip label: "N override" if yes, "Base" + inherited-label if no.
+  const PER_BP_FIELDS_LOCAL: readonly PerBpSlotField[] = [
+    'padding', 'padding-x', 'padding-top', 'padding-bottom',
+    'gap', 'align', 'max-width', 'min-height', 'margin-top',
+    'border-sides', 'border-width', 'border-color', 'visibility', 'order',
+  ] as const
+  const hasAnyPerBpOverride = !isBaseBp
+    && PER_BP_FIELDS_LOCAL.some((f) => isFieldOverridden(selectedSlot, gridKey, config, f))
+  const fieldScopeLabel = getFieldScope(
+    'padding', traits, activeBreakpoint as CanvasBreakpointId,
+    { hasOverrideAtBp: hasAnyPerBpOverride },
+  )
+  const bpScopeLabel: string =
+    fieldScopeLabel === 'tablet-override' ? 'Tablet override'
+    : fieldScopeLabel === 'mobile-override' ? 'Mobile override'
+    : 'Base'
+  const bpScopeClass: string =
+    fieldScopeLabel === 'tablet-override' ? 'lm-scope-chip--tablet-override'
+    : fieldScopeLabel === 'mobile-override' ? 'lm-scope-chip--mobile-override'
+    : 'lm-scope-chip--base'
+
   // Slots eligible for "+ Add slot" dropdown: existing leaves not already nested anywhere, excluding self.
   const nestedAnywhere = new Set<string>()
   for (const name of Object.keys(config.slots)) {
@@ -730,7 +776,11 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
         <div className={`lm-inspector__section${isContainer ? ' lm-inspector__panel--container' : ''}`}>
           <div className="lm-inspector__slot-name">
             {selectedSlot}
-            {isContainer && <span className="lm-badge lm-badge--container">container</span>}
+            <span className="lm-inspector__slot-badges">
+              {getSlotBadges(traits, baseSlot.position).map((badge) => (
+                <span key={badge} className={`lm-badge lm-badge--${badge}`}>{badge}</span>
+              ))}
+            </span>
             <CopyButton text={formatSummary()} onCopied={handleCopied} />
           </div>
         </div>
@@ -763,7 +813,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
             </select>
           </div>
 
-          {baseSlot.position === 'top' && (
+          {canShow('sticky', traits, scope) && (
             <div className="lm-inspector__row">
               <span className="lm-inspector__label">Sticky</span>
               <input
@@ -781,7 +831,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
             </div>
           )}
 
-          {baseSlot.sticky && (
+          {canShow('z-index', traits, scope) && (
             <div className="lm-inspector__row">
               <span className="lm-inspector__label">Z-index</span>
               <input
@@ -799,7 +849,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
           )}
 
           {/* Allowed block types — custom leaf slots only */}
-          {!GLOBAL_SLOT_NAMES_SET.has(selectedSlot) && !isContainer && (() => {
+          {canShow('allowed-block-types', traits, scope) && (() => {
             const currentTypes = (baseSlot['allowed-block-types'] as string[] | undefined) ?? []
             return (
               <div className="lm-inspector__row lm-inspector__row--col">
@@ -834,7 +884,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
           {/* Drawer trigger — label + icon for the button that opens this
               slot as a drawer. Only shown for sidebar slots (others never
               become a drawer). Base/role-level — one label across all BPs. */}
-          {selectedSlot.includes('sidebar') && (
+          {canShow('drawer-trigger-label', traits, scope) && (
             <>
               <div className="lm-inspector__row">
                 <span className="lm-inspector__label">Trigger label</span>
@@ -889,13 +939,13 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
             </>
           )}
 
-          {isFullWidth && (
+          {canShow('full-width-note', traits, scope) && (
             <div className="lm-inspector__locked-note">Full width — locked by position</div>
           )}
         </div>
 
         {/* Container panel — children + create controls */}
-        {isContainer && (
+        {canShow('container-panel', traits, scope) && (
           <div className="lm-inspector__section lm-inspector__panel--container">
             <div className="lm-inspector__section-title">Child slots</div>
             {effectiveChildren.length === 0 ? (
@@ -1003,11 +1053,18 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
         />
 
         {/* Slot Area — outer (grid column width + padding). Hidden for containers — they have no inner host. */}
-        {!isContainer && (
+        {canShow('slot-area-section', traits, scope) && (
         <div className="lm-inspector__section lm-inspector__section--outer" data-slot-type={selectedSlot}>
           <div className="lm-inspector__section-title">
             <span className="lm-inspector__section-glyph">▭</span> Slot Area
-            {!isBaseBp && <span className="lm-bp-badge" data-bp={activeBreakpoint}>{activeBreakpoint}</span>}
+            {!isBaseBp && (
+              <>
+                <span className={`lm-scope-chip ${bpScopeClass}`}>{bpScopeLabel}</span>
+                {!hasAnyPerBpOverride && (
+                  <span className="lm-inspector__inherited-label">Inherited from Base</span>
+                )}
+              </>
+            )}
           </div>
 
           {/* Outer padding — split into X / top / bottom */}
@@ -1216,7 +1273,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
         )}
 
         {/* Property rows — leaf only */}
-        {!isContainer && rows.map((row) => (
+        {canShow('property-rows', traits, scope) && rows.map((row) => (
           <div key={row.property} className="lm-inspector__section">
             <div className="lm-inspector__row">
               <span className="lm-inspector__label">{row.label}</span>
@@ -1235,11 +1292,18 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
         ))}
 
         {/* Slot Parameters — inner container controls (leaf only) */}
-        {!isContainer && (
+        {canShow('slot-parameters-section', traits, scope) && (
         <div className="lm-inspector__section lm-inspector__section--inner">
           <div className="lm-inspector__section-title">
             <span className="lm-inspector__section-glyph">▤</span> Slot Parameters
-            {!isBaseBp && <span className="lm-bp-badge" data-bp={activeBreakpoint}>{activeBreakpoint}</span>}
+            {!isBaseBp && (
+              <>
+                <span className={`lm-scope-chip ${bpScopeClass}`}>{bpScopeLabel}</span>
+                {!hasAnyPerBpOverride && (
+                  <span className="lm-inspector__inherited-label">Inherited from Base</span>
+                )}
+              </>
+            )}
           </div>
 
           {/* Inner max-width */}
@@ -1359,7 +1423,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
         )}
 
         {/* Usable width (leaf only — derived from padding + column width) */}
-        {!isContainer && usableWidth && (
+        {canShow('usable-width', traits, scope) && usableWidth && (
           <div className="lm-inspector__section lm-inspector__derived">
             <div className="lm-inspector__row">
               <span className="lm-inspector__label">Usable width</span>

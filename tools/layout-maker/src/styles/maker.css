@@ -2014,6 +2014,66 @@ body {
   border: 1px solid hsla(270, 55%, 55%, 0.35);
 }
 
+/* Phase 4 badges — concurrent set per slot traits. All on --lm-* tokens. */
+.lm-inspector__slot-badges {
+  display: inline-flex;
+  gap: var(--lm-sp-3);
+  margin-left: var(--lm-sp-3);
+  vertical-align: middle;
+}
+.lm-badge--leaf {
+  background: var(--lm-bg-hover);
+  color: var(--lm-text-secondary);
+  border: 1px solid var(--lm-border-subtle);
+}
+.lm-badge--sidebar {
+  background: var(--lm-bg-active);
+  color: var(--lm-text-accent);
+  border: 1px solid var(--lm-border-focus);
+}
+.lm-badge--top,
+.lm-badge--bottom {
+  background: var(--lm-bg-hover);
+  color: var(--lm-warning);
+  border: 1px solid var(--lm-warning);
+}
+
+/* Phase 4 scope chip — section-level "which scope does edit-here write to"
+ * indicator. Replaces the lone `!isBaseBp` BP badge on per-BP sections. */
+.lm-scope-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  margin-left: var(--lm-sp-3);
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  vertical-align: middle;
+}
+.lm-scope-chip--base {
+  background: var(--lm-bg-hover);
+  color: var(--lm-text-secondary);
+  border: 1px solid var(--lm-border-subtle);
+}
+.lm-scope-chip--tablet-override,
+.lm-scope-chip--mobile-override {
+  background: var(--lm-bg-active);
+  color: var(--lm-text-accent);
+  border: 1px solid var(--lm-border-focus);
+}
+
+/* Phase 4 inherited-value label — paired with a scope chip when a non-desktop
+ * BP has no override. Communicates "edit here → writes to Base" more
+ * explicitly than the inherit-dot alone. Font-size inherits parent (12–13px). */
+.lm-inspector__inherited-label {
+  margin-left: var(--lm-sp-3);
+  color: var(--lm-text-muted);
+  font-style: italic;
+  vertical-align: middle;
+}
+
 /* Slot Role section — position / sticky controls */
 .lm-inspector__section--role {
   border-left: 2px solid hsla(210, 50%, 55%, 0.45);

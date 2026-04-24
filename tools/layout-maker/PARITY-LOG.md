@@ -45,31 +45,30 @@ fix is in the generator, the Inspector, the schema, or the Portal.
 
 ## Open
 
-### [tablet] `align` + `max-width` on container slots are silently ignored
-
-- **Layout / scope:** `layouts/2132.yaml` ("the-new") / `theme`
-- **Breakpoint:** tablet (and any BP, actually — this is a schema-level issue)
-- **Slot:** `content` (has `nested-slots: [theme-blocks]`, so it is a container)
-- **Field:** `align: center`, `max-width: 615px`, `padding: --spacing-xl`, `padding-x: 0`
-- **LM claims:** Inspector exposes Content align / Inner max-width / padding controls on the slot — user can set them, they are written to `config.slots.content` and visible in YAML.
-- **LM canvas:** mostly matches Inspector — shows the fixed-width centered frame on the canvas for that slot.
-- **Portal renders:** ignores them. `[data-slot="content"]` has no `.slot-inner` child (its child is `<div data-slot="theme-blocks">`), so the generator skips the per-slot inner rule (`css-generator.ts:234-246`: `if (slot['nested-slots'] && length > 0) continue`). The vars like `--sl-content-mw: 615px` are emitted but no rule consumes them.
-- **Where the lie lives:** **inspector + schema**. The Inspector shows inner/leaf controls for container slots; the schema has no notion of "these fields are illegal when nested-slots is set".
-- **Root cause:** The visual-params panel (`Inspector.tsx`) doesn't branch on `slot['nested-slots']`. See `tools/layout-maker/CLAUDE.md` "Container vs Leaf Slots (WP-020)" which says containers should only show "chip list + Add/Create buttons" — but the inner-params section is also being shown for containers.
-- **Repro:**
-  1. Open a layout where `content` has `nested-slots: [theme-blocks]`.
-  2. Select `content` in the Canvas.
-  3. Set `Content align: Center`, `Inner max-width: 615px` (Fixed).
-  4. Save, export, and open the actual themed page in Portal.
-  5. Observe: title blocks are NOT constrained to 615px, NOT centered — they fill parent width.
-- **Status:** `open`
-- **Contract/test added:** none yet. Proposed:
-  - `css-generator.test.ts`: given a slot with `nested-slots`, assert no `[data-slot="X"] > .slot-inner` rule is emitted AND no inner vars (`--sl-X-mw`, `--sl-X-al`, `--sl-X-px`, `--sl-X-pt`, `--sl-X-pb`) are emitted.
-  - `Inspector.test.tsx`: when the selected slot has `nested-slots`, the inner-params controls (align / max-width / padding / gap) must not render.
+_(none)_
 
 ---
 
 ## Fixed
+
+### [tablet] `align` + `max-width` on container slots are silently ignored
+
+- **Layout / scope:** `layouts/2132.yaml` ("the-new") / `theme`
+- **Breakpoint:** tablet (and any BP, actually — this was a schema-level issue)
+- **Slot:** `content` (has `nested-slots: [theme-blocks]`, so it is a container)
+- **Field:** `align: center`, `max-width: 615px`, `padding: --spacing-xl`, `padding-x: 0`
+- **LM claims (before fix):** Inspector exposed Content align / Inner max-width / padding controls on container slots — user could set them, they were written to `config.slots.content` and visible in YAML.
+- **LM canvas (before fix):** mostly matched Inspector — showed the fixed-width centered frame on the canvas for that slot.
+- **Portal rendered (before fix):** ignored them. `[data-slot="content"]` has no `.slot-inner` child (its child is `<div data-slot="theme-blocks">`), so the generator's per-slot inner-rule emit skipped containers (still at `css-generator.ts:261-262`: `if (slot['nested-slots'] && length > 0) continue`). But `--sl-content-mw: 615px` style vars were still emitted into `:root` — dead code that gave the Inspector a false reason to surface inner fields.
+- **Where the lie lived:** **generator + inspector**. Two halves: (a) generator emitted inner-slot vars for containers that no rule consumed; (b) Inspector branched on a scattered 17-site gating layer (container / sidebar / position / is-global / sticky / etc.) that hid most inner controls on containers but not all of them — and every new field added risked reopening the lie.
+- **Fix (Phase 4, two cuts):**
+  1. **Cut A (`775917cc`) — generator side:** `css-generator.ts` var-emit loop now honors the same `nested-slots` skip condition as the inner-rule selector loop. Container slots emit zero `--sl-<name>-{mw,al,px,pt,pb,gap}` vars.
+  2. **Cut B (`<phase-4 Cut B SHA>`) — inspector side:** 17 scattered gating sites in `Inspector.tsx` routed through a single `canShow(fieldId, traits, scope)` dispatcher in `src/lib/inspector-capabilities.ts`. Every container trait hard-rejects inner-params. New sections can't accidentally bypass — every gate decision lives in one file with a table test.
+- **Status:** `fixed <Cut A 775917cc + Cut B phase-4>`
+- **Contract/test added:**
+  - `runtime/lib/css-generator.test.ts` — "Phase 4: container slots never reach the leaf inner-params pipeline" describe block — 3 cases asserting zero inner-rule selector AND zero inner vars for containers, plus regression guard that adjacent leaves still emit inner rules.
+  - `src/lib/inspector-capabilities.test.ts` — "container PARITY lock" test asserts `canShow` hard-rejects max-width / align / padding-* / gap / min-height / margin-top / border-* for containers at EVERY BP (desktop / tablet / mobile).
+  - `src/components/Inspector.test.tsx` — "container slot: hides inner-params" and "container slot: hides inner-params across EVERY BP" — integration tests asserting the rendered DOM has zero "Slot Parameters" / "Slot Area" / "Inner max-width" / "Content align" / "Padding ←→" elements on containers.
 
 ### [tablet] Peek / tab trigger pill shows a close (X) sprite alongside the chevron at rest
 
