@@ -55,7 +55,6 @@ Matches portal's `apps/portal/lib/hooks.ts:234` output + WP-024 slot wrapper. LM
 ### Out of scope (explicit — do not mistake for divergence)
 - Theme-page chrome (header, nav, footer, layout grid) — block-forge previews blocks in isolation.
 - Any `[data-slot="…"]` outer grid rules from layout-maker — block-forge doesn't reconstruct the layout, only the `.slot-inner` containment context.
-- Variants — `composeVariants` output is Phase 3+ territory; this contract covers single-block base rendering only.
 - Save/backup behavior — Phase 4 wires POST; read-only this phase.
 
 ## Discipline (PARITY-LOG equivalent)
@@ -72,6 +71,10 @@ _(none at Phase 2 seed)_
 ## Fixed
 
 _(empty)_
+
+## Discipline Confirmation (WP-028 Phase 3)
+
+Variant CRUD drawer landed end-to-end on both surfaces (tools/block-forge + Studio) with byte-identical body + session-backed undo on block-forge. PARITY section added above; §7 "deliberate divergence" UNCHANGED pending Phase 3.5 Path B re-converge. No new files; arch-test stays at 499/0.
 
 ## Discipline Confirmation (WP-026 Close)
 
@@ -120,6 +123,19 @@ Six divergences between Phase 4 plan and shipped code, all acceptable, all logge
 6. Null-block / empty-pending guards in `displayBlock` memo — prevents infinite re-render on block-id transition edge case
 
 See `logs/wp-027/phase-4-result.md` §"6 documented deviations" for full trace.
+
+## Variant CRUD (WP-028 Phase 3 — additive)
+
+As of Phase 3, block-forge ships a `VariantsDrawer` (`src/components/VariantsDrawer.tsx`, byte-identical body to Studio's `apps/studio/src/pages/block-editor/responsive/VariantsDrawer.tsx`) wired into `App.tsx` via `handleVariantAction` + session-backed CRUD:
+- **Store:** `session.variants: BlockVariants` seeded from `block.variants ?? {}` on slug-change (Ruling P' — useEffect spread, `createSession()` stays zero-arg for backward compat).
+- **Actions:** `createVariant / renameVariant / deleteVariant` in `src/lib/session.ts`; `history` carries the action for undo, `delete` records `prev: BlockVariant` so restore is lossless.
+- **Undo:** extends existing `undo()` to handle `variant-create / variant-rename / variant-delete` in addition to accept/reject/tweak. Parity-locked with Phase 2 undo uniformity.
+- **Dirty:** `isDirty(state)` returns true if any variant-* action is in history, in addition to the P2 tweak/pending/rejected checks.
+- **Save round-trip:** `handleSave` appends `variants: Object.keys(session.variants).length > 0 ? session.variants : undefined` to the `BlockJson` payload (disk parity with Studio's `formDataToPayload`). `clearAfterSave(prev, refreshed.variants ?? {})` aligns session.variants to post-save disk state.
+
+**Render-time variant composition (Phase 3 INTERIM — see Phase 3.5 below):** `PreviewTriptych.tsx` calls `composeVariants(base, variantList)` INLINE when `composedBlock.variants` is non-empty, then feeds the composed `{html, css}` into existing `PreviewPanel` → `composeSrcDoc` unchanged. The `composeSrcDoc` wrap (`<div class="slot-inner"><div data-block-shell="{slug}">{html}</div></div>`) is untouched this phase.
+
+**Phase 3.5 follow-up (scheduled):** `preview-assets.ts` drops the inner `<div data-block-shell>` wrap and `PreviewTriptych` switches from the inline `composeVariants` call to `renderForPreview(block, { variants })` — Path B re-converge with Studio. §7 "deliberate divergence" in `apps/studio/.../PARITY.md` flips to `✅ RE-CONVERGED` in that mini-phase. Scope boundary: Phase 3 preserves `preview-assets.ts` + its `.test.ts` + its `.snap` + Studio §7 UNTOUCHED.
 
 ## Cross-contract test layers
 

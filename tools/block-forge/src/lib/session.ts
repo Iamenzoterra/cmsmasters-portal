@@ -1,41 +1,56 @@
 // Phase 4 (WP-026) — pure session state machine.
 // WP-028 Phase 2 — extended with tweaks: Tweak[] + addTweak/removeTweaksFor/composeTweakedCss.
+// WP-028 Phase 3 — extended with variants: BlockVariants + createVariant/renameVariant/
+//                  deleteVariant + undo coverage + isDirty awareness + clearAfterSave
+//                  savedVariants param.
 //
 // Session semantics (per Phase 0 §0.7 save-safety rule 3):
 //   - One session per selected block. App.tsx creates a fresh session on every
 //     slug change (including re-selecting the same slug after a switch-away).
 //   - `backedUp` is the in-memory "have we already created .bak this session"
 //     flag; it's the single source of truth for "requestBackup: bool" on POST.
-//   - `history` is an ordered record of accept/reject/tweak actions for undo.
+//   - `history` is an ordered record of accept/reject/tweak/variant-* actions for undo.
 //   - `lastSavedAt` feeds the status bar; null before any successful save.
-//   - `tweaks` (WP-028) is an ordered list of authored per-BP overrides. Compose
+//   - `tweaks` (WP-028 P2) is an ordered list of authored per-BP overrides. Compose
 //     via `composeTweakedCss(baseCss, tweaks)` at render time — baseCss is the
 //     current block.css snapshot (pre-tweak). Reducer stays pure; no string
 //     accumulation inside state (Brain Ruling D).
+//   - `variants` (WP-028 P3) is the current named-fork map authored in this session.
+//     Seeded from `block.variants` on slug-change via `setSession((s) => ({ ...s,
+//     variants: block.variants ?? {} }))` (Ruling P' — useEffect seed, keeps
+//     `createSession()` zero-arg for backward compat). Any variant-* reducer
+//     mutates this map + pushes a history entry for undo.
 //
 // All transitions are pure — no React, no DOM, no timers. `clearAfterSave`
 // takes `Date.now()` implicitly (side-effectful clock read) — the only
 // impurity. Tests bound this via range assertions (`> 0`) rather than
 // mocking time.
 //
-// No throws — invalid transitions (accept-already-pending, undo-empty-history)
-// are silent no-ops that return the input state.
+// No throws — invalid transitions (accept-already-pending, undo-empty-history,
+// create-duplicate-variant, rename-to-existing) are silent no-ops that return
+// the input state.
 
 import type { Suggestion, Tweak } from '@cmsmasters/block-forge-core'
 import { emitTweak } from '@cmsmasters/block-forge-core'
+import type { BlockVariant, BlockVariants } from '@cmsmasters/db'
 
 export type SessionAction =
   | { type: 'accept'; id: string }
   | { type: 'reject'; id: string }
   | { type: 'tweak'; tweak: Tweak } // WP-028 Phase 2
+  | { type: 'variant-create'; name: string; payload: BlockVariant } // WP-028 Phase 3
+  | { type: 'variant-rename'; from: string; to: string }
+  | { type: 'variant-delete'; name: string; prev: BlockVariant }
 
 export type SessionState = {
   /** Suggestion IDs accepted but not yet saved. Order preserved. */
   pending: string[]
   /** Suggestion IDs explicitly rejected — hidden from the list. */
   rejected: string[]
-  /** Authored per-BP tweaks (WP-028). Compose over base CSS at render time. */
+  /** Authored per-BP tweaks (WP-028 P2). Compose over base CSS at render time. */
   tweaks: Tweak[]
+  /** Named variants authored this session (WP-028 P3). Seeded from block.variants in App.tsx. */
+  variants: BlockVariants
   /** Action history for per-session undo. Latest action last. */
   history: SessionAction[]
   /** True iff `saveBlock` has succeeded at least once since this session started. */
@@ -49,6 +64,7 @@ export function createSession(): SessionState {
     pending: [],
     rejected: [],
     tweaks: [],
+    variants: {},
     history: [],
     backedUp: false,
     lastSavedAt: null,
@@ -110,6 +126,62 @@ export function removeTweaksFor(
   return { ...state, tweaks: next }
 }
 
+/**
+ * Create a named variant (WP-028 Phase 3, Ruling N — deep copy at fork time).
+ * Silent no-op if `name` already exists. `payload` is {html, css} snapshotted
+ * at fork time by the caller (App.tsx seeds from `block.html / block.css`).
+ */
+export function createVariant(
+  state: SessionState,
+  name: string,
+  payload: BlockVariant,
+): SessionState {
+  if (name in state.variants) return state
+  return {
+    ...state,
+    variants: { ...state.variants, [name]: payload },
+    history: [...state.history, { type: 'variant-create', name, payload }],
+  }
+}
+
+/**
+ * Rename a variant (WP-028 Phase 3). Silent no-op if:
+ *   - source name absent
+ *   - target name already exists
+ *   - from === to
+ */
+export function renameVariant(
+  state: SessionState,
+  from: string,
+  to: string,
+): SessionState {
+  if (from === to) return state
+  if (!(from in state.variants)) return state
+  if (to in state.variants) return state
+  const { [from]: moving, ...rest } = state.variants
+  return {
+    ...state,
+    variants: { ...rest, [to]: moving },
+    history: [...state.history, { type: 'variant-rename', from, to }],
+  }
+}
+
+/**
+ * Delete a variant (WP-028 Phase 3). Silent no-op if `name` absent.
+ * History carries `prev: BlockVariant` so undo restores the full payload,
+ * not just the name slot.
+ */
+export function deleteVariant(state: SessionState, name: string): SessionState {
+  const existing = state.variants[name]
+  if (!existing) return state
+  const { [name]: _drop, ...rest } = state.variants
+  return {
+    ...state,
+    variants: rest,
+    history: [...state.history, { type: 'variant-delete', name, prev: existing }],
+  }
+}
+
 /** Roll back the latest action. No-op on empty history. */
 export function undo(state: SessionState): SessionState {
   const last = state.history[state.history.length - 1]
@@ -117,6 +189,24 @@ export function undo(state: SessionState): SessionState {
   const history = state.history.slice(0, -1)
   if (last.type === 'tweak') {
     return { ...state, tweaks: state.tweaks.slice(0, -1), history }
+  }
+  if (last.type === 'variant-create') {
+    const { [last.name]: _drop, ...rest } = state.variants
+    return { ...state, variants: rest, history }
+  }
+  if (last.type === 'variant-rename') {
+    // Rename was `from → to`; undo swaps back. No-op silently if `to` is missing
+    // (defensive — shouldn't happen because reducers are the only writer).
+    if (!(last.to in state.variants)) return { ...state, history }
+    const { [last.to]: moving, ...rest } = state.variants
+    return { ...state, variants: { ...rest, [last.from]: moving }, history }
+  }
+  if (last.type === 'variant-delete') {
+    return {
+      ...state,
+      variants: { ...state.variants, [last.name]: last.prev },
+      history,
+    }
   }
   // accept / reject — remove id from whichever set holds it (existing contract).
   return {
@@ -132,14 +222,23 @@ export function undo(state: SessionState): SessionState {
  * `backedUp=true` (so subsequent saves skip the .bak write); stamp
  * `lastSavedAt = Date.now()`.
  *
+ * WP-028 Phase 3 — accepts optional `savedVariants` to align session.variants
+ * with disk state after save. Defaults to `state.variants` for backward compat
+ * with existing zero-arg callers (the post-save state IS what just hit disk,
+ * so preserving it keeps session in sync without an extra refetch dance).
+ *
  * Note: `backedUp` is only ever flipped true — never back to false — within
  * a session. The only way to reset is a full `createSession()` call.
  */
-export function clearAfterSave(_state: SessionState): SessionState {
+export function clearAfterSave(
+  state: SessionState,
+  savedVariants?: BlockVariants,
+): SessionState {
   return {
     pending: [],
     rejected: [],
     tweaks: [],
+    variants: savedVariants ?? state.variants,
     history: [],
     backedUp: true,
     lastSavedAt: Date.now(),
@@ -160,12 +259,21 @@ export function pickAccepted(
   return suggestions.filter((s) => set.has(s.id))
 }
 
-/** Derived: any unsaved accept/reject/tweak action present. */
+/** Derived: any unsaved accept/reject/tweak/variant-* action present. */
 export function isDirty(state: SessionState): boolean {
-  return (
+  if (
     state.pending.length > 0 ||
     state.rejected.length > 0 ||
     state.tweaks.length > 0
+  )
+    return true
+  // WP-028 Phase 3 — variant-* actions in history drive dirty. After undo pops
+  // the last variant-* entry, history no longer contains it → returns to clean.
+  return state.history.some(
+    (h) =>
+      h.type === 'variant-create' ||
+      h.type === 'variant-rename' ||
+      h.type === 'variant-delete',
   )
 }
 

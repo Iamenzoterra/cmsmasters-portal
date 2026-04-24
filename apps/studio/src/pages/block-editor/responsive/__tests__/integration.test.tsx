@@ -270,3 +270,149 @@ describe('ResponsiveTab — WP-028 Phase 2 TweakPanel flow', () => {
     })
   })
 })
+
+// ─────────────────────────────────────────────────────────────────────────
+// WP-028 Phase 3 — dispatchVariantToForm behavioral unit tests (Ruling T —
+// kept inline with integration to avoid creating a new test file; preserves
+// arch-test Δ0). Mirrors Phase 2 OQ4 invariant tests for dispatchTweakToForm.
+// ─────────────────────────────────────────────────────────────────────────
+import { dispatchVariantToForm } from '../ResponsiveTab'
+import type { BlockVariants } from '@cmsmasters/db'
+
+function makeFormMock(initialVariants: BlockVariants = {}) {
+  let current: BlockVariants = initialVariants
+  const setValue = vi.fn(
+    (_key: 'variants', value: BlockVariants, _opts?: { shouldDirty?: boolean }) => {
+      current = value
+    },
+  )
+  const getValues = vi.fn((_key: 'variants') => current)
+  return {
+    form: { getValues, setValue } as Parameters<typeof dispatchVariantToForm>[0],
+    get current() {
+      return current
+    },
+    setValue,
+    getValues,
+  }
+}
+
+describe('dispatchVariantToForm — OQ4 mirror behavioral tests', () => {
+  it('create: setValue called with {...prev, [name]: payload}; returns previous', () => {
+    const harness = makeFormMock({ md: { html: '<h2>md</h2>', css: '' } })
+    const prev = dispatchVariantToForm(harness.form, {
+      kind: 'create',
+      name: 'sm',
+      html: '<h2>sm</h2>',
+      css: '.sm { padding: 12px }',
+    })
+    expect(prev).toEqual({ md: { html: '<h2>md</h2>', css: '' } })
+    expect(harness.setValue).toHaveBeenCalledWith(
+      'variants',
+      {
+        md: { html: '<h2>md</h2>', css: '' },
+        sm: { html: '<h2>sm</h2>', css: '.sm { padding: 12px }' },
+      },
+      { shouldDirty: true },
+    )
+  })
+
+  it('rename: moves the slot + preserves payload; returns previous', () => {
+    const harness = makeFormMock({ sm: { html: '<h2>x</h2>', css: '.a { color: red }' } })
+    const prev = dispatchVariantToForm(harness.form, {
+      kind: 'rename',
+      from: 'sm',
+      to: 'mobile',
+    })
+    expect(prev).toEqual({ sm: { html: '<h2>x</h2>', css: '.a { color: red }' } })
+    expect(harness.current).toEqual({ mobile: { html: '<h2>x</h2>', css: '.a { color: red }' } })
+  })
+
+  it('delete: drops the slot; returns previous', () => {
+    const harness = makeFormMock({
+      sm: { html: '<h2>sm</h2>', css: '' },
+      md: { html: '<h2>md</h2>', css: '' },
+    })
+    const prev = dispatchVariantToForm(harness.form, { kind: 'delete', name: 'sm' })
+    expect(Object.keys(prev)).toContain('sm')
+    expect(harness.current).toEqual({ md: { html: '<h2>md</h2>', css: '' } })
+  })
+
+  it('OQ4 invariant — reads live form state on each dispatch (not cached)', () => {
+    const harness = makeFormMock({})
+    // First dispatch: creates `sm`.
+    dispatchVariantToForm(harness.form, {
+      kind: 'create',
+      name: 'sm',
+      html: '<h2>sm</h2>',
+      css: '',
+    })
+    // External mutation — simulates user edit between dispatches.
+    harness.setValue('variants', { md: { html: '<h2>md</h2>', css: '' } }, {
+      shouldDirty: true,
+    })
+    // Second dispatch: reads LIVE (which is now `{md: ...}`, NOT the `{sm: ...}` from
+    // the first dispatch's return). Adding `lg` must preserve `md`, not resurrect `sm`.
+    dispatchVariantToForm(harness.form, {
+      kind: 'create',
+      name: 'lg',
+      html: '<h2>lg</h2>',
+      css: '',
+    })
+    expect(harness.current).toEqual({
+      md: { html: '<h2>md</h2>', css: '' },
+      lg: { html: '<h2>lg</h2>', css: '' },
+    })
+    expect(harness.current.sm).toBeUndefined()
+  })
+
+  it('rename missing source → no setValue call; returns previous', () => {
+    const harness = makeFormMock({ md: { html: '<h2>md</h2>', css: '' } })
+    const prev = dispatchVariantToForm(harness.form, {
+      kind: 'rename',
+      from: 'nonexistent',
+      to: 'sm',
+    })
+    expect(prev).toEqual({ md: { html: '<h2>md</h2>', css: '' } })
+    expect(harness.setValue).not.toHaveBeenCalled()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────
+// WP-028 Phase 3 — integration: VariantsDrawer trigger → fork → RHF variants
+// ─────────────────────────────────────────────────────────────────────────
+describe('ResponsiveTab — WP-028 Phase 3 Variant drawer integration', () => {
+  it('drawer trigger opens drawer; Create variant fires onVariantDispatch with deep-copy base', () => {
+    const onVariantDispatch = vi.fn()
+    const block = fixtureBlock('block-spacing-font', blockSpacingFontHtml, blockSpacingFontCss)
+    render(
+      <ResponsiveTab
+        block={block}
+        onVariantDispatch={onVariantDispatch}
+        watchedVariants={{}}
+        baseHtmlForFork="<h2>base</h2>"
+        baseCssForFork=".x { color: red }"
+      />,
+    )
+
+    // Open drawer via trigger.
+    fireEvent.click(document.querySelector('[data-testid="variants-drawer-trigger"]') as HTMLElement)
+
+    // Portal renders into document.body — query there.
+    const forkInput = document.querySelector(
+      '[data-testid="variants-drawer-fork-input"]',
+    ) as HTMLInputElement
+    expect(forkInput).toBeTruthy()
+    fireEvent.change(forkInput, { target: { value: 'sm' } })
+    fireEvent.click(
+      document.querySelector('[data-testid="variants-drawer-fork-submit"]') as HTMLElement,
+    )
+
+    expect(onVariantDispatch).toHaveBeenCalledWith({
+      kind: 'create',
+      name: 'sm',
+      html: '<h2>base</h2>',
+      css: '.x { color: red }',
+    })
+  })
+})

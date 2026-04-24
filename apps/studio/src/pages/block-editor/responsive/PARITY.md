@@ -61,6 +61,7 @@ Matches portal's `apps/portal/lib/hooks.ts:234` output + WP-024 slot wrapper. Th
 
 ### In scope (NEW vs tools/block-forge)
 - **Variant composition via Path B:** `renderForPreview(block, { variants })` — engine internally calls `composeVariants` when `variants.length > 0`. This phase (WP-027 Phase 2) wires it end-to-end. tools/block-forge defers variants to WP-028.
+- **Variant CRUD drawer (WP-028 Phase 3):** `VariantsDrawer` component landed on both surfaces (byte-identical body). Studio wires fork/rename/delete through `dispatchVariantToForm(form, action)` helper → `form.setValue('variants', next, { shouldDirty: true })`. Rendering still diverges on wrap LOCATION — §7 "deliberate divergence" remains until Phase 3.5 Path B re-converge.
 
 ## Discipline (PARITY-LOG equivalent)
 
@@ -139,6 +140,22 @@ The following intentional deltas from `tools/block-forge/PARITY.md` apply only t
    - Byte-identical parity up to `<img src=` attribute value ✅
    - URL-rewriter delta lives at `apps/portal/app/layout.tsx` post-processing, not at `renderBlock()` or injection stack
    - Any future parity test that needs to compare Studio output vs Portal runtime should either (a) normalize asset URLs before diff, or (b) compare against Portal's pre-rewriter `renderBlock()` output directly.
+
+---
+
+## Variant CRUD (WP-028 Phase 3 — additive)
+
+Studio's `VariantsDrawer` (`./VariantsDrawer.tsx`) has a byte-identical body to tools/block-forge's (`tools/block-forge/src/components/VariantsDrawer.tsx`) — only the 3-line JSDoc header differs per the Phase 2 lockstep discipline. Wiring differs between surfaces:
+
+- **Store:** RHF `form.variants` field (registered in `BlockFormData` at `block-editor.tsx:84`); seeded from `block.variants ?? {}` via `blockToFormData`. `useWatch({ name: 'variants' })` feeds the drawer; `form.setValue('variants', next, { shouldDirty: true })` commits.
+- **Dispatch helper:** `dispatchVariantToForm(form, action)` in `./ResponsiveTab.tsx` mirrors the Phase 2 `dispatchTweakToForm` pattern — reads `form.getValues('variants')` LIVE at dispatch time (OQ4 invariant mirror — no cached closure over `watchedVariants`). Returns the prior record for undo instrumentation; Studio does not wire session-level undo (RHF `formState.isDirty` + `reset()` cover this).
+- **Fork base (Ruling N):** `block-editor.tsx` splits `form.getValues('code')` via existing `splitCode(code)` helper into `{html, css}` memoized as `baseHtmlForFork / baseCssForFork`; drawer receives these as props and seeds new variants at fork time. Drawer itself does not re-read form.
+- **Convention warning (Ruling M):** name validation ALLOWS names outside `sm|md|lg|4\d\d|6\d\d|7\d\d` with a warning; engine emits `composeVariants: unknown variant name` at render time.
+- **Delete confirm (Ruling O):** native `window.confirm()`; tests mock via `vi.spyOn(window, 'confirm')`.
+
+**Phase 3 render path:** Studio's `ResponsivePreview` already uses Path B (`renderForPreview(block, { variants })`) since WP-027 — variants flow straight through to iframe `srcdoc`. No PreviewTriptych changes this phase.
+
+**Phase 3.5 follow-up (scheduled):** tools/block-forge `composeSrcDoc` drops inner `<div data-block-shell>` wrap and `PreviewTriptych` switches from inline `composeVariants` to `renderForPreview`. At that point, §7 above flips from "deliberate divergence" to `✅ RE-CONVERGED`. Scope boundary: Phase 3 preserves `preview-assets.ts` + its `.test.ts` + its `.snap` + §7 UNTOUCHED.
 
 ---
 

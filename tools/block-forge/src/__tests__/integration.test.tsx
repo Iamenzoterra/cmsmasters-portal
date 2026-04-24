@@ -397,3 +397,100 @@ describe('Save flow — POST payload contract', () => {
     expect(fresh.lastSavedAt).toBeNull()
   })
 })
+
+// ─────────────────────────────────────────────────────────────────────────
+// WP-028 Phase 3 — Variant CRUD flow: session.variants populates →
+// composeVariants output reflects new variants in final iframe srcdoc CSS.
+// ─────────────────────────────────────────────────────────────────────────
+import { composeVariants } from '@cmsmasters/block-forge-core'
+import {
+  createVariant,
+  renameVariant,
+  deleteVariant,
+} from '../lib/session'
+
+describe('Phase 3 — variant composition → iframe CSS contains reveal rules', () => {
+  it('fork sm variant → composeVariants emits data-variant wrappers + @container reveal', () => {
+    const base = { slug: 'test', html: '<h2>base</h2>', css: '.x { color: red }' }
+    const session = createVariant(createSession(), 'sm', {
+      html: '<h2>sm</h2>',
+      css: '.x { padding: 12px }',
+    })
+    const variantList = Object.entries(session.variants).map(([name, v]) => ({
+      name,
+      html: v.html,
+      css: v.css,
+    }))
+    const composed = composeVariants(base, variantList)
+    // HTML carries both base and variant wrappers.
+    expect(composed.html).toContain('data-variant="base"')
+    expect(composed.html).toContain('data-variant="sm"')
+    // CSS includes base + variant-scoped + @container reveal rule for sm=480px.
+    expect(composed.css).toContain('@container slot (max-width: 480px)')
+    expect(composed.css).toContain('[data-variant="base"]')
+    expect(composed.css).toContain('[data-variant="sm"]')
+  })
+
+  it('rename variant → composeVariants output reflects new name', () => {
+    const base = { slug: 'test', html: '<h2>base</h2>', css: '' }
+    let session = createVariant(createSession(), 'sm', { html: '<h2>x</h2>', css: '' })
+    session = renameVariant(session, 'sm', 'mobile')
+    const variantList = Object.entries(session.variants).map(([name, v]) => ({
+      name,
+      html: v.html,
+      css: v.css,
+    }))
+    const composed = composeVariants(base, variantList)
+    expect(composed.html).toContain('data-variant="mobile"')
+    expect(composed.html).not.toContain('data-variant="sm"')
+  })
+
+  it('delete variant → composeVariants drops from output', () => {
+    const base = { slug: 'test', html: '<h2>base</h2>', css: '' }
+    let session = createVariant(createSession(), 'sm', { html: '<h2>x</h2>', css: '' })
+    session = createVariant(session, 'md', { html: '<h2>y</h2>', css: '' })
+    session = deleteVariant(session, 'sm')
+    const variantList = Object.entries(session.variants).map(([name, v]) => ({
+      name,
+      html: v.html,
+      css: v.css,
+    }))
+    const composed = composeVariants(base, variantList)
+    expect(composed.html).not.toContain('data-variant="sm"')
+    expect(composed.html).toContain('data-variant="md"')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────
+// WP-028 Phase 3 — BlockJson save round-trip preserves variants
+// ─────────────────────────────────────────────────────────────────────────
+describe('Phase 3 — BlockJson.variants round-trip', () => {
+  it('BlockJson with variants serializes + deserializes verbatim via JSON round-trip', () => {
+    const block: BlockJson = {
+      id: 'x',
+      slug: 'test',
+      name: 'test',
+      html: '<h2>x</h2>',
+      css: '',
+      variants: {
+        sm: { html: '<h2>sm</h2>', css: '.a { padding: 12px }' },
+        md: { html: '<h2>md</h2>', css: '' },
+      },
+    }
+    const serialized = JSON.stringify(block)
+    const parsed = JSON.parse(serialized) as BlockJson
+    expect(parsed.variants).toEqual(block.variants)
+  })
+
+  it('BlockJson without variants field: parsed.variants === undefined (no phantom {})', () => {
+    const block: BlockJson = {
+      id: 'x',
+      slug: 'test',
+      name: 'test',
+      html: '<h2>x</h2>',
+      css: '',
+    }
+    const parsed = JSON.parse(JSON.stringify(block)) as BlockJson
+    expect(parsed.variants).toBeUndefined()
+  })
+})

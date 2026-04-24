@@ -7,17 +7,21 @@
 
 import { describe, it, expect } from 'vitest'
 import type { Suggestion, Tweak } from '@cmsmasters/block-forge-core'
+import type { BlockVariant } from '@cmsmasters/db'
 import {
   accept,
   addTweak,
   clearAfterSave,
   composeTweakedCss,
   createSession,
+  createVariant,
+  deleteVariant,
   isActOn,
   isDirty,
   pickAccepted,
   reject,
   removeTweaksFor,
+  renameVariant,
   undo,
   type SessionState,
 } from '../lib/session'
@@ -48,13 +52,18 @@ function makeTweak(overrides: Partial<Tweak> = {}): Tweak {
   }
 }
 
+function makeVariant(overrides: Partial<BlockVariant> = {}): BlockVariant {
+  return { html: '<h2>base</h2>', css: '.x { color: blue }', ...overrides }
+}
+
 describe('session — createSession', () => {
-  it('returns an empty session shape (WP-028: tweaks: [] present)', () => {
+  it('returns an empty session shape (WP-028 P3: variants: {} present)', () => {
     const s = createSession()
     expect(s).toEqual<SessionState>({
       pending: [],
       rejected: [],
       tweaks: [],
+      variants: {},
       history: [],
       backedUp: false,
       lastSavedAt: null,
@@ -287,6 +296,157 @@ describe('session — isDirty', () => {
       ),
     ).toBe(true)
     expect(isDirty(clearAfterSave(accept(createSession(), 'a')))).toBe(false)
+  })
+})
+
+describe('session — createVariant (WP-028 Phase 3)', () => {
+  it('appends new variant + pushes history entry', () => {
+    const v = makeVariant({ html: '<h2>sm</h2>', css: '.x { padding: 12px }' })
+    const s = createVariant(createSession(), 'sm', v)
+    expect(s.variants).toEqual({ sm: v })
+    expect(s.history).toEqual([{ type: 'variant-create', name: 'sm', payload: v }])
+  })
+
+  it('duplicate name is a silent no-op (same state reference)', () => {
+    const v1 = makeVariant()
+    const s1 = createVariant(createSession(), 'sm', v1)
+    const s2 = createVariant(s1, 'sm', makeVariant({ html: '<h2>alt</h2>' }))
+    expect(s2).toBe(s1)
+  })
+
+  it('multiple variants accumulate in order of insertion', () => {
+    const v1 = makeVariant({ html: '<h2>a</h2>' })
+    const v2 = makeVariant({ html: '<h2>b</h2>' })
+    const s = createVariant(createVariant(createSession(), 'a', v1), 'b', v2)
+    expect(Object.keys(s.variants)).toEqual(['a', 'b'])
+    expect(s.history.map((h) => h.type)).toEqual(['variant-create', 'variant-create'])
+  })
+})
+
+describe('session — renameVariant (WP-028 Phase 3)', () => {
+  it('renames the slot + pushes history entry', () => {
+    const v = makeVariant()
+    const s1 = createVariant(createSession(), 'sm', v)
+    const s2 = renameVariant(s1, 'sm', 'mobile')
+    expect(s2.variants).toEqual({ mobile: v })
+    expect(s2.history[s2.history.length - 1]).toEqual({
+      type: 'variant-rename',
+      from: 'sm',
+      to: 'mobile',
+    })
+  })
+
+  it('rename to-existing name is a silent no-op (same state reference)', () => {
+    const v1 = makeVariant({ html: '<h2>a</h2>' })
+    const v2 = makeVariant({ html: '<h2>b</h2>' })
+    const s1 = createVariant(createVariant(createSession(), 'sm', v1), 'md', v2)
+    const s2 = renameVariant(s1, 'sm', 'md')
+    expect(s2).toBe(s1)
+  })
+
+  it('rename missing-source is a silent no-op', () => {
+    const s1 = createSession()
+    const s2 = renameVariant(s1, 'nonexistent', 'target')
+    expect(s2).toBe(s1)
+  })
+
+  it('rename from === to is a silent no-op', () => {
+    const v = makeVariant()
+    const s1 = createVariant(createSession(), 'sm', v)
+    const s2 = renameVariant(s1, 'sm', 'sm')
+    expect(s2).toBe(s1)
+  })
+})
+
+describe('session — deleteVariant (WP-028 Phase 3)', () => {
+  it('removes variant + stores prev payload in history', () => {
+    const v = makeVariant({ css: '.preserve { me: true }' })
+    const s1 = createVariant(createSession(), 'sm', v)
+    const s2 = deleteVariant(s1, 'sm')
+    expect(s2.variants).toEqual({})
+    expect(s2.history[s2.history.length - 1]).toEqual({
+      type: 'variant-delete',
+      name: 'sm',
+      prev: v,
+    })
+  })
+
+  it('delete missing name is a silent no-op', () => {
+    const s1 = createSession()
+    const s2 = deleteVariant(s1, 'nonexistent')
+    expect(s2).toBe(s1)
+  })
+})
+
+describe('session — undo for variant-* actions (WP-028 Phase 3)', () => {
+  it('undo create removes the variant + pops history', () => {
+    const v = makeVariant()
+    const s1 = createVariant(createSession(), 'sm', v)
+    const s2 = undo(s1)
+    expect(s2.variants).toEqual({})
+    expect(s2.history).toEqual([])
+  })
+
+  it('undo rename swaps the name back', () => {
+    const v = makeVariant()
+    const s1 = renameVariant(createVariant(createSession(), 'sm', v), 'sm', 'mobile')
+    const s2 = undo(s1)
+    expect(s2.variants).toEqual({ sm: v })
+    expect(s2.history.map((h) => h.type)).toEqual(['variant-create'])
+  })
+
+  it('undo delete restores with prev payload intact', () => {
+    const v = makeVariant({ css: '.important { keep: this }' })
+    const s1 = deleteVariant(createVariant(createSession(), 'sm', v), 'sm')
+    const s2 = undo(s1)
+    expect(s2.variants).toEqual({ sm: v })
+    expect(s2.history.map((h) => h.type)).toEqual(['variant-create'])
+  })
+
+  it('undo through a full create → rename → delete chain leaves an empty session', () => {
+    const v = makeVariant()
+    let s = createVariant(createSession(), 'sm', v)
+    s = renameVariant(s, 'sm', 'mobile')
+    s = deleteVariant(s, 'mobile')
+    // 3 actions in history; undo each.
+    expect(s.history.length).toBe(3)
+    s = undo(s) // undo delete → restore "mobile"
+    s = undo(s) // undo rename → swap back to "sm"
+    s = undo(s) // undo create → remove "sm"
+    expect(s.variants).toEqual({})
+    expect(s.history).toEqual([])
+  })
+})
+
+describe('session — isDirty with variants (WP-028 Phase 3)', () => {
+  it('true after variant-create; false after undo', () => {
+    const s1 = createVariant(createSession(), 'sm', makeVariant())
+    expect(isDirty(s1)).toBe(true)
+    expect(isDirty(undo(s1))).toBe(false)
+  })
+
+  it('true after variant-delete even when variants become empty', () => {
+    const s1 = createVariant(createSession(), 'sm', makeVariant())
+    // After create + delete, variants={} but history records BOTH actions → still dirty.
+    const s2 = deleteVariant(s1, 'sm')
+    expect(s2.variants).toEqual({})
+    expect(isDirty(s2)).toBe(true)
+  })
+
+  it('clearAfterSave with savedVariants aligns session + returns clean isDirty', () => {
+    const v = makeVariant()
+    const s1 = createVariant(createSession(), 'sm', v)
+    const s2 = clearAfterSave(s1, { sm: v })
+    expect(s2.variants).toEqual({ sm: v })
+    expect(isDirty(s2)).toBe(false)
+  })
+
+  it('clearAfterSave with no savedVariants arg preserves session.variants (backward compat)', () => {
+    const v = makeVariant()
+    const s1 = createVariant(createSession(), 'sm', v)
+    const s2 = clearAfterSave(s1)
+    expect(s2.variants).toEqual({ sm: v })
+    expect(isDirty(s2)).toBe(false)
   })
 })
 

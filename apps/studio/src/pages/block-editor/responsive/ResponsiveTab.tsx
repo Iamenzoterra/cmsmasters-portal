@@ -16,7 +16,8 @@ import {
   type Suggestion,
   type Tweak,
 } from '@cmsmasters/block-forge-core'
-import type { Block } from '@cmsmasters/db'
+import type { Block, BlockVariants } from '@cmsmasters/db'
+import { Button } from '@cmsmasters/ui'
 import {
   accept as acceptFn,
   reject as rejectFn,
@@ -28,6 +29,7 @@ import {
 import { ResponsivePreview } from './ResponsivePreview'
 import { SuggestionList } from './SuggestionList'
 import { TweakPanel, type TweakSelection } from './TweakPanel'
+import { VariantsDrawer, type VariantAction } from './VariantsDrawer'
 
 interface ResponsiveTabProps {
   block: Block | null
@@ -60,6 +62,27 @@ interface ResponsiveTabProps {
    * clear ONLY on successful updateBlockApi, never on Discard.
    */
   saveNonce?: number
+  /**
+   * WP-028 Phase 3 — parent callback invoked by the VariantsDrawer when the
+   * author forks / renames / deletes a variant. Parent (block-editor.tsx) wraps
+   * `dispatchVariantToForm(form, action)` in a useCallback so form state reads
+   * happen at dispatch time (OQ4 invariant mirror). Optional — falls back to a
+   * no-op in read-only / test contexts.
+   */
+  onVariantDispatch?: (action: VariantAction) => void
+  /**
+   * WP-028 Phase 3 — live `form.variants` value, watched by the parent via
+   * `useWatch({ name: 'variants' })`. Drives the VariantsDrawer list when
+   * authors fork/rename/delete. Defaults to `{}` when no variants.
+   */
+  watchedVariants?: BlockVariants
+  /**
+   * WP-028 Phase 3 — base block content at fork time (Ruling N — deep copy).
+   * Derived upstream by splitting `form.code` into html/css; see block-editor.tsx
+   * `baseHtmlForFork/baseCssForFork` memo. Drawer itself does NOT re-read form.
+   */
+  baseHtmlForFork?: string
+  baseCssForFork?: string
 }
 
 interface AnalysisResult {
@@ -257,6 +280,53 @@ export function removeTweaksFromCss(
 }
 
 /**
+ * WP-028 Phase 3 — apply a VariantAction to the RHF form's `variants` field.
+ *
+ * Reads `form.getValues('variants')` LIVE at dispatch time (OQ4 invariant mirror),
+ * computes the next variants record, calls `form.setValue('variants', next,
+ * { shouldDirty: true })`. Returns the PREVIOUS record so callers that want
+ * undo instrumentation can capture it.
+ *
+ * @invariant No cached closure over `form.variants` — the live form state is the
+ *            single source of truth at dispatch time. Tested in integration.test.tsx.
+ */
+export function dispatchVariantToForm(
+  form: {
+    getValues: (key: 'variants') => BlockVariants | undefined
+    setValue: (
+      key: 'variants',
+      value: BlockVariants,
+      opts?: { shouldDirty?: boolean },
+    ) => void
+  },
+  action: VariantAction,
+): BlockVariants {
+  const current = form.getValues('variants') ?? {}
+  const prev: BlockVariants = { ...current }
+  let next: BlockVariants
+  switch (action.kind) {
+    case 'create':
+      // Deep copy of base (Ruling N) — action carries snapshot html/css.
+      next = { ...current, [action.name]: { html: action.html, css: action.css } }
+      break
+    case 'rename': {
+      const moving = current[action.from]
+      if (!moving) return prev
+      const { [action.from]: _dropFrom, ...rest } = current
+      next = { ...rest, [action.to]: moving }
+      break
+    }
+    case 'delete': {
+      const { [action.name]: _dropName, ...rest } = current
+      next = rest
+      break
+    }
+  }
+  form.setValue('variants', next, { shouldDirty: true })
+  return prev
+}
+
+/**
  * Studio Reset handler (WP-028 Phase 2a). Reads live form.code, removes all
  * Phase-2 tweak declarations for (selector, bp), writes back with shouldDirty.
  * Exported for direct testing.
@@ -288,6 +358,10 @@ export function ResponsiveTab({
   onResetTweaks,
   watchedFormCode,
   saveNonce,
+  onVariantDispatch,
+  watchedVariants,
+  baseHtmlForFork,
+  baseCssForFork,
 }: ResponsiveTabProps) {
   const { suggestions, warnings, error } = useResponsiveAnalysis(block)
 
@@ -443,6 +517,15 @@ export function ResponsiveTab({
     return parseAppliedTweaks(watchedFormCode, selection.selector, selection.bp)
   }, [selection, watchedFormCode])
 
+  // WP-028 Phase 3 — VariantsDrawer open state + action forwarder.
+  const [variantsDrawerOpen, setVariantsDrawerOpen] = useState(false)
+  const handleVariantAction = useCallback(
+    (action: VariantAction) => {
+      onVariantDispatch?.(action)
+    },
+    [onVariantDispatch],
+  )
+
   return (
     <div
       style={{
@@ -452,6 +535,16 @@ export function ResponsiveTab({
         overflow: 'hidden',
       }}
     >
+      <div className="flex justify-end gap-2 border-b border-[hsl(var(--border-default))] px-4 py-2">
+        <Button
+          data-testid="variants-drawer-trigger"
+          variant="outline"
+          size="sm"
+          onClick={() => setVariantsDrawerOpen(true)}
+        >
+          + Variant ({Object.keys(watchedVariants ?? {}).length})
+        </Button>
+      </div>
       <ResponsivePreview block={displayBlock} />
       <SuggestionList
         suggestions={suggestions}
@@ -468,6 +561,14 @@ export function ResponsiveTab({
         onTweak={handleTweak}
         onReset={handleReset}
         onClose={handleClose}
+      />
+      <VariantsDrawer
+        open={variantsDrawerOpen}
+        onOpenChange={setVariantsDrawerOpen}
+        variants={watchedVariants ?? {}}
+        baseHtml={baseHtmlForFork ?? ''}
+        baseCss={baseCssForFork ?? ''}
+        onAction={handleVariantAction}
       />
     </div>
   )

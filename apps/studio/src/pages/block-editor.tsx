@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
 import { useForm, useWatch, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -17,7 +17,7 @@ import { FormSection } from '../components/form-section'
 import { DeleteConfirmModal } from '../components/delete-confirm-modal'
 import { BlockImportPanel } from '../components/block-import-panel'
 import { ThumbnailUpload } from '../components/thumbnail-upload'
-import { ResponsiveTab, dispatchTweakToForm, resetTweaksInForm } from './block-editor/responsive/ResponsiveTab'
+import { ResponsiveTab, dispatchTweakToForm, resetTweaksInForm, dispatchVariantToForm, type VariantAction } from './block-editor/responsive/ResponsiveTab'
 import type { Tweak } from '@cmsmasters/block-forge-core'
 import tokensCSS from '../../../../packages/ui/src/theme/tokens.css?raw'
 import tokensResponsiveCSS from '../../../../packages/ui/src/theme/tokens.responsive.css?raw'
@@ -285,6 +285,9 @@ export function BlockEditor() {
   // Live preview values
   const watchedCode = useWatch({ control, name: 'code' })
   const formSlug = useWatch({ control, name: 'slug' })
+  // WP-028 Phase 3 — live variants watch + base html/css split for fork deep-copy (Ruling N).
+  const watchedVariants = useWatch({ control, name: 'variants' })
+  const splitForFork = useMemo(() => splitCode(watchedCode ?? ''), [watchedCode])
 
   const { toast } = useToast()
   const [saving, setSaving] = useState(false)
@@ -324,6 +327,12 @@ export function BlockEditor() {
   // back with shouldDirty. Scoped to (selector, bp) only — other cells preserved.
   const handleResetTweaks = useCallback((selector: string, bp: 1440 | 768 | 480) => {
     resetTweaksInForm(form, selector, bp)
+  }, [form])
+
+  // WP-028 Phase 3: variant dispatch via the shared helper.
+  // OQ4 invariant mirror: reads form.getValues('variants') at dispatch time (live form).
+  const handleVariantDispatch = useCallback((action: VariantAction) => {
+    dispatchVariantToForm(form, action)
   }, [form])
 
   // Fetch block categories for theme blocks context
@@ -890,6 +899,10 @@ ${code}${scriptTag}
           onResetTweaks={handleResetTweaks}
           watchedFormCode={watchedCode ?? ''}
           saveNonce={saveNonce}
+          onVariantDispatch={handleVariantDispatch}
+          watchedVariants={watchedVariants ?? {}}
+          baseHtmlForFork={splitForFork.html}
+          baseCssForFork={splitForFork.css}
         />
       </div>
 
