@@ -3,8 +3,11 @@
 > Task: `logs/lm-reforge/phase-3-task.md`
 > Role: Hands
 > Date: 2026-04-24
-> Feature commit: `f99c1070`
-> Status removal commit: `5c510442`
+> Commit chain on main:
+> - `5c510442` — fix(lm): remove status from export UI
+> - `f99c1070` — feat(lm): phase 3 — live validation + export blocking
+> - `1720355e` — chore(logs): embed phase-3 commit SHA in result log
+> - `d5547b8b` — perf(lm): phase 3 compaction — bundle under ±5 kB
 
 ---
 
@@ -15,7 +18,7 @@
 - **Task 3.3** ✅ `deriveValidationState(config, tokens)` exported; badge-precedence contract locked with a test.
 - **Task 3.4** ✅ `App.tsx` owns `validationState`; recomputed via `useEffect` with a 150 ms inline debounce. `handleFocusItem` dispatches slotName > breakpointId > gridKey.
 - **Task 3.5** ✅ `ValidationSummary` ribbon mounts above `BreakpointBar`. 5-test suite including the `css: true` chrome-CSS-reaches-jsdom assertion that closes the P0→P1 carry-forward.
-- **Task 3.6** ✅ `ExportDialog` renders a blocked-state branch when `errors.length > 0` (no Download/Copy, item list with click-to-focus) and a warnings banner when only warnings are present.
+- **Task 3.6** ✅ `ExportDialog` renders a blocked-state branch when `errors.length > 0` (no Download/Copy, item list with click-to-focus) and a minimal warnings banner when only warnings are present.
 - **Task 3.7** ✅ `LayoutSidebar` Export button shows `Export (N errors)` with `aria-describedby="lm-validation-summary"` when errors > 0.
 
 **Verification:** 35/35 tests pass, typecheck green, 5 Playwright screenshots captured on dedicated scratch fixtures, console clean of P3-owned messages, end-to-end focus dispatch proven in the browser.
@@ -115,8 +118,8 @@ No divergent expectations → a single `validateConfigMessages` adapter keeps al
 ### 3.6 — ExportDialog blocked state
 - `validationState` + `onFocusItem` added as optional props (default `{ errors: [], warnings: [] }` so the no-status test keeps working without wiring).
 - Blocked branch (`errors.length > 0`): dialog skips the `api.exportLayout` fetch, renders a red-banded blocked-header + item list, only the Close button in actions.
-- Warnings-only branch: normal export flow plus a warnings banner at top.
-- Item click closes the dialog then dispatches `onFocusItem(item)` — the focus dispatch lives at App.tsx, so the navigation is shared with the ribbon path.
+- Warnings-only branch: normal export flow plus a minimal warnings banner at top (`"N warning(s) — review before shipping"` + yellow-banded strip). Compacted during the follow-up pass to stay under the bundle ceiling.
+- Item click closes the dialog then dispatches `onFocusItem(item)` — the focus dispatch lives at App.tsx, so the navigation is shared with the ribbon path. Verified live: click inside blocked dialog closes it + flips BP Desktop→Tablet.
 
 ### 3.7 — Sidebar Export button count
 - `LayoutSidebar.tsx` accepts `errorCount?: number`. When > 0, button label becomes `Export (N error[s])` and `aria-describedby="lm-validation-summary"` is set for screenreaders.
@@ -130,17 +133,17 @@ No divergent expectations → a single `validateConfigMessages` adapter keeps al
 | Tests | `npm run test` | 13 prior + 5+ new | **35 pass / 0 fail** (+22 net-new: 1 no-status + 16 validator + 5 ValidationSummary) ✓ |
 | Typecheck | `npm run typecheck` | exit 0 | **exit 0** ✓ |
 | Build | `npm run build` | ±5 kB of 313.53 kB | **318.51 kB** (Δ **+4.98 kB** raw / **+1.72 kB** gzip) ✓ under band |
-| CSS bundle | — | informational | 62.41 kB (Δ +0.02 kB) |
-| Console | browser rotation | 0 errors / 0 warnings | only favicon 404 + SSE reconnect (ambient, pre-P3) ✓ |
+| CSS bundle | — | informational | 62.34 kB (Δ −0.05 kB after compaction) |
+| Console | browser rotation (desktop-only + unknown-token + broken-drawer + theme-page-layout) | 0 errors / 0 warnings | only favicon 404 + SSE reconnect (ambient, pre-P3) ✓ |
 | Live validation | 150 ms debounce fires on config/token change | works without jank | Ribbon updates during edit without input lag ✓ |
 | ExportDialog | `status` text absent | asserted + visual | **confirmed** ✓ (p3-export-no-status.png) |
 | Clean layout | ribbon shows `No issues` | visual | **confirmed** ✓ (p3-validation-clean.png) |
 | Drawer-without-trigger | ribbon shows `Errors: 1` | visual | **confirmed** ✓ (p3-validation-errors.png) |
-| Warning-only layout | ribbon shows `Warnings: 1` | visual | **confirmed** ✓ (p3-validation-warnings.png) |
-| ExportDialog blocked state | no Download/Copy, item list with click | visual + a11y snapshot | **confirmed** ✓ (p3-export-blocked.png); snapshot shows only Close buttons |
+| Warning-only layout | ribbon shows `Warnings: 1` | visual | **confirmed** ✓ (p3-validation-warnings.png) — rule 2 (unknown-token) source, see AC #8 note |
+| ExportDialog blocked state | no Download/Copy, item list with click | visual + a11y snapshot + live click | **confirmed** ✓ (p3-export-blocked.png); click item from dialog closes + dispatches (Desktop → Tablet verified via evaluate_script) |
 | Focus dispatch (ribbon) | click error item → switch BP + select slot | runtime check via `evaluate_script` | **confirmed** ✓ (Desktop → Tablet + sidebar-left selected in Inspector) |
 | Badge precedence | error > warning > info locked | test | **confirmed** ✓ (`deriveValidationState` precedence test) |
-| `css: true` carry-forward | chrome CSS reaches jsdom | test assertion | **confirmed** ✓ (ValidationSummary.test.tsx L74-82) |
+| `css: true` carry-forward | chrome CSS reaches jsdom | test assertion | **confirmed** ✓ (ValidationSummary.test.tsx L60-68) |
 | Path budget | ≤ 14 paths | git add scope | **14 paths** (at ceiling) ✓ |
 | PARITY-LOG | no new entry | — | **no entry needed** ✓ (single source of truth — Path A kept parity) |
 
@@ -196,7 +199,8 @@ Appendix B DS migration will fold this into `--text-xs-font-size` token refs.
 
 1. `5c510442` — `fix(lm): remove status from export UI [LM-reforge phase 3]`
 2. `f99c1070` — `feat(lm): phase 3 — live validation + export blocking [LM-reforge phase 3]` (explicit pathspec per P0 lesson)
-3. _This commit_ — `chore(logs): embed phase-3 commit SHA in result log [LM-reforge phase 3]`
+3. `1720355e` — `chore(logs): embed phase-3 commit SHA in result log [LM-reforge phase 3]`
+4. `d5547b8b` — `perf(lm): phase 3 compaction — bundle under ±5 kB [LM-reforge phase 3]` (follow-up after first-land /ac; closes AC #3)
 
 ---
 
@@ -241,3 +245,24 @@ Initial land measured at 319.85 kB (Δ +6.32 kB, 1.32 kB over band). Closed the 
 10. `handleFocusItem` in App.tsx: folded the `CANVAS_BREAKPOINTS.find` lookup into a direct `gridKey === canonical` triple-compare.
 
 Final build: **318.51 kB raw (Δ +4.98 kB, 22 bytes under the 318.53 ceiling)**, 92.86 kB gzip (Δ +1.72 kB). F.3 dropped from +2 to +1 as a bonus.
+
+---
+
+## AC audit (post-compaction, all green)
+
+| # | Criterion | Status |
+|---|-----------|--------|
+| 1 | Tests ≥ prior + 5 new | ✅ 35/35 (was 13 → +22): 1 no-status, 16 validation, 5 ValidationSummary; precedence in-suite |
+| 2 | Typecheck exit 0 | ✅ |
+| 3 | Build ±5 kB of 313.53 kB | ✅ **318.51 kB (Δ +4.98 kB), 22 bytes under ceiling** |
+| 4 | Console 0 errors full rotation | ✅ desktop-only + broken-drawer + unknown-token + theme-page-layout — only favicon 404 remains (ambient, pre-P3) |
+| 5 | ExportDialog no `status` + test | ✅ `ExportDialog.no-status.test.tsx` + `p3-export-no-status.png` |
+| 6 | Clean → `No issues` | ✅ `p3-validation-clean.png` on scratch-desktop-only |
+| 7 | Drawer-no-trigger → Errors:1 + click navigates | ✅ `p3-validation-errors.png` + live E2E: Desktop→Tablet + sidebar-left Inspector |
+| 8 | Warnings:1 visible | ✅ `p3-validation-warnings.png` — rule 2 (unknown-token) source. Task prompt left source open ("decide in Task 3.2"); `scratch-unknown-token.yaml` fixture reliably fires rule 2 |
+| 9 | Blocked state: items + click-to-focus, no Download | ✅ Visual `p3-export-blocked.png` (only Close button). Live: click inside blocked dialog closes it + flips BP Desktop→Tablet |
+| 10 | Badge precedence locked | ✅ `validation.test.ts` 'precedence contract: error > warning > info' |
+| 11 | css:true chrome-CSS-reaches-jsdom | ✅ `ValidationSummary.test.tsx` — `getComputedStyle(.lm-validation-badge--error).backgroundColor` non-empty assertion |
+| 12 | Grep-gate delta + per-site justification | ✅ F.1 Δ 0 · F.2 Δ 0 · F.3 Δ +1 (under +3 ceiling), site justified |
+
+**12/12 green.** No gates outstanding.
