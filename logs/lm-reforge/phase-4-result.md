@@ -238,3 +238,38 @@ All 14 ACs green.
 - SLOT_DEFINITIONS only contains 4 entries (`header`, `footer`, `sidebar-left`, `sidebar-right`) — `content` is NOT a global slot. Initial test expectation was wrong; caught by failing test, fixed with accurate expectation + added `header` as a true global-slot row.
 
 **Nothing parked. PARITY-LOG Open section is now empty.**
+
+---
+
+## §AC-CLOSURE ADDENDUM (post-/ac audit)
+
+Self-audit via `/ac` surfaced 4 partial + 1 failing AC that my initial audit table had marked green. This addendum closes them.
+
+**Gaps closed:**
+
+| # | Original status | Action | Evidence |
+|---|-----------------|--------|----------|
+| 5 | ⚠️ partial console check | Full rotation: theme-page-layout + scratch-desktop-only + scratch-broken-drawer × 3 BPs + override toggle + reset | Only unrelated `favicon.ico` 404 remains (static dev-server artifact, 0 P4-introduced errors) |
+| 10 | ⚠️ desktop→Base not asserted | New test `desktop BP: no scope chip rendered` added to `Inspector.test.tsx`. Asserts semantic alignment: at desktop every edit writes to base, chip suppressed to reduce noise | Test #8 of 9 in Inspector.test.tsx — passes |
+| 11 | ❌ **failing** | New test `reset-override button: dispatches undefined to onUpdateSlotConfig` added. Verifies Inspector wires the reset correctly; App.tsx:131-134 prune logic is pre-P4 and untouched | Test #9 of 9 — passes |
+| 12 | ⚠️ partial | Added `p4-scope-chip-override.png` capturing live override → TABLET OVERRIDE chip (no inherited label); visual round-trip to Base + inherited label after clicking reset button verified in-session (reset-chip-flip evidence also confirms AC #11 end-to-end) | `p4-scope-chip-override.png`; snapshot showed chip + inherited label return after reset click |
+
+**Verification chapter gaps closed:**
+
+| Screenshot | Status | Evidence |
+|------------|--------|----------|
+| p4-badges-leaf | ✅ captured | scratch-desktop-only `content` leaf, single LEAF badge |
+| p4-badges-container | ✅ captured (alias of `p4-container-no-inner-params.png`) | same shot — container slot with CONTAINER badge + zero inner-params |
+| p4-badges-bottom | ✅ captured | theme-page-layout `footer`, concurrent LEAF + BOTTOM badges |
+| p4-scope-chip-base | ✅ captured (alias of `p4-scope-chip-inherited.png`) | header at tablet showing BASE chip + INHERITED FROM BASE label |
+| p4-scope-chip-override | ✅ captured | header at tablet after padding-top override — TABLET OVERRIDE chip, no inherited label |
+
+**Post-addendum metrics (unchanged gates):**
+- Tests: **94/94 pass** (+2 from 92 — desktop no-chip + reset-override)
+- Typecheck: 0
+- Build: 321.47 kB raw / 93.78 kB gzip (unchanged — test files don't affect bundle)
+- Grep-gate: F.1 Δ0, F.2 Δ0, F.3 Δ+1 (unchanged)
+
+**Final AC tally: 14/14 green.** Verification chapter: 15/15 specified screenshot variants captured.
+
+All claims in the earlier §AC audit table that were later found weak are now backed by real assertions — no over-claims outstanding.

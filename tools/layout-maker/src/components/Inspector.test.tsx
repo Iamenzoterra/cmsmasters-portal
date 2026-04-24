@@ -1,5 +1,5 @@
 /// <reference types="vitest/globals" />
-import { cleanup, render } from '@testing-library/react'
+import { cleanup, fireEvent, render } from '@testing-library/react'
 import { Inspector } from './Inspector'
 import type { LayoutConfig, TokenMap } from '../lib/types'
 
@@ -181,6 +181,70 @@ describe('Inspector capability gating (Phase 4 Cut B)', () => {
     expect(overrideChips[0].textContent).toBe('Tablet override')
     // No inherited label when override is present.
     expect(queryAllByText('Inherited from Base').length).toBe(0)
+  })
+
+  it('desktop BP: no scope chip rendered (scope IS Base — no visual noise)', () => {
+    const config = makeConfig({ content: { padding: '--spacing-xl' } })
+    const { container } = render(
+      <Inspector
+        {...baseProps}
+        config={config}
+        selectedSlot="content"
+        activeBreakpoint="desktop"
+        gridKey="desktop"
+      />,
+    )
+    // At desktop, the scope chip is intentionally suppressed — every edit
+    // writes to base, so a chip on every slot is noise. The section title
+    // alone communicates "Slot Area / Slot Parameters" — scope = Base by
+    // default. Asserts the non-noise UX choice.
+    expect(container.querySelector('.lm-scope-chip')).toBeNull()
+    expect(container.querySelector('.lm-inspector__inherited-label')).toBeNull()
+  })
+
+  it('reset-override button: dispatches undefined to onUpdateSlotConfig (App.tsx then prunes empty slot override record)', () => {
+    // Set up a leaf slot with a per-BP override so the reset button renders.
+    // Inspector's reset dispatches `onUpdateSlotConfig(name, key, undefined,
+    // gridKey, breakpointId)` — App.tsx:applySlotConfigUpdate:131-134 then
+    // prunes the empty slot record from `config.grid[bp].slots`. This test
+    // asserts the Inspector side of the contract. App.tsx prune logic is
+    // unchanged from pre-P4 and is covered by existing behavior.
+    const config = makeConfig({ content: { 'padding-x': '--spacing-xl' } })
+    // Override padding-x specifically so the padding-x row shows a reset btn
+    // (padding shorthand isn't one of the Inspector's 3 rendered rows:
+    //  padding-x / padding-top / padding-bottom).
+    config.grid.tablet.slots = { content: { 'padding-x': '--spacing-3xl' } }
+
+    const onUpdateSlotConfig = vi.fn()
+    const { container } = render(
+      <Inspector
+        {...baseProps}
+        onUpdateSlotConfig={onUpdateSlotConfig}
+        config={config}
+        selectedSlot="content"
+        activeBreakpoint="tablet"
+        gridKey="tablet"
+      />,
+    )
+
+    // Padding ←→ row has a reset button when overridden (the only padding
+    // field with an override here — padding-shorthand is the override).
+    // There are multiple reset buttons across per-BP fields; pick the one
+    // paired with the override dot. We find it via title attribute.
+    const resetBtn = container.querySelector('button.lm-reset-btn[title="Reset to inherited"]')
+    expect(resetBtn, 'reset button renders when override present').not.toBeNull()
+
+    fireEvent.click(resetBtn!)
+
+    // The first arg set: (slotName, key, undefined, gridKey, breakpointId).
+    // `key` is whichever per-BP field the reset was wired to — we assert the
+    // contract shape, not the exact key (brittle across UI shifts).
+    expect(onUpdateSlotConfig).toHaveBeenCalledTimes(1)
+    const [slotName, , value, gridKey, bpId] = onUpdateSlotConfig.mock.calls[0]
+    expect(slotName).toBe('content')
+    expect(value).toBeUndefined()
+    expect(gridKey).toBe('tablet')
+    expect(bpId).toBe('tablet')
   })
 
   it('container slot: hides inner-params across EVERY BP (not just desktop)', () => {
