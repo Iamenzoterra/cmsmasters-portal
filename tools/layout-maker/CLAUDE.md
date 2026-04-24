@@ -221,3 +221,40 @@ When content overflows or positions incorrectly:
 3. If YES — that ancestor is the containing block, not viewport
 4. Fix: remove transform from ancestor or restructure DOM
 5. DO NOT try overflow:hidden, clip-path, or contain:paint as fixes
+
+---
+
+## F.3 Shared-Selector Convention (LM-Reforge P5–P7)
+
+When adding new UI text that needs an uppercase/small-caps or size
+treatment already on a shared class, **add the new selector to the
+existing rule** rather than writing a new `font-size:` declaration. The
+convention keeps the Brain-method F.3 grep-gate flat and compounds:
+every new shared rule pulls more sites into one declaration site.
+
+Reference pairs in `src/styles/maker.css`:
+- P5: `.lm-sidebar__header, .lm-sidebar__group-label` — small-caps section labels
+- P6: `.lm-inspector__empty, .lm-preview-hint` — muted small-text blocks
+- P7 focus-ring: 8-selector shared `:focus-visible` rule (one declaration site)
+
+If a new site does not fit an existing shared rule, it is
+`legitimate-unique` — document it in the phase result log.
+
+---
+
+## Trust Reforge — Next Engineer Pointer
+
+The layout-maker trust reforge ran as LM-Reforge Phases 0–7
+(2026-02 → 2026-04-24). Every phase has a locked task prompt + result
+log + binding AC audit in `logs/lm-reforge/`. The final state is the
+trust boundary for any future layout-maker work:
+
+- **Start at `codex-review/12-workplan.md`** for the full plan, acceptance
+  checklist, and §4 test table (which test locks which contract).
+- **See `codex-review/` Appendix B** for the deferred DS migration
+  (token swap from `--lm-*` to `--tag-*` / `--status-*` / shadcn
+  semantics). P7 explicitly kept the `--lm-*` palette; Appendix B is
+  where that swap lives.
+- **Read `PARITY-LOG.md`** before touching Inspector, css-generator,
+  html-parser, or the config schema. Every entry is fixed with a
+  contract test — do not re-open them.

@@ -47,6 +47,13 @@ fix is in the generator, the Inspector, the schema, or the Portal.
 
 _(none)_
 
+## Status (as of Phase 7 close, 2026-04-24)
+
+Open: **0 entries**. All Phase 2–Phase 6 entries resolved. The last Open
+entry (grid-template-columns not pruning hidden/drawer sidebars) was
+moved to Fixed in the Phase 4 cut chain with its css-generator contract
+test (5 cases). Trust reforge closes with no outstanding lies.
+
 ---
 
 ## Fixed
