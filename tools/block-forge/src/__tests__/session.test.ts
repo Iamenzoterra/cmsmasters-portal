@@ -23,6 +23,7 @@ import {
   removeTweaksFor,
   renameVariant,
   undo,
+  updateVariantContent,
   type SessionState,
 } from '../lib/session'
 
@@ -447,6 +448,52 @@ describe('session — isDirty with variants (WP-028 Phase 3)', () => {
     const s2 = clearAfterSave(s1)
     expect(s2.variants).toEqual({ sm: v })
     expect(isDirty(s2)).toBe(false)
+  })
+})
+
+describe('session — updateVariantContent (WP-028 Phase 4)', () => {
+  it('updates the variant content + pushes history with prev payload for undo', () => {
+    const v = makeVariant({ html: '<h2>orig</h2>', css: '.orig{}' })
+    const s1 = createVariant(createSession(), 'sm', v)
+    const s2 = updateVariantContent(s1, 'sm', { html: '<h2>edited</h2>', css: '.edited{}' })
+    expect(s2.variants).toEqual({ sm: { html: '<h2>edited</h2>', css: '.edited{}' } })
+    expect(s2.history[s2.history.length - 1]).toEqual({
+      type: 'variant-update',
+      name: 'sm',
+      prev: v,
+    })
+  })
+
+  it('no-op (same state ref) when new content is byte-identical to existing', () => {
+    const v = makeVariant({ html: '<h2>same</h2>', css: '.same{}' })
+    const s1 = createVariant(createSession(), 'sm', v)
+    const s2 = updateVariantContent(s1, 'sm', { html: '<h2>same</h2>', css: '.same{}' })
+    expect(s2).toBe(s1)
+  })
+
+  it('no-op (same state ref) when variant missing (rename-race safety)', () => {
+    const s1 = createSession()
+    const s2 = updateVariantContent(s1, 'missing', { html: 'x', css: 'y' })
+    expect(s2).toBe(s1)
+  })
+
+  it('undo reverts update content to the prev payload', () => {
+    const v = makeVariant({ html: '<h2>orig</h2>', css: '.orig{}' })
+    const s1 = createVariant(createSession(), 'sm', v)
+    const s2 = updateVariantContent(s1, 'sm', { html: '<h2>edited</h2>', css: '.edited{}' })
+    const s3 = undo(s2)
+    expect(s3.variants).toEqual({ sm: v })
+    expect(s3.history.map((h) => h.type)).toEqual(['variant-create'])
+  })
+
+  it('isDirty is true after updateVariantContent and false after undo', () => {
+    const v = makeVariant()
+    const s1 = createVariant(createSession(), 'sm', v)
+    const saved = clearAfterSave(s1) // clean baseline from first save
+    expect(isDirty(saved)).toBe(false)
+    const s2 = updateVariantContent(saved, 'sm', { html: '<h2>new</h2>', css: '' })
+    expect(isDirty(s2)).toBe(true)
+    expect(isDirty(undo(s2))).toBe(false)
   })
 })
 

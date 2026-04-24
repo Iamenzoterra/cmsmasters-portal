@@ -3,6 +3,9 @@
 // WP-028 Phase 3 — extended with variants: BlockVariants + createVariant/renameVariant/
 //                  deleteVariant + undo coverage + isDirty awareness + clearAfterSave
 //                  savedVariants param.
+// WP-028 Phase 4 — updateVariantContent reducer + variant-update action type + undo
+//                  extension. Silent no-op on rename-race (name absent) and on
+//                  byte-identical content (suppresses history noise during debounce).
 //
 // Session semantics (per Phase 0 §0.7 save-safety rule 3):
 //   - One session per selected block. App.tsx creates a fresh session on every
@@ -41,6 +44,7 @@ export type SessionAction =
   | { type: 'variant-create'; name: string; payload: BlockVariant } // WP-028 Phase 3
   | { type: 'variant-rename'; from: string; to: string }
   | { type: 'variant-delete'; name: string; prev: BlockVariant }
+  | { type: 'variant-update'; name: string; prev: BlockVariant } // WP-028 Phase 4
 
 export type SessionState = {
   /** Suggestion IDs accepted but not yet saved. Order preserved. */
@@ -182,6 +186,28 @@ export function deleteVariant(state: SessionState, name: string): SessionState {
   }
 }
 
+/**
+ * Update variant content (WP-028 Phase 4). Silent no-ops:
+ *   - variant not found (rename-race: debounce fired after delete/rename)
+ *   - new content byte-identical to existing (no history noise)
+ *
+ * History carries `prev: BlockVariant` so undo restores the pre-edit content.
+ */
+export function updateVariantContent(
+  state: SessionState,
+  name: string,
+  content: BlockVariant,
+): SessionState {
+  const existing = state.variants[name]
+  if (!existing) return state
+  if (existing.html === content.html && existing.css === content.css) return state
+  return {
+    ...state,
+    variants: { ...state.variants, [name]: content },
+    history: [...state.history, { type: 'variant-update', name, prev: existing }],
+  }
+}
+
 /** Roll back the latest action. No-op on empty history. */
 export function undo(state: SessionState): SessionState {
   const last = state.history[state.history.length - 1]
@@ -202,6 +228,15 @@ export function undo(state: SessionState): SessionState {
     return { ...state, variants: { ...rest, [last.from]: moving }, history }
   }
   if (last.type === 'variant-delete') {
+    return {
+      ...state,
+      variants: { ...state.variants, [last.name]: last.prev },
+      history,
+    }
+  }
+  if (last.type === 'variant-update') {
+    // Silent no-op if the variant was deleted between edit and undo (defensive).
+    if (!(last.name in state.variants)) return { ...state, history }
     return {
       ...state,
       variants: { ...state.variants, [last.name]: last.prev },
@@ -273,7 +308,8 @@ export function isDirty(state: SessionState): boolean {
     (h) =>
       h.type === 'variant-create' ||
       h.type === 'variant-rename' ||
-      h.type === 'variant-delete',
+      h.type === 'variant-delete' ||
+      h.type === 'variant-update',
   )
 }
 

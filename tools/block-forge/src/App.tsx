@@ -27,6 +27,7 @@ import {
   reject as rejectFn,
   removeTweaksFor,
   renameVariant as renameVariantFn,
+  updateVariantContent as updateVariantContentFn,
   type SessionState,
 } from './lib/session'
 import { BlockPicker } from './components/BlockPicker'
@@ -235,6 +236,11 @@ export function App() {
       case 'delete':
         setSession((prev) => deleteVariantFn(prev, action.name))
         break
+      case 'update-content':
+        setSession((prev) =>
+          updateVariantContentFn(prev, action.name, { html: action.html, css: action.css }),
+        )
+        break
     }
   }, [])
 
@@ -249,18 +255,26 @@ export function App() {
 
   const handleSave = useCallback(async () => {
     if (!block) return
+    // WP-028 Phase 4 — save on any dirty state (suggestions / tweaks / variants).
+    // Pre-Phase-4 this early-returned on `accepted.length === 0` which blocked
+    // variant-only edits from persisting (and hid the tweaks-only save gap too).
+    if (!isDirty(session)) return
     const accepted = pickAccepted(session, suggestions)
-    if (accepted.length === 0) return
 
     setSaveInFlight(true)
     setSaveError(null)
     try {
       // Core applySuggestions takes {slug, html, css} (BlockInput), returns
-      // {slug, html, css, variants?} (BlockOutput).
-      const applied = applySuggestions(
-        { slug: block.slug, html: block.html, css: block.css },
-        accepted,
-      )
+      // {slug, html, css, variants?} (BlockOutput). When no suggestions are
+      // accepted, skip the call and keep base html/css verbatim — variant /
+      // tweak edits still reach disk through updatedBlock below.
+      const applied =
+        accepted.length > 0
+          ? applySuggestions(
+              { slug: block.slug, html: block.html, css: block.css },
+              accepted,
+            )
+          : { html: block.html, css: block.css }
       // Merge applied html/css back into the full BlockJson so we preserve
       // non-engine fields (name, id, block_type, hooks, metadata, etc.).
       // WP-028 Phase 3 — serialize session.variants; emit undefined when empty so

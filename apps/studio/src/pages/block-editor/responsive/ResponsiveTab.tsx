@@ -321,6 +321,13 @@ export function dispatchVariantToForm(
       next = rest
       break
     }
+    case 'update-content': {
+      // Phase 4 — debounced editor dispatch. Rename-race safety: if the variant
+      // was renamed away while debounce was pending, silently no-op.
+      if (!(action.name in current)) return prev
+      next = { ...current, [action.name]: { html: action.html, css: action.css } }
+      break
+    }
   }
   form.setValue('variants', next, { shouldDirty: true })
   return prev

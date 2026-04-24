@@ -376,6 +376,43 @@ describe('dispatchVariantToForm — OQ4 mirror behavioral tests', () => {
     expect(prev).toEqual({ md: { html: '<h2>md</h2>', css: '' } })
     expect(harness.setValue).not.toHaveBeenCalled()
   })
+
+  it('update-content: updates html+css, preserves other variants, returns previous', () => {
+    const harness = makeFormMock({
+      sm: { html: '<h2>sm-orig</h2>', css: '.x {}' },
+      md: { html: '<h2>md</h2>', css: '.m {}' },
+    })
+    const prev = dispatchVariantToForm(harness.form, {
+      kind: 'update-content',
+      name: 'sm',
+      html: '<h2>sm-edited</h2>',
+      css: '.x { color: red }',
+    })
+    expect(prev).toEqual({
+      sm: { html: '<h2>sm-orig</h2>', css: '.x {}' },
+      md: { html: '<h2>md</h2>', css: '.m {}' },
+    })
+    expect(harness.setValue).toHaveBeenCalledWith(
+      'variants',
+      {
+        sm: { html: '<h2>sm-edited</h2>', css: '.x { color: red }' },
+        md: { html: '<h2>md</h2>', css: '.m {}' },
+      },
+      { shouldDirty: true },
+    )
+  })
+
+  it('update-content: rename-race safety — variant deleted between edit + debounce → no-op', () => {
+    const harness = makeFormMock({ md: { html: '<h2>md</h2>', css: '' } })
+    const prev = dispatchVariantToForm(harness.form, {
+      kind: 'update-content',
+      name: 'sm', // deleted / never existed
+      html: '<h2>stale</h2>',
+      css: '',
+    })
+    expect(prev).toEqual({ md: { html: '<h2>md</h2>', css: '' } })
+    expect(harness.setValue).not.toHaveBeenCalled()
+  })
 })
 
 // ─────────────────────────────────────────────────────────────────────────

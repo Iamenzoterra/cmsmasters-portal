@@ -8,7 +8,7 @@
 // Pure presentational — App.tsx owns the session + save handlers and passes
 // them down as props. No effects, no state.
 
-import type { SessionState } from '../lib/session'
+import { isDirty, type SessionState } from '../lib/session'
 
 type Props = {
   sourcePath: string | null
@@ -26,7 +26,10 @@ export function StatusBar({
   saveError,
 }: Props) {
   const pendingCount = session.pending.length
-  const hasChanges = pendingCount > 0
+  // Save enables on any dirty state (suggestions, tweaks, or variants) —
+  // `session.pending` alone missed tweaks (Phase 2) and variants (Phase 3+4).
+  // The pending-count pill still reflects suggestion queue specifically.
+  const hasChanges = isDirty(session)
   const lastSavedLabel = session.lastSavedAt
     ? new Date(session.lastSavedAt).toLocaleTimeString()
     : 'never'

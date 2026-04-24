@@ -494,3 +494,52 @@ describe('Phase 3 — BlockJson.variants round-trip', () => {
     expect(parsed.variants).toBeUndefined()
   })
 })
+
+// ─────────────────────────────────────────────────────────────────────────
+// WP-028 Phase 4 — variant edit round-trip: session.variants edit → save
+// payload preserves edited content through JSON serialization
+// ─────────────────────────────────────────────────────────────────────────
+describe('Phase 4 — updateVariantContent → save round-trip', () => {
+  it('edit-then-save: session.variants edit preserved through JSON round-trip', async () => {
+    const { createSession, createVariant, updateVariantContent } = await import(
+      '../lib/session'
+    )
+    let s = createSession()
+    s = createVariant(s, 'sm', { html: '<h2>orig</h2>', css: '.orig {}' })
+    s = updateVariantContent(s, 'sm', {
+      html: '<h2>edited</h2>',
+      css: '.edited { color: red }',
+    })
+    // Simulate save payload assembly — matches App.tsx handleSave logic.
+    const serialized = JSON.stringify({
+      id: 'x',
+      slug: 'test',
+      name: 'test',
+      html: '<h2>base</h2>',
+      css: '.base {}',
+      variants: s.variants,
+    })
+    const parsed = JSON.parse(serialized) as BlockJson
+    expect(parsed.variants?.sm).toEqual({
+      html: '<h2>edited</h2>',
+      css: '.edited { color: red }',
+    })
+  })
+
+  it('edit-save-edit again: history chain + undo reverts last edit only', async () => {
+    const { createSession, createVariant, updateVariantContent, undo, clearAfterSave } =
+      await import('../lib/session')
+    let s = createSession()
+    s = createVariant(s, 'sm', { html: '<h2>v1</h2>', css: '' })
+    s = clearAfterSave(s) // first save, baseline
+    s = updateVariantContent(s, 'sm', { html: '<h2>v2</h2>', css: '' })
+    s = updateVariantContent(s, 'sm', { html: '<h2>v3</h2>', css: '' })
+    expect(s.variants.sm.html).toBe('<h2>v3</h2>')
+    // Undo last edit → v2.
+    s = undo(s)
+    expect(s.variants.sm.html).toBe('<h2>v2</h2>')
+    // Undo again → v1 (baseline).
+    s = undo(s)
+    expect(s.variants.sm.html).toBe('<h2>v1</h2>')
+  })
+})

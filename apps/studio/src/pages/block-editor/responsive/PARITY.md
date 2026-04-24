@@ -157,6 +157,32 @@ Studio's `VariantsDrawer` (`./VariantsDrawer.tsx`) has a byte-identical body to 
 
 ---
 
+## Variant Editor (WP-028 Phase 4 — additive)
+
+As of Phase 4, `VariantsDrawer.tsx` ships a tabbed editor on both surfaces:
+- **"Manage" tab** — fork/rename/delete list (Phase 3, unchanged).
+- **Per-variant tabs** — 2-column editor (base HTML/CSS read-only | variant HTML/CSS editable) + width slider + mini-preview iframe.
+
+Editor body byte-identical between surfaces mod 3-line JSDoc header + 1 surface-specific `composeSrcDoc` import path (Ruling GG explicit exception — Studio `./preview-assets`, block-forge `../lib/preview-assets`).
+
+**Dispatch path:** textarea edit → 300ms debounce → `onAction({ kind: 'update-content', name, html, css })`. Flush-on-unmount (empty-deps cleanup effect reading latest-values via ref) guarantees closing the drawer mid-edit never drops content (Ruling BB).
+
+**Mini-preview iframe:** uses reserved slug `'variant-preview'` — TweakPanel listener filters by `currentSlug` (the real block slug at `ResponsiveTab.tsx:410`), so cross-iframe `block-forge:element-click` postMessages from this preview are silently dropped. No composeSrcDoc opt-out param needed (Ruling II). Render pipeline: `renderForPreview(base, { variants: [{ name, html, css }] })` → `composeSrcDoc({ html, css, width, slug: 'variant-preview' })`.
+
+**Width slider:** range 320-1440 step 10. Default per variant name convention — `sm`/`4**`→480, `md`/`6**`→640, `lg`/`7**`→768, custom→640 (Ruling CC). Drives iframe `style.width` live.
+
+**Save paths (per surface):**
+- Studio: textarea → debounced `onAction` → `dispatchVariantToForm({kind:'update-content',...})` → `form.setValue('variants', next, { shouldDirty: true })` → RHF.isDirty footer → existing Save button → `updateBlockApi` → Supabase `blocks.variants` JSONB → `revalidate { all: true }` fire-and-forget.
+- block-forge: textarea → debounced `onAction` → `updateVariantContent(session, name, content)` reducer → `session.isDirty` status bar → existing Save button → `fs.writeFileSync` → `content/db/blocks/{slug}.json`. `.bak` semantics preserved.
+
+**Rename-race safety:** if the user renames or deletes a variant while a debounce is pending, the stale `update-content` dispatch silently no-ops at both dispatch sites (`dispatchVariantToForm` checks `action.name in current`; `updateVariantContent` checks `name in state.variants`).
+
+**Undo symmetry (block-forge only):** `session.ts` extends `SessionAction` with `{ type: 'variant-update'; name; prev: BlockVariant }`; `undo()` restores the pre-edit payload. `isDirty()` picks up `variant-update` entries alongside existing variant-* actions. Studio uses RHF's native dirty tracking — no explicit undo wiring for content edits (consistent with Phase 3 Studio-side discipline).
+
+**First real DB variants write lands at Phase 4** — verified via Playwright Studio save E2E + Portal render at variant BP (screenshots in `logs/wp-028/smoke-p4/`).
+
+---
+
 ## Cross-contract parity notes
 
 - **Injection stack identity:** `@layer tokens, reset, shared, block` order + `.slot-inner { container-type: inline-size; container-name: slot }` wrapper + `<div data-block-shell="{slug}">` block wrapper + `animate-utils.js` runtime injection — byte-identical DOM + CSS output between Studio and tools/block-forge (wrap LOCATION differs per §7, wrap RESULT is identical).

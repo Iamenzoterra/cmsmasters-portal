@@ -133,6 +133,30 @@ As of Phase 3, block-forge ships a `VariantsDrawer` (`src/components/VariantsDra
 
 **Phase 3.5 follow-up (landed):** `preview-assets.ts` now emits only the outer `.slot-inner` wrap; `PreviewTriptych` calls `renderForPreview(block, { variants })` — the inline `composeVariants` helper was removed. §7 "deliberate divergence" flipped to `✅ RE-CONVERGED` on both PARITY.md files. Both surfaces structurally identical iframe DOM (live smoke DOM queries + snapshot pins). No behavior change — WHO-wraps refactor only.
 
+## Variant Editor (WP-028 Phase 4 — additive)
+
+As of Phase 4, `VariantsDrawer.tsx` ships a tabbed editor on both surfaces:
+- **"Manage" tab** — fork/rename/delete list (Phase 3, unchanged).
+- **Per-variant tabs** — 2-column editor (base HTML/CSS read-only | variant HTML/CSS editable) + width slider + mini-preview iframe.
+
+Editor body byte-identical between surfaces mod 3-line JSDoc header + 1 surface-specific `composeSrcDoc` import path (Ruling GG explicit exception — block-forge `../lib/preview-assets`, Studio `./preview-assets`).
+
+**Dispatch path:** textarea edit → 300ms debounce → `onAction({ kind: 'update-content', name, html, css })`. Flush-on-unmount (empty-deps cleanup effect reading latest-values via ref) guarantees closing the drawer mid-edit never drops content (Ruling BB).
+
+**Mini-preview iframe:** uses reserved slug `'variant-preview'` — TweakPanel listener filters by `currentSlug` (the real block slug), so cross-iframe `block-forge:element-click` postMessages from this preview are silently dropped. No composeSrcDoc opt-out param needed (Ruling II). Render pipeline: `renderForPreview(base, { variants: [{ name, html, css }] })` → `composeSrcDoc({ html, css, width, slug: 'variant-preview' })`.
+
+**Width slider:** range 320-1440 step 10. Default per variant name convention — `sm`/`4**`→480, `md`/`6**`→640, `lg`/`7**`→768, custom→640 (Ruling CC). Drives iframe `style.width` live.
+
+**Save paths (per surface):**
+- Studio: textarea → debounced `onAction` → `dispatchVariantToForm({kind:'update-content',...})` → `form.setValue('variants', next, { shouldDirty: true })` → RHF.isDirty footer → existing Save button → `updateBlockApi` → Supabase `blocks.variants` JSONB → `revalidate { all: true }` fire-and-forget.
+- block-forge: textarea → debounced `onAction` → `updateVariantContent(session, name, content)` reducer → `session.isDirty` status bar → existing Save button → `fs.writeFileSync` → `content/db/blocks/{slug}.json`. `.bak` semantics preserved.
+
+**Rename-race safety:** if the user renames or deletes a variant while a debounce is pending, the stale `update-content` dispatch silently no-ops at both dispatch sites (`dispatchVariantToForm` checks `action.name in current`; `updateVariantContent` checks `name in state.variants`).
+
+**Undo symmetry:** `session.ts` extends `SessionAction` with `{ type: 'variant-update'; name; prev: BlockVariant }`; `undo()` restores the pre-edit payload. `isDirty()` picks up `variant-update` entries alongside existing variant-* actions.
+
+**First real DB variants write lands at Phase 4** — verified via Playwright Studio save E2E + Portal render at variant BP (screenshots in `logs/wp-028/smoke-p4/`).
+
 ## Cross-contract test layers
 
 Block-forge's safety net is two-layered:
