@@ -98,14 +98,19 @@ body {
   overflow: hidden;
 }
 
-.lm-sidebar__header {
-  padding: var(--lm-sp-8) var(--lm-sp-8) var(--lm-sp-6);
-  border-bottom: 1px solid var(--lm-border-subtle);
+/* Shared "tiny small-caps meta-label" treatment — used by the sidebar chrome
+ * header and by Phase 5 action-group labels. Single rule covers both. */
+.lm-sidebar__header,
+.lm-sidebar__group-label {
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.8px;
   color: var(--lm-text-secondary);
+}
+.lm-sidebar__header {
+  padding: var(--lm-sp-8) var(--lm-sp-8) var(--lm-sp-6);
+  border-bottom: 1px solid var(--lm-border-subtle);
 }
 
 .lm-sidebar__list {
@@ -145,9 +150,27 @@ body {
 .lm-sidebar__actions {
   display: flex;
   flex-direction: column;
-  gap: var(--lm-sp-2);
+  gap: var(--lm-sp-6);
   padding: var(--lm-sp-6) var(--lm-sp-8);
   border-top: 1px solid var(--lm-border-subtle);
+}
+
+/* Phase 5 — action grouping: Create | Transfer | Manage. Labels reuse the
+ * shared sidebar-header text rule (see selector list above) so F.3 Δ 0. */
+.lm-sidebar__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lm-sp-2);
+}
+.lm-sidebar__group-row {
+  display: flex;
+  gap: var(--lm-sp-2);
+}
+/* Divider above Delete — isolates the destructive action from Rename. */
+.lm-sidebar__group-row--danger {
+  border-top: 1px solid var(--lm-border);
+  padding-top: var(--lm-sp-3);
+  margin-top: var(--lm-sp-2);
 }
 
 /* ── Buttons ─────────────────────────────────────────────────── */
@@ -170,6 +193,10 @@ body {
 .lm-btn:hover { background: var(--lm-bg-hover); }
 .lm-btn--primary { background: var(--lm-bg-button); border-color: var(--lm-bg-button); color: var(--lm-text-inverse); }
 .lm-btn--primary:hover { background: var(--lm-bg-button-hover); }
+/* Phase 5 — ghost demotes a secondary action (Import) below primary. Lighter
+ * border + muted text; hover lifts to the normal .lm-btn treatment. */
+.lm-btn--ghost { border-color: var(--lm-border-subtle); color: var(--lm-text-secondary); }
+.lm-btn--ghost:hover { border-color: var(--lm-border); color: var(--lm-text-primary); background: var(--lm-bg-hover); }
 .lm-btn--danger { color: var(--lm-danger); }
 .lm-btn--danger:hover { background: rgba(244, 135, 113, 0.12); }
 

@@ -173,7 +173,7 @@ export function App() {
   const [blocks, setBlocks] = useState<Map<string, BlockData> | null>(null)
   const [blockWarnings, setBlockWarnings] = useState<ScopingWarning[]>([])
   const [scopes, setScopes] = useState<ScopeEntry[]>([])
-  const [view, setView] = useState<'layouts' | 'settings'>('layouts')
+  const [view, setView] = useState<'layouts' | 'scopes'>('layouts')
   const [validationState, setValidationState] = useState<ValidationState>({ errors: [], warnings: [] })
 
   const prevConfigRef = useRef<LayoutConfig | null>(null)
@@ -669,7 +669,7 @@ export function App() {
         />
 
         {/* Center area — canvas or settings */}
-        {view === 'settings' ? (
+        {view === 'scopes' ? (
           <div className="lm-settings-area">
             <SettingsPage onShowToast={showToast} />
           </div>

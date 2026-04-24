@@ -6,12 +6,12 @@ interface Props {
   layouts: LayoutSummary[]
   activeId: string | null
   scopes: ScopeEntry[]
-  view: 'layouts' | 'settings'
+  view: 'layouts' | 'scopes'
   errorCount?: number
   onSelect: (id: string) => void
   onRefresh: () => void
   onExport: () => void
-  onNavigate: (view: 'layouts' | 'settings') => void
+  onNavigate: (view: 'layouts' | 'scopes') => void
 }
 
 type DialogState =
@@ -36,8 +36,8 @@ export function LayoutSidebar({
 
   function guardScopesConfigured(): boolean {
     if (scopes.length === 0) {
-      alert('No scopes registered. Add one in Settings first.')
-      onNavigate('settings')
+      alert('No scopes registered. Add one in Scopes first.')
+      onNavigate('scopes')
       return false
     }
     return true
@@ -151,10 +151,10 @@ export function LayoutSidebar({
           Layouts
         </button>
         <button
-          className={`lm-sidebar__nav-btn ${view === 'settings' ? 'lm-sidebar__nav-btn--active' : ''}`}
-          onClick={() => onNavigate('settings')}
+          className={`lm-sidebar__nav-btn ${view === 'scopes' ? 'lm-sidebar__nav-btn--active' : ''}`}
+          onClick={() => onNavigate('scopes')}
         >
-          Settings
+          Scopes
         </button>
       </div>
 
@@ -185,19 +185,39 @@ export function LayoutSidebar({
           </div>
 
           <div className="lm-sidebar__actions">
-            <button className="lm-btn lm-btn--primary" onClick={handleNewClick}>New</button>
-            <button className="lm-btn" onClick={handleImportClick}>Import</button>
-            <button className="lm-btn" onClick={handleRenameClick} disabled={!activeId}>Rename</button>
-            <button className="lm-btn" onClick={handleCloneClick} disabled={!activeId}>Clone</button>
-            <button
-              className="lm-btn"
-              onClick={onExport}
-              disabled={!activeId}
-              aria-describedby={errorCount > 0 ? 'lm-validation-summary' : undefined}
-            >
-              {errorCount > 0 ? `Export (${errorCount} errors)` : 'Export'}
-            </button>
-            <button className="lm-btn lm-btn--danger" onClick={handleDelete} disabled={!activeId}>Delete</button>
+            <div className="lm-sidebar__group">
+              <div className="lm-sidebar__group-label">Create</div>
+              <div className="lm-sidebar__group-row">
+                <button className="lm-btn lm-btn--primary" onClick={handleNewClick}>New</button>
+                <button className="lm-btn" onClick={handleCloneClick} disabled={!activeId}>Clone</button>
+              </div>
+            </div>
+
+            <div className="lm-sidebar__group">
+              <div className="lm-sidebar__group-label">Transfer</div>
+              <div className="lm-sidebar__group-row">
+                <button
+                  className="lm-btn lm-btn--primary"
+                  onClick={onExport}
+                  disabled={!activeId}
+                  aria-describedby={errorCount > 0 ? 'lm-validation-summary' : undefined}
+                >
+                  {errorCount > 0 ? `Export (${errorCount} errors)` : 'Export'}
+                </button>
+                <button className="lm-btn lm-btn--ghost" onClick={handleImportClick}>Import</button>
+              </div>
+            </div>
+
+            <div className="lm-sidebar__group">
+              <div className="lm-sidebar__group-label">Manage</div>
+              <div className="lm-sidebar__group-row">
+                <button className="lm-btn" onClick={handleRenameClick} disabled={!activeId}>Rename</button>
+              </div>
+              <div className="lm-sidebar__group-row lm-sidebar__group-row--danger">
+                <button className="lm-btn lm-btn--danger" onClick={handleDelete} disabled={!activeId}>Delete</button>
+              </div>
+            </div>
+
             <input
               ref={importInputRef}
               type="file"

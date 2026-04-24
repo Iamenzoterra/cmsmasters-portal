@@ -6,6 +6,7 @@ interface Props {
   onShowToast: (message: string) => void
 }
 
+export { SettingsPage as ScopesPage }
 export function SettingsPage({ onShowToast }: Props) {
   const [settings, setSettings] = useState<LMSettings | null>(null)
   const [loading, setLoading] = useState(true)
@@ -99,9 +100,9 @@ export function SettingsPage({ onShowToast }: Props) {
   return (
     <div className="lm-settings">
       <div className="lm-settings__header">
-        <h2 className="lm-settings__title">Settings</h2>
+        <h2 className="lm-settings__title">Scopes</h2>
         <p className="lm-settings__subtitle">
-          Register scopes for layouts. Each scope maps to a portal query (e.g. <code>theme</code> → <code>getLayoutByScope(&apos;theme&apos;)</code>).
+          Register scopes for layouts. Each scope maps to a portal query.
         </p>
       </div>
 
