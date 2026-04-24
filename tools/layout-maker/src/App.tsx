@@ -11,6 +11,7 @@ import { Inspector } from './components/Inspector'
 import { ExportDialog } from './components/ExportDialog'
 import { SettingsPage } from './components/SettingsPage'
 import { Toast } from './components/Toast'
+import { ExternalReloadBanner } from './components/ExternalReloadBanner'
 
 /** Insert a sidebar column into an existing columns map at the correct position */
 function insertSidebarColumn(
@@ -175,6 +176,7 @@ export function App() {
   const [scopes, setScopes] = useState<ScopeEntry[]>([])
   const [view, setView] = useState<'layouts' | 'scopes'>('layouts')
   const [validationState, setValidationState] = useState<ValidationState>({ errors: [], warnings: [] })
+  const [externalReloadBanner, setExternalReloadBanner] = useState(false)
 
   const prevConfigRef = useRef<LayoutConfig | null>(null)
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -191,6 +193,13 @@ export function App() {
     if (!preset) return
     setActiveBreakpoint(preset.breakpoint)
     setViewportWidth(preset.width)
+  }, [])
+
+  // Phase 6 — wrap setActiveId so layout-switch also dismisses the
+  // external-reload banner. The banner's "I saw it / moved on" path.
+  const handleSelectLayout = useCallback((id: string | null) => {
+    setExternalReloadBanner(false)
+    setActiveId(id)
   }, [])
 
   // Debounced live validation.
@@ -368,7 +377,7 @@ export function App() {
           }
           prevConfigRef.current = newConfig
           setActiveConfig(newConfig)
-          showToast('Layout updated externally.')
+          setExternalReloadBanner(true)
         }).catch(() => {})
       }
     })
@@ -662,7 +671,7 @@ export function App() {
           scopes={scopes}
           view={view}
           errorCount={validationState.errors.length}
-          onSelect={setActiveId}
+          onSelect={handleSelectLayout}
           onRefresh={refreshLayouts}
           onExport={() => setShowExportDialog(true)}
           onNavigate={setView}
@@ -681,6 +690,10 @@ export function App() {
                   errors={validationState.errors}
                   warnings={validationState.warnings}
                   onFocusItem={handleFocusItem}
+                />
+                <ExternalReloadBanner
+                  visible={externalReloadBanner}
+                  onDismiss={() => setExternalReloadBanner(false)}
                 />
                 <BreakpointBar
                   config={activeConfig}
@@ -744,6 +757,7 @@ export function App() {
           validationState={validationState}
           onClose={() => setShowExportDialog(false)}
           onShowToast={showToast}
+          onExportSuccess={() => setExternalReloadBanner(false)}
           onFocusItem={handleFocusItem}
         />
       )}

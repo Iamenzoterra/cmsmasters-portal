@@ -12,8 +12,7 @@ import {
 } from '../lib/inspector-capabilities'
 import { CopyButton } from './CopyButton'
 import { SlotToggles } from './SlotToggles'
-import { SlotReference } from './SlotReference'
-import { TokenReference } from './TokenReference'
+import { InspectorUtilityZone } from './InspectorUtilityZone'
 import { CreateSlotModal } from './CreateSlotModal'
 import { DRAWER_ICONS } from '../../../../packages/ui/src/portal/drawer-icons'
 // GLOBAL_SLOT_NAMES_SET removed — `traits.isGlobalSlot` from
@@ -632,10 +631,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
           <div className="lm-inspector__empty">
             Click a slot in the canvas to inspect its properties.
           </div>
-          <SlotReference onCopied={() => onShowToast('Copied!')} />
-          {tokens.categories && (
-            <TokenReference categories={tokens.categories} onCopied={() => onShowToast('Copied!')} />
-          )}
+          <InspectorUtilityZone tokens={tokens} onCopied={() => onShowToast('Copied!')} />
         </div>
         <BreakpointFooter config={config} activeBreakpoint={activeBreakpoint} />
       </div>
@@ -1491,10 +1487,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
           )
         })()}
 
-        <SlotReference onCopied={handleCopied} />
-        {tokens.categories && (
-          <TokenReference categories={tokens.categories} onCopied={handleCopied} />
-        )}
+        <InspectorUtilityZone tokens={tokens} onCopied={handleCopied} />
       </div>
       <BreakpointFooter config={config} activeBreakpoint={activeBreakpoint} />
     </div>

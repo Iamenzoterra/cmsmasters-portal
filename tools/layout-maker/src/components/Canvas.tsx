@@ -563,6 +563,15 @@ function SlotZone({ name, config, tokens, width, slotConfig, isSelected, isFlash
             })}
           </div>
         )}
+
+        {/* Phase 6 — preview-fixture reminder. Rendered whenever the slot
+            declares test-blocks (even before blocks have loaded), so the
+            provenance hint doesn't flicker in. Copy is workplan-locked. */}
+        {testBlockSlugs.length > 0 && (
+          <div className="lm-preview-hint">
+            Preview fixtures only. Not exported to Studio.
+          </div>
+        )}
       </div>
     </div>
   )

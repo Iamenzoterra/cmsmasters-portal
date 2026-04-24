@@ -8,6 +8,9 @@ interface Props {
   id: string
   onClose: () => void
   onShowToast: (message: string) => void
+  // Phase 6 — called after a successful copy-payload or download-json. Used
+  // to dismiss the external-reload banner ("I saw it / I shipped it" path).
+  onExportSuccess?: () => void
   validationState?: ValidationState
   onFocusItem?: (item: ValidationItem) => void
 }
@@ -16,6 +19,7 @@ export function ExportDialog({
   id,
   onClose,
   onShowToast,
+  onExportSuccess,
   validationState = { errors: [], warnings: [] },
   onFocusItem,
 }: Props) {
@@ -41,6 +45,7 @@ export function ExportDialog({
     if (!result) return
     await navigator.clipboard.writeText(JSON.stringify(result.payload, null, 2))
     onShowToast('Payload copied to clipboard.')
+    onExportSuccess?.()
   }
 
   const handleDownloadJson = () => {
@@ -53,6 +58,7 @@ export function ExportDialog({
     a.click()
     URL.revokeObjectURL(url)
     onShowToast('JSON downloaded.')
+    onExportSuccess?.()
   }
 
   const handleItemClick = (item: ValidationItem) => {

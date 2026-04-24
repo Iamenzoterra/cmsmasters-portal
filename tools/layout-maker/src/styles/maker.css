@@ -868,9 +868,14 @@ body {
   color: var(--lm-text-secondary);
 }
 
-.lm-inspector__empty {
+/* Muted small-text block — used for empty-state placeholders and Canvas
+ * preview-fixture hints (P6). Shared selector keeps a single declaration site. */
+.lm-inspector__empty,
+.lm-preview-hint {
   color: var(--lm-text-muted);
   font-size: 12px;
+}
+.lm-inspector__empty {
   text-align: center;
   padding: var(--lm-sp-12);
 }
@@ -2378,4 +2383,90 @@ body {
   border-left: 3px solid var(--lm-warning);
   background: var(--lm-bg-hover);
   color: var(--lm-text-secondary);
+}
+
+/* ── Banner (P6) ─────────────────────────────────────────────── */
+/* Sticky notification surface used by ExternalReloadBanner. Models after
+ * .lm-export-dialog__warnings-banner (P3) — border-left accent, muted
+ * background. No font-size decl: inherits body default. */
+.lm-banner {
+  position: sticky;
+  top: 0;
+  z-index: var(--lm-z-breakpoint);
+  display: flex;
+  align-items: center;
+  gap: var(--lm-sp-6);
+  padding: var(--lm-sp-4) var(--lm-sp-8);
+  background: var(--lm-bg-hover);
+  color: var(--lm-text-primary);
+  border-bottom: 1px solid var(--lm-border);
+}
+.lm-banner--info {
+  border-left: 3px solid var(--lm-text-accent);
+}
+.lm-banner__text {
+  flex: 1;
+}
+.lm-banner__close {
+  background: transparent;
+  border: 1px solid var(--lm-border);
+  border-radius: 4px;
+  padding: 2px var(--lm-sp-4);
+  color: var(--lm-text-secondary);
+  font-family: inherit;
+  cursor: pointer;
+  line-height: 1;
+}
+.lm-banner__close:hover {
+  border-color: var(--lm-border-focus);
+  color: var(--lm-text-primary);
+  background: var(--lm-bg-panel);
+}
+
+/* ── Inspector utility zone (P6) ─────────────────────────────── */
+/* Collapsible container that wraps SlotReference + TokenReference.
+ * Default collapsed — header click toggles visibility. Section label
+ * reuses the sidebar small-caps treatment via tiny inline props
+ * (no new shared rule needed — tiny footprint). */
+.lm-utility-zone {
+  border-top: 1px solid var(--lm-border-subtle);
+  margin-top: var(--lm-sp-8);
+}
+.lm-utility-zone__header {
+  display: flex;
+  align-items: center;
+  gap: var(--lm-sp-3);
+  width: 100%;
+  padding: var(--lm-sp-6) var(--lm-sp-8);
+  background: transparent;
+  border: none;
+  color: var(--lm-text-secondary);
+  font-family: inherit;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  cursor: pointer;
+}
+.lm-utility-zone__header:hover {
+  color: var(--lm-text-primary);
+  background: var(--lm-bg-hover);
+}
+.lm-utility-zone__chevron {
+  display: inline-block;
+  transition: transform var(--lm-transition-fast);
+}
+.lm-utility-zone__chevron--expanded {
+  transform: rotate(90deg);
+}
+.lm-utility-zone__body {
+  padding-top: var(--lm-sp-3);
+}
+
+/* ── Preview fixture hint (P6) ───────────────────────────────── */
+/* Canvas-side reminder that test-blocks don't ship to Studio. Shares
+ * its font-size declaration with .lm-inspector__empty above — see
+ * shared selector block (F.3 Δ 0). */
+.lm-preview-hint {
+  padding: var(--lm-sp-2) var(--lm-sp-8);
+  font-style: italic;
 }
