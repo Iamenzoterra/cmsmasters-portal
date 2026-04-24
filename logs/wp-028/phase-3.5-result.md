@@ -1,8 +1,10 @@
 # WP-028 Phase 3.5 — Result Log (Path B re-converge)
 
+> **Status:** ✅ **CLOSED** (impl `81d0e9dc` + log `de75a550` + honesty-round `80ac5930` + SHA embed `b351d373`)
 > Task prompt: `logs/wp-028/phase-3.5-task.md` (commit `c3173752` — scope split out of Phase 3 per Hands review; Ruling R → R')
 > Phase: 3.5 of 7 (mini-phase between 3 and 4)
 > Goal: tools/block-forge `composeSrcDoc` single-wraps (`.slot-inner` only); `PreviewTriptych` calls `renderForPreview(block, { variants })` upstream; PARITY.md §7 flips to `✅ RE-CONVERGED` on both files.
+> Companion summary: `logs/wp-028/phase-3-plus-3.5-summary.md` — rolled-up view of Phase 3 + 3.5 as a single WP-028 arc segment.
 
 ---
 

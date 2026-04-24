@@ -1,8 +1,10 @@
 # WP-028 Phase 3 — Result Log
 
+> **Status:** ✅ **CLOSED** (impl `8d73b334` + log `9238d434`)
 > Task prompt: `logs/wp-028/phase-3-task.md` (commit `c3173752` — narrowed + Phase 3.5 Path B split per Hands review)
 > Phase: 3 of 7 (+ Phase 3.5 — Path B re-converge, separate task prompt `logs/wp-028/phase-3.5-task.md`)
 > Goal: VariantsDrawer real UI + fork/rename/delete + session-backed CRUD on block-forge + RHF-backed CRUD on Studio; PARITY.md additive §Variant CRUD (both surfaces); Phase 3.5 boundary (`preview-assets.ts` + its test + snap + PARITY §7) untouched.
+> Companion summary: `logs/wp-028/phase-3-plus-3.5-summary.md` — rolled-up view of Phase 3 + 3.5 as a single WP-028 arc segment.
 
 ---
 
