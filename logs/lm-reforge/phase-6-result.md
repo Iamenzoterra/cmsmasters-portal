@@ -399,4 +399,5 @@ self-review and in the commit body.
 
 ## §Commit SHA (embedded)
 
-<!-- Filled by follow-up chore commit per P5 precedent -->
+`6b06d423` — feat(lm): phase 6 — context management (reload banner + utility
+zone + preview hint) [LM-reforge phase 6]
