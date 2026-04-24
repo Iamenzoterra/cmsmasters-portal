@@ -140,12 +140,7 @@ block-forge integration pin (`integration.test.tsx`):
   JSON.stringify(payload) contains '"variants":null'           ✅
 ```
 
-**Live DB smoke:** deferred to Phase 6 Close (per `parked-oqs.md` OQ1 note — production Hono Worker predates WP-028 validator changes and would reject `{variants: null}` until redeployed). Local smoke viable against `wrangler dev` on `:8787`; not re-run this phase because:
-1. Validator + payload + pin layer cover the correctness proof.
-2. Phase 4 already proved direct-local-PUT variants persistence end-to-end (`logs/wp-028/phase-4-result.md` Portal smoke addendum, commit `ba229938`).
-3. Re-smoking the same Supabase round-trip with `null` instead of `undefined` only verifies Supabase JS client behaviour (documented and well-known).
-
-The DB-NULL delivery is verified through the deterministic chain above; live re-smoke in Phase 6 Close (post-production-redeploy) closes OQ1 + re-confirms OQ2 in one step.
+**Live DB smoke:** ✅ **RAN + PASSED** against local wrangler-dev on `:8787` + live Supabase. Both SQL library-level and HTTP transport-level legs proven. See `§Live smoke evidence (AC 8)` below. Production-live smoke still deferred to Phase 6 Close (bundled with OQ1 Worker redeploy — production Hono predates Phase 5 validator change).
 
 ---
 
@@ -276,10 +271,83 @@ Phase 6 cannot mark WP-028 DONE until all 6 boxes resolved-or-deferred-with-link
 
 ---
 
+## Live smoke evidence (AC 8) — ran post-/ac audit
+
+User-triggered smoke after `/ac` flagged AC 8 ("OQ2 end-to-end: delete all variants → SELECT returns NULL") as ❌ NOT MET. Ran both SQL library-level and HTTP transport-level legs against local `wrangler dev` on `:8787` + live Supabase (project `yxcqtwuyktbjxstahfqj`). Scripts preserved in `logs/wp-028/smoke-p5/` for future reproducibility.
+
+### Leg 1 — SQL library-level (`smoke-02-supabase-library-null.mjs`)
+
+Exercises the `supabase.from('blocks').update({variants: null})` call that Hono makes internally after `updateBlockSchema.safeParse` accepts the payload. Proves the Supabase JS client → Postgres column-NULL behaviour directly (the piece most commonly in doubt).
+
+```
+=== STEP 0 baseline ===
+  block: fast-loading-speed (1cbfccdf-927a-43e1-a2b7-0605dc2be954)
+  variants: ["sm"]               ← Phase 4 smoke persistence, still intact
+
+=== STEP 1 UPDATE variants = null (Phase 5 OQ2 clear-signal) ===
+  UPDATE ok
+
+=== STEP 2 SELECT variants FROM blocks WHERE id = ? ===
+  result: variants === NULL ✅    ← AC 8 primary assertion
+
+=== STEP 3 positive control — UPDATE variants = {sm: {...}} ===
+  result: variants keys=["sm"] match=✅   ← round-trip populated both ways
+
+=== STEP 4 restore baseline ===
+  restored: variants ["sm"]        ← DB left in exact pre-smoke state
+```
+
+### Leg 2 — HTTP transport-level (`smoke-03-hono-http-put-null.mjs`)
+
+Minted a fresh JWT via Supabase admin API (`auth.admin.generateLink` → `auth.verifyOtp`) for an admin-role profile, then exercised the full HTTP chain as Studio's `updateBlockApi` would: fetch PUT → authMiddleware → requireRole → updateBlockSchema.safeParse → Supabase update → response + GET mirror + direct SELECT.
+
+```
+Minting JWT for: dmitri.smelov@gmail.com (role=admin, id=4935efaf-94c7-...)
+JWT minted (len=1399) — testing against local Hono on http://localhost:8787...
+
+STEP 1 GET: block.variants = ["sm"]
+
+STEP 2 PUT body snippet: {"variants":null}
+  PUT status: 200                                         ← validator accepted null ✅
+  PUT response ok (body.data.variants = NULL ✅)          ← Hono+DB returned NULL
+
+STEP 3 GET after PUT: block.variants = NULL ✅             ← fresh read confirms persistence
+
+STEP 4 direct SELECT: blocks.variants = NULL ✅            ← independent confirmation
+                                                            (bypasses Hono entirely)
+
+STEP 5 baseline restored.
+```
+
+### Coverage map
+
+| Chain link | Proof source |
+|------------|--------------|
+| `form.variants = {}` → `formDataToPayload` emits null | Studio unit pin (integration.test.tsx) |
+| JSON.stringify preserves `"variants":null` | Studio + block-forge pins (assertion on serialized body) |
+| `fetch PUT {variants: null}` reaches Hono | Leg 2 STEP 2 (HTTP status 200 on valid body) |
+| Hono `authMiddleware` accepts JWT | Leg 2 STEP 2 (role=admin JWT passed auth) |
+| Hono `requireRole('content_manager', 'admin')` allows | Leg 2 STEP 2 (no 403) |
+| `updateBlockSchema.safeParse({variants: null}).success === true` | V5 tsx-inline verification + Leg 2 STEP 2 (200 means parse ok) |
+| `parsed.data.variants === null` forwarded to `updateBlock(supabase, id, parsed.data)` | Pre-flight step 4 code inspection (Case A spread handler) |
+| `supabase.from('blocks').update({variants: null})` → column NULL | Leg 1 STEP 2 (SELECT returned NULL) |
+| Column NULL persists across connection re-read | Leg 2 STEP 3 (GET after PUT) |
+| Independent read-path confirms | Leg 2 STEP 4 (service-role SELECT) |
+
+**AC 8 status flipped ❌ NOT MET → ✅ FULLY MET.**
+
+### What this smoke does NOT cover (transparent caveats)
+
+- **Literal Studio UI click-through** — no Playwright navigated the VariantsDrawer delete + Save buttons. The `formDataToPayload` unit pin covers the form-to-payload transform; the HTTP smoke above covers payload-to-DB. The gap is the click-handler wiring in `VariantsDrawer.tsx` + `updateBlockApi` call in `block-editor.tsx`, both of which are Phase 3/4 territory (zero-touch in Phase 5) and were proven in Phase 4's Playwright E2E (`logs/wp-028/smoke-p4/`).
+- **Production endpoint** — smoke ran against local `wrangler dev`; prod Hono Worker still predates Phase 5 (OQ1). OQ2 live-prod verification bundles with OQ1 Worker redeploy at Phase 6 Close.
+
+---
+
 ## Git chain (Phase 5)
 
 - `9042490a` — **feat(validators+studio+tools): WP-028 Phase 5** — code + tests + PARITY.md + CONVENTIONS.md — this phase's implementation commit (code + docs landing in same commit per §5 same-commit discipline)
-- `_(next)_` — **docs(logs): WP-028 Phase 5 result log + OQ2 RESOLVED** — this file + `parked-oqs.md` OQ2 flip embedding `9042490a` SHA
+- `9eac5df8` — **docs(logs): WP-028 Phase 5 result log + OQ2 RESOLVED** — initial result log + `parked-oqs.md` OQ2 flip embedding `9042490a` SHA
+- `_(next)_` — **docs(logs): WP-028 Phase 5 smoke addendum — AC 8 live DB+HTTP evidence** — this §Live smoke evidence section + `logs/wp-028/smoke-p5/` scripts
 
 Phase 4 pattern (reference): `bff6ef77` feat → `9a589c2f` docs/screenshots → `ba229938` smoke addendum.
 
@@ -287,12 +355,20 @@ Phase 4 pattern (reference): `bff6ef77` feat → `9a589c2f` docs/screenshots →
 
 ## Summary
 
-Phase 5 closes with all 5 prompt AC items green:
+Phase 5 closes with all 5 prompt tasks green:
 
 - ✅ **5.1** Dirty-state contract table in both PARITY.md (byte-identical content, LF-normalized)
-- ✅ **5.2** OQ2 end-to-end fix: validator nullable + Studio payload null + Hono Case A (zero-touch) + tools/block-forge fs parity + type widening
+- ✅ **5.2** OQ2 end-to-end fix: validator nullable + Studio payload null + Hono Case A (zero-touch) + tools/block-forge fs parity + type widening + **live smoke proven post-/ac** (see §Live smoke evidence)
 - ✅ **5.3** Carve-out regression pins: 3 block-forge pins (tweak-only / variant-only / mixed) + Studio OQ2 pin; 6 new tests total
 - ✅ **5.4** CONVENTIONS.md §6 cross-tab note
-- ✅ **5.5** parked-oqs.md OQ2 flip queued for commit 2 (awaiting `9042490a` SHA embedding)
+- ✅ **5.5** parked-oqs.md OQ2 flip shipped with commit 2 (`9eac5df8`) embedding feat `9042490a` SHA
 
-18/18 task-prompt AC items ✅; arch-test Δ0 (499/0); typecheck clean; block-editor.tsx net +3 LOC (within 40 cap); 2 new OQs surfaced (OQ5, OQ6) for transparent Phase 6 audit.
+### Honest /ac audit — 17 ACs post-smoke
+
+| Tally | Count | Items |
+|-------|-------|-------|
+| ✅ Fully met | 14 | 1–8, 10–15 (AC 8 flipped from ❌ after live smoke) |
+| ⚠️ Partial | 3 | AC 9 (pins green, but revert-proof needs `<App />` render per OQ6); AC 16 (net +3 LOC vs 33 target, still within 40 cap); AC 17 (§Dirty-state content-byte-identical LF-normalized; raw CRLF/LF per-file convention pre-existing) |
+| ❌ Not met | 0 | — |
+
+arch-test Δ0 (499/0); typecheck clean; 2 new OQs surfaced (OQ5 tweak-compose-on-save gap, OQ6 contract-pin-not-production-render) logged in `parked-oqs.md` for transparent Phase 6 audit.
