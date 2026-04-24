@@ -91,7 +91,10 @@ export function composeSrcDoc(input: ComposeSrcDocInput): string {
 
       function stableClass(el) {
         if (!el.className || typeof el.className !== 'string') return null;
-        const classes = el.className.split(/\s+/).filter(Boolean);
+        // NOTE: this script lives inside a template literal — \s must be double-
+        // escaped so the emitted source keeps the regex meaning. (Caught by
+        // WP-028 Phase 2 live smoke: /s+/ truncated class names at "s" chars.)
+        const classes = el.className.split(/\\s+/).filter(Boolean);
         return classes.find((c) => !UTILITY_PREFIXES.some((p) => c.startsWith(p))) || null;
       }
 
