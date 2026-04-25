@@ -422,8 +422,10 @@ describe('Inspector scope + override clarity (WP-031 phase 4)', () => {
   afterEach(() => cleanup())
 
   it('cluster-inner shows override count when innerOverrideCount > 0', () => {
-    const config = makeConfig({ content: { padding: '--spacing-xl' } })
-    config.grid.tablet.slots = { content: { padding: '--spacing-3xl' } }
+    // INNER_PER_BP_FIELDS = ['max-width', 'align'] (P4 hotfix tightening).
+    // Override max-width to drive the count chip.
+    const config = makeConfig({ content: { 'max-width': '600px' } })
+    config.grid.tablet.slots = { content: { 'max-width': '720px' } }
     const { container } = render(
       <Inspector
         {...baseProps}
@@ -513,5 +515,56 @@ describe('Inspector scope + override clarity (WP-031 phase 4)', () => {
     expect(body?.getAttribute('data-filter')).toBeNull()
     fireEvent.click(checkbox)
     expect(body?.getAttribute('data-filter')).toBe('overridden')
+  })
+
+  // P4 hotfix: filter-state cannot strand the operator on desktop.
+  it('filter does NOT apply on desktop even if showOverriddenOnly state is true', () => {
+    const config = makeConfig({ content: { padding: '--spacing-xl' } })
+    const { container, rerender } = render(
+      <Inspector
+        {...baseProps}
+        config={config}
+        selectedSlot="content"
+        activeBreakpoint="tablet"
+        gridKey="tablet"
+      />,
+    )
+    // Activate filter at tablet
+    fireEvent.click(container.querySelector('.lm-filter-toggle input') as HTMLInputElement)
+    expect(container.querySelector('.lm-inspector__body')?.getAttribute('data-filter')).toBe('overridden')
+    // Switch to desktop — filter must lift, no orphaned hidden clusters.
+    rerender(
+      <Inspector
+        {...baseProps}
+        config={config}
+        selectedSlot="content"
+        activeBreakpoint="desktop"
+        gridKey="desktop"
+      />,
+    )
+    expect(container.querySelector('.lm-inspector__body')?.getAttribute('data-filter')).toBeNull()
+    // Toggle is also gone at desktop.
+    expect(container.querySelector('.lm-filter-toggle')).toBeNull()
+  })
+
+  // P4 hotfix: count + filter source-of-truth aligned for cluster-inner.
+  // Padding shorthand override does NOT inflate innerOverrideCount (no editable
+  // per-BP padding row in Slot Parameters), so cluster-inner won't claim
+  // "1 override" while filter hides it.
+  it('cluster-inner override count ignores padding shorthand (count + filter aligned)', () => {
+    const config = makeConfig({ content: { padding: '--spacing-xl' } })
+    config.grid.tablet.slots = { content: { padding: '--spacing-3xl' } }
+    const { container } = render(
+      <Inspector
+        {...baseProps}
+        config={config}
+        selectedSlot="content"
+        activeBreakpoint="tablet"
+        gridKey="tablet"
+      />,
+    )
+    const inner = container.querySelector('[data-cluster-id="cluster-inner"]')
+    // No count chip on cluster-inner — padding shorthand is OUTER's domain.
+    expect(inner?.querySelector('.lm-cluster-count')).toBeNull()
   })
 })

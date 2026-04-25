@@ -562,8 +562,14 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
     'border-sides', 'border-width', 'border-color',
     'visibility', 'order',
   ] as const
+  // INNER cluster (Slot Parameters) only renders editable per-BP rows for
+  // `max-width` + `align`. `gap`/`min-height`/`margin-top` are read-only
+  // property-rows in Diagnostics (no .lm-bp-dot), `padding` is a shorthand
+  // edited via padding-x/top/bottom in OUTER. Counting them here would mean
+  // the cluster shows "1 override" while filter (:has(.lm-bp-dot)) hides it.
+  // Tightened set keeps count and filter source-of-truth aligned (P4 hotfix).
   const INNER_PER_BP_FIELDS: readonly PerBpSlotField[] = [
-    'max-width', 'align', 'gap', 'min-height', 'margin-top', 'padding',
+    'max-width', 'align',
   ] as const
   const outerOverrideCount = isBaseBp ? 0 : OUTER_PER_BP_FIELDS.filter((f) => isOverridden(f)).length
   const innerOverrideCount = isBaseBp ? 0 : INNER_PER_BP_FIELDS.filter((f) => isOverridden(f)).length
@@ -622,7 +628,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
         <SlotToggles config={config} activeBreakpoint={gridKey} onToggleSlot={onToggleSlot} />
         <AddSlotButton config={config} tokens={tokens} onCreateTopLevelSlot={onCreateTopLevelSlot} />
       </div>
-      <div className="lm-inspector__body" data-filter={showOverriddenOnly ? 'overridden' : undefined}>
+      <div className="lm-inspector__body" data-filter={!isBaseBp && showOverriddenOnly ? 'overridden' : undefined}>
         {/* Identity cluster — slot name + badges + copy + (Phase 4) override-only filter */}
         <InspectorCluster id="cluster-identity" title="">
           <div className={`lm-inspector__section${isContainer ? ' lm-inspector__panel--container' : ''}`}>
