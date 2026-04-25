@@ -404,8 +404,8 @@ This WP unblocks: **nothing hard-blocked**. Task C future-WP is informed by WP-0
 - Phase 2 Task B initial: `c842a9a3`
 - Phase 2 polish (gaps A+B+D): `ecbec5db`
 - Phase 2 follow-up (Brain ruling C-iii): `7c6326f1`
-- Phase 3 doc propagation: `<pending>`
-- Phase 3 result log: `<pending>`
+- Phase 3 doc propagation: `c420e748`
+- Phase 3 result log: see `logs/wp-029/phase-3-result.md` (Commit 2 follows this commit)
 
 ## Approval-gate pattern
 
