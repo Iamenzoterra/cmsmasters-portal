@@ -702,6 +702,8 @@ export function App() {
                   viewportWidth={viewportWidth}
                   onBreakpointChange={handleBreakpointChange}
                   onDevicePreset={handleDevicePreset}
+                  onBatchUpdateSlotConfig={handleBatchUpdateSlotConfig}
+                  onUpdateGridProp={handleUpdateGridProp}
                 />
                 <Canvas
                   config={activeConfig}

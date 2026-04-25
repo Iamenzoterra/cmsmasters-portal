@@ -15,6 +15,7 @@ import { SlotToggles } from './SlotToggles'
 import { InspectorUtilityZone } from './InspectorUtilityZone'
 import { CreateSlotModal } from './CreateSlotModal'
 import { DRAWER_ICONS } from '../../../../packages/ui/src/portal/drawer-icons'
+export { DrawerSettingsControl } from './ResponsivePreviewControls'
 // GLOBAL_SLOT_NAMES_SET removed — `traits.isGlobalSlot` from
 // inspector-capabilities.ts is now the single source of truth, and the
 // `canShow('allowed-block-types', ...)` dispatch internalizes the check.
@@ -279,172 +280,6 @@ function computeUsableWidth(
   return null
 }
 
-function SidebarModeControl({ config, activeBreakpoint, gridKey, onBatchUpdateSlotConfig }: {
-  config: LayoutConfig
-  activeBreakpoint: string
-  gridKey: string
-  onBatchUpdateSlotConfig: Props['onBatchUpdateSlotConfig']
-}) {
-  const isDesktop = activeBreakpoint === 'desktop'
-  const sidebarNames = Object.keys(config.slots).filter((n) => n.includes('sidebar'))
-  if (isDesktop || sidebarNames.length === 0) return null
-
-  // Determine current effective mode: if all sidebar slots share the same per-slot visibility, show it as active
-  const sidebarVisibilities = sidebarNames.map((name) => {
-    const override = config.grid[gridKey]?.slots?.[name]?.visibility
-    return override ?? undefined
-  })
-  const allSame = sidebarVisibilities.every((v) => v === sidebarVisibilities[0])
-  const currentMode = allSame ? sidebarVisibilities[0] : undefined
-
-  return (
-    <div className="lm-inspector__section lm-inspector__info">
-      <div className="lm-inspector__row">
-        <span className="lm-inspector__label">All sidebars at {activeBreakpoint}</span>
-      </div>
-      <div className="lm-align-group">
-        {([
-          { value: undefined, label: 'Visible' },
-          { value: 'hidden', label: 'Hidden' },
-          { value: 'drawer', label: 'Drawer' },
-          { value: 'push', label: 'Push' },
-        ] as const).map((opt) => (
-          <button
-            key={opt.label}
-            className={`lm-align-btn${currentMode === opt.value ? ' lm-align-btn--active' : ''}`}
-            onClick={() => {
-              onBatchUpdateSlotConfig(sidebarNames, 'visibility', opt.value, activeBreakpoint as CanvasBreakpointId)
-            }}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-export function DrawerSettingsControl({ config, activeBreakpoint, gridKey, onUpdateGridProp }: {
-  config: LayoutConfig
-  activeBreakpoint: string
-  gridKey: string
-  onUpdateGridProp: Props['onUpdateGridProp']
-}) {
-  // Only render when the active BP uses an off-canvas sidebar mode
-  // (drawer overlay or push). Both need a trigger button — so both
-  // need the Inspector controls (variant / side / width). Respects
-  // grid-level `sidebars` AND per-slot `visibility` overrides.
-  const grid = config.grid[gridKey]
-
-  // Hooks called unconditionally before the two early returns below so
-  // the hook count is stable across renders that toggle whether the
-  // component has an off-canvas sidebar (Rules-of-Hooks). Null-safe on
-  // `grid` because `config.grid[gridKey]` can be undefined at hook time
-  // (same branch the early return below handles for JSX).
-  const [widthDraft, setWidthDraft] = useState((grid?.['drawer-width'] ?? '').replace(/px$/, ''))
-
-  // Keep draft in sync when user switches BP.
-  useEffect(() => {
-    setWidthDraft((grid?.['drawer-width'] ?? '').replace(/px$/, ''))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gridKey, grid?.['drawer-width']])
-
-  if (!grid) return null
-
-  const isOffCanvas = (v: string | undefined) => v === 'drawer' || v === 'push'
-  const perSlotOffCanvas = Object.values(grid.slots ?? {}).some((s) => isOffCanvas(s.visibility))
-  const gridLevelOffCanvas = isOffCanvas(grid.sidebars)
-  if (!perSlotOffCanvas && !gridLevelOffCanvas) return null
-
-  // Inherited value from a wider BP — shown as placeholder so the
-  // user sees what's actually live if they leave this BP unset.
-  // Walks desktop → tablet → current (ascending-width order, looking
-  // for the nearest wider BP that sets drawer-width).
-  const inheritedWidth = (() => {
-    if (grid['drawer-width']) return undefined
-    const sorted = Object.entries(config.grid)
-      .sort(([, a], [, b]) => parseInt(b['min-width'], 10) - parseInt(a['min-width'], 10))
-    const idx = sorted.findIndex(([n]) => n === gridKey)
-    if (idx < 0) return undefined
-    for (let i = 0; i < idx; i++) {
-      const v = sorted[i][1]['drawer-width']
-      if (v) return { bp: sorted[i][0], value: v.replace(/px$/, '') }
-    }
-    return undefined
-  })()
-
-  const trigger = grid['drawer-trigger'] ?? 'peek'
-  const position = grid['drawer-position'] ?? 'both'
-
-  return (
-    <div className="lm-inspector__section lm-inspector__info">
-      <div className="lm-inspector__row">
-        <span className="lm-inspector__label">Drawer at {activeBreakpoint}</span>
-      </div>
-
-      {/* Trigger variant */}
-      <div className="lm-inspector__row" style={{ marginTop: '6px' }}>
-        <span className="lm-inspector__label">Trigger</span>
-      </div>
-      <div className="lm-align-group">
-        {(['peek', 'hamburger', 'tab', 'fab'] as const).map((opt) => (
-          <button
-            key={opt}
-            className={`lm-align-btn${trigger === opt ? ' lm-align-btn--active' : ''}`}
-            onClick={() => onUpdateGridProp(gridKey, 'drawer-trigger', opt)}
-          >
-            {opt}
-          </button>
-        ))}
-      </div>
-
-      {/* Position */}
-      <div className="lm-inspector__row" style={{ marginTop: '8px' }}>
-        <span className="lm-inspector__label">Side</span>
-      </div>
-      <div className="lm-align-group">
-        {(['left', 'right', 'both'] as const).map((opt) => (
-          <button
-            key={opt}
-            className={`lm-align-btn${position === opt ? ' lm-align-btn--active' : ''}`}
-            onClick={() => onUpdateGridProp(gridKey, 'drawer-position', opt)}
-          >
-            {opt}
-          </button>
-        ))}
-      </div>
-
-      {/* Panel width */}
-      <div className="lm-inspector__row" style={{ marginTop: '8px' }}>
-        <span className="lm-inspector__label">
-          Panel width
-          {inheritedWidth && (
-            <span className="lm-inspector__hint">
-              {` inherits ${inheritedWidth.value}px from ${inheritedWidth.bp}`}
-            </span>
-          )}
-        </span>
-      </div>
-      <div className="lm-width-control">
-        <input
-          className="lm-input"
-          type="number"
-          min="200"
-          max="800"
-          placeholder={inheritedWidth?.value ?? '400'}
-          value={widthDraft}
-          onChange={(e) => setWidthDraft(e.target.value)}
-          onBlur={() => {
-            const v = widthDraft.trim()
-            onUpdateGridProp(gridKey, 'drawer-width', v ? `${v}px` : undefined)
-          }}
-        />
-        <span className="lm-inspector__unit">px</span>
-      </div>
-    </div>
-  )
-}
-
 function ColumnWidthControl({ selectedSlot, gridKey, columnWidth, isFullWidth, widthDraft, setWidthDraft, onUpdateColumnWidth }: {
   selectedSlot: string
   gridKey: string
@@ -614,8 +449,6 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
           <AddSlotButton config={config} tokens={tokens} onCreateTopLevelSlot={onCreateTopLevelSlot} />
         </div>
         <div className="lm-inspector__body">
-          <SidebarModeControl config={config} activeBreakpoint={activeBreakpoint} gridKey={gridKey} onBatchUpdateSlotConfig={onBatchUpdateSlotConfig} />
-          <DrawerSettingsControl config={config} activeBreakpoint={activeBreakpoint} gridKey={gridKey} onUpdateGridProp={onUpdateGridProp} />
           <div className="lm-inspector__section">
             <div className="lm-inspector__section-title">Layout defaults</div>
             <div className="lm-inspector__row">
@@ -784,7 +617,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
         {/* Slot Role — position, sticky, z-index (applies to leaf AND container) */}
         <div className="lm-inspector__section lm-inspector__section--role">
           <div className="lm-inspector__section-title">
-            <span className="lm-inspector__section-glyph">&#9650;</span> Slot Role
+            Slot Role
           </div>
 
           <div className="lm-inspector__row">
@@ -1052,7 +885,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
         {canShow('slot-area-section', traits, scope) && (
         <div className="lm-inspector__section lm-inspector__section--outer" data-slot-type={selectedSlot}>
           <div className="lm-inspector__section-title">
-            <span className="lm-inspector__section-glyph">▭</span> Slot Area
+            Slot Area
             {!isBaseBp && (
               <>
                 <span className={`lm-scope-chip ${bpScopeClass}`}>{bpScopeLabel}</span>
@@ -1291,7 +1124,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
         {canShow('slot-parameters-section', traits, scope) && (
         <div className="lm-inspector__section lm-inspector__section--inner">
           <div className="lm-inspector__section-title">
-            <span className="lm-inspector__section-glyph">▤</span> Slot Parameters
+            Slot Parameters
             {!isBaseBp && (
               <>
                 <span className={`lm-scope-chip ${bpScopeClass}`}>{bpScopeLabel}</span>
@@ -1438,18 +1271,6 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
             )}
           </div>
         )}
-
-        {/* Breakpoint info */}
-        <div className="lm-inspector__section lm-inspector__info">
-          <div className="lm-inspector__row">
-            <span className="lm-inspector__label">Breakpoint</span>
-            <span className="lm-inspector__value">{activeBreakpoint} &rarr; {gridKey} ({bpWidth})</span>
-          </div>
-        </div>
-
-        {/* Sidebar mode — reuse shared control */}
-        <SidebarModeControl config={config} activeBreakpoint={activeBreakpoint} gridKey={gridKey} onBatchUpdateSlotConfig={onBatchUpdateSlotConfig} />
-        <DrawerSettingsControl config={config} activeBreakpoint={activeBreakpoint} gridKey={gridKey} onUpdateGridProp={onUpdateGridProp} />
 
         {/* Test blocks */}
         {blockCount > 0 && (

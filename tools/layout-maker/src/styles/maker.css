@@ -485,6 +485,69 @@ body {
   font-size: 10px;
 }
 
+/* ── Breakpoint preview controls popover ────────────────────── */
+.lm-bp-controls {
+  position: relative;
+}
+
+.lm-bp-controls__trigger {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: var(--lm-sp-2) var(--lm-sp-3);
+  border: 1px solid var(--lm-border);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--lm-text-secondary);
+  font-family: var(--lm-font-mono);
+  font-size: 11px;
+  cursor: pointer;
+  list-style: none;
+  transition: all var(--lm-transition-fast);
+}
+
+.lm-bp-controls__trigger::-webkit-details-marker {
+  display: none;
+}
+
+.lm-bp-controls__trigger::after {
+  content: '▾';
+  margin-left: var(--lm-sp-2);
+  color: var(--lm-text-muted);
+}
+
+.lm-bp-controls[open] .lm-bp-controls__trigger,
+.lm-bp-controls__trigger:hover {
+  color: var(--lm-text-primary);
+  border-color: var(--lm-text-secondary);
+}
+
+.lm-bp-controls__panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 100;
+  width: 280px;
+  padding: var(--lm-sp-4);
+  border: 1px solid var(--lm-border);
+  border-radius: 4px;
+  background: var(--lm-bg-panel);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.lm-bp-controls__panel .lm-inspector__section {
+  padding: var(--lm-sp-3) 0;
+}
+
+.lm-bp-controls__panel .lm-inspector__section:first-child {
+  padding-top: 0;
+}
+
+.lm-bp-controls__panel .lm-inspector__section:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
 /* ── Layout Grid ─────────────────────────────────────────────── */
 .lm-layout-grid {
   display: grid;

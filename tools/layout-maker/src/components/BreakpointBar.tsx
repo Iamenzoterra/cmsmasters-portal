@@ -3,6 +3,13 @@ import type { ReactNode } from 'react'
 import type { CanvasBreakpointId, LayoutConfig, TokenMap } from '../lib/types'
 import { CANVAS_BREAKPOINTS, DEVICE_PRESETS } from '../lib/types'
 import { deriveBreakpointTruth } from '../lib/breakpoint-truth'
+import {
+  DrawerSettingsControl,
+  SidebarModeControl,
+  hasResponsivePreviewControls,
+  type BatchUpdateSlotConfig,
+  type UpdateGridProp,
+} from './ResponsivePreviewControls'
 
 interface Props {
   config: LayoutConfig
@@ -11,6 +18,8 @@ interface Props {
   viewportWidth: number
   onBreakpointChange: (bp: CanvasBreakpointId) => void
   onDevicePreset: (width: number) => void
+  onBatchUpdateSlotConfig: BatchUpdateSlotConfig
+  onUpdateGridProp: UpdateGridProp
 }
 
 /* ── Inline SVG icons (16×16) ───────────────────────────────── */
@@ -37,7 +46,7 @@ const icons: Record<CanvasBreakpointId, ReactNode> = {
   ),
 }
 
-export function BreakpointBar({ config, tokens, activeBreakpoint, viewportWidth, onBreakpointChange, onDevicePreset }: Props) {
+export function BreakpointBar({ config, tokens, activeBreakpoint, viewportWidth, onBreakpointChange, onDevicePreset, onBatchUpdateSlotConfig, onUpdateGridProp }: Props) {
   const truth = deriveBreakpointTruth(activeBreakpoint, config.grid)
   const grid = config.grid[truth.resolvedKey]
   if (!grid) return null
@@ -88,6 +97,14 @@ export function BreakpointBar({ config, tokens, activeBreakpoint, viewportWidth,
           presetsByBp={presetsByBp}
           viewportWidth={viewportWidth}
           onSelect={onDevicePreset}
+        />
+
+        <ResponsivePreviewControlsPopover
+          config={config}
+          activeBreakpoint={activeBreakpoint}
+          gridKey={truth.resolvedKey}
+          onBatchUpdateSlotConfig={onBatchUpdateSlotConfig}
+          onUpdateGridProp={onUpdateGridProp}
         />
       </div>
 
@@ -163,6 +180,38 @@ export function BreakpointBar({ config, tokens, activeBreakpoint, viewportWidth,
         <kbd>Ctrl+[/]</kbd> cycle
       </div>
     </div>
+  )
+}
+
+function ResponsivePreviewControlsPopover({ config, activeBreakpoint, gridKey, onBatchUpdateSlotConfig, onUpdateGridProp }: {
+  config: LayoutConfig
+  activeBreakpoint: CanvasBreakpointId
+  gridKey: string
+  onBatchUpdateSlotConfig: BatchUpdateSlotConfig
+  onUpdateGridProp: UpdateGridProp
+}) {
+  if (!hasResponsivePreviewControls(config, activeBreakpoint, gridKey)) return null
+
+  return (
+    <details className="lm-bp-controls">
+      <summary className="lm-bp-controls__trigger">
+        Preview controls
+      </summary>
+      <div className="lm-bp-controls__panel">
+        <SidebarModeControl
+          config={config}
+          activeBreakpoint={activeBreakpoint}
+          gridKey={gridKey}
+          onBatchUpdateSlotConfig={onBatchUpdateSlotConfig}
+        />
+        <DrawerSettingsControl
+          config={config}
+          activeBreakpoint={activeBreakpoint}
+          gridKey={gridKey}
+          onUpdateGridProp={onUpdateGridProp}
+        />
+      </div>
+    </details>
   )
 }
 

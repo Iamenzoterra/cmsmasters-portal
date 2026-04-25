@@ -202,6 +202,36 @@ describe('Inspector capability gating (Phase 4 Cut B)', () => {
     expect(container.querySelector('.lm-inspector__inherited-label')).toBeNull()
   })
 
+  it('selected slot shows breakpoint truth once via the footer, without an inline duplicate row', () => {
+    const config = makeConfig({ content: {} })
+    const { queryAllByText } = render(
+      <Inspector
+        {...baseProps}
+        config={config}
+        selectedSlot="content"
+        activeBreakpoint="desktop"
+        gridKey="desktop"
+      />,
+    )
+
+    expect(queryAllByText('Breakpoint')).toHaveLength(1)
+  })
+
+  it('section titles do not render decorative disclosure glyphs before clusters exist', () => {
+    const config = makeConfig({ content: {} })
+    const { container } = render(
+      <Inspector
+        {...baseProps}
+        config={config}
+        selectedSlot="content"
+        activeBreakpoint="desktop"
+        gridKey="desktop"
+      />,
+    )
+
+    expect(container.querySelector('.lm-inspector__section-glyph')).toBeNull()
+  })
+
   it('reset-override button: dispatches undefined to onUpdateSlotConfig (App.tsx then prunes empty slot override record)', () => {
     // Set up a leaf slot with a per-BP override so the reset button renders.
     // Inspector's reset dispatches `onUpdateSlotConfig(name, key, undefined,
