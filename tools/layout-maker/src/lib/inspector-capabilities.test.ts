@@ -237,6 +237,86 @@ describe('canShow', () => {
   })
 })
 
+describe('canShow — cluster aliases (WP-031 phase 3)', () => {
+  const leafTraits: SlotTraits = {
+    isContainer: false, isLeaf: true, isSidebar: false, isTopOrBottom: false,
+    isGridParticipant: true, supportsPerBreakpoint: true, supportsRoleLevelOnly: false,
+    hasPositionTop: false, hasSticky: false, isGlobalSlot: false,
+  }
+  const containerTraits: SlotTraits = {
+    ...leafTraits, isContainer: true, isLeaf: false,
+    supportsPerBreakpoint: false, supportsRoleLevelOnly: true,
+  }
+  const sidebarTraits: SlotTraits = { ...leafTraits, isSidebar: true }
+  const stickyTopTraits: SlotTraits = {
+    ...leafTraits, isTopOrBottom: true, hasPositionTop: true, hasSticky: true,
+  }
+
+  const desktopScope: ScopeCtx = { currentBp: 'desktop', hasOverride: false, isGridField: false }
+  const tabletScope: ScopeCtx = { currentBp: 'tablet', hasOverride: false, isGridField: false }
+
+  it('cluster-identity always shows (slot-selected sentinel)', () => {
+    expect(canShow('cluster-identity', leafTraits, desktopScope)).toBe(true)
+    expect(canShow('cluster-identity', containerTraits, desktopScope)).toBe(true)
+  })
+
+  it('cluster-references always shows (utility zone available)', () => {
+    expect(canShow('cluster-references', leafTraits, desktopScope)).toBe(true)
+    expect(canShow('cluster-references', containerTraits, desktopScope)).toBe(true)
+  })
+
+  it('cluster-spacing → true for leaf (any padding/gap field shows)', () => {
+    expect(canShow('cluster-spacing', leafTraits, desktopScope)).toBe(true)
+  })
+
+  it('cluster-spacing → false for container (PARITY lock cascades)', () => {
+    expect(canShow('cluster-spacing', containerTraits, desktopScope)).toBe(false)
+  })
+
+  it('cluster-frame → true for leaf, false for container', () => {
+    expect(canShow('cluster-frame', leafTraits, desktopScope)).toBe(true)
+    expect(canShow('cluster-frame', containerTraits, desktopScope)).toBe(false)
+  })
+
+  it('cluster-children → true for container, false for leaf', () => {
+    expect(canShow('cluster-children', containerTraits, desktopScope)).toBe(true)
+    expect(canShow('cluster-children', leafTraits, desktopScope)).toBe(false)
+  })
+
+  it('cluster-drawer-trigger → true for sidebar, false for non-sidebar', () => {
+    expect(canShow('cluster-drawer-trigger', sidebarTraits, desktopScope)).toBe(true)
+    expect(canShow('cluster-drawer-trigger', leafTraits, desktopScope)).toBe(false)
+    expect(canShow('cluster-drawer-trigger', containerTraits, desktopScope)).toBe(false)
+  })
+
+  it('cluster-behavior → true when any of sticky/z-index/allowed-block-types is active', () => {
+    // sticky requires position=top; allowed-block-types requires non-global leaf
+    expect(canShow('cluster-behavior', leafTraits, desktopScope)).toBe(true) // allowed-block-types
+    expect(canShow('cluster-behavior', stickyTopTraits, desktopScope)).toBe(true) // sticky + z-index
+  })
+
+  it('cluster-layout → true for leaf with grid participation', () => {
+    expect(canShow('cluster-layout', leafTraits, desktopScope)).toBe(true) // column-width
+    expect(canShow('cluster-layout', leafTraits, tabletScope)).toBe(true) // visibility/order
+  })
+
+  it('cluster-diagnostics → true for leaf (usable-width)', () => {
+    expect(canShow('cluster-diagnostics', leafTraits, desktopScope)).toBe(true)
+    expect(canShow('cluster-diagnostics', containerTraits, desktopScope)).toBe(false)
+  })
+
+  it('unknown cluster-* ID returns false (no silent passthrough)', () => {
+    expect(canShow('cluster-bogus', leafTraits, desktopScope)).toBe(false)
+  })
+
+  it('alias backwards-compat: old field-level IDs continue to work', () => {
+    // Cluster ID adds a new resolution path; old field IDs unchanged.
+    expect(canShow('padding-x', leafTraits, desktopScope)).toBe(true)
+    expect(canShow('padding-x', containerTraits, desktopScope)).toBe(false)
+    expect(canShow('drawer-trigger-label', sidebarTraits, desktopScope)).toBe(true)
+  })
+})
+
 describe('getSlotBadges', () => {
   const leafTraits: SlotTraits = {
     isContainer: false, isLeaf: true, isSidebar: false, isTopOrBottom: false,

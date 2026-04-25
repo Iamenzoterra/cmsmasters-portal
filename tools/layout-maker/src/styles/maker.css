@@ -107,6 +107,7 @@ body {
 .lm-sidebar__group-label,
 .lm-slot-toggles__title,
 .lm-inspector__section-title,
+.lm-inspector__cluster-label,
 .lm-slot-ref__title,
 .lm-token-ref__title {
   font-size: 11px;
@@ -2558,4 +2559,66 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ── WP-031 Phase 3: Inspector cluster (collapsible disclosure) ─── */
+/* Native <details>/<summary> primitive. Identity cluster is special-cased
+ * (always-on, no chevron). Small-caps title via the F.3 shared rule above
+ * (.lm-inspector__cluster-label is part of the consolidated selector). */
+.lm-inspector__cluster {
+  border-bottom: 1px solid var(--lm-border-subtle);
+}
+.lm-inspector__cluster:last-child {
+  border-bottom: none;
+}
+
+.lm-inspector__cluster-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lm-sp-3);
+  padding: var(--lm-sp-3) var(--lm-sp-4);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.lm-inspector__cluster-title::-webkit-details-marker {
+  display: none;
+}
+
+.lm-inspector__cluster-title::after {
+  content: '›';
+  display: inline-block;
+  margin-left: auto;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--lm-text-muted);
+  transition: transform var(--lm-transition-fast);
+}
+.lm-inspector__cluster[open] > .lm-inspector__cluster-title::after {
+  transform: rotate(90deg);
+}
+
+.lm-inspector__cluster-scope {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lm-sp-2);
+  margin-left: auto;
+  font-size: 10px;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--lm-text-muted);
+}
+.lm-inspector__cluster-scope + .lm-inspector__cluster-title::after,
+.lm-inspector__cluster-title:has(.lm-inspector__cluster-scope)::after {
+  margin-left: var(--lm-sp-3);
+}
+
+.lm-inspector__cluster-body {
+  padding: var(--lm-sp-2) var(--lm-sp-4) var(--lm-sp-4);
+}
+
+.lm-inspector__cluster--identity {
+  padding: var(--lm-sp-4);
+  border-bottom: 1px solid var(--lm-border-subtle);
 }

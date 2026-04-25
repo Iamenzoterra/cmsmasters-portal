@@ -99,6 +99,46 @@ export function getSlotTraits(
   }
 }
 
+/**
+ * WP-031 Phase 3: cluster ID aliases.
+ *
+ * `canShow('cluster-X', ...)` returns true if ANY aliased field ID returns
+ * true. Aliases map cluster IDs to the field IDs the cluster owns; cluster
+ * visibility = OR over its members. Identity + References are always-true
+ * special cases (no field gating — they ride the slot-selected condition).
+ *
+ * Old field-level IDs continue to work for fine-grained gating inside
+ * cluster bodies. This is purely additive — zero churn in existing tests.
+ */
+const CLUSTER_ALIASES: Record<string, readonly string[]> = {
+  'cluster-layout': ['column-width', 'visibility', 'order', 'position'],
+  'cluster-spacing': [
+    'padding',
+    'padding-x',
+    'padding-top',
+    'padding-bottom',
+    'gap',
+    'min-height',
+    'margin-top',
+    'align',
+  ],
+  'cluster-frame': [
+    'max-width',
+    'background',
+    'border-sides',
+    'border-width',
+    'border-color',
+  ],
+  'cluster-children': ['container-panel'],
+  'cluster-behavior': ['sticky', 'z-index', 'allowed-block-types'],
+  'cluster-drawer-trigger': [
+    'drawer-trigger-label',
+    'drawer-trigger-icon',
+    'drawer-trigger-color',
+  ],
+  'cluster-diagnostics': ['usable-width'],
+}
+
 /** Pure dispatcher: should a given Inspector field render? */
 // eslint-disable-next-line sonarjs/cognitive-complexity
 export function canShow(
@@ -106,6 +146,22 @@ export function canShow(
   traits: SlotTraits,
   scope: ScopeCtx,
 ): boolean {
+  // WP-031 Phase 3: cluster IDs delegate to OR over their aliased fields.
+  if (fieldId.startsWith('cluster-')) {
+    if (fieldId === 'cluster-identity' || fieldId === 'cluster-references') {
+      return true
+    }
+    // cluster-frame is conceptually leaf-only (containers show background
+    // inside cluster-children's panel). Without this guard, the always-true
+    // `background` field alone would surface cluster-frame on containers.
+    if (fieldId === 'cluster-frame' && !traits.isLeaf) {
+      return false
+    }
+    const aliases = CLUSTER_ALIASES[fieldId]
+    if (!aliases) return false
+    return aliases.some((field) => canShow(field, traits, scope))
+  }
+
   const nonDesktop = scope.currentBp !== 'desktop'
 
   switch (fieldId) {
