@@ -525,9 +525,11 @@ body {
 .lm-bp-controls__panel {
   position: absolute;
   top: calc(100% + 4px);
-  left: 0;
+  right: 0;
+  left: auto;
   z-index: 100;
   width: 280px;
+  max-width: calc(100vw - var(--lm-sp-8));
   padding: var(--lm-sp-4);
   border: 1px solid var(--lm-border);
   border-radius: 4px;
@@ -2528,6 +2530,7 @@ body {
  * Pre-P7 audit surfaced 8 gap sites — one rule covers them all. */
 .lm-btn:focus-visible,
 .lm-bp-btn:focus-visible,
+.lm-bp-controls__trigger:focus-visible,
 .lm-copy-btn:focus-visible,
 .lm-export-dialog__close:focus-visible,
 .lm-banner__close:focus-visible,
