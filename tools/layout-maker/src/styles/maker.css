@@ -2701,6 +2701,54 @@ body {
   border-bottom: 1px solid var(--lm-border-subtle);
 }
 
+/* ── WP-031 Phase 6: BEM modifier classes for visual rhythm ──── */
+/* Replaces 19 of 21 inline style={{}} overrides in Inspector.tsx with
+ * token-driven classes. Magic px (8/12/64) → spacing scale. Pixel-
+ * identical output by design — same values, just centralized. */
+
+/* Row spacing modifiers — replace inline marginTop/gap */
+.lm-inspector__row--gap-md { gap: var(--lm-sp-3); }
+.lm-inspector__row--mt-sm { margin-top: var(--lm-sp-4); }   /* was '8px' */
+.lm-inspector__row--mt-md { margin-top: var(--lm-sp-6); }   /* was '12px' */
+.lm-inspector__row--mt-lg { margin-top: var(--lm-sp-8); }   /* was 'var(--lm-sp-8)' */
+
+/* Field width modifiers — replace inline width */
+.lm-inspector__field--narrow { width: 64px; }   /* was '64px' / '60px' */
+.lm-inspector__field--fill { flex: 1; min-width: 0; }
+
+/* Vertical stack of checkboxes / labels */
+.lm-inspector__field-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lm-sp-2);
+}
+
+/* Row-aligned checkbox + label pair — used for block-types options */
+.lm-inspector__checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--lm-sp-2);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* Padded empty state — replaces inline padding on lm-inspector__empty */
+.lm-inspector__empty--padded { padding: var(--lm-sp-4) 0; }
+
+/* Convert-button row wrapper — replaces inline marginTop block */
+.lm-inspector__convert-btn-row { margin-top: var(--lm-sp-8); }
+
+/* Inline pill button modifier — small action button (e.g. "+ Slot" header).
+ * Replaces compound inline style with mt/mr/padding/font/whitespace. */
+.lm-btn--inline-pill {
+  flex: none;
+  margin-top: var(--lm-sp-6);
+  margin-right: var(--lm-sp-4);
+  padding: var(--lm-sp-1) var(--lm-sp-4);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
 /* ── WP-031 Phase 4: Scope + override clarity ─────────────────── */
 /* Cluster header override count chip (sits next to scope chip in scopeBadge slot). */
 .lm-cluster-count {

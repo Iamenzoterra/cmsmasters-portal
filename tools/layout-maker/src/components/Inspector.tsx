@@ -373,10 +373,9 @@ function AddSlotButton({ config, tokens, onCreateTopLevelSlot }: {
   return (
     <>
       <button
-        className="lm-btn"
+        className="lm-btn lm-btn--inline-pill"
         title="Add a new slot to the layout"
         onClick={() => setOpen(true)}
-        style={{ flex: 'none', marginTop: 'var(--lm-sp-6)', marginRight: 'var(--lm-sp-4)', padding: 'var(--lm-sp-1) var(--lm-sp-4)', fontSize: '11px', whiteSpace: 'nowrap' }}
       >
         + Slot
       </button>
@@ -704,8 +703,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
               <span className="lm-inspector__label">Z-index</span>
               <input
                 type="number"
-                className="lm-width-input__field"
-                style={{ width: '64px' }}
+                className="lm-width-input__field lm-inspector__field--narrow"
                 value={baseSlot['z-index'] ?? ''}
                 placeholder="100"
                 onChange={(e) => {
@@ -722,9 +720,9 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
             return (
               <div className="lm-inspector__row lm-inspector__row--col">
                 <span className="lm-inspector__label">Block types</span>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--lm-sp-2)' }}>
+                <div className="lm-inspector__field-stack">
                   {BLOCK_TYPE_OPTIONS.map(({ id, label }) => (
-                    <label key={id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--lm-sp-2)', fontSize: '12px', cursor: 'pointer' }}>
+                    <label key={id} className="lm-inspector__checkbox-label">
                       <input
                         type="checkbox"
                         className="lm-inspector__checkbox"
@@ -758,8 +756,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
                 <span className="lm-inspector__label">Trigger label</span>
                 <input
                   type="text"
-                  className="lm-width-input__field"
-                  style={{ flex: 1, minWidth: 0 }}
+                  className="lm-width-input__field lm-inspector__field--fill"
                   placeholder={selectedSlot.includes('left') ? 'Menu' : 'Details'}
                   value={(baseSlot['drawer-trigger-label'] as string | undefined) ?? ''}
                   onChange={(e) => {
@@ -771,8 +768,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
               <div className="lm-inspector__row">
                 <span className="lm-inspector__label">Trigger icon</span>
                 <select
-                  className="lm-spacing-select lm-spacing-select--inline"
-                  style={{ flex: 1, minWidth: 0 }}
+                  className="lm-spacing-select lm-spacing-select--inline lm-inspector__field--fill"
                   value={(baseSlot['drawer-trigger-icon'] as string | undefined) ?? ''}
                   onChange={(e) => {
                     const v = e.target.value
@@ -818,7 +814,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
         <InspectorCluster id="cluster-children" title="Child slots" defaultOpen>
           <div className="lm-inspector__section lm-inspector__panel--container">
             {effectiveChildren.length === 0 ? (
-              <div className="lm-inspector__empty" style={{ padding: 'var(--lm-sp-4) 0' }}>
+              <div className="lm-inspector__empty lm-inspector__empty--padded">
                 No children yet. Add or create one below.
               </div>
             ) : (
@@ -849,7 +845,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
               </div>
             )}
 
-            <div className="lm-inspector__row" style={{ gap: 'var(--lm-sp-3)', marginTop: 'var(--lm-sp-6)' }}>
+            <div className="lm-inspector__row lm-inspector__row--gap-md lm-inspector__row--mt-md">
               <select
                 className="lm-spacing-select lm-spacing-select--inline"
                 value=""
@@ -878,7 +874,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
             </div>
 
             {/* Container outer params — background (min-height / margin-top tuned via yaml for MVP). */}
-            <div className="lm-inspector__row" style={{ marginTop: 'var(--lm-sp-8)' }}>
+            <div className="lm-inspector__row lm-inspector__row--mt-lg">
               <span className="lm-inspector__label">Background</span>
             </div>
             <BackgroundPicker
@@ -889,7 +885,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
               inheritLabel={config.background ? `inherit (${config.background.replace('--bg-', '')})` : 'inherit (none)'}
             />
 
-            <div style={{ marginTop: 'var(--lm-sp-8)' }}>
+            <div className="lm-inspector__convert-btn-row">
               <button
                 className="lm-btn"
                 disabled={effectiveChildren.length > 0}
@@ -1009,7 +1005,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
             }
 
             return (
-              <div style={{ marginTop: '8px' }}>
+              <div className="lm-inspector__row--mt-sm">
                 <div className="lm-inspector__row">
                   <span className="lm-inspector__label">
                     Border sides
@@ -1035,7 +1031,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
 
                 {hasSides && (
                   <>
-                    <div className="lm-inspector__row" style={{ marginTop: '8px' }}>
+                    <div className="lm-inspector__row lm-inspector__row--mt-sm">
                       <span className="lm-inspector__label">
                         Border width
                         {isOverridden('border-width') && <span className="lm-bp-dot" data-bp={activeBreakpoint} title={`Overridden at ${activeBreakpoint}`} />}
@@ -1056,7 +1052,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
                       <option value="4px">4px</option>
                     </select>
 
-                    <div className="lm-inspector__row" style={{ marginTop: '8px' }}>
+                    <div className="lm-inspector__row lm-inspector__row--mt-sm">
                       <span className="lm-inspector__label">
                         Border color
                         {isOverridden('border-color') && <span className="lm-bp-dot" data-bp={activeBreakpoint} title={`Overridden at ${activeBreakpoint}`} />}
@@ -1089,7 +1085,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
 
           {/* Per-slot visibility — shown on non-desktop BPs */}
           {!isBaseBp && (
-            <div className="lm-inspector__row" style={{ marginTop: '12px' }}>
+            <div className="lm-inspector__row lm-inspector__row--mt-md">
               <span className="lm-inspector__label">
                 Visibility
                 {isOverridden('visibility') && <span className="lm-bp-dot" data-bp={activeBreakpoint} title={`Overridden at ${activeBreakpoint}`} />}
@@ -1120,7 +1116,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
 
           {/* Per-slot display order — shown on non-desktop BPs */}
           {!isBaseBp && (
-            <div className="lm-inspector__row" style={{ marginTop: '8px' }}>
+            <div className="lm-inspector__row lm-inspector__row--mt-sm">
               <span className="lm-inspector__label">
                 Order
                 {isOverridden('order') && <span className="lm-bp-dot" data-bp={activeBreakpoint} title={`Overridden at ${activeBreakpoint}`} />}
@@ -1128,7 +1124,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
               </span>
               <input
                 type="number"
-                className="lm-spacing-select lm-spacing-select--inline"
+                className="lm-spacing-select lm-spacing-select--inline lm-inspector__field--narrow"
                 min={0}
                 max={99}
                 value={slotConfig.order ?? ''}
@@ -1137,7 +1133,6 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
                   const v = e.target.value
                   writeField('order', v === '' ? undefined : parseInt(v, 10))
                 }}
-                style={{ width: '60px' }}
               />
               {isOverridden('order') && (
                 <button className="lm-reset-btn" onClick={() => resetField('order')} title="Reset to inherited">↺</button>
@@ -1239,7 +1234,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
           </div>
 
           {/* Content align */}
-          <div className="lm-inspector__row" style={{ marginTop: '8px' }}>
+          <div className="lm-inspector__row lm-inspector__row--mt-sm">
             <span className="lm-inspector__label">
               Content align
               {isOverridden('align') && <span className="lm-bp-dot" data-bp={activeBreakpoint} title={`Overridden at ${activeBreakpoint}`} />}
@@ -1263,7 +1258,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
           </div>
 
           {/* Background — inherits from layout when unset */}
-          <div className="lm-inspector__row" style={{ marginTop: '8px' }}>
+          <div className="lm-inspector__row lm-inspector__row--mt-sm">
             <span className="lm-inspector__label">Background</span>
           </div>
           <BackgroundPicker
@@ -1276,7 +1271,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
 
           {/* Convert leaf -> container (local pending until first child is added;
               validator rejects persisted empty nested-slots arrays). */}
-          <div style={{ marginTop: 'var(--lm-sp-8)' }}>
+          <div className="lm-inspector__convert-btn-row">
             <button
               className="lm-btn"
               onClick={() => setPendingContainerSlot(selectedSlot)}
