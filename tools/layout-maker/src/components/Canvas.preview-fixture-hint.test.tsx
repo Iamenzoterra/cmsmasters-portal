@@ -36,6 +36,7 @@ const baseProps = {
   gridKey: 'desktop',
   selectedSlot: null,
   onSlotSelect: vi.fn(),
+  onToggleSlot: vi.fn(),
   changedSlots: [],
   blocks: null,
 }

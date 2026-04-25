@@ -693,6 +693,48 @@ body {
   padding-bottom: var(--lm-sp-2);
 }
 
+.lm-slot-zone__visibility-toggle {
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  padding: 0;
+  color: var(--lm-text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--lm-transition-fast), background var(--lm-transition-fast), color var(--lm-transition-fast);
+}
+
+.lm-slot-zone__visibility-toggle svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+}
+
+.lm-slot-zone__visibility-toggle:hover,
+.lm-slot-zone__visibility-toggle:focus-visible {
+  color: var(--lm-text);
+  background: var(--lm-bg-hover);
+  border-color: var(--lm-border);
+  outline: none;
+}
+
+.lm-slot-zone--selected .lm-slot-zone__visibility-toggle,
+.lm-slot-zone:hover .lm-slot-zone__visibility-toggle,
+.lm-slot-zone:focus-within .lm-slot-zone__visibility-toggle {
+  opacity: 1;
+  visibility: visible;
+}
+
 /* When blocks are loaded: remove colored bg */
 .lm-slot-zone--has-blocks {
   background: transparent !important;
@@ -889,7 +931,7 @@ body {
   color: var(--lm-text-muted);
 }
 
-/* ── Slot Toggles (pinned above inspector body) ─────────────── */
+/* ── Slot Toggles ───────────────────────────────────────────── */
 .lm-slot-toggles {
   padding: var(--lm-sp-6) var(--lm-sp-8);
   border-bottom: 1px solid var(--lm-border-subtle);
@@ -993,10 +1035,20 @@ body {
 }
 
 .lm-slot-toggle__name {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
   font-family: var(--lm-font-mono);
   font-size: 11px;
   color: var(--lm-text-primary);
   line-height: 1;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .lm-slot-toggle__input:not(:checked) ~ .lm-slot-toggle__name {
@@ -1005,6 +1057,41 @@ body {
 
 .lm-slot-toggle__input:disabled ~ .lm-slot-toggle__name {
   color: var(--lm-text-secondary);
+}
+
+.lm-slot-toggle__name:focus-visible {
+  outline: 1px solid var(--lm-border-focus);
+  outline-offset: 2px;
+}
+
+.lm-slot-toggle[data-selected="true"] {
+  background: var(--lm-bg-active);
+}
+
+.lm-slot-toggle[data-selected="true"] .lm-slot-toggle__name {
+  color: var(--lm-text-accent);
+}
+
+.lm-sidebar__group--structure {
+  padding: var(--lm-sp-4) var(--lm-sp-8) var(--lm-sp-5);
+  border-bottom: 1px solid var(--lm-border-subtle);
+}
+
+.lm-structure-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lm-sp-4);
+  margin-top: var(--lm-sp-3);
+}
+
+.lm-structure-panel .lm-slot-toggles {
+  padding: 0;
+  border-bottom: 0;
+}
+
+.lm-structure-panel__add {
+  width: 100%;
+  justify-content: center;
 }
 
 /* Muted small-text block — used for empty-state placeholders and Canvas
@@ -2257,25 +2344,6 @@ body {
   background: hsla(210, 60%, 50%, 0.2);
   color: rgba(0, 0, 0, 0.5);
   user-select: none;
-}
-
-/* SlotToggles row with + button */
-.lm-slot-toggles-row {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--lm-sp-4);
-}
-.lm-slot-toggles-row .lm-slot-toggles {
-  flex: 1;
-  min-width: 0;
-}
-.lm-slot-toggles-row > .lm-btn {
-  flex: none;
-  margin-top: var(--lm-sp-6);
-  margin-right: var(--lm-sp-4);
-  padding: var(--lm-sp-1) var(--lm-sp-4);
-  font-size: 11px;
-  white-space: nowrap;
 }
 
 /* Container panel tint — differentiates from leaf panel. */

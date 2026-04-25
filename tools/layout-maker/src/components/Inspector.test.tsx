@@ -36,7 +36,6 @@ const baseProps = {
   tokens,
   onShowToast: vi.fn(),
   blockWarnings: [],
-  onToggleSlot: vi.fn(),
   onUpdateSlotConfig: vi.fn(),
   onBatchUpdateSlotConfig: vi.fn(),
   onUpdateSlotRole: vi.fn(),
@@ -45,7 +44,6 @@ const baseProps = {
   onUpdateLayoutProp: vi.fn(),
   onUpdateNestedSlots: vi.fn(),
   onCreateNestedSlot: vi.fn(),
-  onCreateTopLevelSlot: vi.fn(),
   onSelectSlot: vi.fn(),
 }
 
@@ -122,6 +120,23 @@ describe('Inspector capability gating (Phase 4 Cut B)', () => {
     // Concurrent badge set (Brain #5 — no precedence collapse).
     expect(container.querySelector('.lm-badge--leaf')).not.toBeNull()
     expect(container.querySelector('.lm-badge--sidebar')).not.toBeNull()
+  })
+
+  it('selected state starts Inspector body with the identity cluster', () => {
+    const config = makeConfig({ 'sidebar-left': {} })
+    const { container } = render(
+      <Inspector
+        {...baseProps}
+        config={config}
+        selectedSlot="sidebar-left"
+        activeBreakpoint="desktop"
+        gridKey="desktop"
+      />,
+    )
+
+    const body = container.querySelector('.lm-inspector__body')
+    const first = body?.firstElementChild
+    expect(first?.getAttribute('data-cluster-id')).toBe('cluster-identity')
   })
 
   it('top-positioned slot: shows sticky + full-width locked note + top badge', () => {

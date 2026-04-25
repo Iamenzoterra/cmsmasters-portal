@@ -3,6 +3,7 @@ import { SLOT_DEFINITIONS } from '@cmsmasters/db/slots'
 import type { LayoutConfig, TokenMap, BlockData, SlotConfig, CanvasBreakpointId } from '../lib/types'
 import { resolveSlotConfig } from '../lib/types'
 import { resolveToken, hslTripletToHex } from '../lib/tokens'
+import { SLOT_VISUAL } from '../lib/slot-visual'
 
 /** Resolve a background token or raw value to a canvas-usable hex color. */
 function resolveBackgroundStyle(value: string | undefined, tokens: TokenMap): string | undefined {
@@ -105,6 +106,7 @@ interface Props {
   gridKey: string
   selectedSlot: string | null
   onSlotSelect: (name: string) => void
+  onToggleSlot: (slotName: string, enabled: boolean) => void
   changedSlots: string[]
   blocks: Map<string, BlockData> | null
 }
@@ -124,7 +126,7 @@ function getSlotType(name: string): string {
   return name
 }
 
-export function Canvas({ config, tokens, activeBreakpoint, viewportWidth, gridKey, selectedSlot, onSlotSelect, changedSlots, blocks }: Props) {
+export function Canvas({ config, tokens, activeBreakpoint, viewportWidth, gridKey, selectedSlot, onSlotSelect, onToggleSlot, changedSlots, blocks }: Props) {
   const resolveSlot = (name: string): SlotConfig => resolveSlotConfig(name, gridKey, config)
   // Slots that are nested inside a container — omit from top-level renders since they draw inside the parent.
   const nestedChildNames = new Set<string>()
@@ -190,9 +192,12 @@ export function Canvas({ config, tokens, activeBreakpoint, viewportWidth, gridKe
     return v === 'drawer' || v === 'push'
   })
   // Slots explicitly hidden at this BP — show muted indicators.
-  const hiddenSidebarSlots = Object.keys(config.slots).filter(
-    (name) => effectiveVisibility(name) === 'hidden',
-  )
+  const hiddenSidebarSlots = Object.keys(config.slots).filter((name) => {
+    if (!getSlotType(name).includes('sidebar')) return false
+    if (effectiveVisibility(name) === 'hidden') return true
+    const slot = config.slots[name]
+    return isBaseBp && !slot?.position && !nestedChildNames.has(name) && !grid.columns[name]
+  })
   const isDrawerMode = drawerSlots.length > 0
 
   // Scale canvas to fit available space
@@ -239,6 +244,7 @@ export function Canvas({ config, tokens, activeBreakpoint, viewportWidth, gridKe
             blocks={blocks}
             selectedSlot={selectedSlot}
             onSlotSelect={onSlotSelect}
+            onToggleSlot={onToggleSlot}
             resolveSlot={resolveSlot}
           />
         ))}
@@ -271,6 +277,7 @@ export function Canvas({ config, tokens, activeBreakpoint, viewportWidth, gridKe
                 blocks={blocks}
                 selectedSlot={selectedSlot}
                 onSlotSelect={onSlotSelect}
+                onToggleSlot={onToggleSlot}
                 resolveSlot={resolveSlot}
               />
             )
@@ -294,6 +301,7 @@ export function Canvas({ config, tokens, activeBreakpoint, viewportWidth, gridKe
             blocks={blocks}
             selectedSlot={selectedSlot}
             onSlotSelect={onSlotSelect}
+            onToggleSlot={onToggleSlot}
             resolveSlot={resolveSlot}
           />
         ))}
@@ -382,11 +390,15 @@ interface SlotZoneProps {
   blocks: Map<string, BlockData> | null
   selectedSlot: string | null
   onSlotSelect: (name: string) => void
+  onToggleSlot?: (slotName: string, enabled: boolean) => void
   resolveSlot: (name: string) => SlotConfig
 }
 
-function SlotZone({ name, config, tokens, width, slotConfig, isSelected, isFlashing, onClick, onMouseEnter, onMouseLeave, blocks, selectedSlot, onSlotSelect, resolveSlot }: SlotZoneProps) {
+function SlotZone({ name, config, tokens, width, slotConfig, isSelected, isFlashing, onClick, onMouseEnter, onMouseLeave, blocks, selectedSlot, onSlotSelect, onToggleSlot, resolveSlot }: SlotZoneProps) {
   const ref = useRef<HTMLDivElement>(null)
+  const slotType = getSlotType(name)
+  const slotVisual = SLOT_VISUAL[name] ?? SLOT_VISUAL._fallback
+  const canToggleVisibility = slotType.includes('sidebar') && !slotVisual.locked && Boolean(onToggleSlot)
   const minHeight = slotConfig['min-height'] ?? '80px'
   // Padding: prefer split fields, fall back to legacy shorthand
   const legacyPad = slotConfig.padding ? resolveToken(slotConfig.padding, tokens) : undefined
@@ -440,7 +452,8 @@ function SlotZone({ name, config, tokens, width, slotConfig, isSelected, isFlash
     <div
       ref={ref}
       className={className}
-      data-slot-type={getSlotType(name)}
+      data-slot-name={name}
+      data-slot-type={slotType}
       style={{
         minHeight: hasLoadedBlocks ? undefined : minHeight,
         padding: outerPadding,
@@ -470,6 +483,23 @@ function SlotZone({ name, config, tokens, width, slotConfig, isSelected, isFlash
           </span>
           {blockCount > 0 && (
             <span className="lm-slot-zone__blocks">{blockCount} blocks</span>
+          )}
+          {canToggleVisibility && (
+            <button
+              type="button"
+              className="lm-slot-zone__visibility-toggle"
+              aria-label={`Hide ${name}`}
+              title={`Hide ${name}`}
+              onClick={(e) => {
+                e.stopPropagation()
+                onToggleSlot?.(name, false)
+              }}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
           )}
         </div>
 

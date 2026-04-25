@@ -11,7 +11,6 @@ import {
   type ScopeCtx,
 } from '../lib/inspector-capabilities'
 import { CopyButton } from './CopyButton'
-import { SlotToggles } from './SlotToggles'
 import { InspectorUtilityZone } from './InspectorUtilityZone'
 import { InspectorCluster } from './InspectorCluster'
 import { CreateSlotModal } from './CreateSlotModal'
@@ -72,7 +71,6 @@ interface Props {
   tokens: TokenMap | null
   onShowToast: (message: string) => void
   blockWarnings: ScopingWarning[]
-  onToggleSlot: (slotName: string, enabled: boolean) => void
   onUpdateSlotConfig: (slotName: string, key: string, value: string | number | undefined, targetGridKey?: string, breakpointId?: CanvasBreakpointId) => void
   onBatchUpdateSlotConfig: (slotNames: string[], key: string, value: string | number | undefined, breakpointId?: CanvasBreakpointId) => void
   onUpdateSlotRole: (slotName: string, updates: Record<string, unknown>) => void
@@ -81,7 +79,6 @@ interface Props {
   onUpdateLayoutProp: (key: string, value: string | undefined) => void
   onUpdateNestedSlots: (parentName: string, children: string[] | null) => void
   onCreateNestedSlot: (parentName: string, childName: string, defaults: SlotConfig) => void
-  onCreateTopLevelSlot: (name: string, defaults: SlotConfig, position?: 'top' | 'bottom') => void
   onSelectSlot: (name: string | null) => void
 }
 
@@ -363,39 +360,7 @@ function ColumnWidthControl({ selectedSlot, gridKey, columnWidth, isFullWidth, w
   )
 }
 
-/** Self-contained "+ Slot" button with its own modal state (avoids hooks-order issues with early returns). */
-function AddSlotButton({ config, tokens, onCreateTopLevelSlot }: {
-  config: LayoutConfig
-  tokens: TokenMap
-  onCreateTopLevelSlot: Props['onCreateTopLevelSlot']
-}) {
-  const [open, setOpen] = useState(false)
-  return (
-    <>
-      <button
-        className="lm-btn lm-btn--inline-pill"
-        title="Add a new slot to the layout"
-        onClick={() => setOpen(true)}
-      >
-        + Slot
-      </button>
-      <CreateSlotModal
-        isOpen={open}
-        parentContainer=""
-        existingSlotNames={Object.keys(config.slots)}
-        tokens={tokens}
-        topLevel
-        onClose={() => setOpen(false)}
-        onCreate={(name, defaults, position) => {
-          onCreateTopLevelSlot(name, defaults, position)
-          setOpen(false)
-        }}
-      />
-    </>
-  )
-}
-
-export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tokens, onShowToast, blockWarnings, onToggleSlot, onUpdateSlotConfig, onBatchUpdateSlotConfig, onUpdateSlotRole, onUpdateColumnWidth, onUpdateGridProp, onUpdateLayoutProp, onUpdateNestedSlots, onCreateNestedSlot, onCreateTopLevelSlot, onSelectSlot }: Props) {
+export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tokens, onShowToast, blockWarnings, onUpdateSlotConfig, onBatchUpdateSlotConfig, onUpdateSlotRole, onUpdateColumnWidth, onUpdateGridProp, onUpdateLayoutProp, onUpdateNestedSlots, onCreateNestedSlot, onSelectSlot }: Props) {
   // All hooks declared unconditionally at the top so the hook count stays
   // stable across selectedSlot=null → selectedSlot=string transitions. Moving
   // these below the `!config || !tokens` / `!selectedSlot` early returns
@@ -448,10 +413,6 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
     return (
       <div className="lm-inspector" data-active-bp={activeBreakpoint}>
         <div className="lm-inspector__header">Inspector</div>
-        <div className="lm-slot-toggles-row">
-          <SlotToggles config={config} activeBreakpoint={gridKey} onToggleSlot={onToggleSlot} />
-          <AddSlotButton config={config} tokens={tokens} onCreateTopLevelSlot={onCreateTopLevelSlot} />
-        </div>
         <div className="lm-inspector__body">
           <InspectorCluster id="cluster-layout-defaults" title="Layout defaults" defaultOpen>
             <div className="lm-inspector__section">
@@ -623,10 +584,6 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
   return (
     <div className="lm-inspector" data-active-bp={activeBreakpoint}>
       <div className="lm-inspector__header">Inspector</div>
-      <div className="lm-slot-toggles-row">
-        <SlotToggles config={config} activeBreakpoint={gridKey} onToggleSlot={onToggleSlot} />
-        <AddSlotButton config={config} tokens={tokens} onCreateTopLevelSlot={onCreateTopLevelSlot} />
-      </div>
       <div className="lm-inspector__body" data-filter={!isBaseBp && showOverriddenOnly ? 'overridden' : undefined}>
         {/* Identity cluster — slot name + badges + copy + (Phase 4) override-only filter */}
         <InspectorCluster id="cluster-identity" title="">

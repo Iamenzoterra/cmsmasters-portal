@@ -1,10 +1,15 @@
 import { useRef, useState } from 'react'
-import type { LayoutSummary, ScopeEntry } from '../lib/types'
+import type { LayoutConfig, LayoutSummary, ScopeEntry, SlotConfig, TokenMap } from '../lib/types'
 import { api } from '../lib/api-client'
+import { SlotStructurePanel } from './SlotStructurePanel'
 
 interface Props {
   layouts: LayoutSummary[]
   activeId: string | null
+  activeConfig: LayoutConfig | null
+  gridKey: string
+  selectedSlot: string | null
+  tokens: TokenMap | null
   scopes: ScopeEntry[]
   view: 'layouts' | 'scopes'
   errorCount?: number
@@ -12,6 +17,9 @@ interface Props {
   onRefresh: () => void
   onExport: () => void
   onNavigate: (view: 'layouts' | 'scopes') => void
+  onToggleSlot: (slotName: string, enabled: boolean) => void
+  onCreateTopLevelSlot: (name: string, defaults: SlotConfig, position?: 'top' | 'bottom') => void
+  onSelectSlot: (slotName: string | null) => void
 }
 
 type DialogState =
@@ -23,6 +31,10 @@ type DialogState =
 export function LayoutSidebar({
   layouts,
   activeId,
+  activeConfig,
+  gridKey,
+  selectedSlot,
+  tokens,
   scopes,
   view,
   errorCount = 0,
@@ -30,6 +42,9 @@ export function LayoutSidebar({
   onRefresh,
   onExport,
   onNavigate,
+  onToggleSlot,
+  onCreateTopLevelSlot,
+  onSelectSlot,
 }: Props) {
   const importInputRef = useRef<HTMLInputElement>(null)
   const [dialog, setDialog] = useState<DialogState | null>(null)
@@ -160,6 +175,21 @@ export function LayoutSidebar({
 
       {view === 'layouts' && (
         <>
+          {activeId && activeConfig && gridKey && (
+            <div className="lm-sidebar__group lm-sidebar__group--structure">
+              <div className="lm-sidebar__group-label">Structure</div>
+              <SlotStructurePanel
+                config={activeConfig}
+                gridKey={gridKey}
+                selectedSlot={selectedSlot}
+                tokens={tokens}
+                onToggleSlot={onToggleSlot}
+                onCreateTopLevelSlot={onCreateTopLevelSlot}
+                onSelectSlot={onSelectSlot}
+              />
+            </div>
+          )}
+
           <div className="lm-sidebar__list">
             {layouts.map((layout) => {
               const scopeEntry = scopes.find((s) => s.id === layout.scope)

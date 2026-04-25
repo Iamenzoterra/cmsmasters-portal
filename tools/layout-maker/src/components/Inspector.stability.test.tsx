@@ -57,7 +57,6 @@ const baseProps = {
   tokens,
   onShowToast: vi.fn(),
   blockWarnings: [],
-  onToggleSlot: vi.fn(),
   onUpdateSlotConfig: vi.fn(),
   onBatchUpdateSlotConfig: vi.fn(),
   onUpdateSlotRole: vi.fn(),
@@ -66,7 +65,6 @@ const baseProps = {
   onUpdateLayoutProp: vi.fn(),
   onUpdateNestedSlots: vi.fn(),
   onCreateNestedSlot: vi.fn(),
-  onCreateTopLevelSlot: vi.fn(),
   onSelectSlot: vi.fn(),
 }
 

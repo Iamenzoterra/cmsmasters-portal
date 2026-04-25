@@ -33,10 +33,12 @@ const SLOT_DEFS = (() => {
 interface Props {
   config: LayoutConfig
   activeBreakpoint: string
+  selectedSlot?: string | null
   onToggleSlot: (slotName: string, enabled: boolean) => void
+  onSelectSlot?: (slotName: string) => void
 }
 
-export function SlotToggles({ config, activeBreakpoint, onToggleSlot }: Props) {
+export function SlotToggles({ config, activeBreakpoint, selectedSlot, onToggleSlot, onSelectSlot }: Props) {
   const grid = config.grid[activeBreakpoint]
 
   return (
@@ -44,20 +46,40 @@ export function SlotToggles({ config, activeBreakpoint, onToggleSlot }: Props) {
       <div className="lm-slot-toggles__title">Slots</div>
       {SLOT_DEFS.map(({ name, color, locked }) => {
         const isEnabled = locked || Boolean(grid?.columns[name]) || Boolean(config.slots[name]?.position)
+        const inputId = `lm-slot-toggle-${name}`
 
         return (
-          <label key={name} className="lm-slot-toggle">
+          <div
+            key={name}
+            className="lm-slot-toggle"
+            data-slot-name={name}
+            data-selected={selectedSlot === name ? 'true' : undefined}
+          >
             <input
+              id={inputId}
               type="checkbox"
               className="lm-slot-toggle__input"
+              aria-label={`Toggle ${name} slot`}
               checked={isEnabled}
               disabled={locked}
+              onClick={(e) => e.stopPropagation()}
               onChange={(e) => onToggleSlot(name, e.target.checked)}
             />
-            <span className="lm-slot-toggle__track" />
+            <label
+              htmlFor={inputId}
+              className="lm-slot-toggle__track"
+              aria-hidden="true"
+              onClick={(e) => e.stopPropagation()}
+            />
             <span className="lm-slot-toggle__dot" style={{ '--lm-slot-color': color } as React.CSSProperties} />
-            <span className="lm-slot-toggle__name">{name}</span>
-          </label>
+            <button
+              type="button"
+              className="lm-slot-toggle__name"
+              onClick={() => onSelectSlot?.(name)}
+            >
+              {name}
+            </button>
+          </div>
         )
       })}
     </div>

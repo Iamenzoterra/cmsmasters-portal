@@ -420,6 +420,32 @@ export function App() {
     }
   }, [activeConfig, activeId, showToast])
 
+  const handleCanvasToggleSlotVisibility = useCallback(async (slotName: string, enabled: boolean) => {
+    if (enabled) {
+      await handleToggleSlot(slotName, enabled)
+      return
+    }
+    if (!activeConfig || !activeId) return
+
+    const updated = structuredClone(activeConfig)
+    if (activeBreakpoint === 'desktop') {
+      const baseGridKey = resolveGridKey(activeBreakpoint, updated.grid)
+      delete updated.grid[baseGridKey]?.columns[slotName]
+    } else {
+      applySlotConfigUpdate(updated, slotName, 'visibility', 'hidden', false, activeBreakpoint)
+    }
+
+    try {
+      stripBaseGridSlotOverrides(updated)
+      const saved = await api.updateLayout(activeId, updated)
+      setActiveConfig(saved)
+      prevConfigRef.current = saved
+      showToast(`${slotName} ${enabled ? 'visible' : 'hidden'} (${activeBreakpoint})`)
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Failed to update layout')
+    }
+  }, [activeBreakpoint, activeConfig, activeId, handleToggleSlot, showToast])
+
   const handleUpdateSlotConfig = useCallback(async (
     slotName: string,
     key: string,
@@ -676,6 +702,8 @@ export function App() {
     }
   }, [activeConfig, activeId, showToast])
 
+  const activeGridKey = activeConfig ? resolveGridKey(activeBreakpoint, activeConfig.grid) : ''
+
   return (
     <>
       <div className="lm-shell" data-inspector-open={inspectorOpen ? 'true' : undefined}>
@@ -683,6 +711,10 @@ export function App() {
         <LayoutSidebar
           layouts={layouts}
           activeId={activeId}
+          activeConfig={activeConfig}
+          gridKey={activeGridKey}
+          selectedSlot={selectedSlot}
+          tokens={tokens}
           scopes={scopes}
           view={view}
           errorCount={validationState.errors.length}
@@ -690,6 +722,9 @@ export function App() {
           onRefresh={refreshLayouts}
           onExport={() => setShowExportDialog(true)}
           onNavigate={setView}
+          onToggleSlot={handleToggleSlot}
+          onCreateTopLevelSlot={handleCreateTopLevelSlot}
+          onSelectSlot={setSelectedSlot}
         />
 
         {/* Center area — canvas or settings */}
@@ -732,9 +767,10 @@ export function App() {
                   tokens={tokens}
                   activeBreakpoint={activeBreakpoint}
                   viewportWidth={viewportWidth}
-                  gridKey={resolveGridKey(activeBreakpoint, activeConfig.grid)}
+                  gridKey={activeGridKey}
                   selectedSlot={selectedSlot}
                   onSlotSelect={setSelectedSlot}
+                  onToggleSlot={handleCanvasToggleSlotVisibility}
                   changedSlots={changedSlots}
                   blocks={blocks}
                 />
@@ -755,11 +791,10 @@ export function App() {
           selectedSlot={selectedSlot}
           config={activeConfig}
           activeBreakpoint={activeBreakpoint}
-          gridKey={activeConfig ? resolveGridKey(activeBreakpoint, activeConfig.grid) : ''}
+          gridKey={activeGridKey}
           tokens={tokens}
           onShowToast={showToast}
           blockWarnings={blockWarnings}
-          onToggleSlot={handleToggleSlot}
           onUpdateSlotConfig={handleUpdateSlotConfig}
           onBatchUpdateSlotConfig={handleBatchUpdateSlotConfig}
           onUpdateSlotRole={handleUpdateSlotRole}
@@ -768,7 +803,6 @@ export function App() {
           onUpdateLayoutProp={handleUpdateLayoutProp}
           onUpdateNestedSlots={handleUpdateNestedSlots}
           onCreateNestedSlot={handleCreateNestedSlot}
-          onCreateTopLevelSlot={handleCreateTopLevelSlot}
           onSelectSlot={setSelectedSlot}
         />
         )}
