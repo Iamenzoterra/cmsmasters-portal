@@ -115,3 +115,87 @@ status: full
 ### Recipes (WP-028)
 1. **Add a new tweak property** — extend `CLICKABLE_TAGS` in preview-assets element-click handler (both surfaces), add property to TweakPanel slider UI (both surfaces byte-identical), add PostCSS emit path in `packages/block-forge-core/src/lib/tweaks.ts` `emitTweak`. Snapshot test in core engine pins new property; integration pin in both surfaces pins @container chunk emission.
 2. **Debug tweak-save regression** — run `npm -w tools/block-forge test -- integration` and check `Phase 6 — OQ5 tweak-compose-on-save regression pin` result. Pin asserts `@container slot (max-width: 480px)` in saved css + property:value chunk. If green, save path is correct; if red, composeTweakedCss step missing from handleSave.
+
+## Render-level regression pins (WP-029, block-forge)
+
+### Start Here (WP-029)
+1. `tools/block-forge/src/__tests__/app-save-regression.test.tsx` — 4 active
+   `<App />` mount scenarios + 1 `test.skip` drift detector (canonical
+   reference for the pattern)
+2. `tools/block-forge/src/__tests__/integration.test.tsx` HISTORICAL NOTE block
+   above the Phase 5 describe — 5 archived harness-mirror pins as `it.skip(...)`
+3. `logs/wp-029/phase-2-drift-experiment.md` — empirical proof the pins fire
+   under production drift
+
+### Invariants (WP-029)
+- **Mounts production `<App />`, mocks the module boundary.**
+  `vi.mock('../lib/api-client', () => ({ listBlocks: vi.fn(...), getBlock: vi.fn(...),
+  saveBlock: vi.fn(...) }))` + `import * as apiClient` + typed `vi.mocked()`
+  access. apiClient signature drift surfaces as a TypeScript compile error.
+- **jsdom polyfills are file-level.** ResizeObserver mock +
+  `setPointerCapture` / `releasePointerCapture` shims at the top of the test
+  file (mirroring `TweakPanel.test.tsx` L11–25 + `VariantsDrawer.test.tsx`
+  L7–28). Never global — keeps cross-file isolation.
+- **Drift detector lives as `test.skip(...)`** with an inverted assertion
+  (`expect(saveBlock).not.toHaveBeenCalled()`) + an inline 7-step activation
+  recipe in the test body comment. AC-gate `git diff --quiet` before commit
+  guards the un-skip leak. Empirically validated under drift mutation in
+  Phase 2 (5 live pins fail loudly; drift detector flips to passing).
+- **HISTORICAL NOTE convention prefers `it.skip(...)` over body-comment.** When
+  archiving harness-mirror pins, convert
+  `it('historical/baseline: …', () => { /* original assertions */ })` →
+  `it.skip('historical/baseline: …', () => { /* … */ })`. Skip count stays
+  honest in Vitest output (no-op `it()` shells silently count as "passed",
+  per WP-029 Phase 2 honest-gap closure B).
+- **Production code is FROZEN during pin authoring.** Phase 2 added tests
+  only; `tools/block-forge/src/App.tsx::handleSave` was untouched across all
+  three Phase 2 commits (`c842a9a3` → `ecbec5db` → `7c6326f1`). Pin authors
+  MUST NOT modify production code in the same change — prevents
+  pin-and-mutation entanglement.
+
+### Traps & Gotchas (WP-029)
+- **`@testing-library/user-event` is NOT installed in `tools/block-forge`.**
+  Existing tests use `fireEvent` + `act` wrappers; new tests follow the same
+  pattern. Add a single `await new Promise(r => setTimeout(r, 350))` to flush
+  the App's 300ms tweak debounce when needed (`App.tsx` L195–201).
+- **Compose-on-save invariant inheritance.** The OQ5 invariant (production
+  `handleSave` calls `composeTweakedCss` BEFORE `applySuggestions`) is
+  pinned via the tweak-only scenario's `@container slot (max-width: 768px)`
+  substring assertion — that substring exists in the payload only because
+  production composes tweaks before saving. Brain ruling C-iii (Phase 2
+  follow-up) collapsed harness-era sc 1+5 into one production path; do NOT
+  re-introduce a separate "tweak-compose" scenario unless the OQ5 invariant
+  surfaces as a new bug class.
+- **Don't `vi.spyOn` internal helpers** (e.g. `composeTweakedCss`) to prove
+  a code path was taken. Prefer asserting the observable artefact (CSS
+  substring in saved payload). Spying on internals is the same harness-mirror
+  trap render-level pins exist to escape (Brain ruling C-ii rejection).
+
+### Blast Radius (WP-029)
+- **Changing `tools/block-forge/src/App.tsx::handleSave`** — fires the
+  app-save-regression scenarios (5 fail under drift; 4 active + 1 skip
+  detector activates). Drift mutation experiment in `logs/wp-029/phase-2-drift-experiment.md`
+  is the reproducible proof.
+- **Renaming exported names from `tools/block-forge/src/lib/api-client.ts`**
+  — surfaces as TypeScript compile error in `app-save-regression.test.tsx`
+  via `vi.mocked()` typing.
+- **Modifying jsdom polyfill scope** (e.g. lifting to a global setup file) —
+  changes the cross-file isolation contract. `tools/block-forge` has NO
+  `vitest.setup.ts`; introducing one cascades across all 7 test files in
+  the package.
+
+### Recipes (WP-029)
+1. **Add a new render-level pin** — copy the scenario shape from
+   `app-save-regression.test.tsx::test('1. tweak-only: …', ...)`. Helpers:
+   `mountAppAndSelectBlock`, `dispatchElementClickAndSwitchBp`,
+   `clickHideTweak`, `openVariantsDrawerAndFork`, `clickSave`,
+   `lastSaveBlockArg`. Assert against `lastSaveBlockArg()` payload shape.
+2. **Reproduce the drift detector experiment** — follow the 7-step recipe in
+   the `test.skip` body. Always end with the revert step + verify
+   `git diff -- tools/block-forge/src/App.tsx | wc -l` returns 0 before
+   committing anything (AC gate).
+3. **Archive a Phase 5/6-style harness-mirror pin** — convert
+   `it('historical/baseline: …', () => { /* original assertions */ })` →
+   `it.skip(...)`. Preserve the original assertions verbatim inside the
+   `/* */` block; the empty function body keeps Vitest discovery happy.
+   Update the HISTORICAL NOTE block at the top of the describe.

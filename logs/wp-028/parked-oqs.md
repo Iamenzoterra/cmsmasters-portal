@@ -11,6 +11,8 @@
 - ✅ **RESOLVED** — shipped; commit SHA embedded
 - 🚫 **DEFERRED** — moved to future WP explicitly (e.g. WP-029, WP-030)
 - 📦 **OUT-OF-SCOPE** — operational task; separate ticket required
+- 📦 **CHIP** — separate spawned background task (operationally independent of any WP)
+- ✅ **ACCEPTED** — by-design state; no action required (rationale + revisit anchor inline)
 
 ---
 
@@ -21,9 +23,12 @@
 | OQ1 | P4 | 📦 CONVERTED — Ops ticket stub "Redeploy Hono Worker — WP-028 validator updates" | Ops team | Routine `wrangler deploy` with current Hono bundle; unblocks prod variants PUT; tracked in project ops queue |
 | OQ2 | P4 | ✅ RESOLVED — `9042490a` + `48da60c4` smoke | Phase 5 Ruling HH | `updateBlockSchema.nullable()` + Studio payload null + Hono forward (Case A zero-touch) + tools/block-forge fs parity + 6 integration test pins + live DB+HTTP smoke |
 | OQ3 | P4 | ✅ RESOLVED — `fc8ed555` (Path B — config fix + docs) | Phase 6 Ruling NN | Root cause: `apps/studio/vite.config.ts:7` `envDir: '../..'` loads env from repo root; `/.env.local` gained `VITE_API_URL=http://localhost:8787`; `.context/CONVENTIONS.md` §Vite env resolution explains the envDir caveat |
-| OQ4 | P4 | ✅ DEFERRED → `workplan/WP-029-heuristic-polish.md` Task A | WP-029 | Scope doc reference added at Phase 6 Close — Studio-side variant CSS scoping validator |
+| OQ4 | P4 | ✅ RESOLVED — `611be474` (WP-029 Phase 1) | WP-029 | Studio-side variant CSS scoping validator + inline banner shipped at `apps/studio/src/pages/block-editor/responsive/validateVariantCss.ts` + `VariantsDrawer.tsx::VariantEditorPanel`; OR-semantics; ancestor walk across `@media`; non-blocking; tokens `--status-warn-fg/bg`. 12 unit cases + 5 RTL pins. See `logs/wp-029/phase-1-result.md`. |
 | OQ5 | P5 | ✅ RESOLVED — `fc8ed555` (Ruling MM) | Phase 6 | `composeTweakedCss` now runs in `handleSave` BEFORE `applySuggestions`; tweak-only saves persist composed CSS; integration pin asserts `@container` chunk in saved css; Studio zero-touch (`ResponsiveTab.tsx:151-152` symmetric via `dispatchTweakToForm → setValue('code', ..., { shouldDirty })`) |
-| OQ6 | P5 | ✅ DEFERRED → `workplan/WP-029-heuristic-polish.md` Task B | WP-029 | Scope doc reference added at Phase 6 Close — `<App />` render-level pins replacing Phase 5 contract-mirror harness |
+| OQ6 | P5 | ✅ RESOLVED — `c842a9a3` → `ecbec5db` → `7c6326f1` (WP-029 Phase 2) | WP-029 | Live `<App />` render-level pins replacing harness-mirror baseline at `tools/block-forge/src/__tests__/app-save-regression.test.tsx` (4 active scenarios + 1 `test.skip` drift detector, empirically validated). Phase 5/6 historical pins archived as `it.skip(...)` in `integration.test.tsx`. See `logs/wp-029/phase-2-result.md` + `logs/wp-029/phase-2-drift-experiment.md`. |
+| OQ-α | WP-029 P0 | 📦 CHIP — separate spawned task | WP-029 audit | Pre-existing Studio drift: 6 sites reference `--status-warning-*` (`block-editor.tsx:928`, `template-editor.tsx:387`, `slots-list.tsx:206/297`, `VariantsDrawer.tsx:302`, cross-surface mirror at `tools/block-forge/.../VariantsDrawer.tsx:302`); real tokens are `--status-warn-*` (no `-ing` suffix). Silent fallback to no color. WP-029 new code uses correct namespace; existing 6 sites untouched. Cross-surface byte-identical mirror discipline applies — Studio + tools/block-forge mirror flip together. See `logs/wp-029/phase-0-result.md` §0.5. |
+| OQ-γ | WP-029 P1 | 📦 CHIP — separate spawned task | WP-029 audit | Pre-existing Studio TS errors at `apps/studio/src/pages/block-editor.tsx:20:93` (`VariantAction` not exported from `ResponsiveTab`) + L384:48 (`BlockVariants \| null` not assignable to `BlockVariants \| undefined` for `updateBlock` payload). Verified pre-existing on baseline `302b6908` via stash. WP-029 added zero new TS errors; lint + build remain blocked by these 2 baseline errors. See `logs/wp-029/phase-1-result.md` §Issues. |
+| OQ-δ | WP-029 P1 | ✅ ACCEPTED — by design | — | Cross-surface byte-identical body discipline relaxed for `VariantsDrawer.tsx`: Studio gets the validator + inline banner JSX; `tools/block-forge` mirror does NOT inherit. Acceptance per `workplan/WP-029-heuristic-polish.md` §Key Decisions L85 ("Studio-side only — start with one surface, not both") + §Not in scope L384 ("Variant validator on `tools/block-forge/` side — start Studio-only; port if field data shows value after WP-028 usage window"). Re-evaluate per Task C / WP-030 once 2–4 weeks of WP-028 author field data accumulates. See `logs/wp-029/phase-1-result.md` §Issues #2 + workplan §Phase 3 Open Questions. |
 
 ---
 
@@ -201,6 +206,139 @@ Mounting `<App />` in tests requires mocking `apiClient.saveBlock`, `apiClient.g
 
 ---
 
+### OQ-α — Pre-existing `--status-warning-*` token drift (Studio + cross-surface mirror) 📦 CHIP
+
+**Source:** `logs/wp-029/phase-0-result.md` §0.5
+
+**Description:**
+Studio references `hsl(var(--status-warning-fg))` in 6 production sites. The
+real tokens declared in `packages/ui/src/theme/tokens.css` (L120–127) are
+`--status-warn-fg` / `--status-warn-bg` (no `-ing` suffix). CSS variable
+fallback to `hsl(undefined)` → no color rendered. Pre-existing drift, noted in
+`logs/wp-027/phase-3-result.md` Row 2 but never fixed. Affected sites:
+
+- `apps/studio/src/pages/block-editor.tsx:928` (inline-style dot indicator)
+- `apps/studio/src/pages/template-editor.tsx:387` (same pattern)
+- `apps/studio/src/pages/slots-list.tsx:206 + 297` (icon coloring)
+- `apps/studio/src/pages/block-editor/responsive/VariantsDrawer.tsx:302` (forkCheck warning)
+- `tools/block-forge/src/components/VariantsDrawer.tsx:302` (cross-surface byte-identical mirror — Ruling GG; both flip together)
+
+**Status:** 📦 CHIP — separate spawned task; not WP-029 scope. WP-029 new code
+(validator banner) uses correct `--status-warn-*` namespace; the 6 existing
+sites remain broken until the chip lands.
+
+**Why CHIP, not in WP-029:**
+- Phase 1 brief explicitly scoped fix to validator banner only (saved memory
+  `feedback_no_blocker_no_ask.md` minimal-blast-radius default)
+- Cross-surface coupling: Studio + `tools/block-forge` mirror MUST flip
+  together to preserve **byte-identical cross-surface body discipline**
+  (Ruling GG — WP-028 Phase 4: `VariantsDrawer.tsx` body byte-identical
+  between Studio and `tools/block-forge` modulo 3-line JSDoc header +
+  surface-specific `composeSrcDoc` import); doubles the scope of any
+  single-site fix
+- Visual impact is "no color applied, just `⚠` glyph" — UX still functional
+
+**Resolution path:**
+Spawn dedicated task: replace `--status-warning-*` → `--status-warn-*` across
+all 6 sites + cross-surface mirror in one atomic commit. Verify visual
+parity at affected screens.
+
+**Exit criteria:**
+- Zero `--status-warning-*` references in `apps/studio/src/` + `tools/block-forge/src/`
+- VariantsDrawer.tsx body byte-identical between surfaces
+- Visual smoke: forkCheck warning + slots-list icons + block-editor dots render in correct amber
+
+**Blocking:** none for WP-029.
+
+---
+
+### OQ-γ — Pre-existing Studio TypeScript errors (lint + build blocked) 📦 CHIP
+
+**Source:** `logs/wp-029/phase-1-result.md` §Issues #1
+
+**Description:**
+`apps/studio/src/pages/block-editor.tsx` carries 2 pre-existing TS errors on
+baseline `302b6908` (verified via stash + re-run):
+
+1. **L20:93** — `VariantAction` is imported from `./block-editor/responsive/ResponsiveTab` but `ResponsiveTab` does not export it.
+2. **L384:48** — `BlockVariants | null` not assignable to `BlockVariants | undefined` for the `updateBlock` payload (the `null` clear-signal contract from WP-028 OQ2 was never type-harmonized at this call site).
+
+WP-029 Phase 1 audit confirmed Phase 1 added zero new TS errors; these 2 are
+pre-existing baseline drift. `npm run lint` + `vite build` block on these.
+
+**Status:** 📦 CHIP — separate spawned task.
+
+**Why CHIP, not in WP-029:**
+- Pre-existing drift (predates WP-029 entirely); fixing belongs in a
+  dedicated TS-hygiene pass that audits the broader call-site type-flow
+- Likely fix touches WP-028 territory (`BlockVariants` typing, OQ2 null
+  contract propagation) — out of WP-029 plumbing-hygiene scope
+
+**Resolution path:**
+Spawn task: (a) export `VariantAction` from `ResponsiveTab` (or rebase the
+import); (b) widen `updateBlock` payload's `variants` to `BlockVariants | null
+| undefined` to harmonize with `formDataToPayload`'s null emission contract.
+
+**Exit criteria:**
+- `npm -w @cmsmasters/studio run typecheck` clean
+- `npm -w @cmsmasters/studio run build` clean
+- No regression in WP-028 OQ2 clear-signal pin (`formDataToPayload.test.ts`)
+
+**Blocking:** none for WP-029. Blocks Studio CI green status overall.
+
+---
+
+### OQ-δ — Cross-surface VariantsDrawer divergence accepted by design ✅ ACCEPTED
+
+**Source:** `logs/wp-029/phase-1-result.md` §Issues #2
+
+**Description:**
+WP-028 established a byte-identical body discipline between Studio's
+`apps/studio/src/pages/block-editor/responsive/VariantsDrawer.tsx` and
+`tools/block-forge/src/components/VariantsDrawer.tsx` (Ruling GG; modulo
+3-line JSDoc header + surface-specific `composeSrcDoc` import path).
+
+WP-029 Phase 1 added the validator banner + integration JSX **inside**
+`VariantsDrawer.tsx::VariantEditorPanel` — Studio side only. Bodies are no
+longer byte-identical. The `editor-panel-sm` snapshot in Studio's
+`__snapshots__/VariantsDrawer.test.tsx.snap` now contains banner DOM; the
+tools/block-forge mirror snap does not.
+
+**Status:** ✅ ACCEPTED — by design.
+
+**Why ACCEPTED:**
+Codified in the workplan upfront — `workplan/WP-029-heuristic-polish.md`:
+- §Key Decisions L85 — "Task A validator location: Studio-side only
+  (VariantEditor.tsx). Author feedback is edit-time; tools/block-forge has
+  its own variant editor and may want the same check, but WP-028 field
+  data will clarify if drift emerges. **Start with one surface, not both.**"
+- §Not in scope L384 — "Variant validator on `tools/block-forge/` side —
+  start Studio-only; port if field data shows value after WP-028 usage window."
+
+The cross-surface contract is **intentionally bent** for the WP-028
+field-data window. The bent state is documented; the trip-wire is the
+2–4 week author-usage gate.
+
+**Resolution path:**
+Re-evaluate as part of **Task C / WP-030** when WP-028 author field data
+accumulates (2–4 weeks). Decisions to make at that point:
+- Port validator to tools/block-forge (restores byte-identical bodies)?
+- OR codify Studio-only as the permanent contract (formally exempt
+  validator JSX from byte-identical discipline; update PARITY.md files +
+  CONVENTIONS.md §Byte-identical cross-surface component body discipline)?
+- OR extract validator + banner to `packages/block-forge-ui/` if extract
+  threshold (~15 non-cosmetic diffs per CONVENTIONS.md §Extract-vs-reimplement)
+  flips?
+
+**Exit criteria for re-evaluation (WP-030):**
+- WP-028 author usage signal recorded
+- Decision documented as ADR amendment OR new ADR
+- PARITY.md files updated to reflect chosen state
+
+**Blocking:** none. By-design state until WP-030.
+
+---
+
 ### OQ4 — Studio-side variant CSS scoping validator warning ✅ DEFERRED → WP-029
 
 **Resolution status:** ✅ DEFERRED at Phase 6 Commit 1 → `workplan/WP-029-heuristic-polish.md` Task A (Ruling PP). WP-029 stub created with full scope context.
@@ -264,3 +402,4 @@ Failure mode: any unchecked box at Phase 6 = WP-028 CANNOT mark DONE until resol
 | 2026-04-24 | P6 Commit 1 landing | 5 of 6 OQs flipped in single atomic commit (Rulings MM/NN/OO/PP). **OQ5 ✅ RESOLVED** — `composeTweakedCss` added to `tools/block-forge/src/App.tsx` handleSave BEFORE `applySuggestions` (3-line + comment); Phase 6 regression pin in `integration.test.tsx` asserts `@container` chunk in saved css (Ruling KK); Studio zero-touch confirmed via pre-flight step 2 (ResponsiveTab.tsx:151-152 symmetric). **OQ3 ✅ RESOLVED** — Path B: root cause `apps/studio/vite.config.ts:7` `envDir: '../..'` loads env from repo root; `/.env.local` gained `VITE_API_URL=http://localhost:8787` (gitignored); `.context/CONVENTIONS.md` §Vite env resolution documents the envDir convention for future devs. **OQ1 📦 CONVERTED** — ops ticket stub "Redeploy Hono Worker — WP-028 validator updates" (Ruling OO; no deploy access this phase). **OQ4 + OQ6 ✅ DEFERRED** — created `workplan/WP-029-heuristic-polish.md` stub with Task A (OQ4 variant CSS scoping validator, ~3-5h own) + Task B (OQ6 `<App />` render-level pins, ~1-2h own) + Task C (original WP-029 heuristic polish scope). Phase 6 verification checklist all 6 boxes ticked; WP-028 cleared for ✅ DONE flip pending Commit 2 (doc propagation, approval-gated per Ruling QQ) + Commit 3 (result log). |
 | 2026-04-24 | P6 Commit 2 | Doc propagation under Ruling QQ approval gate — commit `bb3309dc` (8 files: BRIEF + CONVENTIONS 3 subsections + infra-tooling SKILL Tweaks+Variants section + studio-blocks SKILL Tweaks+Variants section + 2 PARITY §Tweak-compose-on-save flip + Discipline Confirmation + BLOCK-ARCH-V2 header line + WP-028 workplan ✅ DONE flip). 5 Brain inline corrections applied during staging: phase enumeration 6→7 (Phase 1 Foundation scaffolding added), OQ4-identifier overload resolved ("live-read invariant" not "OQ4 invariant" in studio-blocks SKILL). arch-test 499/0 preserved (docs-only). |
 | 2026-04-24 | P6 Commit 3 | Result log `logs/wp-028/phase-6-result.md` + final SHA cross-reference. OQ3/OQ5 rows carry `fc8ed555` (Commit 1). WP-028 cleared ✅ DONE. Final green gates: arch-test 499/0, typecheck clean, Studio 104 / block-forge 133 tests. |
+| 2026-04-25 | WP-029 P3 Close | OQ4 ✅ RESOLVED → `611be474` (WP-029 Phase 1: validator + inline banner). OQ6 ✅ RESOLVED → `c842a9a3` → `ecbec5db` → `7c6326f1` (WP-029 Phase 2: live `<App />` render pins + drift detector + honest skip count + Brain C-iii reduction; empirical drift validation in `logs/wp-029/phase-2-drift-experiment.md`). Three new entries appended: OQ-α (📦 CHIP — `--status-warning-*` drift, 6 sites + cross-surface mirror), OQ-γ (📦 CHIP — pre-existing Studio TS errors, 2 baseline issues at `block-editor.tsx:20+384`), OQ-δ (✅ ACCEPTED — cross-surface VariantsDrawer body divergence by design per workplan §Key Decisions L85 + §Not in scope L384; revisit per WP-030). Status key extended with 📦 CHIP + ✅ ACCEPTED codes. Phase 3 doc commit: `<pending>`. |

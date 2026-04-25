@@ -478,7 +478,7 @@ Layout Maker's css-generator emits `container-type: inline-size; container-name:
 
 ### Responsive tokens file
 
-`packages/ui/src/theme/tokens.responsive.css` is a hand-maintained companion to `tokens.css`. `/sync-tokens` does NOT touch it. Currently two clamp-based scaffold tokens (`--space-section`, `--text-display`); real population is deferred to WP-029 so design choices can be informed by real use in WP-025/026. Import order in portal globals: `tokens.css` before `tokens.responsive.css` before `portal-blocks.css`.
+`packages/ui/src/theme/tokens.responsive.css` is a hand-maintained companion to `tokens.css`. `/sync-tokens` does NOT touch it. Currently two clamp-based scaffold tokens (`--space-section`, `--text-display`); real population is deferred to WP-030 (bundled with Task C heuristic polish, gated on 2–4 weeks of WP-028 author field data) so design choices can be informed by real use in WP-025/026/028. Import order in portal globals: `tokens.css` before `tokens.responsive.css` before `portal-blocks.css`.
 
 ---
 
@@ -529,6 +529,17 @@ To get a clamp suggestion, author raw `px`/`rem` at ≥40px spacing or ≥24px f
 ## Block-forge dev tool conventions (WP-026, ADR-025)
 
 `tools/block-forge/` is the first consumer of `@cmsmasters/block-forge-core`. These rules apply to block-forge specifically; other Vite-based dev tools (layout-maker, studio-mockups) are free to pick their own patterns unless explicitly called out.
+
+### 0. NPM workspace nit
+
+`tools/block-forge/` is **NOT** an npm workspace (root `package.json`
+`workspaces` covers `apps/*`, `packages/*`, `tools/layout-maker` only).
+
+- **DO** `cd tools/block-forge && npm <cmd>` to run package-scoped commands.
+- **DON'T** `npm -w tools/block-forge <cmd>` from repo root — fails with
+  "No workspaces found".
+
+WP-029 Phase 2 surfaced this gap.
 
 ### 1. File I/O contract (save safety)
 
@@ -584,6 +595,45 @@ Browser QA (Chrome DevTools, Playwright) and integration tests (`src/__tests__/i
 
 Apps (portal / dashboard / studio / admin) continue to prefer semantic ARIA roles first; `data-*` is for dev-tool surfaces where test-only hooks don't leak into production UX.
 
+### 5. Render-level regression pin pattern (WP-029 Task B)
+
+When a regression vector requires **production code** to fire (not a harness
+mirror), pin via a full `<App />` mount with mocked module boundaries.
+`tools/block-forge/src/__tests__/app-save-regression.test.tsx` is the canonical
+reference.
+
+- **DO** mount the production component (`<App />` for block-forge save flows)
+  + mock the module boundary (`vi.mock('../lib/api-client', …)` for HTTP).
+  Use `import * as apiClient` + typed `vi.mocked()` access — apiClient
+  signature drift surfaces as a TypeScript compile error, not a silent runtime
+  no-op.
+- **DO** add jsdom polyfills file-level (mirror `TweakPanel.test.tsx` L11–25 +
+  `VariantsDrawer.test.tsx` L7–28 — `ResizeObserver` + `setPointerCapture` /
+  `releasePointerCapture` for Radix UI Dialog/Slider). Never global; avoids
+  cross-file pollution.
+- **DO** codify drift detectors as `test.skip(...)` with an inverted assertion
+  + an inline activation comment (step-by-step recipe). AC-gate
+  `git diff --quiet` before commit guards against accidental un-skip leak
+  (Brain WP-029 ruling C4).
+- **DO** convert prior harness-mirror pins to `it.skip('historical/baseline:
+  …', () => { /* original assertions preserved verbatim */ })`.
+  **Prefer `it.skip` over body-comment** — keeps the Vitest count honest
+  (no-op `it()` shells silently count as "passed"; WP-029 Phase 2 honest-gap
+  closure B).
+- **DON'T** delete historical harness-mirror pins — preserve payload-shape
+  intent in commented bodies.
+- **DON'T** assert sequence-of-calls (`mock.mock.calls[0]`,
+  `mock.mock.calls[1]`, …) when a behavior assertion exists. Testing
+  implementation order leans toward mock-testing anti-pattern.
+- **DON'T** spy on internal helpers (e.g. `vi.spyOn(composeTweakedCss)`) to
+  prove a code path was taken. Prefer asserting the observable artefact
+  (a CSS substring in the saved payload) — spying on internals is the same
+  harness-mirror trap render-level pins exist to escape.
+
+Reference: `tools/block-forge/src/__tests__/app-save-regression.test.tsx`
++ `logs/wp-029/phase-2-result.md` + `logs/wp-029/phase-2-drift-experiment.md`
+(empirical drift validation).
+
 ---
 
 ## Studio Responsive tab conventions (WP-027, ADR-025)
@@ -630,3 +680,34 @@ Studio's `block-editor.tsx` integrates 3 editing surfaces that all write into th
 Full enumeration (Studio + block-forge mirror) lives in `apps/studio/src/pages/block-editor/responsive/PARITY.md` §Dirty-state contract. `tools/block-forge/PARITY.md` carries a byte-identical section for the session-driven sibling surface.
 
 **OQ2 clear-signal (Phase 5):** `formDataToPayload` emits `variants: null` on empty and the full map otherwise. The validator (`updateBlockSchema.variants`, `createBlockSchema.variants`) accepts `variantsSchema.nullable().optional()`; Hono forwards whole `parsed.data` through to Supabase so `update({ variants: null })` NULLs the column. Pre-Phase-5 emitted `undefined`, which Supabase JS silently dropped — DB kept the prior value and the author's "delete all variants" intent never reached disk. See `logs/wp-028/parked-oqs.md` OQ2 for the full trace.
+
+### 7. Edit-time validator pattern (WP-029 Task A)
+
+`apps/studio/src/pages/block-editor/responsive/validateVariantCss.ts` is the
+canonical reference for **non-blocking, edit-time validators** in this monorepo.
+Reuse this shape for any future advisory check.
+
+- **DO** make the validator a pure helper — input string + context, output
+  `Warning[]`. Empty input → empty array; parse errors → single
+  `{ reason: 'parse-error' }` warning (no throw).
+- **DO** parse via PostCSS for CSS validators — already a transitive Studio dep
+  via `@cmsmasters/block-forge-core`; no devDep additions required.
+- **DO** latch on the integration's existing debounce (`VariantEditorPanel`
+  uses 300ms). Validator state is local React state synced via
+  `useState(() => validator(...))` lazy init + an effect on the watched fields.
+- **DO** flush-on-unmount via `latestRef` + empty-deps `useEffect` cleanup
+  reading the ref (Ruling BB pattern). NEVER put `[stateField]` in cleanup
+  deps — fires every keystroke, collapses the debounce window
+  (WP-028 Phase 4 Ruling BB; WP-029 Phase 1 confirmed).
+- **DO** render warnings as inline JSX next to the edited field. Use
+  `--status-warn-fg` / `--status-warn-bg` tokens (NOT `--status-warning-*` —
+  see `logs/wp-028/parked-oqs.md` §OQ-α drift chip).
+- **DON'T** block save based on validator output — banner is advisory.
+  RHF `formState.isDirty` and the Save button stay independent.
+- **DON'T** introduce a new debounce wrapper if the integration already has one.
+- **DON'T** add a one-off `<Banner />` component file for a single banner
+  instance — inline JSX is cheaper. Extract only if reused across surfaces.
+
+Reference: `apps/studio/src/pages/block-editor/responsive/validateVariantCss.ts`
++ `VariantsDrawer.tsx::VariantEditorPanel` integration site
+(`logs/wp-029/phase-1-result.md`).

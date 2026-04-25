@@ -2,13 +2,13 @@
 
 > Narrow WP to clear two carry-over OQs from WP-028 before field data has a chance to accumulate. **Task C (real-usage heuristic polish) is explicitly deferred** to a future continuation (WP-030) once WP-028 authors have been in production for 2–4 weeks and generate meaningful signal. Shipping A+B now means no plumbing drift; Task C later means the polish is informed by real data, not guesses.
 
-**Status:** PLANNING
+**Status:** ✅ DONE
 **Priority:** P1 — Plumbing hygiene (neither A nor B blocks production use of WP-028 features; both prevent drift / improve regression coverage)
 **Prerequisites:** WP-028 ✅, OQ1 Hono Worker redeploy (operationally separate — does not block this WP)
 **Milestone/Wave:** ADR-025 follow-ups
 **Estimated effort:** 7–10 hours across 4 phases
 **Created:** 2026-04-24
-**Completed:** —
+**Completed:** 2026-04-25
 
 ---
 
@@ -394,3 +394,28 @@ This WP unblocks: **nothing hard-blocked**. Task C future-WP is informed by WP-0
 - **Approval gate** per saved memory — Phase 3 ≥3 docs, pattern 6/6 target.
 - **Visual check** (per saved memory `feedback_visual_check_mandatory.md`) — Phase 1 manual integration check is light (banner shows/hides); Task B is test-only, no UI. No Playwright needed this WP.
 - **ADR-025 is the tie-breaker** on variant CSS convention questions.
+
+---
+
+## Final SHA chain (post-close)
+
+- Phase 0 RECON: `302b6908`
+- Phase 1 Task A: `611be474`
+- Phase 2 Task B initial: `c842a9a3`
+- Phase 2 polish (gaps A+B+D): `ecbec5db`
+- Phase 2 follow-up (Brain ruling C-iii): `7c6326f1`
+- Phase 3 doc propagation: `<pending>`
+- Phase 3 result log: `<pending>`
+
+## Approval-gate pattern
+
+6/6 maintained: WP-024 ✅ → WP-025 ✅ → WP-026 ✅ → WP-027 ✅ → WP-028 ✅ → WP-029 ✅.
+
+## Honest gaps closed (Phase 2)
+
+5 gaps surfaced under brutal-honesty audit + closed across 3 commits:
+A — pre-existing Studio snap CRLF noise reset (workspace hygiene).
+B — `it.skip` for archived harness-mirror pins (honest Vitest count: 138/0 → 132/6/138 total).
+C — sc 1+5 redundancy reduced 5→4 scenarios per Brain ruling C-iii (OQ5 invariant inherited by sc 1 `@container` substring).
+D — empirical drift validation (mutation experiment in `logs/wp-029/phase-2-drift-experiment.md`).
+E — `tools/block-forge` non-workspace nit deferred to Phase 3 CONVENTIONS.md addendum.

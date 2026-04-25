@@ -2,7 +2,7 @@
 
 > Read this file FIRST. It gives you the full picture in 5 minutes.
 > Then read the specific layer spec for your current task.
-> Last updated: 2026-04-23
+> Last updated: 2026-04-25
 
 ---
 
@@ -120,6 +120,7 @@ Block Forge Core                  ✅ DONE (WP-025: pure-function engine — 6 p
 Block Forge MVP                   ✅ DONE (WP-026: tools/block-forge/ Vite app on :7702 — file-based authoring against content/db/blocks/*.json, 3-panel preview (1440/768/375), accept/reject suggestions, save with .bak; 46 tests, zero PARITY divergences; unblocks WP-027 Studio Responsive tab + WP-028 Tweaks/Variants UI; ADR-025)
 Studio Responsive tab             ✅ DONE (WP-027: apps/studio/ Block Editor's 2-tab surface (Editor | Responsive); display-only suggestion list (6 heuristics via @cmsmasters/block-forge-core); Accept/Reject → form.code dirty → DB save via updateBlockApi({variants}) + Hono /revalidate ≤15 LOC extension ({} = cache-wide); 489/0 arch-test + unit coverage preserved + 6/6 e2e scenarios; composeSrcDoc single-wrap deviation from block-forge PARITY §7 documented; unblocks WP-028 Tweaks/Variants UI + WP-029 tokens.responsive.css populate; ADR-025)
 Tweaks + Variants UI              ✅ DONE (WP-028: TweakPanel + VariantsDrawer + VariantEditor on both surfaces — tools/block-forge + Studio Responsive tab; ADR-025 Layer 2 (visual tweaks) + Layer 4 (named variants) authoring; 7 phases (0-6) + Phase 3.5 mini-phase closed; first real DB variants write shipped; Portal render verified at variant BP; cross-surface byte-identical PARITY contract validated at 10× UI complexity; 499/0 arch-test + typecheck + Studio 104 + block-forge 133 tests green; ADR-025)
+Heuristic polish (Tasks A+B)      ✅ DONE (WP-029: variant CSS scoping validator (Studio-side, `validateVariantCss.ts` + inline banner; non-blocking; OR-semantics; PostCSS-based) + live `<App />` render-level save regression pins (`tools/block-forge/src/__tests__/app-save-regression.test.tsx`; replaces WP-028 Phase 5/6 harness-mirror baseline) + empirical drift validation. Closes WP-028 OQ4 + OQ6. Task C heuristic confidence tuning + `tokens.responsive.css` real population deferred to WP-030 pending 2–4 weeks WP-028 author field data; ADR-025)
 ```
 
 ### What's next
@@ -220,3 +221,4 @@ Dmitry communicates concisely in Ukrainian. Corrections are brief — reorient i
 - Portal Next.js Migration: `logs/portal-nextjs-migration/` — Astro → Next.js 15, ISR, Vercel deploy, revalidation endpoint, portal link in Studio
 - WP-017 Phase 0–8: `logs/wp-017/` — Layer 3 Dashboard + Admin (staff_roles, activity_log, auth resolvers, 14 API endpoints, Dashboard SPA, Admin SPA)
 - WP-028 Phase 0–6: `logs/wp-028/` — Tweaks + Variants UI (cross-surface lockstep for tools/block-forge + Studio Responsive tab). Phases: 0 RECON (extract-vs-reimplement empirical metric), 1 Foundation + placeholder scaffolding (both surfaces + component-snapshot parity test harness), 2 TweakPanel, 3 VariantsDrawer + 3.5 Path B re-converge, 4 VariantEditor + first real DB variants write, 5 OQ2 clear-signal (`nullable().optional()`) + Dirty-state contract, 6 Close (OQ5 tweak-compose-on-save fix). 6 OQs tracked in `parked-oqs.md`; Phase 6 closed all 6 (3 RESOLVED, 2 DEFERRED→WP-029, 1 CONVERTED→ops ticket).
+- WP-029 Phase 0–3: `logs/wp-029/` — Heuristic polish Tasks A+B (variant CSS scoping validator + `<App />` render-level pins). Phases: 0 RECON (PostCSS resolution path + accepted reveal-rule syntaxes audit), 1 Task A (Studio validator + inline banner; 12 unit + 5 RTL pins), 2 Task B (live render pins + drift detector + Brain C-iii sc reduction; 3-commit chain `c842a9a3` → `ecbec5db` → `7c6326f1`; empirical drift validation), 3 Close (doc propagation under approval gate). Closes WP-028 OQ4 + OQ6; surfaces OQ-α/OQ-γ (📦 CHIPs) + OQ-δ (✅ ACCEPTED). Approval-gate pattern 6/6.

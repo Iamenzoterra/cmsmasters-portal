@@ -92,3 +92,58 @@ const hsl = hexToHsl('#218721') // { h: 120, s: 61, l: 33 }
 ### Recipes (WP-028)
 1. **Add a new form field exposed via dispatch helper** — mirror the `dispatchTweakToForm` pattern: read LIVE via `form.getValues`, mutate, write via `setValue(..., { shouldDirty: true })`. Integration pin: assert `form.getValues()` reflects the dispatch call immediately.
 2. **Debug "Save button doesn't enable after Accept/Tweak"** — check `onApplyToForm` callback is wired when mounting `ResponsiveTab` (optional but required for save-enabling). Verify `shouldDirty: true` flag on every setValue call inside dispatch helpers.
+
+## Variant CSS scoping validator (WP-029, ADR-025)
+
+### Invariants (WP-029)
+- **Validator is studio-internal + advisory.** `validateVariantCss(cssText,
+  variantName)` is a pure PostCSS-based helper at
+  `apps/studio/src/pages/block-editor/responsive/validateVariantCss.ts`. Output
+  is `Warning[] | null`; never throws. Save is **never** blocked.
+- **OR-semantics on multi-selector rules.** A CSS rule passes if EITHER (1) any
+  selector includes `[data-variant="<this-variant-name>"]`, OR (2) any ancestor
+  at-rule is `@container (…)` (named or unnamed; traverses across `@media`).
+  Multi-selector rule like `.unscoped, [data-variant="sm"] .scoped { … }` is
+  fine — the rule passes because one selector satisfies the scope check.
+- **Banner is INLINE inside `VariantEditorPanel`** (no separate component
+  file). JSX renders below the textareas grid (~L451 in `VariantsDrawer.tsx`).
+  Tokens: `--status-warn-fg` / `--status-warn-bg` only — NOT `--status-warning-*`
+  (the latter is a pre-existing Studio drift, tracked as a chip; see
+  `logs/wp-028/parked-oqs.md` §OQ-α).
+- **Latches on the existing 300ms debounce.** Validator state is local React
+  state, lazy-initialized via `useState(() => validateVariantCss(...))` so
+  pre-existing unscoped CSS is flagged at mount. Re-validates on
+  `[variant, name]` change. Flush-on-unmount via `latestRef` (Ruling BB
+  pattern); no separate validator timer.
+- **Cross-surface mirror discipline relaxed for this surface.** The validator
+  ships in Studio only — `tools/block-forge/src/components/VariantsDrawer.tsx`
+  body is NO LONGER byte-identical to its Studio mirror. The cross-surface
+  contract is intentionally bent for the WP-028 field-data window;
+  re-evaluate per Task C / WP-030 (see `logs/wp-028/parked-oqs.md` §OQ-δ).
+
+### Traps & Gotchas (WP-029)
+- **Token drift trap.** New code MUST use `--status-warn-fg/bg`. The 6 existing
+  `--status-warning-*` references in Studio (`block-editor.tsx:928`,
+  `template-editor.tsx:387`, `slots-list.tsx:206/297`, `VariantsDrawer.tsx:302`,
+  cross-surface mirror at `tools/block-forge/.../VariantsDrawer.tsx:302`) are
+  pre-existing drift — do NOT inherit the broken namespace.
+- **Initial-render priming is load-bearing.** `useState(() => validator(...))`
+  lazy init is what flags pre-existing unscoped CSS at mount. A regular
+  `useState(null)` + `useEffect` would only validate on first edit — pre-loaded
+  block warnings would not show until the author types.
+- **`form.setValue` is NOT involved.** Validator output is local component
+  state; never written to RHF. RHF `formState.isDirty` independence is
+  pinned by RTL test "save stays enabled" — do not bridge them.
+
+### Blast Radius (WP-029)
+- **Changing `validateVariantCss.ts`** — affects validator behavior matrix.
+  12 inline-CSS unit cases in
+  `apps/studio/src/pages/block-editor/responsive/__tests__/validateVariantCss.test.ts`
+  pin OR-semantics, ancestor walk, parse-error, multi-selector. Adding a new
+  accepted reveal syntax updates the unit cases + ADR-025 carry-over (h)
+  table in `logs/wp-029/phase-0-result.md` §0.3.a.
+- **Changing the inline banner JSX in `VariantEditorPanel`** — affects 5 RTL
+  pins in `VariantsDrawer.test.tsx` + `editor-panel-sm` snapshot. Banner is
+  the only Studio-specific JSX block in the cross-surface mirrored body;
+  edits MUST stay Studio-only (block-forge mirror untouched per OQ-δ
+  acceptance).
