@@ -1110,24 +1110,9 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
         </InspectorCluster>
         )}
 
-        {/* Property rows — leaf only */}
-        {canShow('property-rows', traits, scope) && rows.map((row) => (
-          <div key={row.property} className="lm-inspector__section">
-            <div className="lm-inspector__row">
-              <span className="lm-inspector__label">{row.label}</span>
-              <span className="lm-inspector__value">
-                {row.token ?? row.value}
-                <CopyButton
-                  text={formatLine(row.property, row.token, row.resolvedPx ?? row.value)}
-                  onCopied={handleCopied}
-                />
-              </span>
-            </div>
-            {row.resolvedPx && (
-              <div className="lm-inspector__value-sub">({row.resolvedPx})</div>
-            )}
-          </div>
-        ))}
+        {/* property-rows moved into Diagnostics cluster (Phase 3 hotfix) — they
+            are read-only derived values (Gap, Min-height, Margin-top), so they
+            now live alongside Usable width inside cluster-diagnostics. */}
 
         {/* Slot Parameters cluster — inner container controls (leaf only) */}
         {canShow('cluster-inner', traits, scope) && (
@@ -1263,9 +1248,34 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
         </InspectorCluster>
         )}
 
-        {/* Diagnostics cluster — usable width + test blocks + CSS warnings (collapsed by default) */}
-        {(canShow('usable-width', traits, scope) || blockCount > 0 || (selectedSlot && testBlocks && testBlocks.length > 0)) && (
+        {/* Diagnostics cluster — property rows + usable width + test blocks + CSS warnings.
+            Wrapper condition uses ACTUAL content presence, not trait predicate, so
+            empty Diagnostics never renders (Phase 3 hotfix). */}
+        {(
+          (canShow('property-rows', traits, scope) && rows.length > 0) ||
+          (usableWidth && canShow('usable-width', traits, scope)) ||
+          blockCount > 0 ||
+          (selectedSlot && testBlocks && testBlocks.length > 0 && blockWarnings.some((w) => testBlocks.includes(w.slug)))
+        ) && (
         <InspectorCluster id="cluster-diagnostics" title="Diagnostics">
+          {canShow('property-rows', traits, scope) && rows.map((row) => (
+            <div key={row.property} className="lm-inspector__section">
+              <div className="lm-inspector__row">
+                <span className="lm-inspector__label">{row.label}</span>
+                <span className="lm-inspector__value">
+                  {row.token ?? row.value}
+                  <CopyButton
+                    text={formatLine(row.property, row.token, row.resolvedPx ?? row.value)}
+                    onCopied={handleCopied}
+                  />
+                </span>
+              </div>
+              {row.resolvedPx && (
+                <div className="lm-inspector__value-sub">({row.resolvedPx})</div>
+              )}
+            </div>
+          ))}
+
           {canShow('usable-width', traits, scope) && usableWidth && (
             <div className="lm-inspector__section lm-inspector__derived">
               <div className="lm-inspector__row">

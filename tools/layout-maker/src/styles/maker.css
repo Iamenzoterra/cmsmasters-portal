@@ -2581,6 +2581,13 @@ body {
   cursor: pointer;
   list-style: none;
   user-select: none;
+  /* Sticky cluster header — keeps the active cluster's name visible while
+   * scrolling its content. Anchors to .lm-inspector__body (overflow-y: auto).
+   * Background must be opaque to hide the content scrolling underneath. */
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--lm-bg-panel);
 }
 .lm-inspector__cluster-title::-webkit-details-marker {
   display: none;
