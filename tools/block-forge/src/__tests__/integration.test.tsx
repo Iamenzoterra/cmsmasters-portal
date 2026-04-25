@@ -546,6 +546,22 @@ describe('Phase 4 — updateVariantContent → save round-trip', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────
+// HISTORICAL NOTE (WP-029 Phase 2 — `611be474`+1):
+// The 5 contract-mirror pins below (originally L574–677 + L693–747) were
+// the WP-028 Phase 5 + Phase 6 carve-out: they exercised
+// `assembleSavePayload` / `assembleSavePayloadV2`, harnesses mirroring
+// production `App.tsx::handleSave`. Live render-level pins now live in
+// `app-save-regression.test.tsx` — that file mounts <App /> and asserts
+// against production handleSave directly, eliminating the harness-mirror
+// drift risk surfaced by WP-028 Phase 5/6 OQ surveys.
+//
+// The harness-mirror pins are kept as commented documentation to preserve
+// the payload-shape intent encoded by WP-028 Rulings HH/KK/LL/MM. Do NOT
+// delete: if you find yourself wanting to "clean these up", read this
+// comment again and the WP-029 §Phase 2 plan first.
+// ─────────────────────────────────────────────────────────────────────────
+//
+// (Original WP-028 Phase 5 header, retained for context)
 // WP-028 Phase 5 — Carve-out regression pins (Ruling KK) + OQ2 clear-signal
 // (Ruling HH).
 //
@@ -554,22 +570,13 @@ describe('Phase 4 — updateVariantContent → save round-trip', () => {
 //   2) handleSave: if (!isDirty(session)) return     (was: accepted.length === 0)
 // Prior to those fixes, tweak-only or variant-only edits never reached disk:
 // the Save button stayed disabled AND handleSave early-returned before the
-// write. Both fixes landed at commit bff6ef77. Phase 5 pins the resulting
+// write. Both fixes landed at commit bff6ef77. Phase 5 pinned the resulting
 // contract so any later regression of either clause breaks a test.
 //
-// Pins exercise the save-payload contract by assembling the same payload
-// App.tsx handleSave builds (per tools/block-forge/src/App.tsx L256-305
-// post-Phase-4). Deliberate mirror — the harness encodes what "ship this to
-// disk" means. Full App.tsx render-level pinning is deferred (Phase 6 Close
-// or later) because the App surface pulls in BlockPicker + sourceDir fetch,
-// which is heavyweight for this pin's purpose.
-//
-// Tweak composition gap note: `composeTweakedCss` runs in the render-time
-// `composedBlock` memo (App.tsx L146-153) but NOT in `handleSave`. So saved
-// CSS on a tweak-only session is base CSS, not tweak-composed CSS. This is
-// a pre-existing gap (never in Phase 4 carve-out scope) and is documented
-// as Phase 5 result-log OQ5 / Phase 6 Close cleanup candidate. Pins assert
-// the save-happens contract only.
+// Pins exercised the save-payload contract by assembling the same payload
+// App.tsx handleSave builds. Deliberate mirror — the harness encoded what
+// "ship this to disk" means. Live render-level pinning was deferred to
+// WP-029 Phase 2.
 // ─────────────────────────────────────────────────────────────────────────
 describe('Phase 5 — Carve-out regression pins + OQ2 clear-signal', () => {
   let baseBlock: BlockJson
@@ -608,71 +615,71 @@ describe('Phase 5 — Carve-out regression pins + OQ2 clear-signal', () => {
     }
   }
 
-  it('tweak-only save [Phase 2/4 carve-out pin] — isDirty true → payload assembled (not early-returned)', () => {
-    // Pre-Phase-4 bug: StatusBar read pendingCount only → Save button disabled;
-    // handleSave early-returned on accepted.length === 0 → never reached fs. Both
-    // legs silently dropped tweak-only saves. isDirty(session) must be the gate.
-    let s = createSession()
-    s = addTweak(s, {
-      selector: '.hero-cta',
-      bp: 768,
-      property: 'padding',
-      value: '16px',
-    })
-    expect(isDirty(s)).toBe(true)
-    const payload = assembleSavePayload(baseBlock, s, [])
-    expect(payload).not.toBeNull()
-    expect(payload!.slug).toBe(baseBlock.slug)
-    // Tweak composition not asserted here — pre-existing gap (see header note).
+  it('historical/baseline: tweak-only save [Phase 2/4 carve-out pin] — isDirty true → payload assembled (not early-returned)', () => {
+    /* HISTORICAL — converted to no-op by WP-029 Phase 2 (commit `611be474`+1).
+     * Live render-level equivalent: app-save-regression.test.tsx scenario #1
+     * "tweak-only: accept Hide tweak → saveBlock called with composed CSS".
+     *
+     * Original assertion intent (preserved verbatim, not executed):
+     *   let s = createSession()
+     *   s = addTweak(s, { selector: '.hero-cta', bp: 768, property: 'padding', value: '16px' })
+     *   expect(isDirty(s)).toBe(true)
+     *   const payload = assembleSavePayload(baseBlock, s, [])
+     *   expect(payload).not.toBeNull()
+     *   expect(payload!.slug).toBe(baseBlock.slug)
+     */
   })
 
-  it('variant-only save [Phase 3/4 carve-out pin] — payload carries variants map (not early-returned)', () => {
-    // Pre-Phase-4 bug: handleSave early-returned on accepted.length === 0 →
-    // variant-only edits never reached disk. Phase 4 carve-out removed that.
-    let s = createSession()
-    s = createVariant(s, 'sm', { html: '<h2>sm</h2>', css: '.x { padding: 12px }' })
-    expect(isDirty(s)).toBe(true)
-    const payload = assembleSavePayload(baseBlock, s, [])
-    expect(payload).not.toBeNull()
-    expect(payload!.variants).toEqual({
-      sm: { html: '<h2>sm</h2>', css: '.x { padding: 12px }' },
-    })
+  it('historical/baseline: variant-only save [Phase 3/4 carve-out pin] — payload carries variants map (not early-returned)', () => {
+    /* HISTORICAL — converted to no-op by WP-029 Phase 2.
+     * Live render-level equivalent: app-save-regression.test.tsx scenario #2
+     * "variant-only: fork sm variant → saveBlock css unchanged, variants populated".
+     *
+     * Original assertion intent (preserved, not executed):
+     *   let s = createSession()
+     *   s = createVariant(s, 'sm', { html: '<h2>sm</h2>', css: '.x { padding: 12px }' })
+     *   expect(isDirty(s)).toBe(true)
+     *   const payload = assembleSavePayload(baseBlock, s, [])
+     *   expect(payload).not.toBeNull()
+     *   expect(payload!.variants).toEqual({ sm: { html: '<h2>sm</h2>', css: '.x { padding: 12px }' } })
+     */
   })
 
-  it('mixed save [Phase 4 mixed carve-out pin] — tweak + variant both dirty; payload has variants, save proceeds', () => {
-    let s = createSession()
-    s = addTweak(s, { selector: '.btn', bp: 768, property: 'display', value: 'none' })
-    s = createVariant(s, 'md', { html: '<h2>md</h2>', css: '' })
-    expect(isDirty(s)).toBe(true)
-    const payload = assembleSavePayload(baseBlock, s, [])
-    expect(payload).not.toBeNull()
-    expect(payload!.variants).toEqual({ md: { html: '<h2>md</h2>', css: '' } })
+  it('historical/baseline: mixed save [Phase 4 mixed carve-out pin] — tweak + variant both dirty; payload has variants, save proceeds', () => {
+    /* HISTORICAL — converted to no-op by WP-029 Phase 2.
+     * Live render-level equivalent: app-save-regression.test.tsx scenario #3
+     * "mixed: tweak + variant fork → saveBlock has composed CSS AND variants".
+     *
+     * Original assertion intent (preserved, not executed):
+     *   let s = createSession()
+     *   s = addTweak(s, { selector: '.btn', bp: 768, property: 'display', value: 'none' })
+     *   s = createVariant(s, 'md', { html: '<h2>md</h2>', css: '' })
+     *   expect(isDirty(s)).toBe(true)
+     *   const payload = assembleSavePayload(baseBlock, s, [])
+     *   expect(payload).not.toBeNull()
+     *   expect(payload!.variants).toEqual({ md: { html: '<h2>md</h2>', css: '' } })
+     */
   })
 
-  it('OQ2 clear-signal pin [Ruling HH] — empty session.variants → payload variants === null', () => {
-    // Pre-Phase-5: payload emitted undefined on empty, which Supabase JS client
-    // silently DROPS from the update body. Result: DB kept the prior variants
-    // row value; author saw "0 variants" in UI but Portal still served the old
-    // JSON. Phase 5 flips to null so Supabase NULLs the column on clear-save.
-    // Note: isDirty() requires some history entry (variant CRUD, tweak, etc.)
-    // to return true. A createSession() is not dirty, so we simulate the
-    // "author added then deleted all variants" flow to exercise the clear path.
-    let s = createSession()
-    s = createVariant(s, 'sm', { html: '<h2>sm</h2>', css: '' })
-    s = deleteVariant(s, 'sm')
-    expect(isDirty(s)).toBe(true) // history still carries create + delete
-    expect(Object.keys(s.variants)).toHaveLength(0) // but map is empty
-
-    const payload = assembleSavePayload(baseBlock, s, [])
-    expect(payload).not.toBeNull()
-    expect(payload!.variants).toBeNull()
-
-    // Ruling LL — JSON.stringify preserves the key with null (disk/DB parity
-    // with Studio's PUT payload).
-    const serialized = JSON.stringify(payload)
-    expect(serialized).toContain('"variants":null')
-    const parsed = JSON.parse(serialized) as BlockJson
-    expect(parsed.variants).toBeNull()
+  it('historical/baseline: OQ2 clear-signal pin [Ruling HH] — empty session.variants → payload variants === null', () => {
+    /* HISTORICAL — converted to no-op by WP-029 Phase 2.
+     * Live render-level equivalent: app-save-regression.test.tsx scenario #4
+     * "variants clear-signal (OQ2): pre-loaded variant deleted → saveBlock variants === null".
+     *
+     * Original assertion intent (preserved, not executed) — pre-Phase-5 the
+     * payload emitted undefined on empty, which Supabase JS client silently
+     * DROPPED from the update body. Phase 5 flipped to null so Supabase NULLs
+     * the column on clear-save. Ruling LL — JSON.stringify preserves the
+     * key with null (disk/DB parity with Studio's PUT payload):
+     *   let s = createSession()
+     *   s = createVariant(s, 'sm', { html: '<h2>sm</h2>', css: '' })
+     *   s = deleteVariant(s, 'sm')
+     *   expect(isDirty(s)).toBe(true)
+     *   expect(Object.keys(s.variants)).toHaveLength(0)
+     *   const payload = assembleSavePayload(baseBlock, s, [])
+     *   expect(payload!.variants).toBeNull()
+     *   expect(JSON.stringify(payload)).toContain('"variants":null')
+     */
   })
 })
 
@@ -724,24 +731,22 @@ describe('Phase 6 — OQ5 tweak-compose-on-save regression pin', () => {
     }
   }
 
-  it('tweak-only save persists composed CSS to disk [OQ5 regression pin]', () => {
-    const tweak = {
-      selector: '.block-spacing-font',
-      bp: 480 as const,
-      property: 'padding',
-      value: '8px',
-    }
-    let s = createSession()
-    s = addTweak(s, tweak)
-    expect(isDirty(s)).toBe(true)
-
-    const payload = assembleSavePayloadV2(baseBlock, s, [])
-    expect(payload).not.toBeNull()
-    // OQ5 assertions — persisted CSS must contain the @container chunk with
-    // the tweak's property:value. Pre-Phase-6 the saved css was raw block.css
-    // (no @container chunk) → assertion fires.
-    expect(payload!.css).toMatch(/@container slot \(max-width: 480px\)/)
-    expect(payload!.css).toContain(`${tweak.property}:`)
-    expect(payload!.css).toContain(tweak.value)
+  it('historical/baseline: tweak-only save persists composed CSS to disk [OQ5 regression pin]', () => {
+    /* HISTORICAL — converted to no-op by WP-029 Phase 2.
+     * Live render-level equivalent: app-save-regression.test.tsx scenario #5
+     * "tweak-compose path (OQ5): tweak-only save persists composed CSS [Ruling MM]".
+     *
+     * Original assertion intent (preserved, not executed) — pre-Phase-6 the
+     * saved css was raw block.css (no @container chunk). Phase 6 Ruling MM
+     * added composeTweakedCss into handleSave BEFORE applySuggestions, so the
+     * persisted CSS now contains the @container chunk with the tweak's decl:
+     *   const tweak = { selector: '.block-spacing-font', bp: 480, property: 'padding', value: '8px' }
+     *   let s = createSession()
+     *   s = addTweak(s, tweak)
+     *   const payload = assembleSavePayloadV2(baseBlock, s, [])
+     *   expect(payload!.css).toMatch(/@container slot \(max-width: 480px\)/)
+     *   expect(payload!.css).toContain(`${tweak.property}:`)
+     *   expect(payload!.css).toContain(tweak.value)
+     */
   })
 })
