@@ -314,6 +314,9 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'apps/studio/src/pages/block-editor/responsive/VariantsDrawer.tsx',
       'apps/studio/src/pages/block-editor/responsive/__tests__/TweakPanel.test.tsx',
       'apps/studio/src/pages/block-editor/responsive/__tests__/VariantsDrawer.test.tsx',
+      // WP-029 Phase 1 (Task A): variant CSS scoping advisory validator + unit pins.
+      'apps/studio/src/pages/block-editor/responsive/validateVariantCss.ts',
+      'apps/studio/src/pages/block-editor/responsive/__tests__/validateVariantCss.test.ts',
     ],
     owned_tables: [],
     owned_routes: [],

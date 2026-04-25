@@ -10,6 +10,7 @@ import {
 } from '@cmsmasters/ui';
 import { renderForPreview } from '@cmsmasters/block-forge-core';
 import { composeSrcDoc } from './preview-assets';
+import { validateVariantCss, type ValidationWarning } from './validateVariantCss';
 
 /**
  * VariantsDrawer — Studio Responsive tab surface. WP-028 Phase 3 CRUD + Phase 4 editor.
@@ -344,14 +345,21 @@ function VariantEditorPanel(props: VariantEditorPanelProps) {
   // Local controlled state — editor is the live source; debounce pushes to parent.
   const [html, setHtml] = React.useState(variant.html)
   const [css, setCss] = React.useState(variant.css)
+  // WP-029 Task A — variant CSS scoping advisory; non-blocking, RHF dirty-state independent.
+  const [warnings, setWarnings] = React.useState<ValidationWarning[]>(() =>
+    validateVariantCss(variant.css, name),
+  )
 
   // Sync local state if parent variant changes (e.g. after rename or undo restore).
   React.useEffect(() => {
     setHtml(variant.html)
     setCss(variant.css)
-  }, [variant])
+    setWarnings(validateVariantCss(variant.css, name))
+  }, [variant, name])
 
   // Ruling BB — 300ms debounce + flush-on-unmount.
+  // WP-029 Task A latches `validateVariantCss` into the same debounce body so
+  // the warnings update on the same cadence as the upstream onUpdate dispatch.
   const debounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
   const dispatch = React.useCallback(
     (nextHtml: string, nextCss: string) => {
@@ -359,9 +367,10 @@ function VariantEditorPanel(props: VariantEditorPanelProps) {
       debounceRef.current = setTimeout(() => {
         debounceRef.current = null
         onUpdate(nextHtml, nextCss)
+        setWarnings(validateVariantCss(nextCss, name))
       }, 300)
     },
-    [onUpdate],
+    [onUpdate, name],
   )
   // Keep latest values in a ref so the unmount cleanup sees the newest html/css/onUpdate
   // without re-running on every keystroke (which would collapse the debounce window).
@@ -448,6 +457,48 @@ function VariantEditorPanel(props: VariantEditorPanelProps) {
           />
         </div>
       </div>
+      {warnings.length > 0 && (
+        <div
+          role="alert"
+          data-testid="variants-editor-scope-warning"
+          className="rounded-md border p-3 text-[length:var(--text-sm-font-size)] border-[hsl(var(--status-warn-fg))] bg-[hsl(var(--status-warn-bg))] text-[hsl(var(--status-warn-fg))]"
+        >
+          <div className="font-[number:var(--font-weight-medium)]">
+            {warnings.length === 1
+              ? '1 CSS rule may leak into base render'
+              : `${warnings.length} CSS rules may leak into base render`}
+          </div>
+          <details className="mt-2">
+            <summary className="cursor-pointer">Show details</summary>
+            <ul
+              data-testid="variants-editor-scope-warning-details"
+              className="mt-2 list-disc pl-5 space-y-1"
+            >
+              {warnings.map((w, i) => (
+                <li key={i}>
+                  {w.reason === 'parse-error' ? (
+                    <>
+                      Parse error: <code>{w.detail}</code>
+                    </>
+                  ) : (
+                    <>
+                      Line {w.line}: <code>{w.selector}</code>
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </details>
+          <a
+            href="/workplan/adr/025-responsive-blocks.md"
+            target="_blank"
+            rel="noreferrer"
+            className="mt-2 inline-block underline"
+          >
+            ADR-025 variant CSS convention →
+          </a>
+        </div>
+      )}
       <div className="flex items-center gap-2" data-testid="variants-editor-width-slider">
         <label className="text-[length:var(--text-xs-font-size)] text-[hsl(var(--text-muted))]">
           Preview width

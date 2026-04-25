@@ -506,3 +506,131 @@ describe('VariantsDrawer — editor tab (Phase 4)', () => {
     expect(cloned.outerHTML).toMatchSnapshot('editor-panel-sm')
   })
 })
+
+// WP-029 Task A — variant CSS scoping advisory banner integration.
+// Validator latch is on the existing 300ms debounce; banner appears/disappears
+// with the same cadence as upstream `update-content` dispatch. Banner is purely
+// advisory — it never blocks save (RHF dirty-state independence).
+describe('VariantsDrawer — variant CSS scope warning banner (WP-029 Task A)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('does not render banner when variant CSS is empty', () => {
+    const { getByTestId, queryByRole } = render(
+      <VariantsDrawer
+        open={true}
+        onOpenChange={() => {}}
+        variants={{ sm: { html: '<h2>v</h2>', css: '' } }}
+        baseHtml=""
+        baseCss=""
+        onAction={() => {}}
+      />,
+    )
+    act(() => {
+      fireEvent.click(getByTestId('variants-drawer-tab-sm'))
+    })
+    expect(queryByRole('alert')).toBeNull()
+  })
+
+  it('renders banner after debounce when unscoped CSS is typed', () => {
+    const { getByTestId, queryByTestId } = render(
+      <VariantsDrawer
+        open={true}
+        onOpenChange={() => {}}
+        variants={{ sm: { html: '<h2>v</h2>', css: '' } }}
+        baseHtml=""
+        baseCss=""
+        onAction={() => {}}
+      />,
+    )
+    act(() => {
+      fireEvent.click(getByTestId('variants-drawer-tab-sm'))
+    })
+    const cssTextarea = getByTestId('variants-editor-variant-css') as HTMLTextAreaElement
+    act(() => {
+      fireEvent.change(cssTextarea, { target: { value: '.foo { background: red }' } })
+    })
+    // Pre-debounce: banner not yet present.
+    expect(queryByTestId('variants-editor-scope-warning')).toBeNull()
+    act(() => {
+      vi.advanceTimersByTime(300)
+    })
+    const banner = getByTestId('variants-editor-scope-warning')
+    expect(banner.getAttribute('role')).toBe('alert')
+    expect(banner.textContent).toContain('1 CSS rule may leak into base render')
+  })
+
+  it('clears banner after debounce when CSS is corrected to scoped form', () => {
+    // Initial mount with unscoped CSS — banner present from initial-render policy.
+    const { getByTestId, queryByTestId } = render(
+      <VariantsDrawer
+        open={true}
+        onOpenChange={() => {}}
+        variants={{ sm: { html: '<h2>v</h2>', css: '.foo { color: red }' } }}
+        baseHtml=""
+        baseCss=""
+        onAction={() => {}}
+      />,
+    )
+    act(() => {
+      fireEvent.click(getByTestId('variants-drawer-tab-sm'))
+    })
+    expect(getByTestId('variants-editor-scope-warning')).toBeDefined()
+    const cssTextarea = getByTestId('variants-editor-variant-css') as HTMLTextAreaElement
+    act(() => {
+      fireEvent.change(cssTextarea, {
+        target: { value: '[data-variant="sm"] .foo { color: red }' },
+      })
+    })
+    act(() => {
+      vi.advanceTimersByTime(300)
+    })
+    expect(queryByTestId('variants-editor-scope-warning')).toBeNull()
+  })
+
+  it('expands details with selector + line when "Show details" is clicked', () => {
+    const { getByTestId } = render(
+      <VariantsDrawer
+        open={true}
+        onOpenChange={() => {}}
+        variants={{ sm: { html: '<h2>v</h2>', css: '.leaky { color: red }' } }}
+        baseHtml=""
+        baseCss=""
+        onAction={() => {}}
+      />,
+    )
+    act(() => {
+      fireEvent.click(getByTestId('variants-drawer-tab-sm'))
+    })
+    const details = getByTestId('variants-editor-scope-warning-details')
+    // <ul> is rendered (always — gated by parent <details>'s `open`); content asserts.
+    expect(details.textContent).toContain('Line 1')
+    expect(details.textContent).toContain('.leaky')
+  })
+
+  it('does not block save — Close button stays clickable while banner present', () => {
+    // Studio surface owns save through the editor toolbar (formState.isDirty), not
+    // VariantsDrawer. Here we pin the in-drawer Close affordance — it stays enabled
+    // regardless of banner state, mirroring the non-blocking advisory contract.
+    const { getByTestId } = render(
+      <VariantsDrawer
+        open={true}
+        onOpenChange={() => {}}
+        variants={{ sm: { html: '<h2>v</h2>', css: '.leaky { color: red }' } }}
+        baseHtml=""
+        baseCss=""
+        onAction={() => {}}
+      />,
+    )
+    act(() => {
+      fireEvent.click(getByTestId('variants-drawer-tab-sm'))
+    })
+    expect(getByTestId('variants-editor-scope-warning')).toBeDefined()
+    const closeBtn = getByTestId('variants-drawer-close') as HTMLButtonElement
+    expect(closeBtn.disabled).toBe(false)
+  })
+})
