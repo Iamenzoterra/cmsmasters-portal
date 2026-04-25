@@ -699,6 +699,11 @@ export function App() {
           </div>
         ) : (
           <div className="lm-canvas-area">
+            {/* Phase 5 hotfix: narrow viewport notice. CSS hides at >=768px.
+                Inspector remains reachable via the BreakpointBar toggle. */}
+            <div className="lm-narrow-notice" role="note">
+              Narrow viewport — Layout Maker works best at ≥1280px.
+            </div>
             {activeConfig && tokens ? (
               <>
                 <ValidationSummary

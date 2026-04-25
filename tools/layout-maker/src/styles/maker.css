@@ -139,6 +139,22 @@ body {
   }
 }
 
+/* Phase 5 hotfix: narrow viewport notice — visible only at <768px.
+ * Operator stays informed without being forced through a desktop-only gate. */
+.lm-narrow-notice {
+  display: none;
+  padding: var(--lm-sp-2) var(--lm-sp-4);
+  background: hsla(45, 80%, 25%, 0.5);
+  color: hsl(45, 80%, 85%);
+  font-size: 11px;
+  border-bottom: 1px solid var(--lm-border-subtle);
+}
+@media (max-width: 767px) {
+  .lm-narrow-notice {
+    display: block;
+  }
+}
+
 /* ── Left Sidebar ────────────────────────────────────────────── */
 .lm-sidebar {
   background: var(--lm-bg-panel);
@@ -401,6 +417,11 @@ body {
   display: flex;
   align-items: center;
   gap: var(--lm-sp-4);
+  /* Phase 5 hotfix: row must wrap at narrow widths so the Inspector toggle
+   * (last child) stays reachable when the canvas track shrinks below the
+   * combined width of breakpoint buttons + preset + preview-controls. */
+  flex-wrap: wrap;
+  row-gap: var(--lm-sp-2);
 }
 
 .lm-bp-bar__custom-badge {
