@@ -26,6 +26,7 @@ adds tests only.
 
 | Decision | Chosen | Why |
 |----------|--------|-----|
+| Scenario count | Reduced 5 → 4 (Brain ruling C-iii, follow-up) | sc 5 (tweak-compose / OQ5) was a harness-era artifact — live `<App />` render collapses tweak-only and tweak-compose into one production handleSave path; sc 5 became a synonym of sc 1. The OQ5 invariant is inherited via sc 1's `@container slot (max-width: 768px)` substring assertion (the substring exists only because production calls composeTweakedCss before applySuggestions). |
 | Mount strategy | Full `<App />` + mocked `apiClient` | Workplan §Phase 2 — eliminates harness-mirror drift; production `handleSave` is the SUT |
 | Pin conversion approach | `it('historical/baseline: …', () => { /* … */ })` (empty body, intent in block comment) | Brief §Task 2.4 recommended approach; keeps test names visible in `vitest run` output (auditable history); empty bodies pass as "passed" — preserves count parity with the 138/1-skip target; cleaner than `test.skip` per pin (which would inflate the skip count and blur the drift-detector's role) |
 | jsdom stubs scope | File-level (mirroring `TweakPanel.test.tsx` L11–25 + `VariantsDrawer.test.tsx` L7–28) | Phase 0 carry-over (f) decree — never global; avoids cross-file pollution |
@@ -71,10 +72,14 @@ adds tests only.
 
 ## Open Questions
 
-- **None Phase-2-specific.** OQ-γ (Phase 1 — pre-existing Studio TS errors) and
-  OQ-δ (Phase 1 — cross-surface snap divergence) are independently scoped and
-  do NOT block Phase 2 (different domain; Phase 2 is `infra-tooling` only).
-  Phase 3 Close will document OQ-δ acceptance per the workplan.
+- **OQ-C: sc 1+5 duplication** — RESOLVED via Brain ruling C-iii (follow-up
+  commit `<pending>`). Reduced 5 → 4 scenarios; OQ5 invariant inherited by
+  sc 1's `@container` substring assertion. See Key Decisions row.
+- **None other Phase-2-specific.** OQ-γ (Phase 1 — pre-existing Studio TS
+  errors) and OQ-δ (Phase 1 — cross-surface snap divergence) are independently
+  scoped and do NOT block Phase 2 (different domain; Phase 2 is
+  `infra-tooling` only). Phase 3 Close will document OQ-δ acceptance per the
+  workplan.
 
 ## Verification Results
 
@@ -112,18 +117,15 @@ adds tests only.
 ## Test count delta (empirical)
 
 - **Baseline (Phase 1 close `611be474`):** 133 passed / 0 skipped
-- **After Phase 2:** 138 passed / 1 skipped (139 total)
-- **Math:**
-  - +5 new active mounts in `app-save-regression.test.tsx` (scenarios 1-5)
+- **After Phase 2 initial commit `c842a9a3`:** 138 passed / 1 skipped (no-op shells counted as passed)
+- **After Phase 2 polish `ecbec5db` (B+D):** 133 passed / 6 skipped (no-op shells flipped to `it.skip` for honest count)
+- **After Phase 2 follow-up `<pending>` (C-iii):** **132 passed / 6 skipped (138 total)**
+- **Final math:**
+  - +4 new active mounts in `app-save-regression.test.tsx` (scenarios 1-4 after C-iii reduction)
   - +1 new skip in `app-save-regression.test.tsx` (drift detector)
-  - 5 historical pins in `integration.test.tsx` converted to empty no-op shells — still discovered, still reported as `passed` (no assertions = no failures), so count unchanged
-  - Net: 133 baseline + 5 new = 138 active; 0 baseline + 1 new = 1 skip
-
-The brief's note (§Task 2.6) acknowledged the 138 vs 134 ambiguity. The body-comment
-conversion approach (Task 2.4 recommended path) keeps the historical no-ops
-discoverable + counted-as-passed, which yields 138/1-skip — the higher of the two
-documented possibilities. This is the empirically-correct count given the chosen
-conversion.
+  - +5 new skips in `integration.test.tsx` (historical pins flipped from active no-op shells to `it.skip`; count parity with deletion-by-skip)
+  - Net active: 133 baseline − 5 (Phase 5/6 historical pins now skipped) + 4 (App-render mounts) = 132
+  - Net skipped: 0 baseline + 5 (historical) + 1 (drift detector) = 6
 
 ## Git
 

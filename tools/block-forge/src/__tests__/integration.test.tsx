@@ -559,6 +559,12 @@ describe('Phase 4 — updateVariantContent → save round-trip', () => {
 // the payload-shape intent encoded by WP-028 Rulings HH/KK/LL/MM. Do NOT
 // delete: if you find yourself wanting to "clean these up", read this
 // comment again and the WP-029 §Phase 2 plan first.
+//
+// WP-029 Phase 2 follow-up (Brain ruling C-iii) reduced 5 live mounts to 4 —
+// the OQ5 historical pin (originally Phase 6 OQ5, L693–747 in pre-conversion
+// line numbers) is covered behaviorally by the tweak-only mount in
+// `app-save-regression.test.tsx`. Its commented body is preserved below as
+// the historical record.
 // ─────────────────────────────────────────────────────────────────────────
 //
 // (Original WP-028 Phase 5 header, retained for context)

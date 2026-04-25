@@ -7,14 +7,15 @@
  * in `integration.test.tsx`) with live <App /> mounts so production
  * `App.tsx::handleSave` is the system under test, not a parallel harness.
  *
- * Five active scenarios mirror the historical pin matrix:
+ * Four active scenarios mirror the historical pin matrix:
  *   1. tweak-only        — accept tweak via TweakPanel, click Save
+ *                          (implicitly pins the OQ5 compose-on-save invariant —
+ *                          see Brain ruling C-iii in phase-2-result.md)
  *   2. variant-only      — fork variant via VariantsDrawer, click Save
  *   3. mixed             — tweak + variant, click Save
  *   4. variants-clear    — delete pre-loaded variant, click Save (OQ2 null)
- *   5. tweak-compose     — tweak-only assertion of compose-on-save (OQ5)
  *
- * Sixth `test.skip` codifies the drift-detector experiment (Brain C4).
+ * Fifth `test.skip` codifies the drift-detector experiment (Brain C4).
  *
  * Manifest: not registered — `infra-tooling` convention excludes test files.
  */
@@ -253,6 +254,13 @@ describe('App save regression — production handleSave pins (WP-029 Phase 2)', 
     vi.restoreAllMocks()
   })
 
+  // Note: this scenario implicitly pins the OQ5 invariant. Production handleSave
+  // invokes composeTweakedCss before applySuggestions; the @container substring
+  // in the asserted payload exists only as a result of that compose step.
+  // The harness-era split between "tweak-only" and "tweak-compose (OQ5)" was an
+  // artifact of two different assemble functions — live render collapses them
+  // into one path, so a separate sc 5 would be a synonym, not a new pin.
+  // (Brain ruling C-iii, WP-029 Phase 2 follow-up — sc 5 deleted.)
   test('1. tweak-only: accept Hide tweak → saveBlock called with composed CSS, variants null', async () => {
     await mountAppAndSelectBlock(freshBlock())
     await dispatchElementClickAndSwitchBp(FIXTURE_BLOCK.slug, '.hero')
@@ -262,11 +270,16 @@ describe('App save regression — production handleSave pins (WP-029 Phase 2)', 
     const arg = lastSaveBlockArg()
     expect(arg.requestBackup).toBe(true)
     expect(arg.block.slug).toBe(FIXTURE_BLOCK.slug)
-    // Tweak compose-on-save invariant — payload CSS contains the @container
-    // reveal chunk emitted by composeTweakedCss for bp 768.
+    // Tweak compose-on-save invariant (OQ5 / Ruling MM) — payload CSS contains
+    // the @container reveal chunk emitted by composeTweakedCss for bp 768.
+    // This substring exists in the payload ONLY because production handleSave
+    // calls composeTweakedCss before applySuggestions (Phase 6 OQ5 fix); a
+    // regression of the compose-on-save order would drop this match.
     expect(arg.block.css).toMatch(/@container slot \(max-width: 768px\)/)
     expect(arg.block.css).toContain('display:')
     expect(arg.block.css).toContain('none')
+    // Base CSS survives intact (compose layers on top, doesn't replace).
+    expect(arg.block.css).toContain('color: red')
     // No variants authored → null sentinel (Phase 5 OQ2 / Ruling LL).
     expect(arg.block.variants).toBeNull()
   })
@@ -314,26 +327,6 @@ describe('App save regression — production handleSave pins (WP-029 Phase 2)', 
     // Disk parity (Ruling LL) — JSON.stringify preserves the null key.
     const serialized = JSON.stringify(arg.block)
     expect(serialized).toContain('"variants":null')
-  })
-
-  test('5. tweak-compose path (OQ5): tweak-only save persists composed CSS [Ruling MM regression pin]', async () => {
-    // Phase 6 OQ5 fix — handleSave invokes composeTweakedCss before payload
-    // assembly. Pre-fix the saved css was raw block.css. This pin asserts the
-    // composed @container chunk reaches the saveBlock payload, mirroring the
-    // historical Phase 6 OQ5 pin (integration.test.tsx L727–746) at the live
-    // <App /> render-level.
-    await mountAppAndSelectBlock(freshBlock())
-    await dispatchElementClickAndSwitchBp(FIXTURE_BLOCK.slug, '.hero')
-    await clickHideTweak()
-    await clickSave()
-
-    const arg = lastSaveBlockArg()
-    expect(arg.block.css).toMatch(/@container slot \(max-width: 768px\)/)
-    expect(arg.block.css).toContain('.hero')
-    expect(arg.block.css).toContain('display:')
-    expect(arg.block.css).toContain('none')
-    // And the BASE css survives intact (compose layers on top, doesn't replace).
-    expect(arg.block.css).toContain('color: red')
   })
 
   // ─────────────────────────────────────────────────────────────────────
