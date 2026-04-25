@@ -102,13 +102,21 @@ export function getSlotTraits(
 /**
  * WP-031 Phase 3: cluster ID aliases.
  *
- * `canShow('cluster-X', ...)` returns true if ANY aliased field ID returns
- * true. Aliases map cluster IDs to the field IDs the cluster owns; cluster
- * visibility = OR over its members. Identity + References are always-true
- * special cases (no field gating — they ride the slot-selected condition).
+ * Two layers:
  *
- * Old field-level IDs continue to work for fine-grained gating inside
- * cluster bodies. This is purely additive — zero churn in existing tests.
+ * 1. **Abstract clusters** (Cut A) — semantic field-level groupings. Used by
+ *    capability tests and by Phase 4+ work that needs per-field cluster
+ *    membership. `canShow('cluster-X')` returns OR over aliased field IDs.
+ *
+ * 2. **Section-level clusters** (Cut B) — match the actual top-level sections
+ *    rendered by Inspector.tsx, so the wrap migration is mechanical. These
+ *    use trait rules directly (not field-OR) because each section spans
+ *    multiple field types. Names: `cluster-role`, `cluster-outer`,
+ *    `cluster-inner`.
+ *
+ * Identity + References are always-true sentinels (visible whenever a slot
+ * is selected). Old field-level canShow IDs continue to work — purely
+ * additive layer.
  */
 const CLUSTER_ALIASES: Record<string, readonly string[]> = {
   'cluster-layout': ['column-width', 'visibility', 'order', 'position'],
@@ -139,6 +147,13 @@ const CLUSTER_ALIASES: Record<string, readonly string[]> = {
   'cluster-diagnostics': ['usable-width'],
 }
 
+/** Cut B section-level clusters — trait rules used by Inspector.tsx wraps. */
+const SECTION_CLUSTERS: Record<string, (t: SlotTraits) => boolean> = {
+  'cluster-role': () => true,            // Slot Role section: position/sticky/z-index/allowed/drawer-trigger/full-width
+  'cluster-outer': (t) => t.isLeaf,      // Slot Area section: padding/border/column-width/visibility/order
+  'cluster-inner': (t) => t.isLeaf,      // Slot Parameters section: max-width + align + inner-padding + background
+}
+
 /** Pure dispatcher: should a given Inspector field render? */
 // eslint-disable-next-line sonarjs/cognitive-complexity
 export function canShow(
@@ -146,10 +161,16 @@ export function canShow(
   traits: SlotTraits,
   scope: ScopeCtx,
 ): boolean {
-  // WP-031 Phase 3: cluster IDs delegate to OR over their aliased fields.
+  // WP-031 Phase 3: cluster IDs delegate to OR over their aliased fields
+  // (abstract clusters from Cut A) or to trait rules (section-level clusters
+  // from Cut B used by Inspector.tsx wraps).
   if (fieldId.startsWith('cluster-')) {
     if (fieldId === 'cluster-identity' || fieldId === 'cluster-references') {
       return true
+    }
+    // Section-level clusters (Cut B) — direct trait rule, no field aliasing.
+    if (fieldId in SECTION_CLUSTERS) {
+      return SECTION_CLUSTERS[fieldId](traits)
     }
     // cluster-frame is conceptually leaf-only (containers show background
     // inside cluster-children's panel). Without this guard, the always-true

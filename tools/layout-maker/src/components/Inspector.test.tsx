@@ -304,3 +304,116 @@ describe('Inspector capability gating (Phase 4 Cut B)', () => {
     }
   })
 })
+
+describe('Inspector cluster wrapping (WP-031 phase 3 cut B)', () => {
+  afterEach(() => cleanup())
+
+  it('leaf slot: renders cluster-identity, cluster-role, cluster-outer, cluster-inner', () => {
+    const config = makeConfig({ content: {} })
+    const { container } = render(
+      <Inspector
+        {...baseProps}
+        config={config}
+        selectedSlot="content"
+        activeBreakpoint="desktop"
+        gridKey="desktop"
+      />,
+    )
+    expect(container.querySelector('[data-cluster-id="cluster-identity"]')).not.toBeNull()
+    expect(container.querySelector('[data-cluster-id="cluster-role"]')).not.toBeNull()
+    expect(container.querySelector('[data-cluster-id="cluster-outer"]')).not.toBeNull()
+    expect(container.querySelector('[data-cluster-id="cluster-inner"]')).not.toBeNull()
+    // Container-only cluster absent on leaf
+    expect(container.querySelector('[data-cluster-id="cluster-children"]')).toBeNull()
+  })
+
+  it('container slot: renders cluster-children, NO cluster-outer or cluster-inner', () => {
+    const config = makeConfig({
+      outer: { 'nested-slots': ['inner'] },
+      inner: {},
+    })
+    const { container } = render(
+      <Inspector
+        {...baseProps}
+        config={config}
+        selectedSlot="outer"
+        activeBreakpoint="desktop"
+        gridKey="desktop"
+      />,
+    )
+    expect(container.querySelector('[data-cluster-id="cluster-identity"]')).not.toBeNull()
+    expect(container.querySelector('[data-cluster-id="cluster-role"]')).not.toBeNull()
+    expect(container.querySelector('[data-cluster-id="cluster-children"]')).not.toBeNull()
+    expect(container.querySelector('[data-cluster-id="cluster-outer"]')).toBeNull()
+    expect(container.querySelector('[data-cluster-id="cluster-inner"]')).toBeNull()
+  })
+
+  it('default-open clusters have <details open> attribute (Layout / Spacing equivalents)', () => {
+    const config = makeConfig({ content: {} })
+    const { container } = render(
+      <Inspector
+        {...baseProps}
+        config={config}
+        selectedSlot="content"
+        activeBreakpoint="desktop"
+        gridKey="desktop"
+      />,
+    )
+    const role = container.querySelector('[data-cluster-id="cluster-role"]')
+    const outer = container.querySelector('[data-cluster-id="cluster-outer"]')
+    const inner = container.querySelector('[data-cluster-id="cluster-inner"]')
+    // role/outer/inner are open by default per WP §Default open policy
+    expect(role?.hasAttribute('open')).toBe(true)
+    expect(outer?.hasAttribute('open')).toBe(true)
+    expect(inner?.hasAttribute('open')).toBe(true)
+  })
+
+  it('diagnostics + references collapsed by default', () => {
+    const config = makeConfig({ content: {} })
+    const { container } = render(
+      <Inspector
+        {...baseProps}
+        config={config}
+        selectedSlot="content"
+        activeBreakpoint="desktop"
+        gridKey="desktop"
+      />,
+    )
+    const refs = container.querySelector('[data-cluster-id="cluster-references"]')
+    expect(refs).not.toBeNull()
+    expect(refs?.hasAttribute('open')).toBe(false)
+  })
+
+  it('empty state: cluster-layout-defaults + cluster-references mount once each', () => {
+    const config = makeConfig({})
+    const { container } = render(
+      <Inspector
+        {...baseProps}
+        config={config}
+        selectedSlot={null}
+        activeBreakpoint="desktop"
+        gridKey="desktop"
+      />,
+    )
+    expect(container.querySelectorAll('[data-cluster-id="cluster-layout-defaults"]').length).toBe(1)
+    expect(container.querySelectorAll('[data-cluster-id="cluster-references"]').length).toBe(1)
+    // Selected-slot-only clusters absent in empty state
+    expect(container.querySelector('[data-cluster-id="cluster-identity"]')).toBeNull()
+    expect(container.querySelector('[data-cluster-id="cluster-role"]')).toBeNull()
+  })
+
+  it('cluster identity has no <details>/chevron (always-on)', () => {
+    const config = makeConfig({ content: {} })
+    const { container } = render(
+      <Inspector
+        {...baseProps}
+        config={config}
+        selectedSlot="content"
+        activeBreakpoint="desktop"
+        gridKey="desktop"
+      />,
+    )
+    const identity = container.querySelector('[data-cluster-id="cluster-identity"]')
+    expect(identity?.tagName.toLowerCase()).toBe('div') // not <details>
+  })
+})

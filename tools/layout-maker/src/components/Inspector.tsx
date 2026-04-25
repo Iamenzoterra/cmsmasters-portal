@@ -13,6 +13,7 @@ import {
 import { CopyButton } from './CopyButton'
 import { SlotToggles } from './SlotToggles'
 import { InspectorUtilityZone } from './InspectorUtilityZone'
+import { InspectorCluster } from './InspectorCluster'
 import { CreateSlotModal } from './CreateSlotModal'
 import { DRAWER_ICONS } from '../../../../packages/ui/src/portal/drawer-icons'
 export { DrawerSettingsControl } from './ResponsivePreviewControls'
@@ -449,22 +450,25 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
           <AddSlotButton config={config} tokens={tokens} onCreateTopLevelSlot={onCreateTopLevelSlot} />
         </div>
         <div className="lm-inspector__body">
-          <div className="lm-inspector__section">
-            <div className="lm-inspector__section-title">Layout defaults</div>
-            <div className="lm-inspector__row">
-              <span className="lm-inspector__label">Background</span>
+          <InspectorCluster id="cluster-layout-defaults" title="Layout defaults" defaultOpen>
+            <div className="lm-inspector__section">
+              <div className="lm-inspector__row">
+                <span className="lm-inspector__label">Background</span>
+              </div>
+              <BackgroundPicker
+                value={config.background}
+                onChange={(v) => onUpdateLayoutProp('background', v)}
+                tokens={tokens}
+                allowInherit={false}
+              />
             </div>
-            <BackgroundPicker
-              value={config.background}
-              onChange={(v) => onUpdateLayoutProp('background', v)}
-              tokens={tokens}
-              allowInherit={false}
-            />
-          </div>
+          </InspectorCluster>
           <div className="lm-inspector__empty">
             Click a slot in the canvas to inspect its properties.
           </div>
-          <InspectorUtilityZone tokens={tokens} onCopied={() => onShowToast('Copied!')} />
+          <InspectorCluster id="cluster-references" title="References">
+            <InspectorUtilityZone tokens={tokens} onCopied={() => onShowToast('Copied!')} />
+          </InspectorCluster>
         </div>
         <BreakpointFooter config={config} activeBreakpoint={activeBreakpoint} />
       </div>
@@ -601,24 +605,24 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
         <AddSlotButton config={config} tokens={tokens} onCreateTopLevelSlot={onCreateTopLevelSlot} />
       </div>
       <div className="lm-inspector__body">
-        {/* Slot name + Copy all */}
-        <div className={`lm-inspector__section${isContainer ? ' lm-inspector__panel--container' : ''}`}>
-          <div className="lm-inspector__slot-name">
-            {selectedSlot}
-            <span className="lm-inspector__slot-badges">
-              {getSlotBadges(traits, baseSlot.position).map((badge) => (
-                <span key={badge} className={`lm-badge lm-badge--${badge}`}>{badge}</span>
-              ))}
-            </span>
-            <CopyButton text={formatSummary()} onCopied={handleCopied} />
+        {/* Identity cluster — slot name + badges + copy */}
+        <InspectorCluster id="cluster-identity" title="">
+          <div className={`lm-inspector__section${isContainer ? ' lm-inspector__panel--container' : ''}`}>
+            <div className="lm-inspector__slot-name">
+              {selectedSlot}
+              <span className="lm-inspector__slot-badges">
+                {getSlotBadges(traits, baseSlot.position).map((badge) => (
+                  <span key={badge} className={`lm-badge lm-badge--${badge}`}>{badge}</span>
+                ))}
+              </span>
+              <CopyButton text={formatSummary()} onCopied={handleCopied} />
+            </div>
           </div>
-        </div>
+        </InspectorCluster>
 
-        {/* Slot Role — position, sticky, z-index (applies to leaf AND container) */}
-        <div className="lm-inspector__section lm-inspector__section--role">
-          <div className="lm-inspector__section-title">
-            Slot Role
-          </div>
+        {/* Role cluster — position, sticky, z-index, allowed-block-types, drawer-trigger */}
+        <InspectorCluster id="cluster-role" title="Slot Role" defaultOpen>
+          <div className="lm-inspector__section lm-inspector__section--role">
 
           <div className="lm-inspector__row">
             <span className="lm-inspector__label">Position</span>
@@ -771,12 +775,13 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
           {canShow('full-width-note', traits, scope) && (
             <div className="lm-inspector__locked-note">Full width — locked by position</div>
           )}
-        </div>
+          </div>
+        </InspectorCluster>
 
-        {/* Container panel — children + create controls */}
+        {/* Children cluster — container slots only */}
         {canShow('container-panel', traits, scope) && (
+        <InspectorCluster id="cluster-children" title="Child slots" defaultOpen>
           <div className="lm-inspector__section lm-inspector__panel--container">
-            <div className="lm-inspector__section-title">Child slots</div>
             {effectiveChildren.length === 0 ? (
               <div className="lm-inspector__empty" style={{ padding: 'var(--lm-sp-4) 0' }}>
                 No children yet. Add or create one below.
@@ -866,6 +871,7 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
               </button>
             </div>
           </div>
+        </InspectorCluster>
         )}
 
         <CreateSlotModal
@@ -881,20 +887,22 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
           }}
         />
 
-        {/* Slot Area — outer (grid column width + padding). Hidden for containers — they have no inner host. */}
-        {canShow('slot-area-section', traits, scope) && (
-        <div className="lm-inspector__section lm-inspector__section--outer" data-slot-type={selectedSlot}>
-          <div className="lm-inspector__section-title">
-            Slot Area
-            {!isBaseBp && (
-              <>
-                <span className={`lm-scope-chip ${bpScopeClass}`}>{bpScopeLabel}</span>
-                {!hasAnyPerBpOverride && (
-                  <span className="lm-inspector__inherited-label">Inherited from Base</span>
-                )}
-              </>
-            )}
-          </div>
+        {/* Slot Area cluster — outer (grid column width + padding). Hidden for containers — they have no inner host. */}
+        {canShow('cluster-outer', traits, scope) && (
+        <InspectorCluster
+          id="cluster-outer"
+          title="Slot Area"
+          defaultOpen
+          scopeBadge={!isBaseBp ? (
+            <>
+              <span className={`lm-scope-chip ${bpScopeClass}`}>{bpScopeLabel}</span>
+              {!hasAnyPerBpOverride && (
+                <span className="lm-inspector__inherited-label">Inherited from Base</span>
+              )}
+            </>
+          ) : undefined}
+        >
+          <div className="lm-inspector__section lm-inspector__section--outer" data-slot-type={selectedSlot}>
 
           {/* Outer padding — split into X / top / bottom */}
           {(['padding-x', 'padding-top', 'padding-bottom'] as const).map((key) => {
@@ -1098,7 +1106,8 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
               )}
             </div>
           )}
-        </div>
+          </div>
+        </InspectorCluster>
         )}
 
         {/* Property rows — leaf only */}
@@ -1120,20 +1129,22 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
           </div>
         ))}
 
-        {/* Slot Parameters — inner container controls (leaf only) */}
-        {canShow('slot-parameters-section', traits, scope) && (
-        <div className="lm-inspector__section lm-inspector__section--inner">
-          <div className="lm-inspector__section-title">
-            Slot Parameters
-            {!isBaseBp && (
-              <>
-                <span className={`lm-scope-chip ${bpScopeClass}`}>{bpScopeLabel}</span>
-                {!hasAnyPerBpOverride && (
-                  <span className="lm-inspector__inherited-label">Inherited from Base</span>
-                )}
-              </>
-            )}
-          </div>
+        {/* Slot Parameters cluster — inner container controls (leaf only) */}
+        {canShow('cluster-inner', traits, scope) && (
+        <InspectorCluster
+          id="cluster-inner"
+          title="Slot Parameters"
+          defaultOpen
+          scopeBadge={!isBaseBp ? (
+            <>
+              <span className={`lm-scope-chip ${bpScopeClass}`}>{bpScopeLabel}</span>
+              {!hasAnyPerBpOverride && (
+                <span className="lm-inspector__inherited-label">Inherited from Base</span>
+              )}
+            </>
+          ) : undefined}
+        >
+          <div className="lm-inspector__section lm-inspector__section--inner">
 
           {/* Inner max-width */}
           <div className="lm-inspector__row">
@@ -1248,67 +1259,72 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
               Convert to container
             </button>
           </div>
-        </div>
-        )}
-
-        {/* Usable width (leaf only — derived from padding + column width) */}
-        {canShow('usable-width', traits, scope) && usableWidth && (
-          <div className="lm-inspector__section lm-inspector__derived">
-            <div className="lm-inspector__row">
-              <span className="lm-inspector__label">Usable width</span>
-              <span className="lm-inspector__value">
-                {usableWidth}
-                {usableWidth !== 'dynamic' && (
-                  <CopyButton
-                    text={formatLine('usable-width', undefined, usableWidth)}
-                    onCopied={handleCopied}
-                  />
-                )}
-              </span>
-            </div>
-            {usableWidth !== 'dynamic' && (
-              <div className="lm-inspector__value-sub">(width − padding × 2)</div>
-            )}
           </div>
+        </InspectorCluster>
         )}
 
-        {/* Test blocks */}
-        {blockCount > 0 && (
-          <div className="lm-inspector__section lm-inspector__info">
-            <div className="lm-inspector__row">
-              <span className="lm-inspector__label">Test blocks</span>
-              <span className="lm-inspector__value">{blockCount} configured</span>
+        {/* Diagnostics cluster — usable width + test blocks + CSS warnings (collapsed by default) */}
+        {(canShow('usable-width', traits, scope) || blockCount > 0 || (selectedSlot && testBlocks && testBlocks.length > 0)) && (
+        <InspectorCluster id="cluster-diagnostics" title="Diagnostics">
+          {canShow('usable-width', traits, scope) && usableWidth && (
+            <div className="lm-inspector__section lm-inspector__derived">
+              <div className="lm-inspector__row">
+                <span className="lm-inspector__label">Usable width</span>
+                <span className="lm-inspector__value">
+                  {usableWidth}
+                  {usableWidth !== 'dynamic' && (
+                    <CopyButton
+                      text={formatLine('usable-width', undefined, usableWidth)}
+                      onCopied={handleCopied}
+                    />
+                  )}
+                </span>
+              </div>
+              {usableWidth !== 'dynamic' && (
+                <div className="lm-inspector__value-sub">(width − padding × 2)</div>
+              )}
             </div>
-            <div className="lm-inspector__block-list">
-              {testBlocks!.map((slug) => (
-                <div key={slug} className="lm-inspector__block-row">
-                  <span className="lm-inspector__block-slug">{slug}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+          )}
 
-        {/* CSS scoping warnings for this slot's blocks */}
-        {selectedSlot && testBlocks && testBlocks.length > 0 && (() => {
-          const slotWarnings = blockWarnings.filter((w) => testBlocks.includes(w.slug))
-          if (slotWarnings.length === 0) return null
-          return (
-            <div className="lm-inspector__section lm-inspector__warnings">
-              <div className="lm-inspector__warnings-title">CSS Scoping Warnings</div>
-              {slotWarnings.map((w) => (
-                <div key={w.slug} className="lm-inspector__warning">
-                  <div className="lm-inspector__warning-slug">{w.slug}: {w.selectors.length} unscoped</div>
-                  <div className="lm-inspector__warning-selectors">
-                    {w.selectors.join(', ')}
+          {blockCount > 0 && (
+            <div className="lm-inspector__section lm-inspector__info">
+              <div className="lm-inspector__row">
+                <span className="lm-inspector__label">Test blocks</span>
+                <span className="lm-inspector__value">{blockCount} configured</span>
+              </div>
+              <div className="lm-inspector__block-list">
+                {testBlocks!.map((slug) => (
+                  <div key={slug} className="lm-inspector__block-row">
+                    <span className="lm-inspector__block-slug">{slug}</span>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          )
-        })()}
+          )}
 
-        <InspectorUtilityZone tokens={tokens} onCopied={handleCopied} />
+          {selectedSlot && testBlocks && testBlocks.length > 0 && (() => {
+            const slotWarnings = blockWarnings.filter((w) => testBlocks.includes(w.slug))
+            if (slotWarnings.length === 0) return null
+            return (
+              <div className="lm-inspector__section lm-inspector__warnings">
+                <div className="lm-inspector__warnings-title">CSS Scoping Warnings</div>
+                {slotWarnings.map((w) => (
+                  <div key={w.slug} className="lm-inspector__warning">
+                    <div className="lm-inspector__warning-slug">{w.slug}: {w.selectors.length} unscoped</div>
+                    <div className="lm-inspector__warning-selectors">
+                      {w.selectors.join(', ')}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
+        </InspectorCluster>
+        )}
+
+        <InspectorCluster id="cluster-references" title="References">
+          <InspectorUtilityZone tokens={tokens} onCopied={handleCopied} />
+        </InspectorCluster>
       </div>
       <BreakpointFooter config={config} activeBreakpoint={activeBreakpoint} />
     </div>

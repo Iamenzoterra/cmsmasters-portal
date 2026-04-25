@@ -315,6 +315,23 @@ describe('canShow — cluster aliases (WP-031 phase 3)', () => {
     expect(canShow('padding-x', containerTraits, desktopScope)).toBe(false)
     expect(canShow('drawer-trigger-label', sidebarTraits, desktopScope)).toBe(true)
   })
+
+  // Cut B section-level clusters — match Inspector.tsx top-level sections
+  it('cluster-role → always true (slot has role fields)', () => {
+    expect(canShow('cluster-role', leafTraits, desktopScope)).toBe(true)
+    expect(canShow('cluster-role', containerTraits, desktopScope)).toBe(true)
+    expect(canShow('cluster-role', sidebarTraits, desktopScope)).toBe(true)
+  })
+
+  it('cluster-outer → leaf only (Slot Area section)', () => {
+    expect(canShow('cluster-outer', leafTraits, desktopScope)).toBe(true)
+    expect(canShow('cluster-outer', containerTraits, desktopScope)).toBe(false)
+  })
+
+  it('cluster-inner → leaf only (Slot Parameters section)', () => {
+    expect(canShow('cluster-inner', leafTraits, desktopScope)).toBe(true)
+    expect(canShow('cluster-inner', containerTraits, desktopScope)).toBe(false)
+  })
 })
 
 describe('getSlotBadges', () => {
