@@ -1,10 +1,13 @@
 # WP-031: Layout Maker - Inspector / Workbench UX Refactor
 
-Status: PLANNING  
+Status: ✅ DONE  
 Priority: P1 - operator productivity  
 Created: 2026-04-25  
 Updated: 2026-04-25  
-Completed: -
+Completed: 2026-04-25  
+Close report: `logs/wp-031/phase-close-result.md`  
+Final commit: 8dddfb82 (P6 visual rhythm purge)  
+Total: 6 phases shipped + 4 hotfix passes + close summary
 
 ## Mission
 
