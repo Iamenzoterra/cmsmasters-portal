@@ -2629,3 +2629,45 @@ body {
   padding: var(--lm-sp-4);
   border-bottom: 1px solid var(--lm-border-subtle);
 }
+
+/* ── WP-031 Phase 4: Scope + override clarity ─────────────────── */
+/* Cluster header override count chip (sits next to scope chip in scopeBadge slot). */
+.lm-cluster-count {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px var(--lm-sp-2);
+  border-radius: 2px;
+  background: hsla(var(--lm-bp-hue, 210), 50%, 25%, 0.6);
+  color: hsl(var(--lm-bp-hue, 210), 70%, 85%);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* Row-level override tint — uses :has() to detect rows containing .lm-bp-dot
+ * (which renders only when isOverridden(field) === true). 2px BP-hued left
+ * rail makes overridden rows readable from a glance, complementing the dot. */
+.lm-inspector__row:has(.lm-bp-dot),
+.lm-inspector__pad-row--override {
+  border-left: 2px solid hsl(var(--lm-bp-hue, 210), 60%, 50%);
+  padding-left: var(--lm-sp-3);
+}
+
+/* "Show overridden only" toggle — sits inside cluster-identity when non-desktop */
+.lm-filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lm-sp-2);
+  margin-top: var(--lm-sp-3);
+  font-size: 11px;
+  color: var(--lm-text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Filter active: hide every cluster (except identity) that has no .lm-bp-dot
+ * descendant. Identity always stays so the toggle remains reachable. */
+.lm-inspector__body[data-filter="overridden"] [data-cluster-id]:not([data-cluster-id="cluster-identity"]):not(:has(.lm-bp-dot)) {
+  display: none;
+}

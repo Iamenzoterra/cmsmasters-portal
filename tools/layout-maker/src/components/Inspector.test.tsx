@@ -417,3 +417,101 @@ describe('Inspector cluster wrapping (WP-031 phase 3 cut B)', () => {
     expect(identity?.tagName.toLowerCase()).toBe('div') // not <details>
   })
 })
+
+describe('Inspector scope + override clarity (WP-031 phase 4)', () => {
+  afterEach(() => cleanup())
+
+  it('cluster-inner shows override count when innerOverrideCount > 0', () => {
+    const config = makeConfig({ content: { padding: '--spacing-xl' } })
+    config.grid.tablet.slots = { content: { padding: '--spacing-3xl' } }
+    const { container } = render(
+      <Inspector
+        {...baseProps}
+        config={config}
+        selectedSlot="content"
+        activeBreakpoint="tablet"
+        gridKey="tablet"
+      />,
+    )
+    const inner = container.querySelector('[data-cluster-id="cluster-inner"]')
+    const count = inner?.querySelector('.lm-cluster-count')
+    expect(count).not.toBeNull()
+    expect(count?.textContent).toMatch(/1 override/)
+  })
+
+  it('cluster-inner has no count chip when no override at this BP', () => {
+    const config = makeConfig({ content: { padding: '--spacing-xl' } })
+    const { container } = render(
+      <Inspector
+        {...baseProps}
+        config={config}
+        selectedSlot="content"
+        activeBreakpoint="tablet"
+        gridKey="tablet"
+      />,
+    )
+    const inner = container.querySelector('[data-cluster-id="cluster-inner"]')
+    expect(inner?.querySelector('.lm-cluster-count')).toBeNull()
+  })
+
+  it('desktop BP: no count chip rendered (scope IS Base)', () => {
+    const config = makeConfig({ content: { padding: '--spacing-xl' } })
+    const { container } = render(
+      <Inspector
+        {...baseProps}
+        config={config}
+        selectedSlot="content"
+        activeBreakpoint="desktop"
+        gridKey="desktop"
+      />,
+    )
+    expect(container.querySelector('.lm-cluster-count')).toBeNull()
+  })
+
+  it('"Show overridden only" toggle visible at non-desktop BP', () => {
+    const config = makeConfig({ content: {} })
+    const { container } = render(
+      <Inspector
+        {...baseProps}
+        config={config}
+        selectedSlot="content"
+        activeBreakpoint="tablet"
+        gridKey="tablet"
+      />,
+    )
+    expect(container.querySelector('.lm-filter-toggle')).not.toBeNull()
+  })
+
+  it('"Show overridden only" toggle absent at desktop BP', () => {
+    const config = makeConfig({ content: {} })
+    const { container } = render(
+      <Inspector
+        {...baseProps}
+        config={config}
+        selectedSlot="content"
+        activeBreakpoint="desktop"
+        gridKey="desktop"
+      />,
+    )
+    expect(container.querySelector('.lm-filter-toggle')).toBeNull()
+  })
+
+  it('toggling "Show overridden only" sets data-filter on body', () => {
+    const config = makeConfig({ content: { padding: '--spacing-xl' } })
+    config.grid.tablet.slots = { content: { padding: '--spacing-3xl' } }
+    const { container } = render(
+      <Inspector
+        {...baseProps}
+        config={config}
+        selectedSlot="content"
+        activeBreakpoint="tablet"
+        gridKey="tablet"
+      />,
+    )
+    const checkbox = container.querySelector('.lm-filter-toggle input') as HTMLInputElement
+    const body = container.querySelector('.lm-inspector__body')
+    expect(body?.getAttribute('data-filter')).toBeNull()
+    fireEvent.click(checkbox)
+    expect(body?.getAttribute('data-filter')).toBe('overridden')
+  })
+})

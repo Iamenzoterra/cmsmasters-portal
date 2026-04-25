@@ -427,6 +427,10 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
 
   const [pendingContainerSlot, setPendingContainerSlot] = useState<string | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  // Phase 4 — "Show overridden only" filter. Active state is per-page-load
+  // (no persistence). Body gets data-filter="overridden" attribute; CSS uses
+  // :has() to hide clusters without a .lm-bp-dot descendant.
+  const [showOverriddenOnly, setShowOverriddenOnly] = useState(false)
 
   if (!config || !tokens) {
     return (
@@ -549,6 +553,20 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
   ] as const
   const hasAnyPerBpOverride = !isBaseBp
     && PER_BP_FIELDS_LOCAL.some((f) => isFieldOverridden(selectedSlot, gridKey, config, f))
+
+  // Phase 4 — per-cluster override counts. Drives the cluster-header scope chip
+  // ("Tablet · 3 overrides") so the operator sees write-scope at a glance
+  // before opening any cluster body.
+  const OUTER_PER_BP_FIELDS: readonly PerBpSlotField[] = [
+    'padding-x', 'padding-top', 'padding-bottom',
+    'border-sides', 'border-width', 'border-color',
+    'visibility', 'order',
+  ] as const
+  const INNER_PER_BP_FIELDS: readonly PerBpSlotField[] = [
+    'max-width', 'align', 'gap', 'min-height', 'margin-top', 'padding',
+  ] as const
+  const outerOverrideCount = isBaseBp ? 0 : OUTER_PER_BP_FIELDS.filter((f) => isOverridden(f)).length
+  const innerOverrideCount = isBaseBp ? 0 : INNER_PER_BP_FIELDS.filter((f) => isOverridden(f)).length
   const fieldScopeLabel = getFieldScope(
     'padding', traits, activeBreakpoint as CanvasBreakpointId,
     { hasOverrideAtBp: hasAnyPerBpOverride },
@@ -604,8 +622,8 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
         <SlotToggles config={config} activeBreakpoint={gridKey} onToggleSlot={onToggleSlot} />
         <AddSlotButton config={config} tokens={tokens} onCreateTopLevelSlot={onCreateTopLevelSlot} />
       </div>
-      <div className="lm-inspector__body">
-        {/* Identity cluster — slot name + badges + copy */}
+      <div className="lm-inspector__body" data-filter={showOverriddenOnly ? 'overridden' : undefined}>
+        {/* Identity cluster — slot name + badges + copy + (Phase 4) override-only filter */}
         <InspectorCluster id="cluster-identity" title="">
           <div className={`lm-inspector__section${isContainer ? ' lm-inspector__panel--container' : ''}`}>
             <div className="lm-inspector__slot-name">
@@ -617,6 +635,17 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
               </span>
               <CopyButton text={formatSummary()} onCopied={handleCopied} />
             </div>
+            {!isBaseBp && (
+              <label className="lm-filter-toggle">
+                <input
+                  type="checkbox"
+                  className="lm-inspector__checkbox"
+                  checked={showOverriddenOnly}
+                  onChange={(e) => setShowOverriddenOnly(e.target.checked)}
+                />
+                Show overridden only
+              </label>
+            )}
           </div>
         </InspectorCluster>
 
@@ -896,6 +925,9 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
           scopeBadge={!isBaseBp ? (
             <>
               <span className={`lm-scope-chip ${bpScopeClass}`}>{bpScopeLabel}</span>
+              {outerOverrideCount > 0 && (
+                <span className="lm-cluster-count">{outerOverrideCount} override{outerOverrideCount === 1 ? '' : 's'}</span>
+              )}
               {!hasAnyPerBpOverride && (
                 <span className="lm-inspector__inherited-label">Inherited from Base</span>
               )}
@@ -1123,6 +1155,9 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
           scopeBadge={!isBaseBp ? (
             <>
               <span className={`lm-scope-chip ${bpScopeClass}`}>{bpScopeLabel}</span>
+              {innerOverrideCount > 0 && (
+                <span className="lm-cluster-count">{innerOverrideCount} override{innerOverrideCount === 1 ? '' : 's'}</span>
+              )}
               {!hasAnyPerBpOverride && (
                 <span className="lm-inspector__inherited-label">Inherited from Base</span>
               )}
