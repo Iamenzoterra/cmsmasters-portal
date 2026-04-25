@@ -615,7 +615,7 @@ describe('Phase 5 — Carve-out regression pins + OQ2 clear-signal', () => {
     }
   }
 
-  it('historical/baseline: tweak-only save [Phase 2/4 carve-out pin] — isDirty true → payload assembled (not early-returned)', () => {
+  it.skip('historical/baseline: tweak-only save [Phase 2/4 carve-out pin] — isDirty true → payload assembled (not early-returned)', () => {
     /* HISTORICAL — converted to no-op by WP-029 Phase 2 (commit `611be474`+1).
      * Live render-level equivalent: app-save-regression.test.tsx scenario #1
      * "tweak-only: accept Hide tweak → saveBlock called with composed CSS".
@@ -630,7 +630,7 @@ describe('Phase 5 — Carve-out regression pins + OQ2 clear-signal', () => {
      */
   })
 
-  it('historical/baseline: variant-only save [Phase 3/4 carve-out pin] — payload carries variants map (not early-returned)', () => {
+  it.skip('historical/baseline: variant-only save [Phase 3/4 carve-out pin] — payload carries variants map (not early-returned)', () => {
     /* HISTORICAL — converted to no-op by WP-029 Phase 2.
      * Live render-level equivalent: app-save-regression.test.tsx scenario #2
      * "variant-only: fork sm variant → saveBlock css unchanged, variants populated".
@@ -645,7 +645,7 @@ describe('Phase 5 — Carve-out regression pins + OQ2 clear-signal', () => {
      */
   })
 
-  it('historical/baseline: mixed save [Phase 4 mixed carve-out pin] — tweak + variant both dirty; payload has variants, save proceeds', () => {
+  it.skip('historical/baseline: mixed save [Phase 4 mixed carve-out pin] — tweak + variant both dirty; payload has variants, save proceeds', () => {
     /* HISTORICAL — converted to no-op by WP-029 Phase 2.
      * Live render-level equivalent: app-save-regression.test.tsx scenario #3
      * "mixed: tweak + variant fork → saveBlock has composed CSS AND variants".
@@ -661,7 +661,7 @@ describe('Phase 5 — Carve-out regression pins + OQ2 clear-signal', () => {
      */
   })
 
-  it('historical/baseline: OQ2 clear-signal pin [Ruling HH] — empty session.variants → payload variants === null', () => {
+  it.skip('historical/baseline: OQ2 clear-signal pin [Ruling HH] — empty session.variants → payload variants === null', () => {
     /* HISTORICAL — converted to no-op by WP-029 Phase 2.
      * Live render-level equivalent: app-save-regression.test.tsx scenario #4
      * "variants clear-signal (OQ2): pre-loaded variant deleted → saveBlock variants === null".
@@ -731,7 +731,7 @@ describe('Phase 6 — OQ5 tweak-compose-on-save regression pin', () => {
     }
   }
 
-  it('historical/baseline: tweak-only save persists composed CSS to disk [OQ5 regression pin]', () => {
+  it.skip('historical/baseline: tweak-only save persists composed CSS to disk [OQ5 regression pin]', () => {
     /* HISTORICAL — converted to no-op by WP-029 Phase 2.
      * Live render-level equivalent: app-save-regression.test.tsx scenario #5
      * "tweak-compose path (OQ5): tweak-only save persists composed CSS [Ruling MM]".
