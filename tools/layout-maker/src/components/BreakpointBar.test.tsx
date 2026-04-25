@@ -95,4 +95,64 @@ describe('BreakpointBar responsive preview controls', () => {
     fireEvent.click(getByRole('button', { name: 'tab' }))
     expect(onUpdateGridProp).toHaveBeenCalledWith('tablet', 'drawer-trigger', 'tab')
   })
+
+  // WP-031 Phase 5 — Inspector overlay toggle
+  it('renders Inspector toggle button when onToggleInspector is provided', () => {
+    const onToggle = vi.fn()
+    const { getByRole } = render(
+      <BreakpointBar
+        config={config}
+        tokens={tokens}
+        activeBreakpoint="tablet"
+        viewportWidth={768}
+        onBreakpointChange={vi.fn()}
+        onDevicePreset={vi.fn()}
+        onBatchUpdateSlotConfig={vi.fn()}
+        onUpdateGridProp={vi.fn()}
+        onToggleInspector={onToggle}
+        inspectorOpen={false}
+      />,
+    )
+    const btn = getByRole('button', { name: 'Inspector' })
+    expect(btn).toBeTruthy()
+    expect(btn.getAttribute('aria-expanded')).toBe('false')
+    fireEvent.click(btn)
+    expect(onToggle).toHaveBeenCalledTimes(1)
+  })
+
+  it('Inspector toggle reflects inspectorOpen via aria-expanded + active class', () => {
+    const { getByRole } = render(
+      <BreakpointBar
+        config={config}
+        tokens={tokens}
+        activeBreakpoint="tablet"
+        viewportWidth={768}
+        onBreakpointChange={vi.fn()}
+        onDevicePreset={vi.fn()}
+        onBatchUpdateSlotConfig={vi.fn()}
+        onUpdateGridProp={vi.fn()}
+        onToggleInspector={vi.fn()}
+        inspectorOpen={true}
+      />,
+    )
+    const btn = getByRole('button', { name: 'Inspector' })
+    expect(btn.getAttribute('aria-expanded')).toBe('true')
+    expect(btn.className).toContain('lm-bp-btn--active')
+  })
+
+  it('does NOT render Inspector toggle when onToggleInspector callback is omitted', () => {
+    const { queryByRole } = render(
+      <BreakpointBar
+        config={config}
+        tokens={tokens}
+        activeBreakpoint="tablet"
+        viewportWidth={768}
+        onBreakpointChange={vi.fn()}
+        onDevicePreset={vi.fn()}
+        onBatchUpdateSlotConfig={vi.fn()}
+        onUpdateGridProp={vi.fn()}
+      />,
+    )
+    expect(queryByRole('button', { name: 'Inspector' })).toBeNull()
+  })
 })

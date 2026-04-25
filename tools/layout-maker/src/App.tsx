@@ -177,6 +177,21 @@ export function App() {
   const [view, setView] = useState<'layouts' | 'scopes'>('layouts')
   const [validationState, setValidationState] = useState<ValidationState>({ errors: [], warnings: [] })
   const [externalReloadBanner, setExternalReloadBanner] = useState(false)
+  // Phase 5 — Inspector overlay state for narrow viewports (<1280px). CSS
+  // media query hides the toggle button at full-width; click → toggles.
+  // Esc and backdrop click also close.
+  const [inspectorOpen, setInspectorOpen] = useState(false)
+
+  // Esc key closes Inspector overlay (a11y) — only meaningful when overlay
+  // is active, but the listener always attaches because cost is negligible.
+  useEffect(() => {
+    if (!inspectorOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setInspectorOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [inspectorOpen])
 
   const prevConfigRef = useRef<LayoutConfig | null>(null)
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -663,7 +678,7 @@ export function App() {
 
   return (
     <>
-      <div className="lm-shell">
+      <div className="lm-shell" data-inspector-open={inspectorOpen ? 'true' : undefined}>
         {/* Left sidebar */}
         <LayoutSidebar
           layouts={layouts}
@@ -704,6 +719,8 @@ export function App() {
                   onDevicePreset={handleDevicePreset}
                   onBatchUpdateSlotConfig={handleBatchUpdateSlotConfig}
                   onUpdateGridProp={handleUpdateGridProp}
+                  onToggleInspector={() => setInspectorOpen((o) => !o)}
+                  inspectorOpen={inspectorOpen}
                 />
                 <Canvas
                   config={activeConfig}
@@ -749,6 +766,16 @@ export function App() {
           onCreateTopLevelSlot={handleCreateTopLevelSlot}
           onSelectSlot={setSelectedSlot}
         />
+        )}
+        {/* Phase 5 — Inspector overlay backdrop. Only rendered when overlay
+            is active. CSS hides at >=1280px (overlay mode disabled).
+            Click closes the overlay. */}
+        {inspectorOpen && (
+          <div
+            className="lm-inspector-backdrop"
+            onClick={() => setInspectorOpen(false)}
+            aria-hidden="true"
+          />
         )}
       </div>
 

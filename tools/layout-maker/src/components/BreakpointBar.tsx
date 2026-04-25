@@ -20,6 +20,9 @@ interface Props {
   onDevicePreset: (width: number) => void
   onBatchUpdateSlotConfig: BatchUpdateSlotConfig
   onUpdateGridProp: UpdateGridProp
+  /** Phase 5 — Inspector overlay toggle. Hidden by CSS at >=1280px. */
+  onToggleInspector?: () => void
+  inspectorOpen?: boolean
 }
 
 /* ── Inline SVG icons (16×16) ───────────────────────────────── */
@@ -46,7 +49,7 @@ const icons: Record<CanvasBreakpointId, ReactNode> = {
   ),
 }
 
-export function BreakpointBar({ config, tokens, activeBreakpoint, viewportWidth, onBreakpointChange, onDevicePreset, onBatchUpdateSlotConfig, onUpdateGridProp }: Props) {
+export function BreakpointBar({ config, tokens, activeBreakpoint, viewportWidth, onBreakpointChange, onDevicePreset, onBatchUpdateSlotConfig, onUpdateGridProp, onToggleInspector, inspectorOpen }: Props) {
   const truth = deriveBreakpointTruth(activeBreakpoint, config.grid)
   const grid = config.grid[truth.resolvedKey]
   if (!grid) return null
@@ -106,6 +109,18 @@ export function BreakpointBar({ config, tokens, activeBreakpoint, viewportWidth,
           onBatchUpdateSlotConfig={onBatchUpdateSlotConfig}
           onUpdateGridProp={onUpdateGridProp}
         />
+
+        {/* Phase 5 — Inspector overlay toggle. CSS hides at >=1280px shell width. */}
+        {onToggleInspector && (
+          <button
+            className={`lm-bp-btn lm-bp-bar__inspector-toggle${inspectorOpen ? ' lm-bp-btn--active' : ''}`}
+            onClick={onToggleInspector}
+            aria-expanded={inspectorOpen ? 'true' : 'false'}
+            title="Toggle Inspector overlay"
+          >
+            Inspector
+          </button>
+        )}
       </div>
 
       {/* Layer 1: Active canonical — which BP the operator selected. */}
