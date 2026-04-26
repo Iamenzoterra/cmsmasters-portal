@@ -1,7 +1,7 @@
 # WP-030 Phase 6 — Result
 
 > Phase 6: Save flow + cross-surface PARITY hookup.
-> Status: 🟢 EXECUTED (Hands self-approved per Brain delegation 2026-04-26) — awaiting Brain dual-gate review (code + live UI).
+> Status: 🟢 SEALED (Brain dual-gate review APPROVED 2026-04-26 — code + live UI both 🟢).
 > Phase 5 baseline: `0ba985eb` (doc fixup of `23ec58f4`).
 
 ## What Was Implemented
@@ -166,10 +166,11 @@ Both surfaces empirically prove cascade-chain auto-propagation works as designed
 
 ## Git
 
-```
-Phase 6 main: <pending — awaiting Brain dual-gate review>
-Doc fixup:    <pending>
-```
+- Commit SHA: `50f3c8ff` — `feat(wp-030): Phase 6 — Save flow + cross-surface PARITY [WP-030 phase 6]`
+- 23 files changed / +1597 / -49
+- DS-lint hook: clean (2 files checked)
+- Co-author: `Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>`
+- WP-030 ladder closed: `4f487154` (P1) → `d8c5498a` (P2) → `ddec80e4` (P2.fix) → `45a8e973` (P3) → `95d4fb35` (P3.fix) → `4c377a33` (P4) → `a917f3b6` (P4.fix) → `23ec58f4` (P5) → `0ba985eb` (P5.fix) → `50f3c8ff` (P6)
 
 ## Next steps after review
 
