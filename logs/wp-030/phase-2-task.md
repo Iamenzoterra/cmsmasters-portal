@@ -60,7 +60,13 @@ Plus **Phase 2 pre-flight findings** (from Brain RECON + Hands' Brain-approval r
 - **PF.1** `tokens.css` static values empirically match Phase 0 §0.6 table 1:1 — `defaults.ts` `maxPx` values are GROUND TRUTH (no invented constants).
 - **PF.2** utopia-core `relativeTo: 'viewport'` → emits `vi` units (RTL-safe per WP §Output format key decision). `'viewport-width'` (default) → `vw`. **Generator MUST pass `relativeTo: 'viewport'`** in every `calculateClamp` invocation.
 - **PF.3** `--text-display` does NOT exist in `tokens.css` — only in `tokens.responsive.css` scaffold. It's a fluid-only token, no static fallback. Cascade works (any consumer's `var(--text-display, fallback)` resolves to clamp from tokens.responsive.css). Mental model: `--text-display` is the one V1 token that ONLY exists as fluid.
-- **PF.4** utopia-core `checkWCAG({ min, max, minWidth, maxWidth }) => number[] | null` — empirically locked contract (Hands' RECON, dist/index.d.ts L75-80 confirmation). Semantics: `null` = exact-edge pass (ratio === 2.5 to numeric precision), `[]` = clean pass (ratio < 2.5), `[from, to]` = fail with viewport-width bounds where ratio > 2.5× violates. Task 2.4 `validate.ts` adapter is shape-aware from line 1 (no TODO stubs to replace). Bonus: `UtopiaStep` (return of `calculateTypeScale`) carries inline `wcagViolation?: { from, to } | null` per step — Phase 3+ scale-derived path can leverage; V1 override-only path uses `validate()` for uniform diagnostics.
+- **PF.4** utopia-core `checkWCAG({ min, max, minWidth, maxWidth }) => number[] | null` — empirically locked contract (Hands' RECON, dist/index.d.ts L75-80 confirmation; refined post-amendment empirical probe 2026-04-26). Semantics:
+  - `pass` = result is `null` OR `[]` (empty array)
+  - `fail` = result is length-2 number array `[from, to]` (viewport-width bounds where ratio > 2.5× violates)
+  - The `null` vs `[]` distinction for pass cases is **non-deterministic from inputs** — it's an internal numeric-precision artifact of utopia-core (e.g. `(16, 40)` returns `[]` while `(10, 25)` returns `null` despite both having ratio === 2.5 exact). Both shapes mean "no violation".
+  - Adapter `isViolation = Array.isArray(result) && result.length > 0` correctly handles BOTH pass shapes via short-circuit (null fails Array.isArray; [] fails length > 0).
+  - Task 2.4 `validate.ts` adapter is shape-aware from line 1 (no TODO stubs to replace).
+  - Bonus: `UtopiaStep` (return of `calculateTypeScale`) carries inline `wcagViolation?: { from, to } | null` per step — Phase 3+ scale-derived path can leverage; V1 override-only path uses `validate()` for uniform diagnostics.
 
 ---
 
@@ -509,12 +515,13 @@ import type { ResponsiveConfig, GeneratedToken, WcagViolation } from '../types'
  *
  * checkWCAG contract (locked empirically 2026-04-26 — utopia-core@1.6.0):
  *   Signature: ({ min, max, minWidth, maxWidth }) => number[] | null
- *   Returns:
- *     null            → exact-edge pass (ratio === 2.5 to numeric precision)
- *     []              → clean pass (ratio < 2.5)
- *     [from, to]      → fail; numbers are viewport-width bounds where
- *                       ratio > 2.5× violates. Cross-ref UtopiaStep.wcagViolation
- *                       which exposes { from, to } per scale-derived step.
+ *   Semantic contract:
+ *     pass = null OR []     (no violation; null vs [] is non-deterministic
+ *                            numeric-precision artifact of utopia-core internals —
+ *                            do NOT rely on which shape is returned for any input)
+ *     fail = [from, to]     length-2 number array; viewport-width bounds where
+ *                            ratio > 2.5× violates. Cross-ref UtopiaStep.wcagViolation
+ *                            which exposes { from, to } per scale-derived step.
  *
  * Bonus (non-blocking, Phase 3+ forward note): calculateTypeScale already returns
  * UtopiaStep[] with inline wcagViolation?: { from, to } | null per step. Future
@@ -559,26 +566,32 @@ function buildReason(result: number[] | null): string {
 
 ### MANDATORY drift sanity-check at execution start
 
-Contract was empirically locked Phase 2 pre-flight RECON (2026-04-26 — Hands' Brain-approval round-trip). Confirm no drift since:
+Contract was empirically locked Phase 2 pre-flight RECON (2026-04-26 — Hands' Brain-approval round-trip; refined post-amendment 2026-04-26). Confirm no drift since. Tests SEMANTIC contract only — `null` vs `[]` for pass cases is **non-deterministic numeric-precision artifact** of utopia-core (e.g. `(16, 40)` returns `[]` while `(10, 25)` returns `null` despite both having ratio === 2.5 exact). Both shapes mean "no violation".
 
 ```bash
 cd tools/responsive-tokens-editor && node -e "
 const { checkWCAG } = require('utopia-core');
-console.log('clean pass (16-18, ratio 1.125):', JSON.stringify(checkWCAG({ min: 16, max: 18, minWidth: 375, maxWidth: 1440 })));
-console.log('exact-edge pass (16-40, ratio 2.5):', JSON.stringify(checkWCAG({ min: 16, max: 40, minWidth: 375, maxWidth: 1440 })));
-console.log('fail (10-30, ratio 3.0):', JSON.stringify(checkWCAG({ min: 10, max: 30, minWidth: 375, maxWidth: 1440 })));
+const isViolation = (r) => Array.isArray(r) && r.length > 0;
+const a = checkWCAG({ min: 16, max: 18, minWidth: 375, maxWidth: 1440 });
+const b = checkWCAG({ min: 16, max: 40, minWidth: 375, maxWidth: 1440 });
+const c = checkWCAG({ min: 10, max: 30, minWidth: 375, maxWidth: 1440 });
+console.log('clean pass (16-18, ratio 1.125):', JSON.stringify(a), '→', isViolation(a) ? 'FAIL' : 'pass');
+console.log('boundary pass (16-40, ratio 2.5):', JSON.stringify(b), '→', isViolation(b) ? 'FAIL' : 'pass');
+console.log('fail (10-30, ratio 3.0):', JSON.stringify(c), '→', isViolation(c) ? 'fail' : 'PASS');
 "
 ```
 
-Expected output (locked contract):
+Expected output (semantic contract):
 
 ```
-clean pass (16-18, ratio 1.125): []
-exact-edge pass (16-40, ratio 2.5): null
-fail (10-30, ratio 3.0): [<from>,<to>]   // numbers ARE viewport-width bounds where ratio > 2.5× violates
+clean pass (16-18, ratio 1.125): <null|[]> → pass
+boundary pass (16-40, ratio 2.5): <null|[]> → pass     // either shape is valid; non-deterministic
+fail (10-30, ratio 3.0): [<from>,<to>] → fail          // numbers ARE viewport-width bounds where ratio > 2.5× violates
 ```
 
-If actual output structurally differs (Promise, throws, different ndim, exotic) → STOP, surface to Brain. Do NOT silently adapt — that's how invented constants leak in. The locked array-or-null sentinel pattern is the spec contract.
+The semantic contract: **pass = `null` OR `[]`; fail = length-2 number array `[from, to]`**. Adapter `isViolation = Array.isArray(result) && result.length > 0` correctly handles BOTH pass shapes via short-circuit.
+
+If actual output structurally differs (Promise, throws, different ndim like `{ violations: [...] }`, no length-2 array on fail) → STOP, surface to Brain. Do NOT silently adapt — that's how invented constants leak in. The locked array-or-null sentinel pattern is the spec contract.
 
 ### Domain Rules
 
@@ -905,19 +918,23 @@ cd tools/responsive-tokens-editor && npm test -- --update
 ```bash
 echo "=== Phase 2 Verification ==="
 
-# 1. Drift sanity-check on locked checkWCAG contract (number[] | null)
+# 1. Drift sanity-check on locked checkWCAG SEMANTIC contract (pass = null OR [], fail = [from, to])
+# NOTE: Tests SEMANTIC contract only — null vs [] for pass cases is non-deterministic
+# numeric-precision artifact of utopia-core internals (per refined PF.4). Do NOT assert
+# specific shape per input; assert pass/fail behavior via adapter's isViolation predicate.
 cd tools/responsive-tokens-editor && node -e "
 const { checkWCAG } = require('utopia-core');
-const a = checkWCAG({ min: 16, max: 18, minWidth: 375, maxWidth: 1440 });
-const b = checkWCAG({ min: 16, max: 40, minWidth: 375, maxWidth: 1440 });
-const c = checkWCAG({ min: 10, max: 30, minWidth: 375, maxWidth: 1440 });
-const ok = Array.isArray(a) && a.length === 0
-        && b === null
-        && Array.isArray(c) && c.length === 2;
+const isViolation = (r) => Array.isArray(r) && r.length > 0;
+const a = checkWCAG({ min: 16, max: 18, minWidth: 375, maxWidth: 1440 });  // ratio 1.125 — pass
+const b = checkWCAG({ min: 16, max: 40, minWidth: 375, maxWidth: 1440 });  // ratio 2.5 — pass (boundary)
+const c = checkWCAG({ min: 10, max: 30, minWidth: 375, maxWidth: 1440 });  // ratio 3.0 — fail
+const ok = !isViolation(a)
+        && !isViolation(b)
+        && isViolation(c) && c.length === 2;
 console.log('contract drift:', ok ? '✅ HOLD' : '❌ DRIFT — STOP, surface to Brain');
 console.log('clean:', JSON.stringify(a), '/ edge:', JSON.stringify(b), '/ fail:', JSON.stringify(c));
 "
-echo "(expect: ✅ HOLD — empirically locked contract intact)"
+echo "(expect: ✅ HOLD — semantic contract intact; null vs [] for pass is utopia-core numeric-precision detail)"
 
 # 2. Typecheck
 npm run responsive-tokens-editor:typecheck
@@ -1051,7 +1068,7 @@ git commit -m "feat(wp-030): Phase 2 — config schema + math engine + locked sn
 
 - **READ Phase 0 §0.4 + §0.6 BEFORE writing defaults.ts.** Every minPx/maxPx pair is locked by Brain rulings — invented values cause snapshot misalignment.
 - **READ Phase 1 vite.config.ts** to confirm `test: { css: true }` is set. Snapshot test depends on this.
-- **checkWCAG contract LOCKED empirically pre-approval** (utopia-core@1.6.0, 2026-04-26): `({ min, max, minWidth, maxWidth }) => number[] | null` where `null` = exact-edge pass, `[]` = clean pass, `[from, to]` = fail with viewport-width bounds. Adapter helpers `isViolation` / `buildReason` shape-aware from line 1 — no stub-replacement step. Drift sanity-check at execution start (verification §1) is the only gate.
+- **checkWCAG contract LOCKED empirically pre-approval** (utopia-core@1.6.0, 2026-04-26; refined post-amendment): `({ min, max, minWidth, maxWidth }) => number[] | null`. **Semantic contract (definitive):** pass = `null` OR `[]`; fail = length-2 number array `[from, to]` (viewport-width bounds where ratio > 2.5× violates). The `null` vs `[]` distinction for pass cases is a **non-deterministic numeric-precision artifact** of utopia-core internals — both shapes mean "no violation". Adapter `isViolation = Array.isArray(result) && result.length > 0` correctly short-circuits both pass shapes (null fails Array.isArray; [] fails length > 0). `validate.ts` helpers shape-aware from line 1 — no stub-replacement step. Drift sanity-check at execution start (verification §1) tests SEMANTIC contract only, not specific shape per input.
 - **PASS `relativeTo: 'viewport'` to EVERY `calculateClamp` invocation.** Missing this → `vw` units → RTL-unsafe → snapshot diff at first commit. PF.2 is non-negotiable.
 - **Snapshot review gate.** Hands quotes the generated CSS in result.md `§ Snapshot review` block. Brain reviews + approves BEFORE Hands commits. Do NOT auto-commit the snap file.
 - **DO NOT touch:**
