@@ -120,4 +120,6 @@ Phase 1 task prompt initially had **8 invented config constants** that drifted f
 
 ## Git
 
-- Phase 1 commit: `{TBD}` — `feat(wp-030): Phase 1 — Vite scaffold tools/responsive-tokens-editor/ on :7703 [WP-030 phase 1]`
+- Phase 1 commit: `d8c5498a` — `feat(wp-030): Phase 1 — Vite scaffold tools/responsive-tokens-editor/ on :7703 [WP-030 phase 1]`
+- Task prompt commit: `06099e44` — `docs(wp-030): phase 1 task — Vite scaffold tools/responsive-tokens-editor/ [WP-030 phase 1 prep]`
+- Phase 0 baseline commit: `4f487154`
