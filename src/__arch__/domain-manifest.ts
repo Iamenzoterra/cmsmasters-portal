@@ -661,6 +661,16 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'tools/responsive-tokens-editor/src/types.ts',
       'tools/responsive-tokens-editor/src/vite-env.d.ts',
       'tools/responsive-tokens-editor/src/globals.css',
+      // WP-030 Phase 2: Config schema + math engine. Snapshot file
+      // (__snapshots__/generator.test.ts.snap) is git-tracked but excluded
+      // from manifest per block-forge precedent (snapshot artifacts not registered).
+      'tools/responsive-tokens-editor/src/lib/defaults.ts',
+      'tools/responsive-tokens-editor/src/lib/generator.ts',
+      'tools/responsive-tokens-editor/src/lib/validate.ts',
+      'tools/responsive-tokens-editor/src/lib/config-io.ts',
+      'tools/responsive-tokens-editor/src/__tests__/generator.test.ts',
+      'tools/responsive-tokens-editor/src/__tests__/defaults.test.ts',
+      'tools/responsive-tokens-editor/src/__tests__/validate.test.ts',
       'nx.json',
     ],
     owned_tables: [],

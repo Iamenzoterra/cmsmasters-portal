@@ -1,0 +1,80 @@
+import type { ResponsiveConfig } from '../types'
+
+/**
+ * V1 conservative defaults — locked by Brain rulings 1.a/1.b/1.c (Phase 0 close 2026-04-26).
+ *
+ * Discipline: clamp max = current tokens.css static (preserves desktop rendering);
+ * mobile reduction max ~20%; WCAG 1.4.4 ratio max ≤ 2.5×.
+ *
+ * For V1 every existing token has an explicit override entry — the type/space scales
+ * (ratioAtMin, multipliers, etc.) are seeded for future-token derivation but the
+ * generator emits override values as the actual clamp() output for every entry.
+ */
+export const conservativeDefaults: ResponsiveConfig = {
+  minViewport: 375,
+  maxViewport: 1440,
+
+  type: {
+    baseAtMin: 16,
+    baseAtMax: 18,
+    ratioAtMin: 1.2,
+    ratioAtMax: 1.25,
+    stepMap: {
+      // Future-token step assignments — generator falls back to these
+      // when an entry is NOT in `overrides`. V1: every existing token IS in overrides.
+      6:  { token: '--text-display',         overrides: '--text-display' },
+      5:  { token: '--h1-font-size',         overrides: '--h1-font-size' },
+      4:  { token: '--h2-font-size',         overrides: '--h2-font-size' },
+      3:  { token: '--h3-font-size',         overrides: '--h3-font-size' },
+      2:  { token: '--h4-font-size',         overrides: '--h4-font-size' },
+      1:  { token: '--text-lg-font-size',    overrides: '--text-lg-font-size' },
+      0:  { token: '--text-base-font-size',  overrides: '--text-base-font-size' },
+      [-1]: { token: '--text-sm-font-size',  overrides: '--text-sm-font-size' },
+      [-2]: { token: '--text-xs-font-size',  overrides: '--text-xs-font-size' },
+      [-3]: { token: '--caption-font-size',  overrides: '--caption-font-size' },
+    },
+  },
+
+  spacing: {
+    baseAtMin: 16,
+    baseAtMax: 20,
+    multipliers: {
+      '3xs': 0.125, '2xs': 0.25, 'xs': 0.5, 'sm': 0.75, 'md': 1,
+      'lg':  1.25,  'xl':  1.5,  '2xl': 2,  '3xl': 2.5, '4xl': 3, '5xl': 4,
+      // 6xl–10xl excluded per Phase 0 escalation (a) — 0 consumers
+    },
+  },
+
+  overrides: {
+    // Typography (10 — values match Phase 0 §0.6 conservative-defaults table)
+    '--h1-font-size':        { minPx: 44, maxPx: 54, reason: 'preserve desktop static (ruling 1)' },
+    '--h2-font-size':        { minPx: 34, maxPx: 42, reason: 'preserve desktop static (ruling 1)' },
+    '--h3-font-size':        { minPx: 26, maxPx: 32, reason: 'preserve desktop static (ruling 1)' },
+    '--h4-font-size':        { minPx: 22, maxPx: 26, reason: 'preserve desktop static (ruling 1)' },
+    '--text-lg-font-size':   { minPx: 17, maxPx: 20, reason: 'preserve desktop static (ruling 1)' },
+    '--text-base-font-size': { minPx: 16, maxPx: 18, reason: 'preserve desktop static (ruling 1)' },
+    '--text-sm-font-size':   { minPx: 14, maxPx: 15, reason: 'preserve desktop static (ruling 1)' },
+    '--text-xs-font-size':   { minPx: 12, maxPx: 13, reason: 'preserve desktop static (ruling 1)' },
+    '--caption-font-size':   { minPx: 13, maxPx: 14, reason: 'preserve desktop static (ruling 1)' },
+    '--text-display':        { minPx: 28, maxPx: 64, reason: 'WP-024 hero scaffold preserved (ruling 1.a)' },
+
+    // Spacing (11 — 3xs..5xl)
+    '--spacing-3xs':  { minPx: 2,  maxPx: 2,  reason: 'no-op (ruling 1)' },
+    '--spacing-2xs':  { minPx: 4,  maxPx: 4,  reason: 'no-op (ruling 1)' },
+    '--spacing-xs':   { minPx: 8,  maxPx: 8,  reason: 'no-op tap-target floor (ruling 1)' },
+    '--spacing-sm':   { minPx: 10, maxPx: 12, reason: 'preserve desktop static (ruling 1)' },
+    '--spacing-md':   { minPx: 14, maxPx: 16, reason: 'preserve desktop static (ruling 1)' },
+    '--spacing-lg':   { minPx: 16, maxPx: 20, reason: 'borderline 20% per ruling 1.c — within cap' },
+    '--spacing-xl':   { minPx: 20, maxPx: 24, reason: 'preserve desktop static (ruling 1)' },
+    '--spacing-2xl':  { minPx: 26, maxPx: 32, reason: 'preserve desktop static (ruling 1)' },
+    '--spacing-3xl':  { minPx: 32, maxPx: 40, reason: 'borderline 20% per ruling 1.c — within cap' },
+    '--spacing-4xl':  { minPx: 40, maxPx: 48, reason: 'preserve desktop static (ruling 1)' },
+    '--spacing-5xl':  { minPx: 52, maxPx: 64, reason: 'preserve desktop static (ruling 1)' },
+
+    // Special (1 — section rhythm; tightened per ruling 1.b)
+    '--space-section': {
+      minPx: 52, maxPx: 96,
+      reason: 'tightened from WP-024 scaffold 24-96 (ratio 4.0 fail-WCAG) per ruling 1.b — section rhythm first-class concern',
+    },
+  },
+}
