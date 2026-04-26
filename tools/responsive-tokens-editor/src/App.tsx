@@ -8,6 +8,7 @@ import { GlobalScaleConfig } from './components/GlobalScaleConfig'
 import { WcagBanner } from './components/WcagBanner'
 import { ResetButton } from './components/ResetButton'
 import { LoadStatusBadge } from './components/LoadStatusBadge'
+import { TokenPreviewGrid } from './components/TokenPreviewGrid'
 
 /**
  * Phase 3 orchestrator — single source of truth = useState<ResponsiveConfig>.
@@ -58,12 +59,18 @@ export function App() {
       <main className="flex-1 overflow-y-auto px-6 py-6">
         <WcagBanner violations={violations} />
         <GlobalScaleConfig config={config} onChange={setConfig} />
+        <TokenPreviewGrid
+          tokens={result.tokens}
+          violations={violations}
+          config={config}
+          onChange={setConfig}
+        />
         <ResetButton onReset={() => setConfig(conservativeDefaults)} />
       </main>
 
       <footer className="border-t border-[hsl(var(--border))] px-6 py-3 text-[length:var(--text-xs-font-size)] text-[hsl(var(--muted-foreground))]">
-        Phase 3 · Token grid + per-token override editor land in Phase 4 · Save in
-        Phase 6
+        Phase 4 · Container widths editor + Live preview row land in Phase 5 ·
+        Save in Phase 6
       </footer>
     </div>
   )

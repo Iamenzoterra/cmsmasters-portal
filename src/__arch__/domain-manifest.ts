@@ -683,6 +683,13 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'tools/responsive-tokens-editor/src/__tests__/GlobalScaleConfig.test.tsx',
       'tools/responsive-tokens-editor/src/__tests__/WcagBanner.test.tsx',
       'tools/responsive-tokens-editor/src/__tests__/ResetButton.test.tsx',
+      // WP-030 Phase 4: Token Preview Grid + Per-Token Override Editor.
+      // Inline-expand pattern (PF.15 — @cmsmasters/ui dep deferred).
+      // valueAtViewport pure-fn extracted for testability (PF.19).
+      'tools/responsive-tokens-editor/src/components/TokenPreviewGrid.tsx',
+      'tools/responsive-tokens-editor/src/components/TokenOverrideEditor.tsx',
+      'tools/responsive-tokens-editor/src/__tests__/TokenPreviewGrid.test.tsx',
+      'tools/responsive-tokens-editor/src/__tests__/TokenOverrideEditor.test.tsx',
       'nx.json',
     ],
     owned_tables: [],
