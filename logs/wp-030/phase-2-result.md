@@ -189,7 +189,7 @@ Phase 2 execution then surfaced ONE additional small drift in real-time (test re
 
 - Phase 2 task.md commit: `904405d0` — `docs(wp-030): phase 2 task — config schema + math engine + locked checkWCAG contract [WP-030 phase 2 prep]`
 - Phase 2 task.md PF.4 amendment: `6afe773b` — `docs(wp-030): Phase 2 task — refine PF.4 checkWCAG contract (semantic, not shape-specific)`
-- Phase 2 main commit: **PENDING** — gated on Brain snapshot review approval
+- Phase 2 main commit: `ddec80e4` — `feat(wp-030): Phase 2 — config schema + math engine + locked snapshot [WP-030 phase 2]` (Brain APPROVED snapshot 2026-04-26)
 - Phase 1 baseline: `d8c5498a` (+ doc fixup `4d77a5be`)
 
 ## Next steps after snapshot review
