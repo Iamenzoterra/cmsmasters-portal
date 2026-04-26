@@ -1,7 +1,7 @@
 # WP-030 Phase 5 — Result
 
 > Phase 5: Container Widths Editor + Live Preview Row.
-> Status: 🟢 EXECUTED (Hands self-approved per Brain delegation 2026-04-26) — awaiting Brain dual-gate review (code + live UI).
+> Status: 🟢 SEALED (Brain dual-gate review APPROVED 2026-04-26 — code + live UI both 🟢).
 > Phase 4 baseline: `a917f3b6` (doc fixup of `4c377a33`).
 
 ## What Was Implemented
@@ -181,10 +181,11 @@ Acceptance scenarios all PASS. The 3 iframes' real-time response across config-c
 
 ## Git
 
-```
-Phase 5 main: <pending — awaiting Brain dual-gate review>
-Doc fixup:    <pending>
-```
+- Commit SHA: `23ec58f4` — `feat(wp-030): Phase 5 — Container widths editor + Live preview row [WP-030 phase 5]`
+- 22 files changed / +1867 / -7
+- DS-lint hook: clean (1 file checked)
+- Co-author: `Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>`
+- WP-030 ladder: `4f487154` (P1) → `d8c5498a` (P2) → `ddec80e4` (P2.fixup) → `45a8e973` (P3) → `95d4fb35` (P3.fixup) → `4c377a33` (P4) → `a917f3b6` (P4.fixup) → `23ec58f4` (P5)
 
 ## Next steps after review
 
