@@ -490,6 +490,8 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
   const drawerTriggerSummary = `${drawerTrigger.label} · ${drawerTrigger.icon} · ${drawerTrigger.color}`
   const drawerTriggerAllDefaults =
     drawerTrigger.isLabelDefault && drawerTrigger.isIconDefault && drawerTrigger.isColorDefault
+  const showSticky = canShow('sticky', traits, scope)
+  const showZIndex = canShow('z-index', traits, scope)
 
   // Format helpers
   function formatLine(prop: string, token: string | undefined, resolved: string): string {
@@ -517,26 +519,30 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
         {/* Identity cluster — slot name + badges + copy + (Phase 4) override-only filter */}
         <InspectorCluster id="cluster-identity" title="">
           <div className={`lm-inspector__section${isContainer ? ' lm-inspector__panel--container' : ''}`}>
-            <div className="lm-inspector__slot-name">
-              {selectedSlot}
-              <span className="lm-inspector__slot-badges">
-                {getSlotBadges(traits, baseSlot.position).map((badge) => (
-                  <span key={badge} className={`lm-badge lm-badge--${badge}`}>{badge}</span>
-                ))}
-              </span>
-              <CopyButton text={formatSummary()} onCopied={handleCopied} />
+            <div className="lm-inspector__identity">
+              <div className="lm-inspector__identity-main">
+                <span className="lm-inspector__slot-name" title={selectedSlot}>
+                  {selectedSlot}
+                </span>
+                <span className="lm-inspector__slot-badges">
+                  {getSlotBadges(traits, baseSlot.position).map((badge) => (
+                    <span key={badge} className={`lm-badge lm-badge--${badge}`}>{badge}</span>
+                  ))}
+                </span>
+                <CopyButton text={formatSummary()} onCopied={handleCopied} />
+              </div>
+              {!isBaseBp && (
+                <label className="lm-filter-toggle">
+                  <input
+                    type="checkbox"
+                    className="lm-inspector__checkbox"
+                    checked={showOverriddenOnly}
+                    onChange={(e) => setShowOverriddenOnly(e.target.checked)}
+                  />
+                  Show overridden only
+                </label>
+              )}
             </div>
-            {!isBaseBp && (
-              <label className="lm-filter-toggle">
-                <input
-                  type="checkbox"
-                  className="lm-inspector__checkbox"
-                  checked={showOverriddenOnly}
-                  onChange={(e) => setShowOverriddenOnly(e.target.checked)}
-                />
-                Show overridden only
-              </label>
-            )}
           </div>
         </InspectorCluster>
 
@@ -544,61 +550,67 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
         <InspectorCluster id="cluster-role" title="Slot Role" defaultOpen>
           <div className="lm-inspector__section lm-inspector__section--role">
 
-          <div className="lm-inspector__row">
-            <span className="lm-inspector__label">Position</span>
-            <select
-              className="lm-spacing-select lm-spacing-select--inline"
-              value={baseSlot.position ?? ''}
-              onChange={(e) => {
-                const v = e.target.value as 'top' | 'bottom' | ''
-                const updates: Record<string, unknown> = { position: v || undefined }
-                // Clear sticky + z-index when leaving 'top'
-                if (v !== 'top') {
-                  updates.sticky = undefined
-                  updates['z-index'] = undefined
-                }
-                onUpdateSlotRole(selectedSlot, updates)
-              }}
-            >
-              <option value="">(grid)</option>
-              <option value="top">top</option>
-              <option value="bottom">bottom</option>
-            </select>
-          </div>
-
-          {canShow('sticky', traits, scope) && (
-            <div className="lm-inspector__row">
-              <span className="lm-inspector__label">Sticky</span>
-              <input
-                type="checkbox"
-                className="lm-inspector__checkbox"
-                checked={!!baseSlot.sticky}
+          <div className="lm-inspector__role-basics">
+            <div className="lm-inspector__row lm-inspector__role-position">
+              <span className="lm-inspector__label">Position</span>
+              <select
+                className="lm-spacing-select lm-spacing-select--inline"
+                value={baseSlot.position ?? ''}
                 onChange={(e) => {
-                  const updates: Record<string, unknown> = {
-                    sticky: e.target.checked || undefined,
+                  const v = e.target.value as 'top' | 'bottom' | ''
+                  const updates: Record<string, unknown> = { position: v || undefined }
+                  // Clear sticky + z-index when leaving 'top'
+                  if (v !== 'top') {
+                    updates.sticky = undefined
+                    updates['z-index'] = undefined
                   }
-                  if (!e.target.checked) updates['z-index'] = undefined
                   onUpdateSlotRole(selectedSlot, updates)
                 }}
-              />
+              >
+                <option value="">(grid)</option>
+                <option value="top">top</option>
+                <option value="bottom">bottom</option>
+              </select>
             </div>
-          )}
 
-          {canShow('z-index', traits, scope) && (
-            <div className="lm-inspector__row">
-              <span className="lm-inspector__label">Z-index</span>
-              <input
-                type="number"
-                className="lm-width-input__field lm-inspector__field--narrow"
-                value={baseSlot['z-index'] ?? ''}
-                placeholder="100"
-                onChange={(e) => {
-                  const n = parseInt(e.target.value, 10)
-                  onUpdateSlotRole(selectedSlot, { 'z-index': isNaN(n) ? undefined : n })
-                }}
-              />
-            </div>
-          )}
+            {(showSticky || showZIndex) && (
+              <div className="lm-inspector__role-modifiers">
+                {showSticky && (
+                  <div className="lm-inspector__row">
+                    <span className="lm-inspector__label">Sticky</span>
+                    <input
+                      type="checkbox"
+                      className="lm-inspector__checkbox"
+                      checked={!!baseSlot.sticky}
+                      onChange={(e) => {
+                        const updates: Record<string, unknown> = {
+                          sticky: e.target.checked || undefined,
+                        }
+                        if (!e.target.checked) updates['z-index'] = undefined
+                        onUpdateSlotRole(selectedSlot, updates)
+                      }}
+                    />
+                  </div>
+                )}
+
+                {showZIndex && (
+                  <div className="lm-inspector__row">
+                    <span className="lm-inspector__label">Z-index</span>
+                    <input
+                      type="number"
+                      className="lm-width-input__field lm-inspector__field--narrow"
+                      value={baseSlot['z-index'] ?? ''}
+                      placeholder="100"
+                      onChange={(e) => {
+                        const n = parseInt(e.target.value, 10)
+                        onUpdateSlotRole(selectedSlot, { 'z-index': isNaN(n) ? undefined : n })
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Allowed block types — custom leaf slots only */}
           {canShow('allowed-block-types', traits, scope) && (() => {

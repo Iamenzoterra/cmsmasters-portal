@@ -1145,7 +1145,40 @@ body {
 }
 
 /* ── Inspector Property List ────────────────────────────────── */
+.lm-inspector__identity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lm-sp-3);
+}
+
+.lm-inspector__identity-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "name copy"
+    "badges copy";
+  align-items: start;
+  row-gap: var(--lm-sp-2);
+  column-gap: var(--lm-sp-2);
+}
+
+.lm-inspector__identity-main .lm-copy-btn {
+  grid-area: copy;
+}
+
+.lm-inspector__identity-main .lm-inspector__slot-name {
+  grid-area: name;
+}
+
+.lm-inspector__identity-main .lm-inspector__slot-badges {
+  grid-area: badges;
+}
+
 .lm-inspector__slot-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   display: flex;
   align-items: center;
   gap: var(--lm-sp-4);
@@ -1225,6 +1258,30 @@ body {
   gap: var(--lm-sp-4);
 }
 
+.lm-inspector__role-basics {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lm-sp-3);
+}
+
+.lm-inspector__role-position {
+  align-items: center;
+}
+
+.lm-inspector__role-modifiers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lm-sp-2);
+  margin-left: var(--lm-sp-6);
+  padding-left: var(--lm-sp-4);
+  border-left: 1px solid var(--lm-border-subtle);
+}
+
+.lm-inspector__role-modifiers .lm-inspector__label {
+  font-size: 11px;
+  color: var(--lm-text-muted);
+}
+
 .lm-inspector__row--drawer-trigger-summary {
   align-items: center;
 }
@@ -1271,6 +1328,12 @@ body {
   color: var(--lm-text-muted);
   text-align: right;
   padding-top: 1px;
+}
+
+.lm-inspector__hint {
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--lm-text-muted);
 }
 
 .lm-inspector__derived {
@@ -2284,9 +2347,12 @@ body {
 /* Phase 4 badges — concurrent set per slot traits. All on --lm-* tokens. */
 .lm-inspector__slot-badges {
   display: inline-flex;
-  gap: var(--lm-sp-3);
-  margin-left: var(--lm-sp-3);
+  gap: var(--lm-sp-2);
+  margin-left: 0;
   vertical-align: middle;
+}
+.lm-inspector__slot-badges .lm-badge {
+  margin-left: 0;
 }
 .lm-badge--leaf {
   background: var(--lm-bg-hover);
@@ -2343,6 +2409,9 @@ body {
 
 /* Slot Role section — position / sticky controls */
 .lm-inspector__section--role {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lm-sp-4);
   border-left: 2px solid hsla(210, 50%, 55%, 0.45);
   background: linear-gradient(90deg, hsla(210, 50%, 55%, 0.04), transparent 60%);
 }
@@ -2926,7 +2995,6 @@ body {
   display: inline-flex;
   align-items: center;
   gap: var(--lm-sp-2);
-  margin-top: var(--lm-sp-3);
   font-size: 11px;
   color: var(--lm-text-secondary);
   cursor: pointer;

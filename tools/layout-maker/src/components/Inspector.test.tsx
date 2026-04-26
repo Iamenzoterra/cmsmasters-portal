@@ -1,5 +1,5 @@
 /// <reference types="vitest/globals" />
-import { cleanup, fireEvent, render } from '@testing-library/react'
+import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import { Inspector } from './Inspector'
 import type { LayoutConfig, TokenMap } from '../lib/types'
 
@@ -128,6 +128,53 @@ describe('Inspector capability gating (Phase 4 Cut B)', () => {
     expect(container.querySelector('.lm-badge--sidebar')).not.toBeNull()
   })
 
+  it('identity block groups slot name, badges, copy button, and override filter', () => {
+    const config = makeConfig({ 'sidebar-left': {} })
+    const { container } = render(
+      <Inspector
+        {...baseProps}
+        config={config}
+        selectedSlot="sidebar-left"
+        activeBreakpoint="tablet"
+        gridKey="tablet"
+      />,
+    )
+
+    const identity = container.querySelector('.lm-inspector__identity')
+    expect(identity).not.toBeNull()
+    expect(identity?.querySelector('.lm-inspector__slot-name')?.textContent).toBe('sidebar-left')
+    expect(identity?.querySelector('.lm-inspector__slot-name')?.getAttribute('title')).toBe('sidebar-left')
+    expect(identity?.querySelector('.lm-inspector__slot-badges')).not.toBeNull()
+    expect(identity?.querySelector('.lm-copy-btn')).not.toBeNull()
+    expect(identity?.querySelector('.lm-filter-toggle')).not.toBeNull()
+  })
+
+  it('identity copy button keeps formatSummary payload and toast contract', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    })
+    const onShowToast = vi.fn()
+    const config = makeConfig({ 'sidebar-left': {} })
+    const { container } = render(
+      <Inspector
+        {...baseProps}
+        config={config}
+        selectedSlot="sidebar-left"
+        activeBreakpoint="desktop"
+        gridKey="desktop"
+        onShowToast={onShowToast}
+      />,
+    )
+
+    fireEvent.click(container.querySelector('.lm-inspector__identity .lm-copy-btn') as HTMLButtonElement)
+
+    await waitFor(() => expect(writeText).toHaveBeenCalled())
+    expect(writeText.mock.calls[0][0]).toContain('[desktop 1440px] sidebar-left:')
+    expect(onShowToast).toHaveBeenCalledWith('Copied!')
+  })
+
   it('selected state starts Inspector body with the identity cluster', () => {
     const config = makeConfig({ 'sidebar-left': {} })
     const { container } = render(
@@ -145,8 +192,8 @@ describe('Inspector capability gating (Phase 4 Cut B)', () => {
     expect(first?.getAttribute('data-cluster-id')).toBe('cluster-identity')
   })
 
-  it('top-positioned slot: shows sticky + full-width locked note + top badge', () => {
-    const config = makeConfig({ header: { position: 'top' } })
+  it('top-positioned slot: groups sticky + z-index as position modifiers', () => {
+    const config = makeConfig({ header: { position: 'top', sticky: true, 'z-index': 100 } })
     const { queryByText, container } = render(
       <Inspector
         {...baseProps}
@@ -158,8 +205,36 @@ describe('Inspector capability gating (Phase 4 Cut B)', () => {
     )
 
     expect(queryByText('Sticky')).not.toBeNull()
+    expect(queryByText('Z-index')).not.toBeNull()
+    expect(container.querySelector('.lm-inspector__role-basics')).not.toBeNull()
+    const modifiers = container.querySelector('.lm-inspector__role-modifiers')
+    expect(modifiers).not.toBeNull()
+    expect(modifiers?.textContent).toContain('Sticky')
+    expect(modifiers?.textContent).toContain('Z-index')
     expect(queryByText(/Full width — locked by position/)).not.toBeNull()
     expect(container.querySelector('.lm-badge--top')).not.toBeNull()
+  })
+
+  it('custom leaf slot: block types remain editable from Slot Role', () => {
+    const onUpdateSlotRole = vi.fn()
+    const config = makeConfig({ custom: {} })
+    const { getByLabelText, queryByText } = render(
+      <Inspector
+        {...baseProps}
+        config={config}
+        selectedSlot="custom"
+        activeBreakpoint="desktop"
+        gridKey="desktop"
+        onUpdateSlotRole={onUpdateSlotRole}
+      />,
+    )
+
+    expect(queryByText('Block types')).not.toBeNull()
+    expect(queryByText("No types — slot won't show block controls in Studio")).not.toBeNull()
+    fireEvent.click(getByLabelText('Theme blocks'))
+    expect(onUpdateSlotRole).toHaveBeenCalledWith('custom', {
+      'allowed-block-types': ['theme-block'],
+    })
   })
 
   it('non-desktop BP with no override: scope chip reads Base + inherited label', () => {
