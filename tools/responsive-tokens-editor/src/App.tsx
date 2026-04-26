@@ -9,6 +9,8 @@ import { WcagBanner } from './components/WcagBanner'
 import { ResetButton } from './components/ResetButton'
 import { LoadStatusBadge } from './components/LoadStatusBadge'
 import { TokenPreviewGrid } from './components/TokenPreviewGrid'
+import { ContainerWidthsEditor } from './components/ContainerWidthsEditor'
+import { LivePreviewRow } from './components/LivePreviewRow'
 
 /**
  * Phase 3 orchestrator — single source of truth = useState<ResponsiveConfig>.
@@ -65,12 +67,13 @@ export function App() {
           config={config}
           onChange={setConfig}
         />
+        <ContainerWidthsEditor config={config} onChange={setConfig} />
+        <LivePreviewRow resultCss={result.css} />
         <ResetButton onReset={() => setConfig(conservativeDefaults)} />
       </main>
 
       <footer className="border-t border-[hsl(var(--border))] px-6 py-3 text-[length:var(--text-xs-font-size)] text-[hsl(var(--muted-foreground))]">
-        Phase 4 · Container widths editor + Live preview row land in Phase 5 ·
-        Save in Phase 6
+        Phase 5 · Save flow + cross-surface PARITY in Phase 6
       </footer>
     </div>
   )

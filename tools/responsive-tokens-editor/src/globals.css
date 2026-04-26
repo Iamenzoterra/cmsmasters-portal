@@ -1,8 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap');
 @import '../../../packages/ui/src/theme/tokens.css';
 @import 'tailwindcss';
 @config '../tailwind.config.ts';
-
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap');
 
 body {
   background-color: hsl(var(--bg-page));

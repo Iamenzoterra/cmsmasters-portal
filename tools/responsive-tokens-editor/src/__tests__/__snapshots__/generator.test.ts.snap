@@ -41,5 +41,25 @@ exports[`generator — V1 conservative defaults > matches locked snapshot — Br
   /* Section rhythm */
   --space-section: clamp(3.25rem, 2.2817rem + 4.1315vi, 6rem);
 }
+
+/* Container widths — discrete per-BP (NOT fluid clamp) */
+:root {
+  --container-max-w: 100%;
+  --container-px: 16px;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --container-max-w: 720px;
+    --container-px: 24px;
+  }
+}
+
+@media (min-width: 1280px) {
+  :root {
+    --container-max-w: 1280px;
+    --container-px: 32px;
+  }
+}
 "
 `;

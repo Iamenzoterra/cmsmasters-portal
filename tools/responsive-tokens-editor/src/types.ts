@@ -56,12 +56,39 @@ export type ResponsiveConfig = {
    * Future authoring: scale-derived first, override only when scale doesn't fit.
    */
   overrides: Record<string, TokenOverride>
+
+  /**
+   * Container widths — discrete per-BP values (NOT fluid clamp).
+   *
+   * Phase 5 (WP-030) introduces `--container-max-w` + `--container-px` tokens
+   * via cascade-override. 0 consumers today; future block CSS adopting
+   * var(--container-max-w) resolves to fluid-system values once Phase 6
+   * activates the tokens.responsive.css overlay. Editor surfaces these as
+   * 3 BPs × 2 fields (mobile/tablet/desktop containers).
+   *
+   * Generator emits :root mobile containers block + 2 @media containers
+   * blocks (TABLET_BP=768, DESKTOP_BP=1280 — hardcoded constants in
+   * generator.ts; making editable is a V2 concern).
+   */
+  containers: {
+    mobile: ContainerBpValue
+    tablet: ContainerBpValue
+    desktop: ContainerBpValue
+  }
 }
 
 export type TokenOverride = {
   minPx: number
   maxPx: number
   reason?: string
+}
+
+/** Container BP value — width + padding at one breakpoint. */
+export type ContainerBpValue = {
+  /** Mobile allows '100%' (full-bleed) OR fixed px; tablet/desktop force px. */
+  maxWidth: number | '100%'
+  /** Horizontal padding inside container at this BP, in px. */
+  px: number
 }
 
 /** Output entry for one generated token line. */

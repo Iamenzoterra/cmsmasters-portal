@@ -690,6 +690,13 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'tools/responsive-tokens-editor/src/components/TokenOverrideEditor.tsx',
       'tools/responsive-tokens-editor/src/__tests__/TokenPreviewGrid.test.tsx',
       'tools/responsive-tokens-editor/src/__tests__/TokenOverrideEditor.test.tsx',
+      // WP-030 Phase 5: Container Widths Editor + Live Preview Row.
+      // 3-BP schema extension (PF.22-PF.24); iframe srcdoc preview (PF.25-PF.26).
+      // PostCSS @import order fix BAKED into globals.css (PF.21).
+      'tools/responsive-tokens-editor/src/components/ContainerWidthsEditor.tsx',
+      'tools/responsive-tokens-editor/src/components/LivePreviewRow.tsx',
+      'tools/responsive-tokens-editor/src/__tests__/ContainerWidthsEditor.test.tsx',
+      'tools/responsive-tokens-editor/src/__tests__/LivePreviewRow.test.tsx',
       'nx.json',
     ],
     owned_tables: [],

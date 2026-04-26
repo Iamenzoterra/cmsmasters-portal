@@ -77,4 +77,14 @@ export const conservativeDefaults: ResponsiveConfig = {
       reason: 'tightened from WP-024 scaffold 24-96 (ratio 4.0 fail-WCAG) per ruling 1.b — section rhythm first-class concern',
     },
   },
+
+  // Container widths — discrete per-BP (Phase 5 WP-030). Not fluid clamp.
+  // V1 defaults from WP §2.2 (mobile full-bleed, tablet 720, desktop 1280).
+  // Generator emits :root mobile block + @media tablet/desktop blocks
+  // (TABLET_BP=768, DESKTOP_BP=1280).
+  containers: {
+    mobile:  { maxWidth: '100%', px: 16 },
+    tablet:  { maxWidth: 720,    px: 24 },
+    desktop: { maxWidth: 1280,   px: 32 },
+  },
 }

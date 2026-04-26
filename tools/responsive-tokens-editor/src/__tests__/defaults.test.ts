@@ -74,4 +74,11 @@ describe('conservativeDefaults — V1 ruling-locked values', () => {
     expect(conservativeDefaults.overrides['--spacing-9xl']).toBeUndefined()
     expect(conservativeDefaults.overrides['--spacing-10xl']).toBeUndefined()
   })
+
+  // Phase 5 — container schema seed (WP §2.2)
+  it('seeds container widths per WP §2.2 (mobile 100%/16, tablet 720/24, desktop 1280/32)', () => {
+    expect(conservativeDefaults.containers.mobile).toEqual({ maxWidth: '100%', px: 16 })
+    expect(conservativeDefaults.containers.tablet).toEqual({ maxWidth: 720, px: 24 })
+    expect(conservativeDefaults.containers.desktop).toEqual({ maxWidth: 1280, px: 32 })
+  })
 })

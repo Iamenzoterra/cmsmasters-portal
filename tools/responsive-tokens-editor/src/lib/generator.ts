@@ -14,6 +14,17 @@ const HEADER = `/* tokens.responsive.css
  */`
 
 /**
+ * Container BP thresholds — Phase 5 (WP-030) hardcoded constants.
+ *
+ * Mobile applies below TABLET_BP; tablet @media applies from TABLET_BP up to
+ * DESKTOP_BP-1; desktop @media applies from DESKTOP_BP up. Making these
+ * editable in the schema is a V2 concern — V1 keeps the schema minimal by
+ * fixing the BPs and exposing only the per-BP values in the editor.
+ */
+const TABLET_BP = 768
+const DESKTOP_BP = 1280
+
+/**
  * Convert config → tokens.responsive.css string + per-token diagnostics.
  *
  * Discipline:
@@ -116,8 +127,38 @@ export function generateTokensCss(config: ResponsiveConfig): GeneratorResult {
     }
     lines.push('')
   }
-  // Trim trailing blank line + close
+  // Trim trailing blank line + close the :root token-clamp block
   while (lines[lines.length - 1] === '') lines.pop()
+  lines.push('}')
+  lines.push('')
+
+  // 6. Container BP overrides — discrete per-BP values (Phase 5 WP-030).
+  //    NOT fluid clamp: per WP §Container widths sub-editor design rationale.
+  //    Mobile :root applies below TABLET_BP; @media tablet/desktop cascade.
+  const { mobile, tablet, desktop } = config.containers
+  const mobileMaxW =
+    typeof mobile.maxWidth === 'number' ? `${mobile.maxWidth}px` : mobile.maxWidth
+
+  lines.push('/* Container widths — discrete per-BP (NOT fluid clamp) */')
+  lines.push(':root {')
+  lines.push(`  --container-max-w: ${mobileMaxW};`)
+  lines.push(`  --container-px: ${mobile.px}px;`)
+  lines.push('}')
+  lines.push('')
+
+  lines.push(`@media (min-width: ${TABLET_BP}px) {`)
+  lines.push('  :root {')
+  lines.push(`    --container-max-w: ${tablet.maxWidth}px;`)
+  lines.push(`    --container-px: ${tablet.px}px;`)
+  lines.push('  }')
+  lines.push('}')
+  lines.push('')
+
+  lines.push(`@media (min-width: ${DESKTOP_BP}px) {`)
+  lines.push('  :root {')
+  lines.push(`    --container-max-w: ${desktop.maxWidth}px;`)
+  lines.push(`    --container-px: ${desktop.px}px;`)
+  lines.push('  }')
   lines.push('}')
   lines.push('')
 

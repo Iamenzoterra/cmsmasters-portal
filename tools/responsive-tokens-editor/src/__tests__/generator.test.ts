@@ -62,4 +62,22 @@ describe('generator — V1 conservative defaults', () => {
       expect(t!.maxPx, `token ${name} maxPx must equal desktop static`).toBe(expectedStatic)
     }
   })
+
+  // Phase 5 — container BP emit (PF.24)
+  it('emits container :root mobile block with --container-max-w 100% + --container-px 16px (V1 defaults)', () => {
+    expect(result.css).toMatch(/--container-max-w:\s*100%/)
+    expect(result.css).toMatch(/--container-px:\s*16px/)
+  })
+
+  it('emits @media (min-width: 768px) tablet block with maxWidth 720px + px 24px', () => {
+    expect(result.css).toMatch(/@media\s*\(\s*min-width:\s*768px\s*\)/)
+    expect(result.css).toMatch(/--container-max-w:\s*720px/)
+    expect(result.css).toMatch(/--container-px:\s*24px/)
+  })
+
+  it('emits @media (min-width: 1280px) desktop block with maxWidth 1280px + px 32px', () => {
+    expect(result.css).toMatch(/@media\s*\(\s*min-width:\s*1280px\s*\)/)
+    expect(result.css).toMatch(/--container-max-w:\s*1280px/)
+    expect(result.css).toMatch(/--container-px:\s*32px/)
+  })
 })
