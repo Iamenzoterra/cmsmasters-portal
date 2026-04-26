@@ -158,8 +158,9 @@ Saved 7 screenshots to `logs/wp-030/p4-smoke/`. All 6 acceptance scenarios from 
 
 ## Git
 
-- Commit SHA: _pending Brain dual-gate review_
-- Files staged after review: see task §"Brain review gate (before commit)" command block
+- Commit SHA: `4c377a33` — `feat(wp-030): Phase 4 — Token preview grid + override editor [WP-030 phase 4]`
+- 15 files changed / +1628 / -2
+- DS-lint hook: clean (1 file checked)
 - Co-author: `Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>`
 
 ## Next steps after review
