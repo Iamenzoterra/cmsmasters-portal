@@ -646,6 +646,21 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       // WP-028 Phase 1: parity tests for TweakPanel + VariantsDrawer placeholders.
       'tools/block-forge/src/__tests__/TweakPanel.test.tsx',
       'tools/block-forge/src/__tests__/VariantsDrawer.test.tsx',
+      // WP-030 Phase 1: Responsive Tokens Editor scaffold (Vite app on :7703).
+      // README.md and .gitignore are git-tracked but excluded from manifest per
+      // block-forge precedent (meta files not registered as owned source).
+      'tools/responsive-tokens-editor/package.json',
+      'tools/responsive-tokens-editor/tsconfig.json',
+      'tools/responsive-tokens-editor/vite.config.ts',
+      'tools/responsive-tokens-editor/tailwind.config.ts',
+      'tools/responsive-tokens-editor/postcss.config.cjs',
+      'tools/responsive-tokens-editor/index.html',
+      'tools/responsive-tokens-editor/PARITY.md',
+      'tools/responsive-tokens-editor/src/main.tsx',
+      'tools/responsive-tokens-editor/src/App.tsx',
+      'tools/responsive-tokens-editor/src/types.ts',
+      'tools/responsive-tokens-editor/src/vite-env.d.ts',
+      'tools/responsive-tokens-editor/src/globals.css',
       'nx.json',
     ],
     owned_tables: [],

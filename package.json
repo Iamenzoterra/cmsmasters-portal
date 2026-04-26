@@ -25,6 +25,10 @@
     "block-forge:build": "cd tools/block-forge && npm run build",
     "block-forge:test": "cd tools/block-forge && npm test",
     "block-forge:typecheck": "cd tools/block-forge && npm run typecheck",
+    "responsive-tokens-editor": "cd tools/responsive-tokens-editor && npm run dev",
+    "responsive-tokens-editor:build": "cd tools/responsive-tokens-editor && npm run build",
+    "responsive-tokens-editor:test": "cd tools/responsive-tokens-editor && npm test",
+    "responsive-tokens-editor:typecheck": "cd tools/responsive-tokens-editor && npm run typecheck",
     "content:pull": "node tools/content-sync.js pull",
     "content:push": "node tools/content-sync.js push",
     "layout-maker": "cd tools/layout-maker && npm run dev"

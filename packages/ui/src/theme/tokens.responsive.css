@@ -4,10 +4,10 @@
  * Decoupled from tokens.css — Figma sync does NOT touch this file.
  *
  * Populated minimally as a scaffold in WP-024. Real token values are
- * hand-tuned in WP-029 (Responsive Tokens Population) once WP-025/026
- * generate real-world demand signals from block authoring.
+ * populated in WP-030 (Responsive Tokens Editor — Vite app on :7703).
+ * After Phase 6 lands, this file is machine-generated; do not edit manually.
  *
- * See ADR-025 (Responsive Blocks) and WP-024 (Responsive Blocks — Foundation).
+ * See ADR-025 (Responsive Blocks), WP-024 (Foundation), WP-030 (Editor).
  */
 
 :root {
