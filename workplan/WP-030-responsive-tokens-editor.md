@@ -858,7 +858,7 @@ a917f3b6  Phase 4 fixup
 0ba985eb  Phase 5 fixup
 50f3c8ff  Phase 6 main      ← Save flow + cross-surface PARITY (esc.d RESOLVED) — 23 files / +1597 / -49
 3f42849b  Phase 6 fixup
-<P7-main>  Phase 7 main     ← Close + doc propagation (this commit)
+68410794  Phase 7 main     ← Close + doc propagation (this commit)
 <P7-fix>   Phase 7 fixup
 ```
 
