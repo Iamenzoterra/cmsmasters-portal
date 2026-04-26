@@ -2,13 +2,13 @@
 
 > Build the missing foundation of ADR-025 Layer 1: a populated `tokens.responsive.css` that all blocks consume via cascade override. Authoring tool follows industry-standard Utopia model (system-level scale config → auto-generated fluid clamps) with per-token override escape hatch. Lives as `tools/responsive-tokens-editor/` Vite app, not Studio — Hono Workers cannot write repo files; precedent matches `tools/block-forge/`. Conservative V1 defaults preserve current static rendering on desktop; introduce graceful mobile fluidity only.
 
-**Status:** IN PROGRESS — Phase 0 RECON in flight (approved by user 2026-04-26)
+**Status:** ✅ DONE — All 7 phases shipped 2026-04-26 (P6 main `50f3c8ff` / P6 fixup `3f42849b`; P7 close per this commit)
 **Priority:** P0 — Foundational (Layer 1 of ADR-025; unblocks WP-031 Inspector + downstream heuristic-tuning work)
 **Prerequisites:** WP-024 ✅ (scaffold + Portal cascade order), WP-029 ✅ (closure of ADR-025 wave plumbing)
 **Milestone/Wave:** ADR-025 Layer 1 (Auto Tokens) — corrected priority per 2026-04-26 user feedback
 **Estimated effort:** 7-9 days across 7 phases (~50-60 hours)
 **Created:** 2026-04-26
-**Completed:** —
+**Completed:** 2026-04-26
 
 ---
 
@@ -724,30 +724,30 @@ npm run test                                       # All package tests green
 
 ## Acceptance Criteria (Definition of Done)
 
-- [ ] `tools/responsive-tokens-editor/` Vite app starts on port 7703 via `npm run responsive-tokens-editor`
-- [ ] Editor loads `packages/ui/src/theme/responsive-config.json` on mount; if missing, seeds from `defaults.ts`
-- [ ] Global Scale Config UI works: 6 inputs (min/max viewport, type base × ratio at min/max), spacing base × min/max + multipliers
-- [ ] Token Preview Grid shows all 24+ tokens at @375/@768/@1440 with override badges
-- [ ] Per-token Override Modal allows minPx/maxPx + reason; integrates WCAG 1.4.4 warning
-- [ ] Container Widths Editor produces discrete per-BP values (no clamp)
-- [ ] Live Preview Row renders sample H1+H2+body+section at 3 widths using current config
-- [ ] WCAG 1.4.4 ratio check (max ≤ 2.5× min) fires on every fluid token; save-anyway gate exists
-- [ ] Save button writes `responsive-config.json` AND regenerates `tokens.responsive.css` in repo
-- [ ] Generated `tokens.responsive.css` overrides existing tokens (`--h1-font-size`, ..., `--spacing-3xs`, ..., `--spacing-10xl`, `--text-display`, etc.) with `clamp()` values
-- [ ] `tools/block-forge/src/globals.css` imports `tokens.responsive.css` (Phase 6 PARITY)
-- [ ] Studio Responsive tab `preview-assets.ts` includes `tokens.responsive.css` in iframe srcdoc (Phase 6 PARITY mirror)
-- [ ] PARITY.md files cross-reference (`tools/block-forge/PARITY.md` ↔ `tools/responsive-tokens-editor/PARITY.md` ↔ `apps/studio/src/pages/block-editor/responsive/PARITY.md`)
-- [ ] Render-level smoke: production block (`fast-loading-speed.json`) renders fluidly in Portal localhost; visual parity vs pre-WP at 1440 width
-- [ ] `npm run arch-test` passes (all 500+ tests; new test files registered)
-- [ ] `npm run typecheck` clean across workspace
-- [ ] `npm run test` clean (all package tests including new generator + defaults + validate suites)
-- [ ] All 8 phases logged in `logs/wp-030/`
-- [ ] Domain manifest updated (`infra-tooling.owned_files` + `pkg-ui.owned_files`)
-- [ ] Domain skills updated (pkg-ui invariants, infra-tooling tools list, optional studio-blocks PARITY note)
-- [ ] CONVENTIONS.md updated (responsive token system section)
-- [ ] BRIEF.md status table reflects WP-030 done
-- [ ] Approval-gate pattern executed at Phase 7 (Brain explicitly approves doc batch before Hands executes)
-- [ ] No known blockers for WP-031 (Inspector rebuild)
+- [x] `tools/responsive-tokens-editor/` Vite app starts on port 7703 via `npm run responsive-tokens-editor`
+- [x] Editor loads `packages/ui/src/theme/responsive-config.json` on mount; if missing, seeds from `defaults.ts`
+- [x] Global Scale Config UI works: 6 inputs (min/max viewport, type base × ratio at min/max), spacing base × min/max + multipliers
+- [x] Token Preview Grid shows all 24+ tokens at @375/@768/@1440 with override badges
+- [x] Per-token Override Modal allows minPx/maxPx + reason; integrates WCAG 1.4.4 warning
+- [x] Container Widths Editor produces discrete per-BP values (no clamp)
+- [x] Live Preview Row renders sample H1+H2+body+section at 3 widths using current config
+- [x] WCAG 1.4.4 ratio check (max ≤ 2.5× min) fires on every fluid token; save-anyway gate exists
+- [x] Save button writes `responsive-config.json` AND regenerates `tokens.responsive.css` in repo
+- [x] Generated `tokens.responsive.css` overrides existing tokens (`--h1-font-size`, ..., `--spacing-3xs`, ..., `--spacing-10xl`, `--text-display`, etc.) with `clamp()` values
+- [x] `tools/block-forge/src/globals.css` imports `tokens.responsive.css` (Phase 6 PARITY)
+- [x] Studio Responsive tab `preview-assets.ts` includes `tokens.responsive.css` in iframe srcdoc (Phase 6 PARITY mirror)
+- [x] PARITY.md files cross-reference (`tools/block-forge/PARITY.md` ↔ `tools/responsive-tokens-editor/PARITY.md` ↔ `apps/studio/src/pages/block-editor/responsive/PARITY.md`)
+- [x] Render-level smoke: production block (`fast-loading-speed.json`) renders fluidly in Portal localhost; visual parity vs pre-WP at 1440 width
+- [x] `npm run arch-test` passes (all 500+ tests; new test files registered)
+- [x] `npm run typecheck` clean across workspace
+- [x] `npm run test` clean (all package tests including new generator + defaults + validate suites)
+- [x] All 8 phases logged in `logs/wp-030/`
+- [x] Domain manifest updated (`infra-tooling.owned_files` + `pkg-ui.owned_files`)
+- [x] Domain skills updated (pkg-ui invariants, infra-tooling tools list, optional studio-blocks PARITY note)
+- [x] CONVENTIONS.md updated (responsive token system section)
+- [x] BRIEF.md status table reflects WP-030 done
+- [x] Approval-gate pattern executed at Phase 7 (Brain explicitly approves doc batch before Hands executes)
+- [x] No known blockers for WP-031 (Inspector rebuild)
 
 ---
 
@@ -833,3 +833,59 @@ Per saved memory `feedback_preflight_recon_load_bearing`: 8/8 phases of WP-028 h
 ---
 
 **End of WP-030.**
+
+---
+
+## Outcome (post-Phase-7 close)
+
+WP-030 shipped across 7 phases (Phase 0 RECON → Phase 7 Close), 2026-04-26 single-day execution.
+
+### SHA ladder
+
+```
+06099e44  Phase 1 task draft
+d8c5498a  Phase 1 main      ← Vite scaffold tools/responsive-tokens-editor/ on :7703
+4d77a5be  Phase 1 fixup
+904405d0  Phase 2 task draft
+6afe773b  Phase 2 task PF.4 refinement
+ddec80e4  Phase 2 main      ← config schema + math engine + locked snapshot
+f17a66e7  Phase 2 fixup
+45a8e973  Phase 3 main      ← Global Scale UI + WCAG banner
+95d4fb35  Phase 3 fixup
+4c377a33  Phase 4 main      ← Token preview grid + override editor (PF.14 closure)
+a917f3b6  Phase 4 fixup
+23ec58f4  Phase 5 main      ← Container widths editor + Live preview row (esc.b RESOLVED)
+0ba985eb  Phase 5 fixup
+50f3c8ff  Phase 6 main      ← Save flow + cross-surface PARITY (esc.d RESOLVED) — 23 files / +1597 / -49
+3f42849b  Phase 6 fixup
+<P7-main>  Phase 7 main     ← Close + doc propagation (this commit)
+<P7-fix>   Phase 7 fixup
+```
+
+### Key empirical results
+
+- **Tests:** 12 files / 76 assertions / 0 fail (P5 baseline 11/67 → +1 file +9 assertions in Phase 6 config-io test). P7 doc-only — no test changes.
+- **Arch-test:** 539 / 539 (P5 baseline 537 → PF.42 documented +2 manifest expansion delta in Phase 6: +1 owned `responsive-config.json` entry + 1 NEW known-gap line for SOT role).
+- **Typecheck:** clean across all phases (no `any`, strict TS).
+- **PFs:** 51 total across 7 phases (PF.1 → PF.51) — RECON discipline held; PF.41 (generator AUTO-GEN header preserved via single-line save-time prefix) was the gold-tier mid-execution catch.
+- **Phase 0 escalations status:** all 4 closed — (a) ✅ HELD all 6 phases / (b) ✅ RESOLVED Phase 5 / (c) ✅ HELD all 6 phases / (d) ✅ RESOLVED Phase 6.
+- **Cross-surface activation empirically proven:** block-forge `:7702` triptych (3 BPs DOM-verified) + Portal `:3100` cascade-resolves at 1440 viewport (`--container-max-w: 1280px`) + 500 viewport (`--container-max-w: 100%`, h1 fluid scales 54 → 45.2px). 9 screenshots in `logs/wp-030/p6-smoke/`.
+
+### Brain-Hands persona discipline
+
+P1–P7 ladder ran the dual-persona pattern: Brain drafts task spec + reviews dual-gate; Hands self-approves per Brain delegation OR surfaces pushback; project-owner gate fires on Close phase per `feedback_close_phase_approval_gate` (P7 only — touched 7 doc files). Self-approval signal pattern: 6/6 across P1–P6; P7 added explicit project-owner gate per saved memory.
+
+### Polish queue (post-WP)
+
+- Locale-aware number formatting (0.125 vs 0,125)
+- Edit-multipliers toggle in GlobalScaleConfig (read-only "Phase 5+" label)
+- Container "effective max-width" indicator (PF.30 mitigation hint)
+- Auto-scale-down LivePreviewRow iframes (visual quality at narrow viewport)
+- PF.28 lint-ds.sh extension to `tools/` paths
+- Root npm alias `responsive-tokens-editor`
+
+### Future-WP work (post-WP-030)
+
+- Heuristic confidence tuning (Task C, future-WP) — pending 2–4 weeks WP-028 + WP-030 author field data
+- Cross-surface validator port decision (OQ-δ, future-WP) — pending field data + tooling consolidation review
+- WP-031 (Inspector rebuild) — unblocked by WP-030 (real fluid baselines now exist to inspect/edit)

@@ -90,6 +90,62 @@ status: full
 4. **Regenerate preview parity:** after a token or portal render change, update `src/lib/preview-assets.ts` AND `tools/block-forge/PARITY.md` in the same commit. Run `npm run block-forge` + DevTools-check the iframe DOM matches the new contract.
 5. **Install fresh:** follow the install dance (strip `@cmsmasters/*` → `npm install` → restore). Root `block-forge:*` aliases still work post-dance.
 
+## Responsive Tokens Editor — WP-030 (ADR-025 Layer 1)
+
+### Start Here (responsive-tokens-editor)
+1. `tools/responsive-tokens-editor/README.md` — purpose + how to run (if not present, see Recipes below)
+2. `tools/responsive-tokens-editor/PARITY.md` — save-flow contract + cascade-override pattern + cross-surface PARITY trio
+3. `tools/responsive-tokens-editor/src/App.tsx` — orchestrator (config state + save flow + WCAG override gate)
+4. `tools/responsive-tokens-editor/src/lib/generator.ts` — fluid clamp generator (utopia-core wrapper); snapshot baseline at `__tests__/generator.test.ts.snap`
+5. `tools/responsive-tokens-editor/src/lib/config-io.ts` — fetch wire-up to Vite middleware
+6. `tools/responsive-tokens-editor/vite.config.ts` — `responsiveConfigApiPlugin` (mirrors block-forge `blocksApiPlugin`)
+
+### Public API (responsive-tokens-editor)
+(none — runnable dev surface, consumes `utopia-core@1.6.0` + `@cmsmasters/ui` types only; outputs to repo via fs)
+
+### Invariants (responsive-tokens-editor)
+- **Port 7703** (strictPort) — sibling of LM `:7700/:7701`, block-forge `:7702`, studio-mockups `:7777`.
+- **Two-file save contract:** every Save writes BOTH `packages/ui/src/theme/responsive-config.json` (SOT) AND `packages/ui/src/theme/tokens.responsive.css` (cascade-override, machine-generated). Never one without the other.
+- **Save-safety contract (6 rules; mirrors block-forge):** body validated server-side / first-save-per-session `.bak` (client-owned `_firstSaveDone` flag) / two fixed paths only / no deletes / server stateless / two-write atomicity trade-off (JSON first, then CSS — V1 acceptable; PF.40).
+- **Snapshot stability via save-time prefix (PF.41 / R.3 invariant from P6):** generator.ts emits its own `/* AUTO-GENERATED */` header (Phase 2 baseline); save-time wrapper in `config-io.ts` PREPENDS a single-line `/* Saved by tools/responsive-tokens-editor on ${ISO} ... */` comment. Generator output stays byte-stable; snapshot test does NOT need re-accept on save flow changes.
+- **Cascade-override pattern:** `tokens.css` (Figma-synced static) → `tokens.responsive.css` (machine-generated `clamp()` overrides on same custom-property names) → cascade resolves to fluid behavior. Container widths use `:root + 2 @media` discrete pattern (NOT fluid clamp; per WP §Container widths sub-editor).
+- **RTL-safe via `vi` (viewport-inline) units** in all clamp expressions — generator emits `1.234vi` not `1.234vw` so right-to-left languages get correct horizontal scaling.
+- **Conservative V1 defaults preserve desktop static** (Phase 0 ruling 1) — clamps resolve to `maxPx` at editor `maxViewport`. Existing blocks render identically on desktop post-WP-030.
+- **WCAG 1.4.4 strictness** (Phase 0 esc.c HELD): each fluid token must have `maxPx / minPx ≤ 2.5`. Violations surface inline banner + global header banner. Save blocked unless explicit "Save anyway" override toggle.
+
+### Traps & Gotchas (responsive-tokens-editor)
+- **NPM workspace nit (carry from block-forge):** `tools/responsive-tokens-editor/` is NOT an npm workspace (root `package.json` `workspaces` covers `apps/*`, `packages/*`, `tools/layout-maker` only). Use `cd tools/responsive-tokens-editor && npm <cmd>`, NOT `npm -w tools/responsive-tokens-editor <cmd>` (fails with "No workspaces found").
+- **Install dance for workspace `*` deps:** if any `@cmsmasters/*` deps appear in `package.json` over time, the same workaround as block-forge applies — temporarily comment out the `@cmsmasters/*` lines, `npm install`, restore.
+- **Vitest `css: true` required** (saved memory `feedback_vitest_css_raw`) — preserved at `vite.config.ts:195`. If a future `?raw` import lands and tests assert on content, the flag is mandatory; otherwise assertions silently run on empty strings.
+- **Generator snapshot is ground truth (saved memory `feedback_fixture_snapshot_ground_truth`):** filenames in `__tests__/` are aspirational; cross-ref `generator.test.ts.snap` before adding new assertions. Snapshot pins 22 vi entries + 0 vw + 2 @media + 3 --container-max-w.
+- **Direct edits to `tokens.responsive.css` are overwritten on next Save.** Authors must edit via the editor UI; `tokens.responsive.css` is NOT a hand-maintained file post-WP-030 (was at WP-024 baseline).
+- **Two-write atomicity trade-off (PF.40):** if CSS write fails after JSON success, JSON is committed but CSS stale. Next save retries both (idempotent). V1 acceptable; documented in `tools/responsive-tokens-editor/PARITY.md` Save-safety §6.
+
+### Blast Radius (responsive-tokens-editor)
+- **`vite.config.ts` `responsiveConfigApiPlugin`** — breaks the fs bridge. POST handler changes need matching `config-io.ts` update + `__tests__/config-io.test.ts` update.
+- **`src/lib/generator.ts`** — affects all 22 fluid token clamp expressions + 3 container blocks. Snapshot at `__tests__/generator.test.ts.snap` pins output; any change requires snapshot re-accept (rare — generator should be stable).
+- **`src/lib/config-io.ts`** — affects save flow timestamp prefix (PF.41) + session flag (`_firstSaveDone`). Test file mocks fetch; signature drift surfaces as TS compile error in test.
+- **`packages/ui/src/theme/responsive-config.json` schema** breaking changes — affects load on next editor start; `defaults.ts::conservativeDefaults` is the fallback. Schema bump = bump `version` field (not yet implemented; future need).
+- **Cross-surface activation paths:**
+  - `apps/portal/app/globals.css:3` (cascade @import) — auto-resolves new content
+  - `tools/block-forge/src/globals.css:2` (cascade @import; WP-030 P6 BAKE)
+  - `tools/block-forge/src/lib/preview-assets.ts:14` (`?raw` import)
+  - `apps/studio/src/pages/block-editor/responsive/preview-assets.ts:19` (`?raw` import)
+  All auto-propagate; manual edits only on `@layer` order / file path / sibling-file structural changes.
+
+### Recipes (responsive-tokens-editor)
+1. **Run dev:** `cd tools/responsive-tokens-editor && npm run dev`. Opens `:7703`. (Root alias `npm run responsive-tokens-editor` not yet wired — polish queue.)
+2. **Edit a fluid token:** open `:7703` → Token Preview Grid → click Override on the row → enter minPx/maxPx + reason → Save. Toast confirms. Run `git diff packages/ui/src/theme/responsive-config.json` to see what changed; commit both files together.
+3. **Add a Type Scale step:** (V1+ — currently read-only). Requires editing `stepMap` in JSON directly OR future "Edit-multipliers toggle" (polish queue).
+4. **Debug Save failing:** DevTools → Network → POST `/api/save-config` → check status + response body (`{ ok: true, savedAt, backupCreated }`). 400 = body validation; 500 = fs error. Check disk for `.bak` siblings.
+5. **Restore from `.bak`:** `cp packages/ui/src/theme/tokens.responsive.css.bak packages/ui/src/theme/tokens.responsive.css` + `cp packages/ui/src/theme/responsive-config.json.bak packages/ui/src/theme/responsive-config.json`. Editor reads on next page load.
+6. **Verify cross-surface activation:** boot block-forge `:7702` AND Portal `:3100` in addition to `:7703`. Edit a token + Save in :7703 → refresh :7702 (preview iframes pick up via `?raw` HMR) → refresh :3100 (cascade resolves new bytes). DOM-level proof via DevTools `getComputedStyle(document.documentElement).getPropertyValue('--h1-font-size')`.
+
+### Sibling cross-references
+- `tools/block-forge/PARITY.md` §"WP-030 cross-surface PARITY (Phase 6)" — block-forge consumption contract
+- `apps/studio/src/pages/block-editor/responsive/PARITY.md` §"WP-030 cross-surface PARITY (Phase 6)" — Studio consumption contract
+- `.context/CONVENTIONS.md` §"Responsive tokens authoring (WP-030, ADR-025 Layer 1)" — author-facing convention rules
+
 ## Tweaks + Variants authoring (WP-028, ADR-025 Layer 2 + Layer 4)
 
 ### Start Here (WP-028)

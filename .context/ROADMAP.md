@@ -256,6 +256,5 @@ Layer 3: ██████  DONE (WP-017, completed 2026-04-09)
 | Homepage (10 sections) | Portal V2 |
 | Theme catalog /themes with search | Portal V2 |
 | Meilisearch integration | Portal V2 |
-| WP-030: Heuristic confidence tuning (Task C) | After 2–4 weeks WP-028 author field data |
-| WP-030: `tokens.responsive.css` real population | Bundled with WP-030 (informed by real clamp ranges authors emit) |
-| WP-030: Cross-surface validator port decision (OQ-δ) | Bundled with WP-030 (decide: port to block-forge / formalize Studio-only / extract to package) |
+| Heuristic confidence tuning (Task C, post-WP-030) | Future WP, after 2–4 weeks of WP-028 + WP-030 author field data |
+| Cross-surface validator port decision (OQ-δ, post-WP-030) | Future WP — decide: port validator to block-forge / formalize Studio-only / extract to package |

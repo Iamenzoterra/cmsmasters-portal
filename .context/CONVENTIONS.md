@@ -478,7 +478,67 @@ Layout Maker's css-generator emits `container-type: inline-size; container-name:
 
 ### Responsive tokens file
 
-`packages/ui/src/theme/tokens.responsive.css` is a hand-maintained companion to `tokens.css`. `/sync-tokens` does NOT touch it. Currently two clamp-based scaffold tokens (`--space-section`, `--text-display`); real population is deferred to WP-030 (bundled with Task C heuristic polish, gated on 2–4 weeks of WP-028 author field data) so design choices can be informed by real use in WP-025/026/028. Import order in portal globals: `tokens.css` before `tokens.responsive.css` before `portal-blocks.css`.
+`packages/ui/src/theme/tokens.responsive.css` is a **machine-generated** companion to `tokens.css` — produced by `tools/responsive-tokens-editor/` (`:7703`). Source of truth: `packages/ui/src/theme/responsive-config.json` (sibling file in the same dir, hand-edited via the editor's UI, written by the same Save flow). `/sync-tokens` does NOT touch either file. WP-024 shipped a 2-token scaffold (`--space-section`, `--text-display`); WP-030 (✅ DONE 2026-04-26) populated the file with the full fluid scale (10 typography + 11 spacing + 1 special + 3 container BPs = 22 fluid tokens + 3 discrete container @media blocks). **Edit convention:** open the editor, change values, click Save — NEVER edit `tokens.responsive.css` directly (next Save overwrites). Import order in portal globals: `tokens.css` before `tokens.responsive.css` before `portal-blocks.css`.
+
+---
+
+## Responsive tokens authoring (WP-030, ADR-025 Layer 1)
+
+`tools/responsive-tokens-editor/` (`:7703`) is the canonical authoring surface for `packages/ui/src/theme/tokens.responsive.css`. Built per ADR-025 Layer 1 (auto tokens) — Utopia full-system fluid scale config drives auto-generated `clamp()` values; per-token override available for outliers.
+
+### Cascade-override pattern
+
+Token resolution order at runtime:
+1. `tokens.css` (Figma-synced static values; e.g. `--h1-font-size: 54px`)
+2. `tokens.responsive.css` (machine-generated `clamp()` overrides; same custom-property names)
+3. Container `@media` blocks (mobile-first cascade for `--container-max-w` + `--container-px`)
+
+The cascade ensures: blocks authoring against `var(--h1-font-size)` get the FLUID value at runtime (same custom-property name), but the static fallback survives if `tokens.responsive.css` is missing (e.g. dev tooling that imports only `tokens.css`).
+
+### Conservative-defaults rule (Phase 0 ruling 1)
+
+V1 defaults preserve current desktop static rendering — `clamp(minPx, slope, maxPx)` resolves to `maxPx` at the editor's `maxViewport` (1440 by default). Result: existing blocks render IDENTICALLY on desktop post-WP-030 vs pre-WP-030. Mobile fluidity is the only NEW behavior. This is the deliberate trade-off between "introduce graceful mobile fluidity" and "do not regress desktop rendering on 4500+ themes in the wild".
+
+### When to add token vs override
+
+| Scenario | Action |
+|----------|--------|
+| Author wants a new fluid token at a Type Scale step (e.g. between `--text-base` and `--text-lg`) | **Add token at scale step** — extend `stepMap` in `responsive-config.json` (via editor's Type Scale UI). Generates `clamp()` from scale math at min/max viewports. |
+| Author wants to tighten/loosen the clamp range for an existing token (e.g. `--h1-font-size` mobile floor 32px instead of 44px) | **Override** — edit `overrides[--h1-font-size].minPx/maxPx` in `responsive-config.json` (via editor's Token Preview Grid override modal). Reason field documents why. |
+| Author wants to disable fluidity entirely for a token | **Override with `minPx === maxPx`** — clamp degenerates to constant. |
+| Author wants discrete per-BP container widths (NOT fluid clamp) | **Container Widths Editor** — `containers.{mobile,tablet,desktop}.{maxWidth,px}`. Generator emits `:root + 2 @media` blocks. |
+
+### Editor save flow
+
+1. Click Save in `:7703` → POST to Vite dev-server middleware `/api/save-config`
+2. Server writes BOTH files (`responsive-config.json` SOT + `tokens.responsive.css` cascade-override)
+3. First save per session creates `.bak` siblings (preserves pre-edit bytes for rollback)
+4. Toast "Saved. Run `git commit` to deploy." confirms — author commits manually (no auto-deploy)
+5. Cross-surface activation is automatic: `apps/portal/app/globals.css:3` + `tools/block-forge/src/globals.css:2` + 2 `preview-assets.ts` `?raw` imports re-resolve on next request / Vite HMR
+
+### WCAG override gate (1.4.4)
+
+Editor validates each fluid token against WCAG 1.4.4 (max-px ÷ min-px ≤ 2.5). Violations show inline banner + global header banner. Save button blocked when violations exist UNLESS author explicitly toggles "Save anyway despite N WCAG violation(s)" — forces a deliberate decision, not a silent override.
+
+### Run command
+
+```bash
+cd tools/responsive-tokens-editor && npm run dev
+# ... opens :7703
+```
+
+Or via root alias (if defined): `npm run responsive-tokens-editor`. (As of Phase 7 close, root alias is NOT yet wired — Phase 6 verified the `cd` path; root alias falls into post-WP polish queue per `feedback_no_blocker_no_ask`.)
+
+### Cross-surface PARITY discipline (WP-030 Phase 6)
+
+Three PARITY.md files cross-reference each other:
+- `tools/responsive-tokens-editor/PARITY.md` — full save-flow contract + cascade-override pattern + save-safety 6 rules
+- `tools/block-forge/PARITY.md` §"WP-030 cross-surface PARITY (Phase 6)" — block-forge consumption via TWO paths (globals.css cascade + preview-iframe `?raw`)
+- `apps/studio/src/pages/block-editor/responsive/PARITY.md` §"WP-030 cross-surface PARITY (Phase 6)" — Studio consumption via `preview-assets.ts:19` `?raw` import (already-wired since WP-027)
+
+Auto-propagation: any token addition / removal / rename in generator output flows automatically through both consumption paths via Vite import primitives. Manual same-commit edits needed ONLY when `@layer` order, file path, or sibling-file structure changes.
+
+Reference: `tools/responsive-tokens-editor/PARITY.md` for the canonical contract.
 
 ---
 
