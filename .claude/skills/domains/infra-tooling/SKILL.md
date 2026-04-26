@@ -21,6 +21,11 @@ status: full
 - **html-generator emits nested `<div data-slot="child"></div>` inside the parent tag**, zero whitespace between tags (required for `resolveSlots` regex compatibility in portal). (WP-020)
 - **css-generator skips `.slot-inner` rules for container slots** (they have no `.slot-inner` — they contain other `data-slot` elements). Container outer rules (min-height, flex, background) are preserved. (WP-020)
 - **css-generator emits `container-type: inline-size; container-name: slot` on the generic `[data-slot] > .slot-inner` rule.** Exposes each leaf slot's inline width to block CSS `@container slot (max-width: …)` queries. Container slots correctly skip — they hold nested `<div data-slot="child">`, not `.slot-inner`, so the selector never matches them. Contract test in `css-generator.test.ts` asserts both the emission and the container-slot exclusion. (WP-024 / ADR-025)
+- **Layout Maker Inspector is not the slot-topology host.** `SlotStructurePanel` in the left sidebar owns slot rows, slot selection, row visibility toggles, and `Add slot`; do not move those controls back into Inspector. (WP-032)
+- **Canvas slot chrome owns spatial selected-sidebar visibility.** The Phase 2 eye action toggles sidebar visibility without re-selecting the slot, and hidden sidebars surface through the existing hidden badge path. (WP-032)
+- **Drawer trigger fields are rare config.** Sidebar trigger label/icon/color render as an Inspector summary plus `DrawerTriggerDialog`, not three inline `Slot Role` rows. (WP-032)
+- **`inspector-capabilities.ts` is the source of truth for Inspector visibility/capability gates.** UI moves must preserve that dispatcher rather than forking ad hoc field checks. (WP-032)
+- **WP-031 shell metrics remain part of LM workbench acceptance.** Structure/Inspector changes must preserve canvas widths around `1080 / 784 / 150` at `1600 / 1024 / 390` viewports. (WP-031/WP-032)
 
 ## Traps & Gotchas
 

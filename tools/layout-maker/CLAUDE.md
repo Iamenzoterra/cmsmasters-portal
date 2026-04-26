@@ -242,6 +242,16 @@ If a new site does not fit an existing shared rule, it is
 
 ---
 
+## Operator Workbench IA (WP-032)
+
+- `SlotStructurePanel` owns slot topology: slot rows, selected state, row visibility toggles, and `Add slot`.
+- `Canvas` owns spatial selected-sidebar visibility through the eye chrome and hidden badge path.
+- `Inspector` owns selected layout/slot properties; it must not host global slot topology again.
+- `DrawerTriggerDialog` owns drawer trigger label/icon/color editing; Inspector renders only the compact summary.
+- `src/lib/inspector-capabilities.ts` remains the source of truth for what fields can appear.
+
+---
+
 ## Trust Reforge — Next Engineer Pointer
 
 The layout-maker trust reforge ran as LM-Reforge Phases 0–7
