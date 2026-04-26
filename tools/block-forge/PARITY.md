@@ -222,3 +222,16 @@ Key discipline outcomes:
 - **Same-commit discipline** enforced for cross-surface body landings (Phases 2, 3, 4).
 - **Approval-gate pattern** at Phase 5 + Phase 6 Close (≥3 doc files triggers explicit Brain approval before doc commit lands) — Ruling QQ + saved memory `feedback_close_phase_approval_gate.md`.
 - **Pre-flight RECON** caught OQ3 root cause (`envDir: '../..'`) before Phase 6 Commit 1 wrote code — saved memory `feedback_preflight_recon_load_bearing.md` validated 6/6 phases.
+
+## WP-030 cross-surface PARITY (Phase 6)
+
+`tools/responsive-tokens-editor/` (`:7703`) is the canonical writer of `packages/ui/src/theme/tokens.responsive.css` post-WP-030 Phase 6. Cross-reference: `tools/responsive-tokens-editor/PARITY.md` (full save-flow contract + cascade-override pattern documentation).
+
+block-forge consumes `tokens.responsive.css` via TWO paths:
+
+1. **Editor chrome** — `src/globals.css:2` `@import` (Phase 6 BAKE; cross-surface PARITY consistency with portal apps).
+2. **Preview iframe** — `src/lib/preview-assets.ts:14` `?raw` import → composed into `<style>` `@layer tokens` block alongside `tokens.css`.
+
+Auto-propagation: any token addition / removal / rename in the generator output flows automatically through both consumption paths via Vite import primitives (`@import` cascade re-resolves; `?raw` HMR re-runs). Manual same-commit edits are needed ONLY when `@layer` order, file path, or sibling-file structure changes.
+
+Studio side: equivalent two-path consumption documented in `apps/studio/src/pages/block-editor/responsive/PARITY.md` (matching cross-reference entry).

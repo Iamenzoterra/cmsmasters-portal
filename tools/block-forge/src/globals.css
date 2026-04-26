@@ -1,4 +1,5 @@
 @import '../../../packages/ui/src/theme/tokens.css';
+@import '../../../packages/ui/src/theme/tokens.responsive.css'; /* WP-030 P6 cross-surface PARITY */
 @import 'tailwindcss';
 @config '../tailwind.config.ts';
 

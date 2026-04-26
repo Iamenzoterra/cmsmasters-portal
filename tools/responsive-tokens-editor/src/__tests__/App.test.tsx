@@ -27,12 +27,12 @@ describe('App — Phase 3 orchestrator', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
-  it('renders Phase 5 placeholder ribbon in footer (signposts Phase 6 work)', () => {
+  it('renders Phase 6 footer ribbon (Save flow live, cross-surface PARITY active)', () => {
     render(<App />)
-    // Anchor on the unique footer copy — `/Phase 5/i` alone matches both the
-    // footer and GlobalScaleConfig's "(Phase 5+)" advanced-multipliers label.
+    // Anchor on the unique footer copy — `/Phase 6/i` alone could match other
+    // labels in the future; full phrase is anchored to footer ribbon.
     expect(
-      screen.getByText(/Save flow \+ cross-surface PARITY in Phase 6/i)
+      screen.getByText(/Save flow live · Cross-surface PARITY active/i)
     ).toBeInTheDocument()
   })
 })

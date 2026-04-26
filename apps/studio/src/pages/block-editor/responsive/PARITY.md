@@ -241,3 +241,13 @@ Transparent last-write-wins is acceptable per the WP-028 workplan §5 directive:
 Studio Responsive tab surface closed WP-028 with byte-identical cross-surface body discipline across TweakPanel + VariantsDrawer + VariantEditor. OQ5 Studio zero-touch confirmed via Phase 6 pre-flight: `ResponsiveTab.tsx:151-152` emits `emitTweak` output into `form.code` at dispatch time; save serializes `form.code` verbatim with no compose-on-save step required. Contrast with block-forge which shipped Ruling MM compose-in-handleSave fix at Phase 6 Commit 1 `fc8ed555` (asymmetric fix pattern — data path differs, dirty-state contract identical).
 
 `block-editor.tsx` LOC deviation held at 33/40 through Phase 6 (Phase 5 exit). Cross-reference: `tools/block-forge/PARITY.md` §Discipline Confirmation (WP-028 Close).
+
+## WP-030 cross-surface PARITY (Phase 6)
+
+`tools/responsive-tokens-editor/` (`:7703`) is the canonical writer of `packages/ui/src/theme/tokens.responsive.css` post-WP-030 Phase 6. Cross-reference: `tools/responsive-tokens-editor/PARITY.md` (full save-flow contract + cascade-override pattern documentation).
+
+Studio Responsive tab consumes `tokens.responsive.css` via `src/pages/block-editor/responsive/preview-assets.ts:19` `?raw` import → composed into iframe `<style>` `@layer tokens` block (byte-identical with block-forge's `src/lib/preview-assets.ts:14` per WP-027 Studio mirror discipline).
+
+Auto-propagation: any token addition / removal / rename in the generator output flows automatically through the `?raw` import on Vite HMR. Manual same-commit edits are needed ONLY when `@layer` order, file path, or sibling-file structure changes (consistent with block-forge mirror discipline).
+
+Phase 0 Ruling #4 reduced Studio-side Phase 6 work to docs-only — Studio's `preview-assets.ts:19` already imports `tokensResponsiveCSS` since WP-027; activation is automatic when generator populates real values into the file.
