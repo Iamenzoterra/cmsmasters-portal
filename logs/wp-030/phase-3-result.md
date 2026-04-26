@@ -192,8 +192,8 @@ None — all decisions either had ruling/precedent or were explicitly evaluated 
 | Phase 0 RECON commit | `4f487154` | committed (prior phase) |
 | Phase 1 scaffold commit | `d8c5498a` + `4d77a5be` | committed (prior phase) |
 | Phase 2 main commit | `ddec80e4` + `f17a66e7` | committed (prior phase) |
-| Phase 3 main commit | _pending Brain code-review + UI-review gates_ | uncommitted |
-| Phase 3 task commit | _Brain task draft `phase-3-task.md` uncommitted (drafted by Hands per `feedback_plan_approval`)_ | uncommitted |
+| Phase 3 main commit (engine code + tests + screenshots + manifest + task.md + result.md draft) | `45a8e973` | committed (2026-04-26, post-dual-gate-review) |
+| Phase 3 doc fixup (this SHA recorded into result.md) | _this commit_ | committed |
 
 ---
 
