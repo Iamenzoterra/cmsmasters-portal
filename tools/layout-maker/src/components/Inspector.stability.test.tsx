@@ -70,9 +70,8 @@ const baseProps = {
 
 function getWidthInput(container: HTMLElement): HTMLInputElement {
   // Numeric width input lives inside `div.lm-width-input` wrapper (see
-  // ColumnWidthControl line 448 in Inspector.tsx). The drawer-trigger-label
-  // text input also uses className `lm-width-input__field` for layout
-  // symmetry — parent-scoped selector disambiguates.
+  // ColumnWidthControl in Inspector.tsx). Parent-scoped selector avoids
+  // matching modal or utility text inputs that reuse the same field class.
   const el = container.querySelector<HTMLInputElement>(
     '.lm-width-input > .lm-width-input__field',
   )

@@ -102,9 +102,9 @@ describe('Inspector capability gating (Phase 4 Cut B)', () => {
     expect(container.querySelector('.lm-badge--container')).toBeNull()
   })
 
-  it('sidebar slot: shows drawer-trigger controls + concurrent sidebar+leaf badges', () => {
+  it('sidebar slot: shows drawer-trigger summary + concurrent sidebar+leaf badges', () => {
     const config = makeConfig({ 'sidebar-left': {} })
-    const { queryByText, container } = render(
+    const { getByLabelText, getByText, queryByText, container } = render(
       <Inspector
         {...baseProps}
         config={config}
@@ -114,9 +114,15 @@ describe('Inspector capability gating (Phase 4 Cut B)', () => {
       />,
     )
 
-    expect(queryByText('Trigger label')).not.toBeNull()
-    expect(queryByText('Trigger icon')).not.toBeNull()
-    expect(queryByText('Trigger color')).not.toBeNull()
+    expect(queryByText('Drawer trigger')).not.toBeNull()
+    expect(queryByText('Menu · chevron · the-sky')).not.toBeNull()
+    expect(getByText('Configure')).toBeTruthy()
+    expect(queryByText('Trigger label')).toBeNull()
+    expect(queryByText('Trigger icon')).toBeNull()
+    expect(queryByText('Trigger color')).toBeNull()
+    fireEvent.click(getByText('Configure'))
+    expect(queryByText(/Configure drawer trigger/)).not.toBeNull()
+    expect(getByLabelText('Label')).toBeTruthy()
     // Concurrent badge set (Brain #5 — no precedence collapse).
     expect(container.querySelector('.lm-badge--leaf')).not.toBeNull()
     expect(container.querySelector('.lm-badge--sidebar')).not.toBeNull()

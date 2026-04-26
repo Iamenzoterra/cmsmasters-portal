@@ -1,8 +1,10 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import type { LayoutConfig, TokenMap, ScopingWarning, PerBpSlotField, CanvasBreakpointId, SlotConfig } from '../lib/types'
 import { resolveSlotConfig, getBaseGridKey, isFieldOverridden } from '../lib/types'
 import { deriveBreakpointTruth } from '../lib/breakpoint-truth'
 import { resolveToken, resolveTokenPx, hslTripletToHex } from '../lib/tokens'
+import { ColorTokenSelect } from '../lib/color-token-select'
+import { getEffectiveDrawerTrigger } from '../lib/drawer-trigger-defaults'
 import {
   canShow,
   getFieldScope,
@@ -14,7 +16,7 @@ import { CopyButton } from './CopyButton'
 import { InspectorUtilityZone } from './InspectorUtilityZone'
 import { InspectorCluster } from './InspectorCluster'
 import { CreateSlotModal } from './CreateSlotModal'
-import { DRAWER_ICONS } from '../../../../packages/ui/src/portal/drawer-icons'
+import { DrawerTriggerDialog } from './DrawerTriggerDialog'
 export { DrawerSettingsControl } from './ResponsivePreviewControls'
 // GLOBAL_SLOT_NAMES_SET removed — `traits.isGlobalSlot` from
 // inspector-capabilities.ts is now the single source of truth, and the
@@ -94,87 +96,6 @@ function getBorderTokens(tokens: TokenMap): Array<{ name: string; hsl: string }>
   return Object.keys(tokens.all)
     .filter((t) => t.startsWith('--border-'))
     .map((name) => ({ name, hsl: `hsl(${tokens.all[name]})` }))
-}
-
-/** Brand / accent color tokens suitable for filling a drawer trigger button.
- *  Filters to --brand-* primitives and skips neutral greys (triplet matches
- *  "0 0% X%") which would look muddy on the trigger. */
-function getBrandColorTokens(tokens: TokenMap): Array<{ name: string; hsl: string }> {
-  return Object.keys(tokens.all)
-    .filter((t) => t.startsWith('--brand-'))
-    .filter((t) => {
-      const v = tokens.all[t]
-      // Drop pure whites/blacks/greys — not usable as a trigger background.
-      return !/^0 0%/.test(v) && !/0 0% (0|100|95|87|62|46|33|23|9|5)%/.test(v)
-    })
-    .map((name) => ({ name, hsl: `hsl(${tokens.all[name]})` }))
-}
-
-/** Shared custom dropdown with color swatches. */
-function ColorTokenSelect({ options, value, onChange, placeholder }: {
-  options: Array<{ value: string; label: string; hex: string }>
-  value: string | undefined
-  onChange: (v: string | undefined) => void
-  placeholder: string
-}) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [open])
-
-  const selected = options.find((o) => o.value === value)
-
-  return (
-    <div className="lm-color-select" ref={ref}>
-      <button
-        type="button"
-        className="lm-color-select__trigger"
-        onClick={() => setOpen(!open)}
-      >
-        {selected ? (
-          <>
-            <span className="lm-color-select__swatch" style={{ background: selected.hex }} />
-            <span className="lm-color-select__label">{selected.label}</span>
-            <span className="lm-color-select__hex">{selected.hex}</span>
-          </>
-        ) : (
-          <span className="lm-color-select__label">{placeholder}</span>
-        )}
-        <span className="lm-color-select__chevron">▾</span>
-      </button>
-      {open && (
-        <div className="lm-color-select__menu">
-          <button
-            type="button"
-            className={`lm-color-select__option ${!value ? 'lm-color-select__option--active' : ''}`}
-            onClick={() => { onChange(undefined); setOpen(false) }}
-          >
-            <span className="lm-color-select__swatch lm-color-select__swatch--none" />
-            <span className="lm-color-select__label">{placeholder}</span>
-          </button>
-          {options.map((o) => (
-            <button
-              key={o.value}
-              type="button"
-              className={`lm-color-select__option ${value === o.value ? 'lm-color-select__option--active' : ''}`}
-              onClick={() => { onChange(o.value); setOpen(false) }}
-            >
-              <span className="lm-color-select__swatch" style={{ background: o.hex }} />
-              <span className="lm-color-select__label">{o.label}</span>
-              <span className="lm-color-select__hex">{o.hex}</span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  )
 }
 
 function BackgroundPicker({ value, onChange, tokens, allowInherit, inheritLabel }: {
@@ -391,6 +312,10 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
 
   const [pendingContainerSlot, setPendingContainerSlot] = useState<string | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [drawerDialogOpen, setDrawerDialogOpen] = useState(false)
+  useEffect(() => {
+    setDrawerDialogOpen(false)
+  }, [selectedSlot])
   // Phase 4 — "Show overridden only" filter. Active state is per-page-load
   // (no persistence). Body gets data-filter="overridden" attribute; CSS uses
   // :has() to hide clusters without a .lm-bp-dot descendant.
@@ -561,6 +486,10 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
   })
 
   // `showCreateModal` state is declared at the top of Inspector (hooks-at-top rule).
+  const drawerTrigger = getEffectiveDrawerTrigger(baseSlot, selectedSlot)
+  const drawerTriggerSummary = `${drawerTrigger.label} · ${drawerTrigger.icon} · ${drawerTrigger.color}`
+  const drawerTriggerAllDefaults =
+    drawerTrigger.isLabelDefault && drawerTrigger.isIconDefault && drawerTrigger.isColorDefault
 
   // Format helpers
   function formatLine(prop: string, token: string | undefined, resolved: string): string {
@@ -704,60 +633,24 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
             )
           })()}
 
-          {/* Drawer trigger — label + icon for the button that opens this
-              slot as a drawer. Only shown for sidebar slots (others never
-              become a drawer). Base/role-level — one label across all BPs. */}
-          {canShow('drawer-trigger-label', traits, scope) && (
-            <>
-              <div className="lm-inspector__row">
-                <span className="lm-inspector__label">Trigger label</span>
-                <input
-                  type="text"
-                  className="lm-width-input__field lm-inspector__field--fill"
-                  placeholder={selectedSlot.includes('left') ? 'Menu' : 'Details'}
-                  value={(baseSlot['drawer-trigger-label'] as string | undefined) ?? ''}
-                  onChange={(e) => {
-                    const v = e.target.value
-                    onUpdateSlotRole(selectedSlot, { 'drawer-trigger-label': v.trim() || undefined })
-                  }}
-                />
-              </div>
-              <div className="lm-inspector__row">
-                <span className="lm-inspector__label">Trigger icon</span>
-                <select
-                  className="lm-spacing-select lm-spacing-select--inline lm-inspector__field--fill"
-                  value={(baseSlot['drawer-trigger-icon'] as string | undefined) ?? ''}
-                  onChange={(e) => {
-                    const v = e.target.value
-                    onUpdateSlotRole(selectedSlot, { 'drawer-trigger-icon': v || undefined })
-                  }}
-                >
-                  <option value="">chevron (default)</option>
-                  {DRAWER_ICONS.map((icon) => (
-                    <option key={icon.name} value={icon.name}>{icon.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="lm-inspector__row lm-inspector__row--col">
-                <span className="lm-inspector__label">Trigger color</span>
-                {(() => {
-                  const brandTokens = getBrandColorTokens(tokens)
-                  const options = brandTokens.map((t) => ({
-                    value: t.name,
-                    label: t.name.replace('--brand-', ''),
-                    hex: hslTripletToHex(tokens.all[t.name]) ?? t.hsl,
-                  }))
-                  return (
-                    <ColorTokenSelect
-                      options={options}
-                      value={baseSlot['drawer-trigger-color']}
-                      onChange={(v) => onUpdateSlotRole(selectedSlot, { 'drawer-trigger-color': v })}
-                      placeholder={selectedSlot.includes('left') ? 'the-sky (default)' : 'deep-blue (default)'}
-                    />
-                  )
-                })()}
-              </div>
-            </>
+          {/* Drawer trigger — rare-use role config collapsed into one summary row. */}
+          {canShow('cluster-drawer-trigger', traits, scope) && (
+            <div className="lm-inspector__row lm-inspector__row--drawer-trigger-summary">
+              <span className="lm-inspector__label">Drawer trigger</span>
+              <span className="lm-inspector__drawer-trigger-summary" title={drawerTriggerSummary}>
+                {drawerTriggerSummary}
+                {drawerTriggerAllDefaults && (
+                  <span className="lm-inspector__defaults-tag">(default)</span>
+                )}
+              </span>
+              <button
+                type="button"
+                className="lm-btn lm-btn--ghost lm-inspector__configure-btn"
+                onClick={() => setDrawerDialogOpen(true)}
+              >
+                Configure
+              </button>
+            </div>
           )}
 
           {canShow('full-width-note', traits, scope) && (
@@ -765,6 +658,15 @@ export function Inspector({ selectedSlot, config, activeBreakpoint, gridKey, tok
           )}
           </div>
         </InspectorCluster>
+
+        <DrawerTriggerDialog
+          isOpen={drawerDialogOpen}
+          slotName={selectedSlot}
+          baseSlot={baseSlot}
+          tokens={tokens}
+          onClose={() => setDrawerDialogOpen(false)}
+          onUpdateSlotRole={(name, partial) => onUpdateSlotRole(name, partial as Record<string, unknown>)}
+        />
 
         {/* Children cluster — container slots only */}
         {canShow('container-panel', traits, scope) && (
