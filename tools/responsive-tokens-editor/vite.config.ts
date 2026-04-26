@@ -14,5 +14,9 @@ export default defineConfig({
     // through Vite's pipeline so `?raw` returns the actual file content.
     // (saved memory feedback_vitest_css_raw + infra-tooling SKILL trap)
     css: true,
+    // Phase 3: hooks @testing-library/jest-dom matchers into expect.
+    // Per-file `// @vitest-environment jsdom` directive on component tests
+    // (PF.7 — block-forge precedent; do NOT set environment globally).
+    setupFiles: ['./src/setupTests.ts'],
   },
 })

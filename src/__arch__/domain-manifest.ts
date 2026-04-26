@@ -671,6 +671,18 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'tools/responsive-tokens-editor/src/__tests__/generator.test.ts',
       'tools/responsive-tokens-editor/src/__tests__/defaults.test.ts',
       'tools/responsive-tokens-editor/src/__tests__/validate.test.ts',
+      // WP-030 Phase 3: Global Scale UI — 4 components + 4 tests + setupTests.
+      // All run in jsdom via per-file `// @vitest-environment jsdom` directive
+      // (PF.7 — block-forge precedent; NOT global env).
+      'tools/responsive-tokens-editor/src/setupTests.ts',
+      'tools/responsive-tokens-editor/src/components/GlobalScaleConfig.tsx',
+      'tools/responsive-tokens-editor/src/components/WcagBanner.tsx',
+      'tools/responsive-tokens-editor/src/components/ResetButton.tsx',
+      'tools/responsive-tokens-editor/src/components/LoadStatusBadge.tsx',
+      'tools/responsive-tokens-editor/src/__tests__/App.test.tsx',
+      'tools/responsive-tokens-editor/src/__tests__/GlobalScaleConfig.test.tsx',
+      'tools/responsive-tokens-editor/src/__tests__/WcagBanner.test.tsx',
+      'tools/responsive-tokens-editor/src/__tests__/ResetButton.test.tsx',
       'nx.json',
     ],
     owned_tables: [],
