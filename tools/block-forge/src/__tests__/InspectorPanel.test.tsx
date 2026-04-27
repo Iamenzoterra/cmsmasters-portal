@@ -208,7 +208,7 @@ describe('InspectorPanel — section conditional rows', () => {
 })
 
 describe('InspectorPanel — Visibility section (Phase 3 wires)', () => {
-  it('renders disabled checkbox with (Phase 3) hint when pinned', () => {
+  it('renders disabled checkbox when no onVisibilityToggle (Phase 3 read-only fallback)', () => {
     const { getByTestId } = render(
       <InspectorPanel
         slug="hero"
@@ -222,8 +222,81 @@ describe('InspectorPanel — Visibility section (Phase 3 wires)', () => {
     const cb = getByTestId('inspector-hide-at-bp') as HTMLInputElement
     expect(cb).toBeTruthy()
     expect(cb.disabled).toBe(true)
-    const section = getByTestId('inspector-section-visibility')
-    expect(section.textContent).toMatch(/\(Phase 3\)/)
+  })
+
+  it('renders enabled checkbox when onVisibilityToggle provided', () => {
+    const { getByTestId } = render(
+      <InspectorPanel
+        slug="hero"
+        hovered={null}
+        pinned={PINNED_BLOCK}
+        activeBp={1440}
+        onActiveBpChange={() => undefined}
+        onClearPin={() => undefined}
+        onVisibilityToggle={() => undefined}
+      />,
+    )
+    const cb = getByTestId('inspector-hide-at-bp') as HTMLInputElement
+    expect(cb.disabled).toBe(false)
+    expect(cb.checked).toBe(false)
+  })
+
+  it('reflects isHiddenAtActiveBp=true → checked', () => {
+    const { getByTestId } = render(
+      <InspectorPanel
+        slug="hero"
+        hovered={null}
+        pinned={PINNED_BLOCK}
+        activeBp={1440}
+        onActiveBpChange={() => undefined}
+        onClearPin={() => undefined}
+        onVisibilityToggle={() => undefined}
+        isHiddenAtActiveBp
+      />,
+    )
+    const cb = getByTestId('inspector-hide-at-bp') as HTMLInputElement
+    expect(cb.checked).toBe(true)
+  })
+
+  it('checking calls onVisibilityToggle(activeBp, true)', async () => {
+    const { vi } = await import('vitest')
+    const { fireEvent } = await import('@testing-library/react')
+    const onToggle = vi.fn()
+    const { getByTestId } = render(
+      <InspectorPanel
+        slug="hero"
+        hovered={null}
+        pinned={PINNED_BLOCK}
+        activeBp={1440}
+        onActiveBpChange={() => undefined}
+        onClearPin={() => undefined}
+        onVisibilityToggle={onToggle}
+      />,
+    )
+    const cb = getByTestId('inspector-hide-at-bp') as HTMLInputElement
+    fireEvent.click(cb)
+    expect(onToggle).toHaveBeenCalledWith(1440, true)
+  })
+
+  it('unchecking calls onVisibilityToggle(activeBp, false)', async () => {
+    const { vi } = await import('vitest')
+    const { fireEvent } = await import('@testing-library/react')
+    const onToggle = vi.fn()
+    const { getByTestId } = render(
+      <InspectorPanel
+        slug="hero"
+        hovered={null}
+        pinned={PINNED_BLOCK}
+        activeBp={1440}
+        onActiveBpChange={() => undefined}
+        onClearPin={() => undefined}
+        onVisibilityToggle={onToggle}
+        isHiddenAtActiveBp
+      />,
+    )
+    const cb = getByTestId('inspector-hide-at-bp') as HTMLInputElement
+    fireEvent.click(cb)
+    expect(onToggle).toHaveBeenCalledWith(1440, false)
   })
 })
 

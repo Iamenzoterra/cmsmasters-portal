@@ -192,6 +192,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
               data-active="true"
               data-cell-bp="375"
+              data-editable="false"
               data-empty="false"
             >
               <span
@@ -211,6 +212,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="768"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -239,6 +241,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="1440"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -283,6 +286,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
               data-active="true"
               data-cell-bp="375"
+              data-editable="false"
               data-empty="false"
             >
               <span
@@ -302,6 +306,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="768"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -330,6 +335,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="1440"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -374,6 +380,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
               data-active="true"
               data-cell-bp="375"
+              data-editable="false"
               data-empty="false"
             >
               <span
@@ -393,6 +400,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="768"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -421,6 +429,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="1440"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -465,6 +474,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
               data-active="true"
               data-cell-bp="375"
+              data-editable="false"
               data-empty="false"
             >
               <span
@@ -484,6 +494,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="768"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -512,6 +523,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="1440"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -556,6 +568,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
               data-active="true"
               data-cell-bp="375"
+              data-editable="false"
               data-empty="false"
             >
               <span
@@ -575,6 +588,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="768"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -603,6 +617,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="1440"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -647,6 +662,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
               data-active="true"
               data-cell-bp="375"
+              data-editable="false"
               data-empty="false"
             >
               <span
@@ -666,6 +682,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="768"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -694,6 +711,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="1440"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -738,6 +756,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
               data-active="true"
               data-cell-bp="375"
+              data-editable="false"
               data-empty="false"
             >
               <span
@@ -757,6 +776,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="768"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -785,6 +805,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="1440"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -829,6 +850,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
               data-active="true"
               data-cell-bp="375"
+              data-editable="false"
               data-empty="false"
             >
               <span
@@ -848,6 +870,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="768"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -876,6 +899,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="1440"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -931,6 +955,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
               data-active="true"
               data-cell-bp="375"
+              data-editable="false"
               data-empty="false"
             >
               <span
@@ -950,6 +975,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="768"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -978,6 +1004,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="1440"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -1022,6 +1049,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
               data-active="true"
               data-cell-bp="375"
+              data-editable="false"
               data-empty="false"
             >
               <span
@@ -1041,6 +1069,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="768"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -1069,6 +1098,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="1440"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -1113,6 +1143,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
               data-active="true"
               data-cell-bp="375"
+              data-editable="false"
               data-empty="false"
             >
               <span
@@ -1132,6 +1163,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="768"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -1160,6 +1192,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="1440"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -1204,6 +1237,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
               data-active="true"
               data-cell-bp="375"
+              data-editable="false"
               data-empty="false"
             >
               <span
@@ -1223,6 +1257,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="768"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -1251,6 +1286,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="1440"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -1295,6 +1331,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
               data-active="true"
               data-cell-bp="375"
+              data-editable="false"
               data-empty="false"
             >
               <span
@@ -1314,6 +1351,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="768"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -1342,6 +1380,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="1440"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -1397,6 +1436,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
               data-active="true"
               data-cell-bp="375"
+              data-editable="false"
               data-empty="false"
             >
               <span
@@ -1416,6 +1456,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="768"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -1444,6 +1485,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="1440"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -1488,6 +1530,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
               data-active="true"
               data-cell-bp="375"
+              data-editable="false"
               data-empty="false"
             >
               <span
@@ -1507,6 +1550,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="768"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -1535,6 +1579,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="1440"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -1579,6 +1624,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
               data-active="true"
               data-cell-bp="375"
+              data-editable="false"
               data-empty="false"
             >
               <span
@@ -1598,6 +1644,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="768"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -1626,6 +1673,7 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
               class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
               data-active="false"
               data-cell-bp="1440"
+              data-editable="false"
               data-empty="true"
             >
               <span
@@ -1664,12 +1712,11 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
           Visibility
         </div>
         <label
-          class="flex cursor-not-allowed items-center gap-2 text-[length:var(--text-xs-font-size)] text-[hsl(var(--text-muted))]"
-          title="Editing wired in Phase 3"
+          class="flex cursor-pointer items-center gap-2 text-[length:var(--text-xs-font-size)] text-[hsl(var(--text-primary))]"
+          title="Hide ..cta at 375px breakpoint"
         >
           <input
             aria-label="Hide at 375px breakpoint"
-            class="cursor-not-allowed"
             data-testid="inspector-hide-at-bp"
             disabled=""
             type="checkbox"
@@ -1677,11 +1724,6 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
           <span>
             Hide at 
             375
-          </span>
-          <span
-            class="italic"
-          >
-            (Phase 3)
           </span>
         </label>
       </section>

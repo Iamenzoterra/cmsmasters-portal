@@ -162,6 +162,27 @@ export function removeTweaksFor(
 }
 
 /**
+ * WP-033 Phase 3 — property-scoped tweak removal. Used by the visibility
+ * checkbox uncheck path (precise reset of `display:none` only, preserves
+ * other tweaks at the same selector+bp). Additive — does NOT replace
+ * `removeTweaksFor` (selector+bp scoped); the two coexist.
+ *
+ * Like `removeTweaksFor`, no history compensation entry — destructive reset.
+ */
+export function removeTweakFor(
+  state: SessionState,
+  selector: string,
+  bp: number,
+  property: string,
+): SessionState {
+  const next = state.tweaks.filter(
+    (t) => !(t.selector === selector && t.bp === bp && t.property === property),
+  )
+  if (next.length === state.tweaks.length) return state
+  return { ...state, tweaks: next }
+}
+
+/**
  * Create a named variant (WP-028 Phase 3, Ruling N — deep copy at fork time).
  * Silent no-op if `name` already exists. `payload` is {html, css} snapshotted
  * at fork time by the caller (App.tsx seeds from `block.html / block.css`).

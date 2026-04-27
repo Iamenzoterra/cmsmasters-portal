@@ -20,6 +20,7 @@ import {
   isDirty,
   pickAccepted,
   reject,
+  removeTweakFor,
   removeTweaksFor,
   renameVariant,
   setFluidModeOverride,
@@ -181,6 +182,43 @@ describe('session — removeTweaksFor (WP-028 Phase 2)', () => {
     const s = addTweak(createSession(), makeTweak({ selector: '.x', bp: 480 }))
     const next = removeTweaksFor(s, '.x', 480)
     expect(next.history).toEqual(s.history) // history unchanged
+  })
+})
+
+describe('session — removeTweakFor (WP-033 Phase 3)', () => {
+  it('removes only the tweak matching (selector, bp, property); preserves others at same selector+bp', () => {
+    const s = addTweak(
+      addTweak(
+        createSession(),
+        makeTweak({ selector: '.x', bp: 1440, property: 'display', value: 'none' }),
+      ),
+      makeTweak({ selector: '.x', bp: 1440, property: 'font-size', value: '48px' }),
+    )
+    const next = removeTweakFor(s, '.x', 1440, 'display')
+    expect(next.tweaks).toHaveLength(1)
+    expect(next.tweaks[0].property).toBe('font-size')
+  })
+
+  it('does NOT affect tweaks at different BPs', () => {
+    const s = addTweak(
+      addTweak(
+        createSession(),
+        makeTweak({ selector: '.x', bp: 1440, property: 'display', value: 'none' }),
+      ),
+      makeTweak({ selector: '.x', bp: 768, property: 'display', value: 'none' }),
+    )
+    const next = removeTweakFor(s, '.x', 1440, 'display')
+    expect(next.tweaks).toHaveLength(1)
+    expect(next.tweaks[0].bp).toBe(768)
+  })
+
+  it('is a no-op (same ref) when nothing matches', () => {
+    const s = addTweak(
+      createSession(),
+      makeTweak({ selector: '.x', bp: 1440, property: 'font-size', value: '48px' }),
+    )
+    const next = removeTweakFor(s, '.x', 1440, 'display')
+    expect(next).toBe(s)
   })
 })
 

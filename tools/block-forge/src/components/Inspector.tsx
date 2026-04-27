@@ -1,4 +1,7 @@
 // WP-033 Phase 1 — Inspector orchestrator.
+// WP-033 Phase 3 — owns useInspectorPerBpValues hook (Option A: hook lifecycle
+// at this level keeps InspectorPanel pure-presentational). Forwards new
+// callbacks (onCellEdit, onApplyToken, onVisibilityToggle) + isHiddenAtActiveBp.
 //
 // Owns hover + pin state. Listens to 4 postMessage types from the preview
 // iframe; dispatches `block-forge:inspector-request-pin` back to apply the
@@ -10,7 +13,7 @@
 // for selection. This file does NOT preventDefault — the element-click handler
 // inside the iframe IIFE already does that.
 //
-// 4 listeners (Phase 1 contract):
+// 4 listeners (Phase 1 contract — UNCHANGED Phase 3):
 //   1. block-forge:inspector-hover    → setHovered
 //   2. block-forge:inspector-unhover  → setHovered(null)
 //   3. block-forge:element-click      → request pin (click-to-pin gesture)
@@ -18,14 +21,11 @@
 //
 // Slug filter: every message is gated on `msg.slug === slug` so a stale
 // iframe (mid-tab-switch) can't pollute the active inspection.
-//
-// Programmatic re-pin: when activeBp changes, PreviewTriptych re-renders a
-// new iframe instance — its IIFE has no data-bf-pin set, so Inspector
-// re-sends the pin request to restore the outline. Same trigger covers
-// block-switch (slug change clears pinned state instead).
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { Tweak } from '@cmsmasters/block-forge-core'
 import { InspectorPanel } from './InspectorPanel'
+import { useInspectorPerBpValues } from '../hooks/useInspectorPerBpValues'
 
 type Rect = { x: number; y: number; w: number; h: number }
 
@@ -48,13 +48,48 @@ type Props = {
   slug: string | null
   activeBp: InspectorBp
   onActiveBpChange: (bp: InspectorBp) => void
+  /** Phase 3 — emit a tweak from active cell. App.tsx → addTweak. */
+  onCellEdit?: (selector: string, bp: InspectorBp, property: string, value: string) => void
+  /** Phase 3 — apply fluid token (bp:0 emit). App.tsx → addTweak with var(--token). */
+  onApplyToken?: (selector: string, property: string, tokenName: string) => void
+  /** Phase 3 — visibility toggle. App.tsx → addTweak / removeTweakFor for `display`. */
+  onVisibilityToggle?: (selector: string, bp: InspectorBp, hide: boolean) => void
+  /**
+   * Phase 3 — session.tweaks slice. Used to derive `isHiddenAtActiveBp`
+   * (checkbox state) inline at this level since pin selector lives here.
+   * App.tsx is the session owner; passing the readonly slice is the lowest
+   * coupling option.
+   */
+  tweaks?: ReadonlyArray<Tweak>
+  /** Phase 3 — base+composed CSS used by useChipDetection + useInspectorPerBpValues. */
+  effectiveCss?: string
+  /** Phase 3 — block HTML threaded through to useInspectorPerBpValues for hidden-iframe srcdoc. */
+  blockHtml?: string
 }
 
 const PIN_CLEAR_SENTINEL = '__clear__'
 
-export function Inspector({ slug, activeBp, onActiveBpChange }: Props) {
+export function Inspector({
+  slug,
+  activeBp,
+  onActiveBpChange,
+  onCellEdit,
+  onApplyToken,
+  onVisibilityToggle,
+  tweaks,
+  effectiveCss,
+  blockHtml,
+}: Props) {
   const [hovered, setHovered] = useState<HoverState | null>(null)
   const [pinned, setPinned] = useState<PinState | null>(null)
+
+  // Phase 3 §3.2 — hidden-iframe per-BP value sourcing.
+  const valuesByBp = useInspectorPerBpValues({
+    pinned,
+    blockHtml: blockHtml ?? '',
+    effectiveCss: effectiveCss ?? '',
+    slug,
+  })
 
   // Send a request-pin message to the active iframe. Selector === null sends
   // the __clear__ sentinel (cross-iframe-safe; null serializes oddly through
@@ -145,9 +180,7 @@ export function Inspector({ slug, activeBp, onActiveBpChange }: Props) {
     setHovered(null)
   }, [slug])
 
-  // Escape unpins. Listener is parent-window-scoped — iframe sandbox prevents
-  // keydowns from bubbling, so this won't conflict with the existing fullscreen
-  // Escape handler in PreviewTriptych (different concern, both can coexist).
+  // Escape unpins.
   useEffect(() => {
     if (!pinned) return
     function onKey(e: KeyboardEvent) {
@@ -157,24 +190,40 @@ export function Inspector({ slug, activeBp, onActiveBpChange }: Props) {
     return () => window.removeEventListener('keydown', onKey)
   }, [pinned])
 
-  // Re-pin on BP-change: PreviewTriptych destroys + recreates the iframe when
-  // tabs switch, so the new iframe instance has no data-bf-pin set. We
-  // re-issue the request to restore the outline. Skipped on first mount
-  // (pinned is null then anyway) and skipped when there's no current pin.
+  // Re-pin on BP-change.
   const lastSentBpRef = useRef<InspectorBp>(activeBp)
   useEffect(() => {
     if (lastSentBpRef.current === activeBp) return
     lastSentBpRef.current = activeBp
     if (pinned?.selector) {
-      // Defer one frame so the new iframe's IIFE has registered its message
-      // listener before we post. (Without the defer, the post arrives before
-      // the listener exists and is silently dropped.)
       const id = window.setTimeout(() => {
         requestPinRef.current(pinned.selector)
       }, 60)
       return () => window.clearTimeout(id)
     }
   }, [activeBp, pinned?.selector])
+
+  // Phase 3 — bind selector to onVisibilityToggle so InspectorPanel doesn't
+  // need to know the selector explicitly.
+  const handleVisibilityToggle = useCallback(
+    (bp: InspectorBp, hide: boolean) => {
+      if (!pinned?.selector || !onVisibilityToggle) return
+      onVisibilityToggle(pinned.selector, bp, hide)
+    },
+    [pinned?.selector, onVisibilityToggle],
+  )
+
+  // Phase 3 — derive isHiddenAtActiveBp from session.tweaks slice.
+  const isHiddenAtActiveBp = useMemo(() => {
+    if (!pinned?.selector || !tweaks) return false
+    return tweaks.some(
+      (t) =>
+        t.selector === pinned.selector &&
+        t.bp === activeBp &&
+        t.property === 'display' &&
+        t.value === 'none',
+    )
+  }, [pinned?.selector, activeBp, tweaks])
 
   return (
     <InspectorPanel
@@ -184,13 +233,17 @@ export function Inspector({ slug, activeBp, onActiveBpChange }: Props) {
       activeBp={activeBp}
       onActiveBpChange={onActiveBpChange}
       onClearPin={() => requestPinRef.current(null)}
+      valuesByBp={valuesByBp}
+      onCellEdit={onCellEdit}
+      onApplyToken={onApplyToken}
+      onVisibilityToggle={onVisibilityToggle ? handleVisibilityToggle : undefined}
+      isHiddenAtActiveBp={isHiddenAtActiveBp}
+      effectiveCss={effectiveCss}
     />
   )
 }
 
-// Minimal CSS.escape for query-selector embedding. Standard CSS.escape exists
-// in modern browsers; this fallback covers the same shape for the slug names
-// we care about (kebab-case, ASCII).
+// Minimal CSS.escape for query-selector embedding.
 function cssEscape(s: string): string {
   if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
     return CSS.escape(s)

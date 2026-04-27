@@ -20,6 +20,7 @@ exports[`PropertyRow — snapshot > matches snapshot — active=375 typical row 
         class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
         data-active="true"
         data-cell-bp="375"
+        data-editable="false"
         data-empty="false"
       >
         <span
@@ -39,6 +40,7 @@ exports[`PropertyRow — snapshot > matches snapshot — active=375 typical row 
         class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
         data-active="false"
         data-cell-bp="768"
+        data-editable="false"
         data-empty="true"
       >
         <span
@@ -67,6 +69,7 @@ exports[`PropertyRow — snapshot > matches snapshot — active=375 typical row 
         class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
         data-active="false"
         data-cell-bp="1440"
+        data-editable="false"
         data-empty="true"
       >
         <span

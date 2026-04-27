@@ -26,6 +26,7 @@ import {
   isDirty,
   pickAccepted,
   reject as rejectFn,
+  removeTweakFor,
   removeTweaksFor,
   renameVariant as renameVariantFn,
   setFluidModeOverride,
@@ -190,6 +191,35 @@ export function App() {
   const handleInspectorBpChange = useCallback((bp: InspectorBp) => {
     setPreviewActiveId(BP_VIEWPORT[bp])
   }, [])
+
+  // WP-033 Phase 3 — Inspector dispatchers. Synchronous (not debounced like
+  // TweakPanel's slider) — cell edit / token apply / visibility toggle are
+  // discrete actions, not continuous drags. composedBlock memo picks up the
+  // new tweak and re-renders the iframe; Inspector re-pins automatically.
+  const handleInspectorCellEdit = useCallback(
+    (selector: string, bp: InspectorBp, property: string, value: string) => {
+      setSession((prev) => addTweak(prev, { selector, bp, property, value }))
+    },
+    [],
+  )
+  const handleInspectorApplyToken = useCallback(
+    (selector: string, property: string, tokenName: string) => {
+      setSession((prev) =>
+        addTweak(prev, { selector, bp: 0, property, value: `var(${tokenName})` }),
+      )
+    },
+    [],
+  )
+  const handleInspectorVisibilityToggle = useCallback(
+    (selector: string, bp: InspectorBp, hide: boolean) => {
+      setSession((prev) =>
+        hide
+          ? addTweak(prev, { selector, bp, property: 'display', value: 'none' })
+          : removeTweakFor(prev, selector, bp, 'display'),
+      )
+    },
+    [],
+  )
 
   // Clear selection on block switch.
   useEffect(() => {
@@ -429,6 +459,12 @@ export function App() {
             slug={currentSlug}
             activeBp={inspectorActiveBp}
             onActiveBpChange={handleInspectorBpChange}
+            onCellEdit={handleInspectorCellEdit}
+            onApplyToken={handleInspectorApplyToken}
+            onVisibilityToggle={handleInspectorVisibilityToggle}
+            tweaks={session.tweaks}
+            effectiveCss={composedBlock?.css ?? ''}
+            blockHtml={composedBlock?.html ?? ''}
           />
         </aside>
       </main>
