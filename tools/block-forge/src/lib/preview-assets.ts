@@ -20,9 +20,24 @@ import animateUtilsJS from '../../../../packages/ui/src/portal/animate-utils.js?
 // queries in the block CSS evaluate inside the preview iframe. Matches portal's theme-page
 // hierarchy where `[data-slot] > .slot-inner` gets this contract (see
 // `tools/layout-maker/runtime/lib/css-generator.ts:254-255`).
+//
+// The `:has()` opt-out companion rule is duplicated here from
+// tokens.responsive.opt-out.css because the iframe wraps the import in
+// `@layer tokens`, which loses to `@layer shared` regardless of selector
+// specificity. Emitting it inside `@layer shared` (same layer as the base
+// .slot-inner rule) lets selector specificity decide the winner and the
+// `:has()` selector wins. In production rendering (`apps/portal/app/globals.css`)
+// the imports are unlayered so the opt-out file's rule already wins via
+// source-order — no duplication needed there.
 const SLOT_CONTAINMENT_RULE = `.slot-inner {
   container-type: inline-size;
   container-name: slot;
+}
+@media (min-width: 768px) and (max-width: 1279.98px) {
+  .slot-inner:has([data-fluid-tablet="off"]) { container: normal; }
+}
+@media (max-width: 767.98px) {
+  .slot-inner:has([data-fluid-mobile="off"]) { container: normal; }
 }`
 
 export type ComposeSrcDocInput = {

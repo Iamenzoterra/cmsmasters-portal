@@ -24,9 +24,21 @@ import animateUtilsJS from '../../../../../../packages/ui/src/portal/animate-uti
 // Inline const — NOT exported (mirrors tools/block-forge/src/lib/preview-assets.ts:19
 // which is `const` not `export const`). Any change here breaks the cross-surface
 // PARITY contract with block-forge.
+//
+// Per-BP fluid opt-out bypass (`.slot-inner:has(...)`) is duplicated from
+// tokens.responsive.opt-out.css for the same reason as block-forge's preview-assets.ts:
+// the iframe wraps the opt-out import in `@layer tokens` which loses to `@layer shared`
+// regardless of selector specificity. See block-forge's preview-assets.ts header for
+// the full rationale.
 const SLOT_CONTAINMENT_RULE = `.slot-inner {
   container-type: inline-size;
   container-name: slot;
+}
+@media (min-width: 768px) and (max-width: 1279.98px) {
+  .slot-inner:has([data-fluid-tablet="off"]) { container: normal; }
+}
+@media (max-width: 767.98px) {
+  .slot-inner:has([data-fluid-mobile="off"]) { container: normal; }
 }`
 
 export type ComposeSrcDocInput = {
