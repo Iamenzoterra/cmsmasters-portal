@@ -5,7 +5,8 @@
   "type": "module",
   "main": "./index.ts",
   "exports": {
-    ".": "./index.ts"
+    ".": "./index.ts",
+    "./responsive-config.json": "./src/theme/responsive-config.json"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",

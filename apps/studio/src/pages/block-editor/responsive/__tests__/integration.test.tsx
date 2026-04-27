@@ -89,7 +89,9 @@ describe('ResponsiveTab — integration via WP-025 fixtures', () => {
 
   it('null block: renders preview prompt + empty suggestion state', () => {
     render(<ResponsiveTab block={null} />)
-    expect(screen.getByText(/Select a block/i)).toBeTruthy()
+    // Phase 4: scoped to ResponsivePreview's "Select a block to preview." —
+    // Inspector also renders a "Select a block to inspect elements." empty state.
+    expect(screen.getByText(/Select a block to preview/i)).toBeTruthy()
     expect(screen.getByText(/No responsive suggestions/i)).toBeTruthy()
   })
 

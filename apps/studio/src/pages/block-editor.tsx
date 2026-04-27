@@ -18,6 +18,7 @@ import { DeleteConfirmModal } from '../components/delete-confirm-modal'
 import { BlockImportPanel } from '../components/block-import-panel'
 import { ThumbnailUpload } from '../components/thumbnail-upload'
 import { ResponsiveTab, dispatchTweakToForm, resetTweaksInForm, dispatchVariantToForm, type VariantAction } from './block-editor/responsive/ResponsiveTab'
+import { dispatchInspectorEdit, type InspectorEdit } from './block-editor/responsive/inspector/lib/dispatchInspectorEdit'
 import type { Tweak } from '@cmsmasters/block-forge-core'
 import tokensCSS from '../../../../packages/ui/src/theme/tokens.css?raw'
 import tokensResponsiveCSS from '../../../../packages/ui/src/theme/tokens.responsive.css?raw'
@@ -336,6 +337,13 @@ export function BlockEditor() {
   // OQ4 invariant mirror: reads form.getValues('variants') at dispatch time (live form).
   const handleVariantDispatch = useCallback((action: VariantAction) => {
     dispatchVariantToForm(form, action)
+  }, [form])
+
+  // WP-033 Phase 4: Inspector dispatch via the Studio-local helper. OQ4 invariant
+  // mirror — reads form.getValues('code') at dispatch time, applies emitTweak /
+  // removeDeclarationFromCss based on edit kind, writes back with shouldDirty.
+  const handleInspectorEdit = useCallback((edit: InspectorEdit) => {
+    dispatchInspectorEdit(form, edit)
   }, [form])
 
   // Fetch block categories for theme blocks context
@@ -906,6 +914,7 @@ ${code}${scriptTag}
           watchedVariants={watchedVariants ?? {}}
           baseHtmlForFork={splitForFork.html}
           baseCssForFork={splitForFork.css}
+          onInspectorEdit={handleInspectorEdit}
         />
       </div>
 

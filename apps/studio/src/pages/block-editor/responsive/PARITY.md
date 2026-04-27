@@ -260,3 +260,49 @@ Phase 0 Ruling #4 reduced Studio-side Phase 6 work to docs-only — Studio's `pr
 ### Per-block fluid opt-out (post-WP-030 hotfix)
 
 Companion file `packages/ui/src/theme/tokens.responsive.opt-out.css` consumed via `?raw` import in `preview-assets.ts` → injected into `@layer tokens` block AFTER `tokensResponsiveCSS`. Mirrors block-forge's `src/lib/preview-assets.ts` exactly. Provides `[data-fluid="off"]` and `[data-fluid="desktop-only"]` hooks for block-level fluid opt-out. Cross-surface PARITY discipline: any change to opt-out injection order or layer placement MUST update both surfaces same-commit. See CONVENTIONS.md "Per-block fluid opt-out" for author-facing usage.
+
+## Inspector (Phase 4 — WP-033)
+
+> **Sibling contract:** [`tools/block-forge/PARITY.md` Inspector section](../../../../../../tools/block-forge/PARITY.md). Any edit here must apply there (and vice-versa) — Phase 4 Ruling 3 trio-sync rule.
+
+Studio Responsive tab gains an Inspector surface (sibling to TweakPanel). Files live under `./inspector/` and mirror tools/block-forge per Phase 4 Ruling 1 (REIMPLEMENT, not extract).
+
+### Owned files (Studio surface) ↔ block-forge mirror
+
+| Studio file | block-forge mirror |
+|---|---|
+| `./inspector/Inspector.tsx` | `tools/block-forge/src/components/Inspector.tsx` |
+| `./inspector/InspectorPanel.tsx` | `…/components/InspectorPanel.tsx` |
+| `./inspector/PropertyRow.tsx` | `…/components/PropertyRow.tsx` |
+| `./inspector/BreadcrumbNav.tsx` | `…/components/BreadcrumbNav.tsx` |
+| `./inspector/TokenChip.tsx` | `…/components/TokenChip.tsx` |
+| `./inspector/hooks/useInspectorPerBpValues.ts` | `…/hooks/useInspectorPerBpValues.ts` |
+| `./inspector/hooks/useChipDetection.ts` | `…/hooks/useChipDetection.ts` |
+| `./inspector/lib/dispatchInspectorEdit.ts` | (n/a — block-forge uses session reducer) |
+| `./inspector/lib/css-mutate.ts` | (n/a — block-forge uses removeTweakFor reducer) |
+
+Inspector internals are byte-identical mod 3-line JSDoc headers. Emit handlers diverge at the boundary — Studio: `dispatchInspectorEdit(form, edit)` against `form.code` via PostCSS; block-forge: `addTweak / removeTweakFor` against `session.tweaks`. Both produce the same DB-stored shape (CSS rules under `@container slot (max-width: Npx)`).
+
+### Studio integration (ResponsiveTab.tsx)
+
+`<Inspector>` mounts as a sibling to `<TweakPanel>` near `ResponsiveTab.tsx:564`. Selection state shared via the existing `block-forge:element-click` listener (already wired since WP-028 Phase 2). Inspector uses its OWN `inspectorBp` state (1440 default) — independent from `selection.bp` (TweakPanel's BP picker uses 480/768/1440; Inspector uses 375/768/1440 per block-forge convention). No mutual exclusion required: both panels populate on the same selection; both can emit tweaks against the same form.code without conflict (Phase 4 live smoke confirmed).
+
+The Inspector receives a single `onInspectorEdit?: (edit: InspectorEdit) => void` callback prop on ResponsiveTab; ResponsiveTab translates the 3 Inspector callbacks (cell-edit, apply-token, visibility-toggle) into `InspectorEdit` shapes internally. block-editor.tsx wraps `dispatchInspectorEdit(form, edit)` to enforce the OQ4 LIVE-read invariant.
+
+### Known limitations (Phase 3 Issue #3 carryover)
+
+When a block has pre-existing `@container slot` rules for a property and the user clicks `[Use --token ✓]`, the chip emits a single bp:0 tweak — but the existing @container rule may still take precedence in the cascade. The TokenChip tooltip surfaces this with the suffix `· Note: existing breakpoint overrides may still apply.`
+
+To clear the override, the author edits the inactive cells individually first via the ↗ tab-switch. To be revisited in a follow-up Inspector-polish WP.
+
+### postMessage types (Phase 1 protocol — Phase 4 reuses unchanged)
+
+Phase 4 introduces NO new postMessage types. Inspector reuses the 4 listeners + 1 emitter from Phase 1; preview-assets.ts iframe runtime is unchanged.
+
+### Probe iframe DOM match (Phase 3 Issue #1)
+
+`useInspectorPerBpValues` MUST run html through `renderForPreview` BEFORE `composeSrcDoc` to match the visible iframe DOM (`<div data-block-shell="{slug}">…` wrap). Without this, captured selectors with `:nth-of-type` resolve to the wrong DOM node. Studio's hook honors this — see hook source for the `renderForPreview` call.
+
+### Ruling 5 — `responsive-config.json` import path
+
+Phase 4 added `./responsive-config.json` to `packages/ui/package.json` exports. Both surfaces consume via `import responsiveConfig from '@cmsmasters/ui/responsive-config.json'`. Replaces Phase 3 block-forge's relative-path workaround. tsconfig path mapping added in both `apps/studio/tsconfig.json` + `tools/block-forge/tsconfig.json` for type resolution.

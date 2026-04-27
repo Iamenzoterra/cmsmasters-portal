@@ -16,7 +16,8 @@
     "paths": {
       "@cmsmasters/block-forge-core": ["../../packages/block-forge-core/src/index.ts"],
       "@cmsmasters/db": ["../../packages/db/src/index.ts"],
-      "@cmsmasters/ui": ["../../packages/ui/index.ts"]
+      "@cmsmasters/ui": ["../../packages/ui/index.ts"],
+      "@cmsmasters/ui/responsive-config.json": ["../../packages/ui/src/theme/responsive-config.json"]
     }
   },
   "include": ["src/**/*"],

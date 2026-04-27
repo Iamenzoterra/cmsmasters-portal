@@ -1,4 +1,5 @@
-// WP-033 Phase 3 — Token chip render.
+// WP-033 Phase 4 — Studio mirror of tools/block-forge/src/components/TokenChip.tsx
+// (byte-identical body mod 3-line JSDoc header per Phase 4 Ruling 1 mirror discipline).
 //
 // Two modes:
 //   - in-use:    subdued span; "Using --<token>"; non-clickable (no onApply).
@@ -6,7 +7,7 @@
 //                which emits a bp:0 tweak with `var(--<token>)` (fluid token
 //                resolves correctly across all 3 BPs via clamp).
 //
-// Hover title carries the M/T/D triple for transparency: "Sets X/Y/Z at M/T/D".
+// Hover title carries the M/T/D triple + Phase 4 Ruling 2 cascade-override note.
 
 import type { InspectorBp } from './Inspector'
 

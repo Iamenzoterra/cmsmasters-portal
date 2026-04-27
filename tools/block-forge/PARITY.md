@@ -252,3 +252,41 @@ Studio mirror at `apps/studio/src/pages/block-editor/responsive/preview-assets.t
 `src/components/FluidModeControl.tsx` is a 3-state segmented control (Fluid / Desktop+Tablet / Static) wired into App.tsx header. Mutates `data-fluid` attribute on the FIRST opening tag of `block.html` via `src/lib/fluid-mode.ts` parser/setter. Persists through existing save flow (session.fluidModeOverride → composedBlock.html → applySuggestions/saveBlock). 
 
 **Studio mirror is a TODO** — Studio's Responsive tab does NOT yet have an equivalent toggle. Author working in Studio must hand-edit block HTML in DB. PARITY follow-up: extract a shared FluidModeControl primitive (or reimplement per WP-028 reimplement-not-extract decision) and wire into `apps/studio/src/pages/block-editor/responsive/ResponsiveTab.tsx` next to the Process button. Tracked in CONVENTIONS.md "Per-block fluid opt-out" + polish queue.
+
+## Inspector (Phase 4 — WP-033)
+
+> **Studio mirror:** [`apps/studio/src/pages/block-editor/responsive/inspector/`](../../apps/studio/src/pages/block-editor/responsive/inspector/) — files mirror this directory's `src/components/` + `src/hooks/` per Phase 4 Ruling 1 (REIMPLEMENT, not extract — qualitative I/O divergence at the EMIT boundary keeps a shared package premature; YAGNI until Phase 6+ Inspector polish work justifies extraction).
+
+### Owned files (block-forge surface) ↔ Studio mirror
+
+| block-forge file | Studio mirror file |
+|---|---|
+| `src/components/Inspector.tsx` | `…/inspector/Inspector.tsx` |
+| `src/components/InspectorPanel.tsx` | `…/inspector/InspectorPanel.tsx` |
+| `src/components/PropertyRow.tsx` | `…/inspector/PropertyRow.tsx` |
+| `src/components/BreadcrumbNav.tsx` | `…/inspector/BreadcrumbNav.tsx` |
+| `src/components/TokenChip.tsx` | `…/inspector/TokenChip.tsx` |
+| `src/hooks/useInspectorPerBpValues.ts` | `…/inspector/hooks/useInspectorPerBpValues.ts` |
+| `src/hooks/useChipDetection.ts` | `…/inspector/hooks/useChipDetection.ts` |
+| (n/a — block-forge uses session.tweaks reducer) | `…/inspector/lib/dispatchInspectorEdit.ts` (Studio-local) |
+| (n/a — block-forge uses removeTweakFor reducer) | `…/inspector/lib/css-mutate.ts` (Studio-local) |
+
+Inspector internals are byte-identical mod 3-line JSDoc headers. Emit handlers diverge at the boundary — block-forge: `addTweak/removeTweakFor` against `session.tweaks`; Studio: `dispatchInspectorEdit(form, edit)` against `form.code` via PostCSS. Both produce the same DB-stored shape (CSS rules under `@container slot (max-width: Npx)`).
+
+### Known limitations (Phase 3 Issue #3 carryover)
+
+When a block has pre-existing `@container slot` rules for a property and the user clicks `[Use --token ✓]`, the chip emits a single bp:0 tweak — but the existing @container rule may still take precedence in the cascade. The TokenChip tooltip surfaces this with the suffix `· Note: existing breakpoint overrides may still apply.`
+
+To clear the override, the author edits the inactive cells individually first via the ↗ tab-switch, OR uses TweakPanel Reset (which removes all per-bp tweaks for the selector at that BP). To be revisited in a follow-up Inspector-polish WP that decides between (a) chip emits 1 vs 3-or-4 tweaks, (b) chip clears existing @container rules first, or (c) chip emits a marker that takes cascade precedence.
+
+### postMessage types (Phase 1 protocol — Phase 4 reuses unchanged)
+
+Phase 4 introduces NO new postMessage types. The 4 listeners in Inspector.tsx (`block-forge:inspector-hover`, `block-forge:inspector-unhover`, `block-forge:element-click`, `block-forge:inspector-pin-applied`) and the 1 emitter (`block-forge:inspector-request-pin`) ship at Phase 1 and remain stable across surfaces.
+
+### Probe iframe DOM match (Phase 3 Issue #1)
+
+Probe iframes spawned by `useInspectorPerBpValues` MUST run html through `renderForPreview` BEFORE `composeSrcDoc` to match the visible iframe DOM. Without the `<div data-block-shell="{slug}">` wrap, captured selectors with `:nth-of-type` resolve to the wrong DOM node. Both surfaces enforce this in their hook.
+
+### Ruling 5 — `responsive-config.json` import path
+
+Phase 4 added `./responsive-config.json` to `packages/ui/package.json` exports (no source-file edits — only the manifest). Both surfaces consume via `import responsiveConfig from '@cmsmasters/ui/responsive-config.json'`. Replaces Phase 3 block-forge's relative-path workaround `../../../../packages/ui/...`. tsconfig path mapping added for both (`apps/studio/tsconfig.json`, `tools/block-forge/tsconfig.json`) so TypeScript resolves the JSON without traversing the export field.

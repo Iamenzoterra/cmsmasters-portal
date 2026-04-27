@@ -55,6 +55,14 @@ Live Preview Row (Phase 5) uses generic samples (H1/H2/body/buttons/section). Fo
 
 V2 enhancement (deferred to polish queue per WP §5.3): integrate `fast-loading-speed` sample directly into Live Preview Row.
 
+## Inspector consumer note (Phase 4 — WP-033)
+
+`responsive-config.json` is now consumed by `useChipDetection` in BOTH Inspector surfaces (block-forge + Studio Inspector mirror). Token resolution math (linear interp between `minViewport` and `maxViewport`) is duplicated in both surfaces (REIMPLEMENT per Phase 0 Ruling 5; YAGNI on extraction until Phase 6+ Inspector-polish work justifies it).
+
+**Import path (Phase 4 Ruling 5):** Both surfaces import via the new package export `@cmsmasters/ui/responsive-config.json` (added to `packages/ui/package.json` `exports` field in WP-033 Phase 4 — no source-file edits to packages/ui beyond the manifest).
+
+**Implication:** any change to `responsive-config.json` math semantics (e.g. adding/removing tokens, changing `minViewport` / `maxViewport` constants) must coordinate with both Inspector surfaces — `useChipDetection` math + the property-token compatibility table in both files. Test mirrors verify token resolution at min/max/linear-interp BPs.
+
 ## Status
 
-✅ FULL CONTRACT — Phase 6 (machine-generated `tokens.responsive.css`, save-safety contract live, cross-surface PARITY chain documented).
+✅ FULL CONTRACT — Phase 6 (machine-generated `tokens.responsive.css`, save-safety contract live, cross-surface PARITY chain documented). Phase 4 of WP-033 added the Inspector consumer cross-reference above.

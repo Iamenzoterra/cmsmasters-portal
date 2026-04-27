@@ -1,0 +1,205 @@
+// @vitest-environment jsdom
+// WP-033 Phase 4 — Studio mirror of tools/block-forge inspector-cell-edit.test.tsx
+// (cross-surface test mirror per Phase 4 Ruling 1).
+
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { render, cleanup, fireEvent } from '@testing-library/react'
+import { PropertyRow } from '../PropertyRow'
+
+afterEach(cleanup)
+
+function makeValues(activeBp: 375 | 768 | 1440, value: string) {
+  return {
+    375: activeBp === 375 ? value : null,
+    768: activeBp === 768 ? value : null,
+    1440: activeBp === 1440 ? value : null,
+  }
+}
+
+describe('PropertyRow — active cell input rendering', () => {
+  it('renders <input> on active cell when onCellEdit provided + value present', () => {
+    const { getByTestId } = render(
+      <PropertyRow
+        label="font-size"
+        valuesByBp={makeValues(1440, '16px')}
+        activeBp={1440}
+        onBpSwitch={() => undefined}
+        onCellEdit={() => undefined}
+      />,
+    )
+    const input = getByTestId('property-row-font-size-input-1440') as HTMLInputElement
+    expect(input).toBeTruthy()
+    expect(input.tagName.toLowerCase()).toBe('input')
+    expect(input.defaultValue).toBe('16px')
+  })
+
+  it('does NOT render input when onCellEdit is undefined (read-only mode)', () => {
+    const { queryByTestId, getByTestId } = render(
+      <PropertyRow
+        label="font-size"
+        valuesByBp={makeValues(1440, '16px')}
+        activeBp={1440}
+        onBpSwitch={() => undefined}
+      />,
+    )
+    expect(queryByTestId('property-row-font-size-input-1440')).toBeNull()
+    expect(getByTestId('property-row-font-size-cell-1440')).toBeTruthy()
+  })
+
+  it('inactive cells stay non-editable even when onCellEdit provided', () => {
+    const { queryByTestId, getByTestId } = render(
+      <PropertyRow
+        label="font-size"
+        valuesByBp={{ 375: '12px', 768: null, 1440: null }}
+        activeBp={375}
+        onBpSwitch={() => undefined}
+        onCellEdit={() => undefined}
+      />,
+    )
+    expect(getByTestId('property-row-font-size-input-375')).toBeTruthy()
+    expect(queryByTestId('property-row-font-size-input-768')).toBeNull()
+    expect(queryByTestId('property-row-font-size-input-1440')).toBeNull()
+  })
+
+  it('empty active cell stays as `—` (no input rendered)', () => {
+    const { queryByTestId, getByTestId } = render(
+      <PropertyRow
+        label="font-size"
+        valuesByBp={{ 375: null, 768: null, 1440: null }}
+        activeBp={1440}
+        onBpSwitch={() => undefined}
+        onCellEdit={() => undefined}
+      />,
+    )
+    expect(queryByTestId('property-row-font-size-input-1440')).toBeNull()
+    expect(getByTestId('property-row-font-size-cell-1440').textContent).toContain('—')
+  })
+})
+
+describe('PropertyRow — commit behavior', () => {
+  it('blur with new value calls onCellEdit(activeBp, trimmedValue)', () => {
+    const onCellEdit = vi.fn()
+    const { getByTestId } = render(
+      <PropertyRow
+        label="font-size"
+        valuesByBp={makeValues(1440, '16px')}
+        activeBp={1440}
+        onBpSwitch={() => undefined}
+        onCellEdit={onCellEdit}
+      />,
+    )
+    const input = getByTestId('property-row-font-size-input-1440') as HTMLInputElement
+    input.value = '  48px  '
+    fireEvent.blur(input)
+    expect(onCellEdit).toHaveBeenCalledTimes(1)
+    expect(onCellEdit).toHaveBeenCalledWith(1440, '48px')
+  })
+
+  it('blur with unchanged value is a no-op (no onCellEdit call)', () => {
+    const onCellEdit = vi.fn()
+    const { getByTestId } = render(
+      <PropertyRow
+        label="font-size"
+        valuesByBp={makeValues(1440, '16px')}
+        activeBp={1440}
+        onBpSwitch={() => undefined}
+        onCellEdit={onCellEdit}
+      />,
+    )
+    const input = getByTestId('property-row-font-size-input-1440') as HTMLInputElement
+    fireEvent.blur(input)
+    expect(onCellEdit).not.toHaveBeenCalled()
+  })
+
+  it('Enter keydown blurs the input (which commits)', () => {
+    const onCellEdit = vi.fn()
+    const { getByTestId } = render(
+      <PropertyRow
+        label="font-size"
+        valuesByBp={makeValues(1440, '16px')}
+        activeBp={1440}
+        onBpSwitch={() => undefined}
+        onCellEdit={onCellEdit}
+      />,
+    )
+    const input = getByTestId('property-row-font-size-input-1440') as HTMLInputElement
+    input.focus()
+    input.value = '24px'
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(onCellEdit).toHaveBeenCalledWith(1440, '24px')
+  })
+})
+
+describe('PropertyRow — cancel + validation', () => {
+  it('Escape keydown reverts value + blurs (no commit)', () => {
+    const onCellEdit = vi.fn()
+    const { getByTestId } = render(
+      <PropertyRow
+        label="font-size"
+        valuesByBp={makeValues(1440, '16px')}
+        activeBp={1440}
+        onBpSwitch={() => undefined}
+        onCellEdit={onCellEdit}
+      />,
+    )
+    const input = getByTestId('property-row-font-size-input-1440') as HTMLInputElement
+    input.focus()
+    input.value = '99px'
+    fireEvent.keyDown(input, { key: 'Escape' })
+    expect(input.value).toBe('16px')
+    expect(onCellEdit).not.toHaveBeenCalled()
+  })
+
+  it('em-unit value rejected (snaps back to previous; no commit)', () => {
+    const onCellEdit = vi.fn()
+    const { getByTestId } = render(
+      <PropertyRow
+        label="font-size"
+        valuesByBp={makeValues(1440, '16px')}
+        activeBp={1440}
+        onBpSwitch={() => undefined}
+        onCellEdit={onCellEdit}
+      />,
+    )
+    const input = getByTestId('property-row-font-size-input-1440') as HTMLInputElement
+    input.value = '2em'
+    fireEvent.blur(input)
+    expect(input.value).toBe('16px')
+    expect(onCellEdit).not.toHaveBeenCalled()
+  })
+
+  it('rem-unit value accepted (rem allowed, distinct from em)', () => {
+    const onCellEdit = vi.fn()
+    const { getByTestId } = render(
+      <PropertyRow
+        label="font-size"
+        valuesByBp={makeValues(1440, '16px')}
+        activeBp={1440}
+        onBpSwitch={() => undefined}
+        onCellEdit={onCellEdit}
+      />,
+    )
+    const input = getByTestId('property-row-font-size-input-1440') as HTMLInputElement
+    input.value = '2rem'
+    fireEvent.blur(input)
+    expect(onCellEdit).toHaveBeenCalledWith(1440, '2rem')
+  })
+
+  it('empty value rejected (snaps back to previous; no commit)', () => {
+    const onCellEdit = vi.fn()
+    const { getByTestId } = render(
+      <PropertyRow
+        label="font-size"
+        valuesByBp={makeValues(1440, '16px')}
+        activeBp={1440}
+        onBpSwitch={() => undefined}
+        onCellEdit={onCellEdit}
+      />,
+    )
+    const input = getByTestId('property-row-font-size-input-1440') as HTMLInputElement
+    input.value = ''
+    fireEvent.blur(input)
+    expect(input.value).toBe('16px')
+    expect(onCellEdit).not.toHaveBeenCalled()
+  })
+})

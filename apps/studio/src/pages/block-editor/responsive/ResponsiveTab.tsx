@@ -30,6 +30,8 @@ import { ResponsivePreview } from './ResponsivePreview'
 import { SuggestionList } from './SuggestionList'
 import { TweakPanel, type TweakSelection } from './TweakPanel'
 import { VariantsDrawer, type VariantAction } from './VariantsDrawer'
+import { Inspector, type InspectorBp } from './inspector/Inspector'
+import { dispatchInspectorEdit } from './inspector/lib/dispatchInspectorEdit'
 
 interface ResponsiveTabProps {
   block: Block | null
@@ -83,6 +85,12 @@ interface ResponsiveTabProps {
    */
   baseHtmlForFork?: string
   baseCssForFork?: string
+  /**
+   * WP-033 Phase 4 — Inspector dispatch callback. block-editor.tsx wraps
+   * `dispatchInspectorEdit(form, edit)` so the LIVE-read invariant holds.
+   * Optional — falls back to read-only Inspector when undefined.
+   */
+  onInspectorEdit?: (edit: import('./inspector/lib/dispatchInspectorEdit').InspectorEdit) => void
 }
 
 interface AnalysisResult {
@@ -196,6 +204,53 @@ function isContainerFor(atRule: PcssAtRule, bp: number): boolean {
   if (atRule.name !== 'container') return false
   const m = atRule.params.match(/slot\s*\(\s*max-width:\s*(\d+)px\s*\)/i)
   return !!m && Number(m[1]) === bp
+}
+
+/**
+ * WP-033 Phase 4 — parse ALL tweaks (across all bps + top-level) from form.code.
+ * Used by Inspector to derive `isHiddenAtActiveBp` from form state. Differs from
+ * `parseAppliedTweaks` below (which is filtered by selector + bp): Inspector
+ * receives the full flat list and filters internally per pinned selector.
+ *
+ * Top-level rules are emitted as bp:0 entries (matches Inspector apply-token semantic).
+ * Pure function — no side effects.
+ */
+export function parseAllTweaksFromCode(formCode: string): Tweak[] {
+  const { css } = splitCode(formCode)
+  if (!css) return []
+  let root: postcss.Root
+  try {
+    root = postcss.parse(css)
+  } catch {
+    return []
+  }
+  const out: Tweak[] = []
+
+  function collectFromRule(rule: PcssRule, bp: number) {
+    rule.walkDecls((decl) => {
+      out.push({
+        selector: rule.selector.trim(),
+        bp,
+        property: decl.prop,
+        value: decl.value,
+      })
+    })
+  }
+
+  // Top-level rules → bp:0
+  root.walkRules((rule) => {
+    if (rule.parent?.type === 'root') collectFromRule(rule, 0)
+  })
+
+  // @container slot (max-width: Npx) → bp:N
+  root.walkAtRules('container', (atRule) => {
+    const m = atRule.params.match(/slot\s*\(\s*max-width:\s*(\d+)px\s*\)/i)
+    if (!m) return
+    const bp = Number(m[1])
+    atRule.walkRules((rule) => collectFromRule(rule, bp))
+  })
+
+  return out
 }
 
 /**
@@ -369,6 +424,7 @@ export function ResponsiveTab({
   watchedVariants,
   baseHtmlForFork,
   baseCssForFork,
+  onInspectorEdit,
 }: ResponsiveTabProps) {
   const { suggestions, warnings, error } = useResponsiveAnalysis(block)
 
@@ -533,6 +589,71 @@ export function ResponsiveTab({
     [onVariantDispatch],
   )
 
+  // WP-033 Phase 4 — Inspector state + dispatch handlers.
+  const [inspectorBp, setInspectorBp] = useState<InspectorBp>(1440)
+
+  // Split form.code into html/css for Inspector (probe iframes need both;
+  // useChipDetection needs effectiveCss). Falls back to base block when no
+  // form data threaded.
+  const inspectorBlockSource = useMemo(() => {
+    const code = watchedFormCode ?? ''
+    if (code) {
+      const { html, css } = splitCode(code)
+      return { html, css }
+    }
+    return { html: block?.html ?? '', css: block?.css ?? '' }
+  }, [watchedFormCode, block?.html, block?.css])
+
+  const inspectorTweaks = useMemo<Tweak[]>(() => {
+    return watchedFormCode ? parseAllTweaksFromCode(watchedFormCode) : []
+  }, [watchedFormCode])
+
+  const onInspectorEditRef = useRef(onInspectorEdit)
+  useEffect(() => {
+    onInspectorEditRef.current = onInspectorEdit
+  }, [onInspectorEdit])
+
+  const handleInspectorCellEdit = useCallback(
+    (selector: string, bp: InspectorBp, property: string, value: string) => {
+      onInspectorEditRef.current?.({
+        kind: 'tweak',
+        tweak: { selector, bp, property, value },
+      })
+    },
+    [],
+  )
+
+  const handleInspectorApplyToken = useCallback(
+    (selector: string, property: string, tokenName: string) => {
+      onInspectorEditRef.current?.({
+        kind: 'apply-token',
+        selector,
+        property,
+        tokenName,
+      })
+    },
+    [],
+  )
+
+  const handleInspectorVisibilityToggle = useCallback(
+    (selector: string, bp: InspectorBp, hide: boolean) => {
+      if (hide) {
+        onInspectorEditRef.current?.({
+          kind: 'tweak',
+          tweak: { selector, bp, property: 'display', value: 'none' },
+        })
+      } else {
+        onInspectorEditRef.current?.({
+          kind: 'remove-decl',
+          selector,
+          bp,
+          property: 'display',
+        })
+      }
+    },
+    [],
+  )
+
   return (
     <div
       style={{
@@ -568,6 +689,17 @@ export function ResponsiveTab({
         onTweak={handleTweak}
         onReset={handleReset}
         onClose={handleClose}
+      />
+      <Inspector
+        slug={currentSlug}
+        activeBp={inspectorBp}
+        onActiveBpChange={setInspectorBp}
+        blockHtml={inspectorBlockSource.html}
+        effectiveCss={inspectorBlockSource.css}
+        tweaks={inspectorTweaks}
+        onCellEdit={onInspectorEdit ? handleInspectorCellEdit : undefined}
+        onApplyToken={onInspectorEdit ? handleInspectorApplyToken : undefined}
+        onVisibilityToggle={onInspectorEdit ? handleInspectorVisibilityToggle : undefined}
       />
       <VariantsDrawer
         open={variantsDrawerOpen}

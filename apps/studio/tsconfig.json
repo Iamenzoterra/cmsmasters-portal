@@ -16,7 +16,8 @@
       "@cmsmasters/db": ["../../packages/db/src/index.ts"],
       "@cmsmasters/validators": ["../../packages/validators/src/index.ts"],
       "@cmsmasters/api-client": ["../../packages/api-client/src/index.ts"],
-      "@cmsmasters/ui": ["../../packages/ui/index.ts"]
+      "@cmsmasters/ui": ["../../packages/ui/index.ts"],
+      "@cmsmasters/ui/responsive-config.json": ["../../packages/ui/src/theme/responsive-config.json"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "vite-env.d.ts"],

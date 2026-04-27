@@ -41,6 +41,23 @@ const SLOT_CONTAINMENT_RULE = `.slot-inner {
   .slot-inner:has([data-fluid-mobile="off"]) { container: normal; }
 }`
 
+// WP-033 Phase 4 — Inspector outline CSS (mirrored from
+// tools/block-forge/src/lib/preview-assets.ts:55-66 byte-identical).
+// `[data-bf-hover]` and `[data-bf-pin]` attributes are toggled by the Inspector
+// IIFE below; CSS draws the visual indicator (blue for hover, green for pin).
+const INSPECTOR_OUTLINE_RULE = `[data-bf-hover] {
+  outline-style: solid;
+  outline-width: 2px;
+  outline-color: hsl(var(--text-link));
+  outline-offset: -2px;
+}
+[data-bf-pin] {
+  outline-style: solid;
+  outline-width: 2px;
+  outline-color: hsl(var(--status-success-fg));
+  outline-offset: -2px;
+}`
+
 export type ComposeSrcDocInput = {
   /** Pre-wrapped html from renderForPreview — contains `<div data-block-shell="{slug}">...</div>` */
   html: string
@@ -87,6 +104,7 @@ export function composeSrcDoc(input: ComposeSrcDocInput): string {
     @layer shared {
       ${portalBlocksCSS}
       ${SLOT_CONTAINMENT_RULE}
+      ${INSPECTOR_OUTLINE_RULE}
     }
     @layer block {
       ${css}
@@ -175,6 +193,158 @@ export function composeSrcDoc(input: ComposeSrcDocInput): string {
           },
         }, '*');
       }, true);
+    })();
+  </script>
+  <script>
+    // WP-033 Phase 4 — Inspector hover + request-pin protocol (Studio mirror of
+    // tools/block-forge/src/lib/preview-assets.ts:200-358 byte-identical).
+    // ADDITIVE: the click handler above is untouched (TweakPanel still receives
+    // 'block-forge:element-click'). Inspector listens to that same message for
+    // click-to-pin and replies via 'block-forge:inspector-request-pin'.
+    (function () {
+      const CLICKABLE_TAGS = ['DIV','SECTION','ARTICLE','ASIDE','HEADER','FOOTER','NAV','MAIN',
+                              'H1','H2','H3','H4','H5','H6','P','SPAN','A','BUTTON','UL','OL','LI','IMG'];
+      const UTILITY_PREFIXES = ['hover:','focus:','active:','animate-','group-','peer-'];
+      const SLUG = ${JSON.stringify(slug)};
+
+      function stableClass(el) {
+        if (!el.className || typeof el.className !== 'string') return null;
+        const classes = el.className.split(/\\s+/).filter(Boolean);
+        return classes.find((c) => !UTILITY_PREFIXES.some((p) => c.startsWith(p))) || null;
+      }
+
+      function deriveSelector(el) {
+        if (!el || el === document.body) return 'body';
+        if (el.id) return '#' + CSS.escape(el.id);
+        const path = [];
+        let cur = el;
+        let depth = 0;
+        while (cur && cur !== document.body && depth < 5) {
+          if (cur.id) { path.unshift('#' + CSS.escape(cur.id)); break; }
+          const cls = stableClass(cur);
+          if (cls) {
+            path.unshift(cur.tagName.toLowerCase() + '.' + CSS.escape(cls));
+          } else {
+            const parent = cur.parentElement;
+            const siblings = parent ? Array.from(parent.children).filter((c) => c.tagName === cur.tagName) : [];
+            const idx = siblings.indexOf(cur) + 1;
+            path.unshift(cur.tagName.toLowerCase() + ':nth-of-type(' + idx + ')');
+          }
+          cur = cur.parentElement;
+          depth += 1;
+        }
+        return path.join(' > ');
+      }
+
+      function snapshotComputed(el) {
+        const cs = getComputedStyle(el);
+        return {
+          padding: cs.padding, paddingTop: cs.paddingTop, paddingRight: cs.paddingRight,
+          paddingBottom: cs.paddingBottom, paddingLeft: cs.paddingLeft,
+          margin: cs.margin, marginTop: cs.marginTop, marginRight: cs.marginRight,
+          marginBottom: cs.marginBottom, marginLeft: cs.marginLeft,
+          fontSize: cs.fontSize, fontWeight: cs.fontWeight, lineHeight: cs.lineHeight,
+          letterSpacing: cs.letterSpacing, textAlign: cs.textAlign,
+          color: cs.color, backgroundColor: cs.backgroundColor,
+          gap: cs.gap, rowGap: cs.rowGap, columnGap: cs.columnGap,
+          display: cs.display, flexDirection: cs.flexDirection,
+          alignItems: cs.alignItems, justifyContent: cs.justifyContent,
+          gridTemplateColumns: cs.gridTemplateColumns,
+          width: cs.width, height: cs.height,
+          borderRadius: cs.borderRadius,
+        };
+      }
+
+      let hoveredEl = null;
+      let rafId = null;
+
+      function clearHover() {
+        if (hoveredEl) {
+          hoveredEl.removeAttribute('data-bf-hover');
+          hoveredEl = null;
+        }
+      }
+
+      function applyHover(el) {
+        if (el === hoveredEl) return;
+        clearHover();
+        if (!el || !CLICKABLE_TAGS.includes(el.tagName)) {
+          parent.postMessage({ type: 'block-forge:inspector-unhover', slug: SLUG }, '*');
+          return;
+        }
+        el.setAttribute('data-bf-hover', '');
+        hoveredEl = el;
+        const rect = el.getBoundingClientRect();
+        parent.postMessage({
+          type: 'block-forge:inspector-hover',
+          slug: SLUG,
+          selector: deriveSelector(el),
+          rect: { x: rect.x, y: rect.y, w: rect.width, h: rect.height },
+        }, '*');
+      }
+
+      document.body.addEventListener('mouseover', (e) => {
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => {
+          rafId = null;
+          applyHover(e.target);
+        });
+      }, true);
+
+      document.body.addEventListener('mouseleave', () => {
+        if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+        clearHover();
+        parent.postMessage({ type: 'block-forge:inspector-unhover', slug: SLUG }, '*');
+      });
+
+      window.addEventListener('message', (e) => {
+        const msg = e.data;
+        if (!msg || typeof msg !== 'object' || msg.type !== 'block-forge:inspector-request-pin') return;
+        if (msg.slug !== SLUG) return;
+
+        const prev = document.querySelector('[data-bf-pin]');
+        if (prev) prev.removeAttribute('data-bf-pin');
+
+        if (msg.selector === '__clear__' || !msg.selector) {
+          parent.postMessage({
+            type: 'block-forge:inspector-pin-applied',
+            slug: SLUG,
+            selector: null,
+          }, '*');
+          return;
+        }
+
+        let target = null;
+        try { target = document.querySelector(msg.selector); } catch (_err) { /* invalid selector */ }
+
+        if (!target) {
+          parent.postMessage({
+            type: 'block-forge:inspector-pin-applied',
+            slug: SLUG,
+            selector: null,
+            requestedSelector: msg.selector,
+            error: 'no-match',
+          }, '*');
+          return;
+        }
+
+        target.setAttribute('data-bf-pin', '');
+        const rect = target.getBoundingClientRect();
+        parent.postMessage({
+          type: 'block-forge:inspector-pin-applied',
+          slug: SLUG,
+          selector: msg.selector,
+          rect: { x: rect.x, y: rect.y, w: rect.width, h: rect.height },
+          computedStyle: snapshotComputed(target),
+        }, '*');
+      });
+
+      window.addEventListener('beforeunload', () => {
+        if (rafId) cancelAnimationFrame(rafId);
+        clearHover();
+        const pinned = document.querySelector('[data-bf-pin]');
+        if (pinned) pinned.removeAttribute('data-bf-pin');
+      });
     })();
   </script>
 </body>

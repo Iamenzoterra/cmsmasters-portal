@@ -1,15 +1,6 @@
 // @vitest-environment jsdom
-// WP-033 Phase 3 §3.3 — useChipDetection + cascade walk + token resolution.
-//
-// Validates:
-//   1. var(--token) source → in-use mode
-//   2. raw px matching token at activeBp → available mode
-//   3. raw px not matching any token → null
-//   4. property without compatible tokens (text-align, font-weight) → null
-//   5. var(--space-md) on font-size → null (incompatible category)
-//   6. cascade winner inside @container at activeBp wins over top-level
-//   7. memoization: stable reference on identical args
-//   8. empty selector → null
+// WP-033 Phase 4 — Studio mirror of tools/block-forge useChipDetection.test.tsx
+// (cross-surface test mirror per Phase 4 Ruling 1).
 
 import { describe, it, expect } from 'vitest'
 import { renderHook } from '@testing-library/react'
@@ -24,7 +15,6 @@ describe('useChipDetection — token resolution math', () => {
     expect(__testing.resolveTokenAtBp('--h2-font-size', 1440, RESPONSIVE_CONFIG())).toBe(42)
   })
   it('resolveTokenAtBp returns linear interp at 768', () => {
-    // h2: min 34, max 42, t = (768-375)/(1440-375) = 0.369 → 34 + 0.369*8 = 36.95 → 37
     expect(__testing.resolveTokenAtBp('--h2-font-size', 768, RESPONSIVE_CONFIG())).toBe(37)
   })
   it('resolveTokenAtBp returns null on unknown token', () => {
@@ -154,7 +144,7 @@ describe('useChipDetection — chip detection (hook)', () => {
     expect(result.current).toBeNull()
   })
 
-  it('var(--space-md) on font-size → null (incompatible category)', () => {
+  it('var(--spacing-md) on font-size → null (incompatible category)', () => {
     const { result } = renderHook(() =>
       useChipDetection({
         selector: '.x',
@@ -183,7 +173,6 @@ describe('useChipDetection — chip detection (hook)', () => {
         effectiveCss: css,
       }),
     )
-    // Container value 42px matches --h2-font-size at maxPx → available.
     expect(result.current?.mode).toBe('available')
     expect(result.current?.tokenName).toBe('--h2-font-size')
   })
@@ -204,11 +193,7 @@ describe('useChipDetection — chip detection (hook)', () => {
         effectiveCss: css,
       }),
     )
-    // Top-level 16px → matches --text-base-font-size minPx (16) at activeBp=1440?
-    // No: --text-base-font-size at 1440 = 18, not 16. So null.
-    // 16 at 1440: spacing-lg has minPx 16, maxPx 20 → resolves to 20 at 1440. No match.
-    // Verify via no-match expectation:
-    expect(result.current?.tokenName).not.toBe('--text-base-font-size') // sanity
+    expect(result.current?.tokenName).not.toBe('--text-base-font-size')
   })
 
   it('memoization: stable reference on identical args', () => {

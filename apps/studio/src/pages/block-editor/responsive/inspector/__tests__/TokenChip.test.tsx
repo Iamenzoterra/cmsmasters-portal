@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
-// WP-033 Phase 3 §3.3 — TokenChip render component.
+// WP-033 Phase 4 — Studio mirror of tools/block-forge/src/__tests__/TokenChip.test.tsx
+// (cross-surface test mirror per Phase 4 Ruling 1).
 
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, cleanup, fireEvent } from '@testing-library/react'
-import { TokenChip } from '../components/TokenChip'
+import { TokenChip } from '../TokenChip'
 
 afterEach(cleanup)
 
@@ -75,8 +76,8 @@ describe('TokenChip — available mode', () => {
   })
 })
 
-describe('TokenChip — title attr', () => {
-  it('contains M/T/D triple in correct order', () => {
+describe('TokenChip — title attr (Phase 4 Ruling 2 cascade-override note)', () => {
+  it('contains M/T/D triple + cascade-override note', () => {
     const { getByTestId } = render(
       <TokenChip mode="available" tokenName="--h2-font-size" valuesByBp={VALUES} />,
     )

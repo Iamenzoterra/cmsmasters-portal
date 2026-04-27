@@ -1,0 +1,54 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`BreadcrumbNav — empty state > matches snapshot — empty state 1`] = `
+<div>
+  <div
+    class="min-h-[1.5rem] font-mono text-[length:var(--text-xs-font-size)] text-[hsl(var(--text-secondary))]"
+    data-testid="inspector-breadcrumb"
+  >
+    <span
+      class="text-[hsl(var(--text-muted))]"
+    >
+      Hover an element to inspect, click to pin.
+    </span>
+  </div>
+</div>
+`;
+
+exports[`BreadcrumbNav — hover state > matches snapshot — hover state 1`] = `
+<div>
+  <div
+    class="min-h-[1.5rem] font-mono text-[length:var(--text-xs-font-size)] text-[hsl(var(--text-secondary))]"
+    data-testid="inspector-breadcrumb"
+  >
+    <span
+      class="block truncate text-[hsl(var(--text-muted))]"
+      title="h2.title"
+    >
+      <span
+        class="mr-1 inline-block h-2 w-2 rounded-full bg-[hsl(var(--text-link))]"
+      />
+      h2.title
+    </span>
+  </div>
+</div>
+`;
+
+exports[`BreadcrumbNav — pinned state > matches snapshot — pinned state 1`] = `
+<div>
+  <div
+    class="min-h-[1.5rem] font-mono text-[length:var(--text-xs-font-size)] text-[hsl(var(--text-secondary))]"
+    data-testid="inspector-breadcrumb"
+  >
+    <span
+      class="block truncate text-[hsl(var(--text-primary))]"
+      title=".cta"
+    >
+      <span
+        class="mr-1 inline-block h-2 w-2 rounded-full bg-[hsl(var(--status-success-fg))]"
+      />
+      .cta
+    </span>
+  </div>
+</div>
+`;
