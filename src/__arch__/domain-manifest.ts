@@ -638,6 +638,11 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'tools/block-forge/src/components/TweakPanel.tsx',
       'tools/block-forge/src/components/VariantsDrawer.tsx',
       'tools/block-forge/src/components/FluidModeControl.tsx',
+      // WP-033 Phase 1: Inspector orchestrator + InspectorPanel UI shell.
+      // DevTools-style hover/pin replacement for TweakPanel — block-forge first;
+      // Studio mirror lands in Phase 4 per Ruling D (REIMPLEMENT, not extract).
+      'tools/block-forge/src/components/Inspector.tsx',
+      'tools/block-forge/src/components/InspectorPanel.tsx',
       'tools/block-forge/src/lib/fluid-mode.ts',
       'tools/block-forge/src/lib/file-io.ts',
       'tools/block-forge/src/lib/paths.ts',
@@ -653,6 +658,9 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       // WP-028 Phase 1: parity tests for TweakPanel + VariantsDrawer placeholders.
       'tools/block-forge/src/__tests__/TweakPanel.test.tsx',
       'tools/block-forge/src/__tests__/VariantsDrawer.test.tsx',
+      // WP-033 Phase 1: Inspector unit tests + InspectorPanel snapshot.
+      'tools/block-forge/src/__tests__/Inspector.test.tsx',
+      'tools/block-forge/src/__tests__/InspectorPanel.test.tsx',
       // WP-030 Phase 1: Responsive Tokens Editor scaffold (Vite app on :7703).
       // README.md and .gitignore are git-tracked but excluded from manifest per
       // block-forge precedent (meta files not registered as owned source).

@@ -1,0 +1,243 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`InspectorPanel — empty state (no slug) > renders empty placeholder 1`] = `
+<div>
+  <div
+    aria-label="Inspector"
+    class="p-4 text-[length:var(--text-sm-font-size)] text-[hsl(var(--text-muted))]"
+    data-empty="true"
+    data-testid="inspector-panel"
+  >
+    Select a block to inspect elements.
+  </div>
+</div>
+`;
+
+exports[`InspectorPanel — hover only > renders blue dot + selector in muted breadcrumb 1`] = `
+<div>
+  <div
+    aria-label="Inspector"
+    class="flex flex-col gap-3 border-t border-[hsl(var(--border-default))] p-4"
+    data-bp="768"
+    data-slug="hero"
+    data-testid="inspector-panel"
+  >
+    <div
+      class="flex items-center justify-between gap-2"
+    >
+      <span
+        class="text-[length:var(--text-sm-font-size)] font-medium text-[hsl(var(--text-primary))]"
+      >
+        Inspector
+      </span>
+    </div>
+    <div
+      class="min-h-[1.5rem] font-mono text-[length:var(--text-xs-font-size)] text-[hsl(var(--text-secondary))]"
+      data-testid="inspector-breadcrumb"
+    >
+      <span
+        class="block truncate text-[hsl(var(--text-muted))]"
+        title="h2.title"
+      >
+        <span
+          class="mr-1 inline-block h-2 w-2 rounded-full bg-[hsl(var(--text-link))]"
+        />
+        h2.title
+      </span>
+    </div>
+    <div
+      aria-label="Inspector breakpoint"
+      class="flex gap-1"
+      role="radiogroup"
+    >
+      <button
+        aria-checked="false"
+        class="rounded-md px-3 py-1 text-[length:var(--text-sm-font-size)] text-[hsl(var(--text-muted))] hover:bg-[hsl(var(--bg-surface-alt))]"
+        data-testid="inspector-bp-1440"
+        role="radio"
+        type="button"
+      >
+        1440
+      </button>
+      <button
+        aria-checked="true"
+        class="rounded-md bg-[hsl(var(--bg-surface-alt))] px-3 py-1 text-[length:var(--text-sm-font-size)] font-medium text-[hsl(var(--text-primary))]"
+        data-testid="inspector-bp-768"
+        role="radio"
+        type="button"
+      >
+        768
+      </button>
+      <button
+        aria-checked="false"
+        class="rounded-md px-3 py-1 text-[length:var(--text-sm-font-size)] text-[hsl(var(--text-muted))] hover:bg-[hsl(var(--bg-surface-alt))]"
+        data-testid="inspector-bp-375"
+        role="radio"
+        type="button"
+      >
+        375
+      </button>
+    </div>
+    <div
+      class="rounded-md border border-dashed border-[hsl(var(--border-default))] p-3 text-[length:var(--text-xs-font-size)] text-[hsl(var(--text-muted))]"
+      data-testid="inspector-properties-placeholder"
+    >
+      Properties — Phase 2
+    </div>
+  </div>
+</div>
+`;
+
+exports[`InspectorPanel — pinned (Clear button visible) > renders green dot + selector + Clear button 1`] = `
+<div>
+  <div
+    aria-label="Inspector"
+    class="flex flex-col gap-3 border-t border-[hsl(var(--border-default))] p-4"
+    data-bp="375"
+    data-slug="hero"
+    data-testid="inspector-panel"
+  >
+    <div
+      class="flex items-center justify-between gap-2"
+    >
+      <span
+        class="text-[length:var(--text-sm-font-size)] font-medium text-[hsl(var(--text-primary))]"
+      >
+        Inspector
+      </span>
+      <button
+        aria-label="Clear pin (Esc)"
+        class="rounded border border-[hsl(var(--border-default))] px-2 py-0.5 text-[length:var(--text-xs-font-size)] text-[hsl(var(--text-muted))] hover:bg-[hsl(var(--bg-surface-alt))]"
+        data-testid="inspector-clear-pin"
+        type="button"
+      >
+        Clear
+      </button>
+    </div>
+    <div
+      class="min-h-[1.5rem] font-mono text-[length:var(--text-xs-font-size)] text-[hsl(var(--text-secondary))]"
+      data-testid="inspector-breadcrumb"
+    >
+      <span
+        class="block truncate text-[hsl(var(--text-primary))]"
+        title=".cta"
+      >
+        <span
+          class="mr-1 inline-block h-2 w-2 rounded-full bg-[hsl(var(--status-success-fg))]"
+        />
+        .cta
+      </span>
+    </div>
+    <div
+      aria-label="Inspector breakpoint"
+      class="flex gap-1"
+      role="radiogroup"
+    >
+      <button
+        aria-checked="false"
+        class="rounded-md px-3 py-1 text-[length:var(--text-sm-font-size)] text-[hsl(var(--text-muted))] hover:bg-[hsl(var(--bg-surface-alt))]"
+        data-testid="inspector-bp-1440"
+        role="radio"
+        type="button"
+      >
+        1440
+      </button>
+      <button
+        aria-checked="false"
+        class="rounded-md px-3 py-1 text-[length:var(--text-sm-font-size)] text-[hsl(var(--text-muted))] hover:bg-[hsl(var(--bg-surface-alt))]"
+        data-testid="inspector-bp-768"
+        role="radio"
+        type="button"
+      >
+        768
+      </button>
+      <button
+        aria-checked="true"
+        class="rounded-md bg-[hsl(var(--bg-surface-alt))] px-3 py-1 text-[length:var(--text-sm-font-size)] font-medium text-[hsl(var(--text-primary))]"
+        data-testid="inspector-bp-375"
+        role="radio"
+        type="button"
+      >
+        375
+      </button>
+    </div>
+    <div
+      class="rounded-md border border-dashed border-[hsl(var(--border-default))] p-3 text-[length:var(--text-xs-font-size)] text-[hsl(var(--text-muted))]"
+      data-testid="inspector-properties-placeholder"
+    >
+      Properties — Phase 2
+    </div>
+  </div>
+</div>
+`;
+
+exports[`InspectorPanel — populated, no hover/pin > renders header + breadcrumb hint + BP picker + properties placeholder 1`] = `
+<div>
+  <div
+    aria-label="Inspector"
+    class="flex flex-col gap-3 border-t border-[hsl(var(--border-default))] p-4"
+    data-bp="1440"
+    data-slug="hero"
+    data-testid="inspector-panel"
+  >
+    <div
+      class="flex items-center justify-between gap-2"
+    >
+      <span
+        class="text-[length:var(--text-sm-font-size)] font-medium text-[hsl(var(--text-primary))]"
+      >
+        Inspector
+      </span>
+    </div>
+    <div
+      class="min-h-[1.5rem] font-mono text-[length:var(--text-xs-font-size)] text-[hsl(var(--text-secondary))]"
+      data-testid="inspector-breadcrumb"
+    >
+      <span
+        class="text-[hsl(var(--text-muted))]"
+      >
+        Hover an element to inspect, click to pin.
+      </span>
+    </div>
+    <div
+      aria-label="Inspector breakpoint"
+      class="flex gap-1"
+      role="radiogroup"
+    >
+      <button
+        aria-checked="true"
+        class="rounded-md bg-[hsl(var(--bg-surface-alt))] px-3 py-1 text-[length:var(--text-sm-font-size)] font-medium text-[hsl(var(--text-primary))]"
+        data-testid="inspector-bp-1440"
+        role="radio"
+        type="button"
+      >
+        1440
+      </button>
+      <button
+        aria-checked="false"
+        class="rounded-md px-3 py-1 text-[length:var(--text-sm-font-size)] text-[hsl(var(--text-muted))] hover:bg-[hsl(var(--bg-surface-alt))]"
+        data-testid="inspector-bp-768"
+        role="radio"
+        type="button"
+      >
+        768
+      </button>
+      <button
+        aria-checked="false"
+        class="rounded-md px-3 py-1 text-[length:var(--text-sm-font-size)] text-[hsl(var(--text-muted))] hover:bg-[hsl(var(--bg-surface-alt))]"
+        data-testid="inspector-bp-375"
+        role="radio"
+        type="button"
+      >
+        375
+      </button>
+    </div>
+    <div
+      class="rounded-md border border-dashed border-[hsl(var(--border-default))] p-3 text-[length:var(--text-xs-font-size)] text-[hsl(var(--text-muted))]"
+      data-testid="inspector-properties-placeholder"
+    >
+      Properties — Phase 2
+    </div>
+  </div>
+</div>
+`;

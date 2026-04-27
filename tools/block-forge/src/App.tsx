@@ -33,11 +33,29 @@ import {
   type SessionState,
 } from './lib/session'
 import { BlockPicker } from './components/BlockPicker'
+import { Inspector, type InspectorBp } from './components/Inspector'
 import { PreviewTriptych } from './components/PreviewTriptych'
 import { SuggestionList } from './components/SuggestionList'
 import { StatusBar } from './components/StatusBar'
 import { TweakPanel, type TweakSelection } from './components/TweakPanel'
 import { VariantsDrawer, type VariantAction } from './components/VariantsDrawer'
+
+// WP-033 Phase 1.5 — Inspector ↔ PreviewTriptych viewport coupling.
+// Inspector's BP picker (1440|768|375) and Triptych's tab id share state via
+// App.tsx (single source of truth). The two tables map between them. The 480
+// BP (TweakPanel legacy) is intentionally NOT mapped — TweakPanel keeps its
+// own independent BP state until Phase 5 collapses both to 1440|768|375.
+type ViewportId = 'desktop' | 'tablet' | 'mobile'
+const VIEWPORT_BP: Record<ViewportId, InspectorBp> = {
+  desktop: 1440,
+  tablet: 768,
+  mobile: 375,
+}
+const BP_VIEWPORT: Record<InspectorBp, ViewportId> = {
+  1440: 'desktop',
+  768: 'tablet',
+  375: 'mobile',
+}
 
 /**
  * Small inline debounce — keeps App.tsx self-contained (no new util files
@@ -163,6 +181,15 @@ export function App() {
   const [selection, setSelection] = useState<TweakSelection | null>(null)
   const [currentBp, setCurrentBp] = useState<1440 | 768 | 480>(1440)
   const currentSlug = block?.slug ?? null
+
+  // WP-033 Phase 1.5 — Option C: lift PreviewTriptych's activeId here so
+  // Inspector and Triptych stay in lockstep. Default 'desktop' (existing
+  // Triptych default). inspectorActiveBp is derived from previewActiveId.
+  const [previewActiveId, setPreviewActiveId] = useState<ViewportId>('desktop')
+  const inspectorActiveBp = VIEWPORT_BP[previewActiveId]
+  const handleInspectorBpChange = useCallback((bp: InspectorBp) => {
+    setPreviewActiveId(BP_VIEWPORT[bp])
+  }, [])
 
   // Clear selection on block switch.
   useEffect(() => {
@@ -376,6 +403,8 @@ export function App() {
             block={composedBlock}
             fluidMode={currentFluidMode}
             onFluidModeChange={handleFluidModeChange}
+            activeId={previewActiveId}
+            onActiveIdChange={setPreviewActiveId}
           />
         </section>
         <aside data-region="suggestions" className="flex flex-col overflow-hidden">
@@ -395,6 +424,11 @@ export function App() {
             onTweak={handleTweak}
             onReset={handleResetTweaks}
             onClose={handleClose}
+          />
+          <Inspector
+            slug={currentSlug}
+            activeBp={inspectorActiveBp}
+            onActiveBpChange={handleInspectorBpChange}
           />
         </aside>
       </main>

@@ -34,10 +34,27 @@ type Props = {
   block: BlockJson | null
   fluidMode: FluidMode
   onFluidModeChange: (mode: FluidMode) => void
+  /** WP-033 Phase 1.5 — Option C lift. When supplied, makes the active tab
+   *  parent-controlled (App.tsx pairs it with Inspector.activeBp so a tab
+   *  click flows back into Inspector and vice versa). When omitted, the
+   *  internal `useState` fallback preserves the legacy uncontrolled API. */
+  activeId?: ViewportId
+  onActiveIdChange?: (id: ViewportId) => void
 }
 
-export function PreviewTriptych({ block, fluidMode, onFluidModeChange }: Props) {
-  const [activeId, setActiveId] = useState<ViewportId>('desktop')
+export function PreviewTriptych({
+  block,
+  fluidMode,
+  onFluidModeChange,
+  activeId: controlledActiveId,
+  onActiveIdChange,
+}: Props) {
+  const [internalActiveId, setInternalActiveId] = useState<ViewportId>('desktop')
+  const activeId = controlledActiveId ?? internalActiveId
+  const setActiveId = (id: ViewportId) => {
+    if (onActiveIdChange) onActiveIdChange(id)
+    else setInternalActiveId(id)
+  }
   const [fullscreen, setFullscreen] = useState(false)
 
   // ESC exits fullscreen. Listener is parent-window-scoped; iframe keydowns
