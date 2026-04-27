@@ -32,7 +32,7 @@
 | 2 | — | `6bf32ee0` | result Phase 2 |
 | 3 | `83102a10` | `936101a6` | `a7fac58f` |
 | 4 | `a94c2792` | `745a5bbc` | `06df405b` (+SHA backfill `c91fc696`) |
-| 5 | `e3e9a1f4` | TBD (impl commit) | TBD (result + SHA backfill) |
+| 5 | `e3e9a1f4` | `841d1c41` (fix) + `ff55f868` (doc batch) | TBD (result + SHA backfill) |
 
 ---
 
