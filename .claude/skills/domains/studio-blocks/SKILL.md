@@ -155,3 +155,41 @@ Reference: WP-030 Phase 0 Ruling #4 reduced Studio-side Phase 6 work to docs-onl
   the only Studio-specific JSX block in the cross-surface mirrored body;
   edits MUST stay Studio-only (block-forge mirror untouched per OQ-δ
   acceptance).
+
+## Inspector cross-surface mirror (WP-033, ADR-025 Layer 2)
+
+### Start Here (Inspector / Studio mirror)
+1. `apps/studio/src/pages/block-editor/responsive/PARITY.md` §Inspector — Studio-side cross-surface contract + integration notes
+2. `apps/studio/src/pages/block-editor/responsive/inspector/Inspector.tsx` — orchestrator (4 message listeners + useInspectorPerBpValues lifecycle)
+3. `apps/studio/src/pages/block-editor/responsive/inspector/lib/dispatchInspectorEdit.ts` — Studio-local form mutation pattern (mirrors `dispatchTweakToForm` LIVE-read invariant)
+4. `apps/studio/src/pages/block-editor/responsive/inspector/lib/css-mutate.ts` — `removeDeclarationFromCss` PostCSS decl removal (Studio-local; visibility-uncheck path)
+5. `apps/studio/src/pages/block-editor/responsive/ResponsiveTab.tsx` §Inspector mount — TweakPanel sibling + 3 curried callbacks (cell edit / apply token / visibility toggle)
+
+### Invariants (Inspector / Studio mirror)
+- **1:1 mirror of block-forge Inspector internals** — 9 source files mirrored byte-identical mod 3-line JSDoc per Phase 4 Ruling 1 REIMPLEMENT. Emit boundary diverges intentionally: block-forge uses `addTweak` reducer; Studio uses `dispatchInspectorEdit(form, edit)` form mutation.
+- **`dispatchInspectorEdit` LIVE-read invariant** — uses `form.getValues('code')` at dispatch time (no closure cache); matches `dispatchTweakToForm` invariant from WP-028 Phase 2 OQ4. Three edit kinds: `tweak` / `apply-token` / `remove-decl`.
+- **`removeDeclarationFromCss`** is Studio-local (no block-forge counterpart needed because block-forge uses session reducer). Bp=0 walks top-level rules; bp>0 walks `@container slot (max-width: {bp}px)` rules. Cleans empty rules + empty containers.
+- **Studio's `preview-assets.ts` MUST mirror block-forge's Inspector IIFE block byte-identically** (Phase 4 Issue #2). Hover/unhover with rAF dedup + request-pin listener that sets `data-bf-pin` + posts `inspector-pin-applied` with `snapshotComputed`.
+- **TweakPanel + Inspector coexist V1** (Phase 0 §0.4 + Phase 4 §4.6 verified). Both write to `form.code` via dispatch helpers. WP-033 §5.2 historical "Delete TweakPanel" task superseded by Phase 5 Brain ruling KEEP — sunset deferred.
+- **`displayBlock` follows `watchedFormCode`** post-WP-033 Phase 5 OQ1 fix (`ResponsiveTab.tsx:518`). Inspector + TweakPanel + SuggestionList tweaks reflect in the visible iframe IMMEDIATELY (DevTools mental model). Falls back to suggestions-applied derivation when no form.code threaded.
+- **Probe iframes pass through `renderForPreview`** before `composeSrcDoc` to match the visible DOM with `<div data-block-shell="{slug}">` wrap (Phase 3 §3.3 requirement, mirrored from block-forge in Phase 4).
+- **`@cmsmasters/ui/responsive-config.json` package export** is the canonical chip-detection import path (post-Phase 4 Ruling 5). Both Studio + block-forge consume via `import responsiveConfig from '@cmsmasters/ui/responsive-config.json'`.
+
+### Traps & Gotchas (Inspector / Studio mirror)
+- **`<input>` blur events don't bubble in browser; React listens to `focusout`.** Vitest tests use `fireEvent.blur(...)` (testing-library); native code paths must dispatch `focusout` not `blur`. Same trap as block-forge surface.
+- **`displayBlock` derivation affects ALL preview consumers** — currently only `ResponsivePreview` consumes it (1 consumer at L676). Phase 5 OQ1 fix verified low risk via §5.0.2 RECON. Future consumers (e.g. hypothetical export-preview) inherit live-form behaviour automatically.
+- **`integration.test.tsx` regex must scope to "Select a block to preview"** — Inspector ALSO renders an empty state "Select a block to inspect elements." matching the broader `/Select a block/i` regex. Specificity matters.
+- **`tsconfig.json` paths mapping for `@cmsmasters/ui`** takes precedence over package.json `exports` field with bundler resolution. Phase 4 Ruling 5 added an explicit `@cmsmasters/ui/responsive-config.json` paths entry; without it TypeScript errors at the chip-detection import site.
+- **Studio's PARITY.md §7 wrap-LOCATION deviation** is documented (data-block-shell emitted by composeSrcDoc, not renderForPreview). Inspector probe iframes pass through `renderForPreview` to MATCH the visible DOM — do not "fix" the wrap to match block-forge's deeper wrap.
+- **`watchedFormCode` flow into `displayBlock` is now load-bearing.** If the prop is dropped from ResponsiveTab callsite, displayBlock falls back to suggestions-applied derivation (test contexts) — but the visible iframe stops tracking Inspector edits. Always thread `watchedFormCode` from a parent that wraps `useWatch({ name: 'code' })`.
+
+### Blast Radius (Inspector / Studio mirror)
+- **`inspector/` hooks/components changes** require coordinated cross-surface edit with `tools/block-forge/src/components/{Inspector,InspectorPanel,...}.tsx` + hooks (see infra-tooling SKILL §Inspector / block-forge).
+- **`ResponsiveTab.tsx::displayBlock` derivation** affects the entire visible preview — `ResponsivePreview` is the single consumer today; future consumers inherit. 5-test pin in `__tests__/responsive-tab-live-rerender.test.tsx` guards live-rerender + fallback contract.
+- **`dispatchInspectorEdit.ts` contract** — adding a new `kind` (e.g. `multi-tweak` for WP-034 cascade-clear) requires updating both the type union and the switch + Inspector callsite. Test pin in `__tests__/dispatchInspectorEdit.test.ts` covers each kind branch.
+- **`preview-assets.ts` Inspector IIFE block** — byte-identical contract with block-forge. Editing one without the other breaks PARITY trio. Audit trail: `apps/studio/.../PARITY.md` + `tools/block-forge/PARITY.md`.
+
+### Recipes (Inspector / Studio mirror)
+1. **Run Inspector live smoke at Studio:** `npm -w @cmsmasters/studio run dev` → `:5173/block-editor/{id}` → switch to Responsive tab → click pin on element → cell-edit at active BP → blur → visible iframe re-renders IMMEDIATELY (post-Phase 5 OQ1 fix). Verify TweakPanel + Inspector populate same selection.
+2. **Add a new edit kind to dispatchInspectorEdit** — extend `InspectorEdit` type union, add switch branch in `dispatchInspectorEdit`, add Inspector callsite (e.g. new button in PropertyRow), add test in `dispatchInspectorEdit.test.ts`. Studio is the canonical site; block-forge has its own emit reducer (no parallel needed unless engine-level change).
+3. **Debug "Inspector pin doesn't post message"** — check Studio's `preview-assets.ts` Inspector IIFE block matches block-forge byte-identically (Phase 4 Issue #2 was missing IIFE → no message dispatch). Compare ranges with diff or grep for `block-forge:inspector-`.

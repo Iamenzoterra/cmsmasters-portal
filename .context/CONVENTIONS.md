@@ -809,4 +809,70 @@ Reuse this shape for any future advisory check.
 
 Reference: `apps/studio/src/pages/block-editor/responsive/validateVariantCss.ts`
 + `VariantsDrawer.tsx::VariantEditorPanel` integration site
+
+## Inspector pattern (WP-033, ADR-025 Layer 2)
+
+The Inspector is the canonical DevTools-style authoring surface for responsive blocks. It coexists with TweakPanel (V1; sunset deferred) and ships in two surfaces — `tools/block-forge` (canonical) and `apps/studio/src/pages/block-editor/responsive/inspector` (cross-surface mirror).
+
+### 1. Hover/pin postMessage protocol (cross-surface; locked)
+
+Iframe IIFE (in `preview-assets.ts` of each surface) emits four message types in the `block-forge:` namespace:
+
+| Type | Payload | Direction |
+|---|---|---|
+| `block-forge:inspector-hover` | `{ slug, selector, rect }` | iframe → host |
+| `block-forge:inspector-unhover` | `{ slug }` | iframe → host |
+| `block-forge:inspector-request-pin` | `{ slug, selector, rect }` | iframe → host |
+| `block-forge:inspector-pin-applied` | `{ slug, selector, computedStyle }` | iframe → host (after host sets `data-bf-pin`) |
+
+`rAF` throttle on hover dedup; cleanup on unmount. Inspector orchestrator listens to all four, plus the existing `block-forge:element-click` for TweakPanel coexistence.
+
+### 2. DevTools mental model
+
+- **Single pin per slug.** Pinning a new element auto-clears the prior pin.
+- **Active cell editable on focus** (current breakpoint cell). Inactive cells render `↗` to switch BP without re-pinning.
+- **Empty cells render `—`** when no value; the per-BP probe fills these on iframe-ready.
+- **Validation** rejects empty + bare `em` (regex `(?<!r)em`); `rem | px | % | var(...) | keyword` all pass; invalid input snaps back via `e.currentTarget.value = value`.
+
+### 3. Per-BP cell sourcing — Option A (3 hidden iframes)
+
+`useInspectorPerBpValues(slug, html, css, selector, properties)` mounts 3 hidden iframes — one per breakpoint — and `getComputedStyle`s the pinned selector. Module-scoped cache by `(selector, cssHash)` via djb2; cleanup on unmount + pin clear.
+
+**MUST** wrap html through `renderForPreview({slug, html, css}, {variants:[]})` BEFORE `composeSrcDoc` to match the visible DOM's `<div data-block-shell="{slug}">` wrap. Skipping the wrap silently misses selectors (Phase 3 §3.3 fix).
+
+### 4. Chip detection — Option B-subset (PostCSS cascade walk)
+
+`useChipDetection(css, selector, property, activeBp)` walks PostCSS root: top-level rules first, then `@container slot (max-width: <bp>)` rules whose bp === activeBp. Within each, picks the LAST decl for `property` (cascade ≈ source order). Linear-interp resolution against `responsive-config.json` 22-token compatibility table (10 type + 11 spacing + 1 special).
+
+**Import path** is `@cmsmasters/ui/responsive-config.json` (package export; Phase 4 Ruling 5). Both surfaces use this — relative-path workaround from Phase 3 is obsolete.
+
+### 5. Emit chains diverge (block-forge vs Studio)
+
+| Surface | Chain | Notes |
+|---|---|---|
+| `tools/block-forge` | `addTweak` reducer → `session.tweaks` → `composeTweakedCss` → save | Session is SOT; OQ5 invariant pins `composeTweakedCss` BEFORE `applySuggestions` in `handleSave`. |
+| `apps/studio` | `dispatchInspectorEdit(form, edit)` → `form.code` → save serializes verbatim | Form.code is SOT; LIVE-read invariant matches `dispatchTweakToForm` (WP-028 Phase 2 OQ4). 3 edit kinds: `tweak` / `apply-token` / `remove-decl`. |
+
+Chip apply emits `{bp:0, value:'var(--token)'}` — same shape both surfaces. Visibility uncheck differs: block-forge uses session reducer's `removeTweakFor`, Studio uses `removeDeclarationFromCss(css, selector, bp, property)` PostCSS walk (Studio-local; Phase 4).
+
+### 6. TweakPanel + Inspector coexistence (V1; locked)
+
+Both surfaces mount BOTH controls. Inspector is preferred for discrete property edits + token-aware suggestions; TweakPanel is preferred for continuous-drag value tweaking. Both listen to `block-forge:element-click` and write to the same emit pipeline (form.code on Studio; session.tweaks on block-forge). Sunset decision deferred — surfaces field data on which surface authors actually prefer.
+
+### 7. Live-rerender contract (post-Phase 5 OQ1)
+
+Studio's `displayBlock` derivation (`ResponsiveTab.tsx::518`) follows `watchedFormCode` so Inspector + TweakPanel + SuggestionList tweaks reflect in the visible iframe IMMEDIATELY (no save round-trip). Block-forge has had this contract since Phase 1 (live-form coupling).
+
+### 8. Known limitation — chip cascade override (WP-034 stub)
+
+Chip apply emits at `bp:0` but pre-existing `@container slot` rules at higher specificity may continue to override the token. Tooltip pin (Phase 4 Ruling 2) surfaces the caveat: `"Sets {M}/{T}/{D}px at M/T/D · Note: existing breakpoint overrides may still apply."` Full fix scoped at `workplan/WP-034-inspector-cascade-override.md` (BACKLOG).
+
+References:
+- `tools/block-forge/PARITY.md` §Inspector
+- `apps/studio/src/pages/block-editor/responsive/PARITY.md` §Inspector
+- `tools/responsive-tokens-editor/PARITY.md` §Inspector consumer count
+- `.claude/skills/domains/infra-tooling/SKILL.md` §Inspector
+- `.claude/skills/domains/studio-blocks/SKILL.md` §Inspector cross-surface mirror
+- `workplan/WP-033-block-forge-inspector.md` (full WP doc)
+- `workplan/WP-034-inspector-cascade-override.md` (BACKLOG)
 (`logs/wp-029/phase-1-result.md`).

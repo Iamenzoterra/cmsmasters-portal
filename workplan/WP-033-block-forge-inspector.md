@@ -2,13 +2,37 @@
 
 > Replace the WP-028 generic 4-slider TweakPanel with a real Inspector. Author hovers an element in the preview, clicks to pin selection, sees that element's computed CSS in a side panel, edits per-BP properties surgically. When a value matches a populated WP-030 fluid token, surface a "Use --token ✓" chip — one click swaps raw px for `var(--token)` and all three BPs become coherent. Cross-surface lockstep with Studio Responsive tab same-WP. Subordinate fix: diagnose + close the WP-028 "slider doesn't apply" gap so the rebuild lands on a working pipeline.
 
-**Status:** 🟡 IN PROGRESS — Phase 0 task prompt written 2026-04-27 (`logs/wp-033/phase-0-task.md`); awaiting Hands execution
+**Status:** ✅ DONE — 5 phases shipped, WP-033 closes ADR-025 Layer 2 alongside (5 authoring tools live: TweakPanel + VariantsDrawer + SuggestionList + Inspector × 2 surfaces).
 **Priority:** P0 — Inspector closes the UI gap of the ADR-025 Layer 2 vision; tokens (Layer 1) shipped at WP-030 are foundation for the chip integration
 **Prerequisites:** WP-024 ✅ (variants infra + Portal cascade), WP-028 ✅ (selector derivation + emitTweak contract + cross-surface mirror baseline), WP-029 ✅ (validator + render-level pin pattern), WP-030 ✅ (populated `tokens.responsive.css` + `responsive-config.json` SOT)
 **Milestone/Wave:** ADR-025 Layer 2 (element-targeted authoring) — corrected priority per 2026-04-26 user feedback, refined 2026-04-27 post-WP-030
-**Estimated effort:** 5–7 days across 6 phases (~40-55 hours)
+**Estimated effort:** 5–7 days across 5 phases (~40-55 hours estimated; actual ~28h)
 **Created:** 2026-04-27
-**Completed:** —
+**Completed:** 2026-04-27
+
+---
+
+## Outcome Ladder (WP-033 final)
+
+| Tier | Outcome | Evidence |
+|---|---|---|
+| Bronze | Inspector ships in both surfaces; arch-test + typecheck + vitest GREEN | Phase 0–5 commits; **arch-test 580/580** post-Phase 5 OQ1 test addition |
+| Silver | Live smoke 12+ checks GREEN at both surfaces; cross-surface PARITY trio synced | Phase 4 §4.6 result.md + 3 PARITY.md additive Inspector sections |
+| Gold | Slider-bug regression pinned (Phase 3 `slider-bug-regression.test.ts`); per-BP cell sourcing Option A + chip detection Option B-subset working in production | Phase 3 + 4 result.md; WP-028 architectural ghost laid to rest |
+| Platinum | Inspector mental model ratified by Phase 0 RECON Product trap pass (§0.11 7Q caught 3 V1 caveats — addressed in Phase 2 + 4); TweakPanel coexists per intentional V1 design (Phase 5 Brain ruling KEEP); displayBlock follows watchedFormCode (Phase 5 OQ1) — visible iframe reflects edits IMMEDIATELY | Phase 0 §0.11 + Phase 5 OQ1 fix in `ResponsiveTab.tsx:518` |
+
+---
+
+## Commit Ladder
+
+| Phase | Task prompt | Implementation | Result.md |
+|---|---|---|---|
+| 0 | (RECON) | (RECON-only) | result Phase 0 |
+| 1 | — | `547bb79d` | result Phase 1 |
+| 2 | — | `6bf32ee0` | result Phase 2 |
+| 3 | `83102a10` | `936101a6` | `a7fac58f` |
+| 4 | `a94c2792` | `745a5bbc` | `06df405b` (+SHA backfill `c91fc696`) |
+| 5 | `e3e9a1f4` | TBD (impl commit) | TBD (result + SHA backfill) |
 
 ---
 
@@ -686,7 +710,7 @@ npm run arch-test                                 # Mirror files registered, par
 
 5.1. **CC reads all phase logs** — understands what was done, what deviated.
 
-5.2. **Delete `TweakPanel.tsx` from both surfaces** — no consumers remain after Phase 4. Remove from manifest. Update consuming tests to import Inspector instead.
+5.2. **TweakPanel coexistence (Phase 0 §0.4 + Phase 4 §4.6 + Phase 5 Brain ruling KEEP).** TweakPanel + Inspector coexist V1 — original "Delete TweakPanel" task superseded. Inspector is preferred for discrete property edits + token-aware suggestions; TweakPanel is preferred for continuous-drag value tweaking. Sunset decision deferred to a follow-up after author field data shows redundancy. NO files deleted in Phase 5. CONVENTIONS.md captures the rationale (`Inspector pattern §6 TweakPanel + Inspector coexistence`).
 
 5.3. **CC proposes doc updates**:
 - `.context/CONVENTIONS.md` — new section: "Inspector pattern (WP-033)" — hover/pin postMessage protocol, rAF throttle convention, selector strategy (re-affirmed), token-chip exact-match V1, per-property emitTweak (closes slider-bug)
@@ -774,7 +798,7 @@ npm run test                         # All package tests green incl. inspector-p
 - [ ] Visibility "Hide at this BP" checkbox emits scoped display: none tweak
 - [ ] All Phase 1-3 behaviors mirrored to Studio Responsive tab in Phase 4 (byte-identical UX; same postMessage protocol; PARITY trio updated same-commit)
 - [ ] PARITY.md trio cross-references (`tools/block-forge` ↔ `apps/studio/.../responsive` ↔ `tools/responsive-tokens-editor`)
-- [ ] `tools/block-forge/src/components/TweakPanel.tsx` and `apps/studio/src/pages/block-editor/responsive/TweakPanel.tsx` deleted at Phase 5 (no consumers)
+- [x] ~~`tools/block-forge/src/components/TweakPanel.tsx` and `apps/studio/src/pages/block-editor/responsive/TweakPanel.tsx` deleted at Phase 5~~ — superseded by Phase 5 Brain ruling KEEP (coexistence V1; sunset deferred to follow-up after field data)
 - [ ] Render-level regression pin (`inspector-pipeline.test.tsx`) — mount `<App />`, programmatically pin element, edit cell, assert preview iframe srcDoc reflects edit
 - [ ] `parity.test.ts` cross-surface byte-equality on injected hover/click scripts
 - [ ] `npm run arch-test` passes (all 540+ tests; new owned_files registered; deleted entries pruned)

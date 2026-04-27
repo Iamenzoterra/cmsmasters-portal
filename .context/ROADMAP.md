@@ -258,3 +258,6 @@ Layer 3: ██████  DONE (WP-017, completed 2026-04-09)
 | Meilisearch integration | Portal V2 |
 | Heuristic confidence tuning (Task C, post-WP-030) | Future WP, after 2–4 weeks of WP-028 + WP-030 author field data |
 | Cross-surface validator port decision (OQ-δ, post-WP-030) | Future WP — decide: port validator to block-forge / formalize Studio-only / extract to package |
+| Inspector cascade-override fix (WP-034, post-WP-033) | BACKLOG — chip apply with @container clearing; documented at workplan/WP-034-inspector-cascade-override.md |
+| TweakPanel sunset decision (post-WP-033) | Future — surface field data on whether authors prefer Inspector vs TweakPanel; coexistence retained V1 |
+| Inspector e2e Playwright coverage (post-WP-033) | Future WP — currently unit + manual smoke is the established tier (WP-033 Phase 5 Ruling 3 DEFER) |

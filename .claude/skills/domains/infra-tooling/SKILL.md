@@ -260,3 +260,38 @@ status: full
    `it.skip(...)`. Preserve the original assertions verbatim inside the
    `/* */` block; the empty function body keeps Vitest discovery happy.
    Update the HISTORICAL NOTE block at the top of the describe.
+
+## Inspector (WP-033, ADR-025 Layer 2)
+
+### Start Here (Inspector / block-forge)
+1. `tools/block-forge/PARITY.md` §Inspector — hover/pin postMessage protocol + cross-surface contract
+2. `tools/block-forge/src/components/Inspector.tsx` — orchestrator (hover/pin lifecycle, useInspectorPerBpValues mount)
+3. `tools/block-forge/src/hooks/useInspectorPerBpValues.ts` — 3 hidden iframe per-BP cell sourcing (Option A)
+4. `tools/block-forge/src/hooks/useChipDetection.ts` — PostCSS cascade walk + linear-interp token resolution (Option B-subset)
+5. `tools/block-forge/src/lib/preview-assets.ts` — Inspector IIFE block (hover/unhover/request-pin/pin-applied postMessage runtime)
+
+### Invariants (Inspector / block-forge)
+- **Hover/pin protocol** via `block-forge:inspector-{hover,unhover,request-pin,pin-applied}` postMessage types. rAF throttle on hover; cleanup on iframe unmount.
+- **Selector strategy**: id > stable-class > tag.class > nth-of-type fallback (depth 5; UTILITY_PREFIXES filtered). Matches Studio mirror byte-identically (Phase 4 Ruling 1 REIMPLEMENT).
+- **Probe iframes (3 hidden)** MUST run html through `renderForPreview` BEFORE `composeSrcDoc` (matches visible iframe DOM with `<div data-block-shell="{slug}">` wrap). Phase 3 §3.3 fix verified by live smoke; same wrap discipline mirrored to Studio Phase 4.
+- **Module-scoped cache** by `(selector, cssHash)` via djb2 hash; cleanup on unmount + pin clear.
+- **emitTweak `{bp: 0}` = top-level rule** (no @container wrap); empirical pin in `slider-bug-regression.test.ts` guards the contract.
+- **Single pin per slug** — pinning a new element auto-clears the prior pin (DevTools mental model). ↗ button on inactive cells switches BP without re-pinning.
+- **Active cell editable on focus**; blur/Enter commit, Esc cancel. `em` validation reject (snaps back). `rem|px|%|var(...)|keyword` all pass.
+
+### Traps & Gotchas (Inspector / block-forge)
+- **`<input>` blur events don't bubble in browser; React listens to `focusout`.** Vitest tests use `fireEvent.blur(...)` (testing-library); native code paths must dispatch `focusout` not `blur`.
+- **Chip-apply emits at bp:0 but pre-existing @container rules may override** (Phase 3 Issue #3). Tooltip pin (Phase 4 Ruling 2) mitigates by surfacing the caveat: "Sets {M}/{T}/{D}px at M/T/D · Note: existing breakpoint overrides may still apply." See WP-034 stub for follow-up.
+- **TokenChip `responsive-config.json` import uses `@cmsmasters/ui/responsive-config.json`** package export (post-Phase 4 Ruling 5 migration). Pre-Phase 4 used the relative-path workaround documented in Phase 3 §3.3; that path is now obsolete.
+- **Inspector IIFE block in `preview-assets.ts`** is byte-identical to Studio's mirror (Phase 4 §4.6 Issue #2). Editing one without the other breaks cross-surface PARITY.
+
+### Blast Radius (Inspector / block-forge)
+- **Hover/pin protocol changes** affect both `tools/block-forge` AND `apps/studio/.../inspector` simultaneously — coordinated edit required (see studio-blocks SKILL §Inspector cross-surface mirror).
+- **emitTweak engine changes** ripple to TweakPanel + Inspector + Studio mirror simultaneously (4 surfaces).
+- **`responsive-config.json` schema changes** propagate to Inspector chip detection in both surfaces; `@cmsmasters/ui/responsive-config.json` export is the contract.
+- **Inspector IIFE byte-identical contract**: see traps. PARITY trio (`tools/block-forge/PARITY.md` + `apps/studio/.../PARITY.md` + `tools/responsive-tokens-editor/PARITY.md`) is the audit trail.
+
+### Recipes (Inspector / block-forge)
+1. **Run Inspector live smoke at block-forge:** `npm run block-forge` → `:7702` → load fast-loading-speed → click pin on `.gauge-score` → cell-edit padding 60→48 at active BP → blur → iframe re-renders. Verify pin persists across ↗ BP switches.
+2. **Add a new chip-detectable token category** — extend `responsive-config.json` `categories[]` (in responsive-tokens-editor flow) → `useChipDetection.ts` consumes via the package import. Mirror to Studio identically.
+3. **Debug Inspector probe iframe staleness** — DevTools → Network → check 3 hidden iframe srcdocs at `:7702` after pin → verify `data-block-shell="{slug}"` wrap present. If missing, `renderForPreview` step was skipped (Phase 3 §3.3 regression).
