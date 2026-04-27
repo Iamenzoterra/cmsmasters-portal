@@ -12,6 +12,7 @@
 
 import tokensCSS from '../../../../packages/ui/src/theme/tokens.css?raw'
 import tokensResponsiveCSS from '../../../../packages/ui/src/theme/tokens.responsive.css?raw'
+import tokensResponsiveOptOutCSS from '../../../../packages/ui/src/theme/tokens.responsive.opt-out.css?raw'
 import portalBlocksCSS from '../../../../packages/ui/src/portal/portal-blocks.css?raw'
 import animateUtilsJS from '../../../../packages/ui/src/portal/animate-utils.js?raw'
 
@@ -49,13 +50,16 @@ export function composeSrcDoc(input: ComposeSrcDocInput): string {
     @layer tokens {
       ${tokensCSS}
       ${tokensResponsiveCSS}
+      ${tokensResponsiveOptOutCSS}
     }
     @layer reset {
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html { overflow: visible; }
       body {
         font-family: 'Manrope', system-ui, sans-serif;
         width: ${width}px;
-        overflow: hidden;
+        overflow-x: visible;
+        overflow-y: hidden;
         background: white;
       }
     }
@@ -73,12 +77,19 @@ export function composeSrcDoc(input: ComposeSrcDocInput): string {
   <script type="module">${animateUtilsJS}</script>
   ${jsBlock}
   <script>
-    // ResizeObserver → postMessage parent for iframe height sync
-    const ro = new ResizeObserver((entries) => {
-      const h = Math.ceil(entries[0].contentRect.height);
-      parent.postMessage({ type: 'block-forge:iframe-height', slug: ${JSON.stringify(slug)}, width: ${width}, height: h }, '*');
+    // ResizeObserver: report height + contentWidth so the parent panel can
+    // grow the iframe element when block content overflows the simulated BP
+    // width. Body keeps the BP width for layout; overflow-x:visible lets
+    // content spill; parent sizes the iframe to fit so overflow is rendered
+    // instead of clipped. The width literal in the payload remains the BP
+    // (filter key for the parent listener); contentWidth is the new field.
+    const ro = new ResizeObserver(() => {
+      const h = Math.ceil(Math.max(document.body.scrollHeight, document.documentElement.scrollHeight));
+      const cw = Math.ceil(Math.max(document.body.scrollWidth, document.documentElement.scrollWidth, ${width}));
+      parent.postMessage({ type: 'block-forge:iframe-height', slug: ${JSON.stringify(slug)}, width: ${width}, height: h, contentWidth: cw }, '*');
     });
     ro.observe(document.body);
+    ro.observe(document.documentElement);
   </script>
   <script>
     // WP-028 Phase 2 — element-click selection for TweakPanel (Ruling E: strictly additive).

@@ -127,12 +127,19 @@ export function onVisible(element, callback, opts = {}) {
 </script>
   
   <script>
-    // ResizeObserver → postMessage parent for iframe height sync
-    const ro = new ResizeObserver((entries) => {
-      const h = Math.ceil(entries[0].contentRect.height);
-      parent.postMessage({ type: 'block-forge:iframe-height', slug: "test", width: 1440, height: h }, '*');
+    // ResizeObserver: report height + contentWidth so the parent panel can
+    // grow the iframe element when block content overflows the simulated BP
+    // width. Body keeps the BP width for layout; overflow-x:visible lets
+    // content spill; parent sizes the iframe to fit so overflow is rendered
+    // instead of clipped. The width literal in the payload remains the BP
+    // (filter key for the parent listener); contentWidth is the new field.
+    const ro = new ResizeObserver(() => {
+      const h = Math.ceil(Math.max(document.body.scrollHeight, document.documentElement.scrollHeight));
+      const cw = Math.ceil(Math.max(document.body.scrollWidth, document.documentElement.scrollWidth, 1440));
+      parent.postMessage({ type: 'block-forge:iframe-height', slug: "test", width: 1440, height: h, contentWidth: cw }, '*');
     });
     ro.observe(document.body);
+    ro.observe(document.documentElement);
   </script>
   <script>
     // WP-028 Phase 2 — element-click selection for TweakPanel (Ruling E: strictly additive).
@@ -329,12 +336,19 @@ export function onVisible(element, callback, opts = {}) {
 </script>
   
   <script>
-    // ResizeObserver → postMessage parent for iframe height sync
-    const ro = new ResizeObserver((entries) => {
-      const h = Math.ceil(entries[0].contentRect.height);
-      parent.postMessage({ type: 'block-forge:iframe-height', slug: "test", width: 1440, height: h }, '*');
+    // ResizeObserver: report height + contentWidth so the parent panel can
+    // grow the iframe element when block content overflows the simulated BP
+    // width. Body keeps the BP width for layout; overflow-x:visible lets
+    // content spill; parent sizes the iframe to fit so overflow is rendered
+    // instead of clipped. The width literal in the payload remains the BP
+    // (filter key for the parent listener); contentWidth is the new field.
+    const ro = new ResizeObserver(() => {
+      const h = Math.ceil(Math.max(document.body.scrollHeight, document.documentElement.scrollHeight));
+      const cw = Math.ceil(Math.max(document.body.scrollWidth, document.documentElement.scrollWidth, 1440));
+      parent.postMessage({ type: 'block-forge:iframe-height', slug: "test", width: 1440, height: h, contentWidth: cw }, '*');
     });
     ro.observe(document.body);
+    ro.observe(document.documentElement);
   </script>
   <script>
     // WP-028 Phase 2 — element-click selection for TweakPanel (Ruling E: strictly additive).

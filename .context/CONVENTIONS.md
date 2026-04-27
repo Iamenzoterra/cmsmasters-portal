@@ -520,6 +520,45 @@ V1 defaults preserve current desktop static rendering — `clamp(minPx, slope, m
 
 Editor validates each fluid token against WCAG 1.4.4 (max-px ÷ min-px ≤ 2.5). Violations show inline banner + global header banner. Save button blocked when violations exist UNLESS author explicitly toggles "Save anyway despite N WCAG violation(s)" — forces a deliberate decision, not a silent override.
 
+### Per-BP fluid opt-out (`data-fluid-tablet` / `data-fluid-mobile` attributes)
+
+Some block classes look correct at static desktop sizes only at specific viewports — fluid scaling actively hurts them at tablet, or at mobile, or both. Each BP is independently togglable. The opt-out hooks live in `packages/ui/src/theme/tokens.responsive.opt-out.css` (companion to `tokens.responsive.css`).
+
+**Author usage** — independent attributes on the block element:
+
+| Attribute | Behavior |
+|---|---|
+| `data-fluid-tablet="off"` | Pin desktop sizes at tablet viewport (768px ≤ vw < 1280px); fluid below |
+| `data-fluid-mobile="off"` | Pin desktop sizes at mobile viewport (vw < 768px); fluid above |
+| (both attributes absent / not "off") | Default — full fluid scaling per `tokens.responsive.css` clamps |
+
+Combine both for full opt-out. Desktop has no toggle: at desktop viewport (≥1280px) the fluid clamp already evaluates to maxPx, so a desktop opt-out would be a visual no-op.
+
+```html
+<!-- Pin tablet only — heading stays desktop-sized at 768-1279, fluid below -->
+<section class="block-theme-name" data-fluid-tablet="off">…</section>
+
+<!-- Full opt-out — both tablet and mobile pinned -->
+<section class="block-theme-name" data-fluid-tablet="off" data-fluid-mobile="off">…</section>
+```
+
+**Mechanic** — viewport `@media` query × CSS specificity. The media gate restricts the override to the matching BP range; `[data-fluid-*="off"]` specificity beats the `:root` cascade, re-binding the same token names to their static maxPx values within the block scope. All `var(--token)` references in descendant CSS resolve via custom-property inheritance — no per-block CSS edits needed.
+
+**Legacy `data-fluid` migration** — the parser still reads pre-redesign `data-fluid="off" | "desktop-only"` for backward compat (maps to the new per-BP shape: `off` → both off, `desktop-only` → tablet=off, mobile=on). The writer always emits the new attrs and strips legacy `data-fluid` it encounters. Zero blocks in `content/db/blocks/` use the legacy attribute as of WP-030 redesign — the migration is parse-only insurance.
+
+**Drift caveat** — `tokens.responsive.opt-out.css` is currently HAND-MAINTAINED to mirror the maxPx of each clamp in `tokens.responsive.css`. If the editor changes a maxPx (or adds/removes a token), `tokens.responsive.opt-out.css` MUST be re-synced manually. Polish queue item: editor regenerates this file alongside `tokens.responsive.css` (eliminates drift). Tracked for WP-031 / polish.
+
+**Cross-surface activation** — the opt-out file is consumed via:
+1. `apps/portal/app/globals.css` — `@import` after `tokens.responsive.css`
+2. `tools/block-forge/src/lib/preview-assets.ts` — `?raw` import injected into `@layer tokens` block of iframe srcdoc
+3. `apps/studio/src/pages/block-editor/responsive/preview-assets.ts` — same (PARITY mirror)
+
+The new attrs work identically in production rendering, block-forge previews, and Studio Responsive tab previews.
+
+**UI affordance — block-forge per-tab `FluidModeControl`** — 2-state segmented toggle (Fluid | Static) rendered next to the active tab's controls in `PreviewTriptych`. Visible only when the active tab is Tablet or Mobile (Desktop hides the toggle since fluid==static there). Reads/writes `data-fluid-tablet` / `data-fluid-mobile` on the FIRST opening tag of `block.html`. Implementation: `tools/block-forge/src/components/FluidModeControl.tsx` + parser at `tools/block-forge/src/lib/fluid-mode.ts`. Persists through existing save flow (`session.fluidModeOverride` → `composedBlock.html` → `applySuggestions` → `saveBlock`).
+
+**Studio mirror — TODO follow-up** — Studio Responsive tab does NOT yet have the equivalent toggle (PARITY divergence). Author working in Studio must hand-edit block HTML in DB. Tracked for polish queue / WP-031 — extract shared primitive OR reimplement per WP-028 reimplement-not-extract decision and wire into `apps/studio/src/pages/block-editor/responsive/ResponsiveTab.tsx` near the Process button.
+
 ### Run command
 
 ```bash

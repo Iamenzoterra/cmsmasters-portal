@@ -13,8 +13,11 @@
 
 ### Reset layer (`@layer reset`)
 - Box-sizing + margin/padding normalize on `*, *::before, *::after`.
-- `body { font-family: 'Manrope', system-ui, sans-serif; width: {renderWidth}px; overflow: hidden; background: white; }`
-  - `width` is fixed per breakpoint panel (1440/768/375). `overflow: hidden` prevents double-scroll; parent `PreviewPanel` controls scroll via ResizeObserver → postMessage height sync.
+- `html { overflow: visible; }` — root must allow content to extend beyond the body box so the parent panel can grow the iframe element to fit overflow (see "Overflow-aware sizing" below).
+- `body { font-family: 'Manrope', system-ui, sans-serif; width: {renderWidth}px; overflow-x: visible; overflow-y: hidden; background: white; }`
+  - `width` is fixed per breakpoint panel (1440/768/375) — keeps the layout simulation honest (block CSS resolves `100%` against the BP).
+  - `overflow-y: hidden` still prevents the body from scrolling vertically (height is sized by the parent panel via ResizeObserver postMessage).
+  - `overflow-x: visible` lets content wider than the BP render past the body box. The parent panel grows the iframe ELEMENT to `max(BP, contentWidth)` so the overflow is rendered, not clipped by the iframe's own boundary, and overlays a dashed BP marker so authors still see "this is where 1440 / 768 / 375 ends".
 
 ### Shared layer (`@layer shared`)
 1. `packages/ui/src/portal/portal-blocks.css` — shared component classes from ADR-024 (buttons, headings, containers shared across blocks).
@@ -37,8 +40,10 @@ Matches portal's `apps/portal/lib/hooks.ts:234` output + WP-024 slot wrapper. Th
 ### Runtime injection (after body DOM)
 1. `packages/ui/src/portal/animate-utils.js` — ADR-023 animation layer (always-on for parity with portal runtime).
 2. Block's own `block.js` (if present) — appended after animate-utils.
-3. ResizeObserver → `postMessage({ type: 'block-forge:iframe-height', slug, width, height })` for parent-panel height sync.
+3. ResizeObserver → `postMessage({ type: 'block-forge:iframe-height', slug, width, height, contentWidth })` for parent-panel size sync.
    - `type` literal is pinned by `preview-assets.test.ts` case (i) — any rename forces test update.
+   - Observes BOTH `document.body` and `document.documentElement` so a child wider than the body still triggers re-measurement.
+   - `width` (the BP) stays as the listener filter key. `contentWidth = max(body.scrollWidth, documentElement.scrollWidth, BP)` — the parent panel sizes the iframe element to this so horizontal overflow renders. The `overflow +Npx` badge in the parent panel is driven off `contentWidth - BP`.
 4. **Element-click delegator** (WP-028 Phase 2) → `postMessage({ type: 'block-forge:element-click', slug, selector, rect, computedStyle })` for parent TweakPanel seeding.
    - Delegated click listener on `document.body` (capture phase). Filters by `CLICKABLE_TAGS` (semantic block elements) and emits `e.preventDefault() + e.stopPropagation()` on match so the preview doesn't navigate/submit.
    - Selector derivation per Ruling H: `#id` → stable class → `nth-of-type` fallback walk, max depth 5. Utility prefixes (`hover:`, `focus:`, `active:`, `animate-`, `group-`, `peer-`) excluded from "stable" class pool.
@@ -251,3 +256,7 @@ Studio Responsive tab consumes `tokens.responsive.css` via `src/pages/block-edit
 Auto-propagation: any token addition / removal / rename in the generator output flows automatically through the `?raw` import on Vite HMR. Manual same-commit edits are needed ONLY when `@layer` order, file path, or sibling-file structure changes (consistent with block-forge mirror discipline).
 
 Phase 0 Ruling #4 reduced Studio-side Phase 6 work to docs-only — Studio's `preview-assets.ts:19` already imports `tokensResponsiveCSS` since WP-027; activation is automatic when generator populates real values into the file.
+
+### Per-block fluid opt-out (post-WP-030 hotfix)
+
+Companion file `packages/ui/src/theme/tokens.responsive.opt-out.css` consumed via `?raw` import in `preview-assets.ts` → injected into `@layer tokens` block AFTER `tokensResponsiveCSS`. Mirrors block-forge's `src/lib/preview-assets.ts` exactly. Provides `[data-fluid="off"]` and `[data-fluid="desktop-only"]` hooks for block-level fluid opt-out. Cross-surface PARITY discipline: any change to opt-out injection order or layer placement MUST update both surfaces same-commit. See CONVENTIONS.md "Per-block fluid opt-out" for author-facing usage.

@@ -36,6 +36,7 @@
 import type { Suggestion, Tweak } from '@cmsmasters/block-forge-core'
 import { emitTweak } from '@cmsmasters/block-forge-core'
 import type { BlockVariant, BlockVariants } from '@cmsmasters/db'
+import type { FluidMode } from './fluid-mode'
 
 export type SessionAction =
   | { type: 'accept'; id: string }
@@ -45,6 +46,7 @@ export type SessionAction =
   | { type: 'variant-rename'; from: string; to: string }
   | { type: 'variant-delete'; name: string; prev: BlockVariant }
   | { type: 'variant-update'; name: string; prev: BlockVariant } // WP-028 Phase 4
+  | { type: 'fluid-mode'; mode: FluidMode; prev: FluidMode | null } // WP-030 hotfix — per-BP fluid opt-out (carries prev for undo)
 
 export type SessionState = {
   /** Suggestion IDs accepted but not yet saved. Order preserved. */
@@ -61,6 +63,13 @@ export type SessionState = {
   backedUp: boolean
   /** Last successful save timestamp (ms since epoch). Null before any save. */
   lastSavedAt: number | null
+  /**
+   * Per-block fluid opt-out override (WP-030 hotfix). Null = no change pending;
+   * composedBlock falls through to the value parsed from block.html. Non-null
+   * = user clicked the FluidModeControl in the header; on save, the override
+   * is written into block.html via setFluidMode().
+   */
+  fluidModeOverride: FluidMode | null
 }
 
 export function createSession(): SessionState {
@@ -72,6 +81,28 @@ export function createSession(): SessionState {
     history: [],
     backedUp: false,
     lastSavedAt: null,
+    fluidModeOverride: null,
+  }
+}
+
+/**
+ * Set per-BP fluid override (WP-030 hotfix). Pure reducer — App.tsx mutates
+ * the block.html via setFluidMode() at render time + save time.
+ *
+ * History entry carries `prev` so undo can restore the previous override (or
+ * fall through to null when the user toggles for the first time this session).
+ */
+export function setFluidModeOverride(
+  state: SessionState,
+  mode: FluidMode,
+): SessionState {
+  return {
+    ...state,
+    fluidModeOverride: mode,
+    history: [
+      ...state.history,
+      { type: 'fluid-mode', mode, prev: state.fluidModeOverride },
+    ],
   }
 }
 
@@ -243,6 +274,9 @@ export function undo(state: SessionState): SessionState {
       history,
     }
   }
+  if (last.type === 'fluid-mode') {
+    return { ...state, fluidModeOverride: last.prev, history }
+  }
   // accept / reject — remove id from whichever set holds it (existing contract).
   return {
     ...state,
@@ -277,6 +311,7 @@ export function clearAfterSave(
     history: [],
     backedUp: true,
     lastSavedAt: Date.now(),
+    fluidModeOverride: null,
   }
 }
 
@@ -294,12 +329,13 @@ export function pickAccepted(
   return suggestions.filter((s) => set.has(s.id))
 }
 
-/** Derived: any unsaved accept/reject/tweak/variant-* action present. */
+/** Derived: any unsaved accept/reject/tweak/variant or fluid-mode action present. */
 export function isDirty(state: SessionState): boolean {
   if (
     state.pending.length > 0 ||
     state.rejected.length > 0 ||
-    state.tweaks.length > 0
+    state.tweaks.length > 0 ||
+    state.fluidModeOverride !== null
   )
     return true
   // WP-028 Phase 3 — variant-* actions in history drive dirty. After undo pops

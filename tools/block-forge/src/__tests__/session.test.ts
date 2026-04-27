@@ -22,10 +22,12 @@ import {
   reject,
   removeTweaksFor,
   renameVariant,
+  setFluidModeOverride,
   undo,
   updateVariantContent,
   type SessionState,
 } from '../lib/session'
+import { FLUID_DEFAULT } from '../lib/fluid-mode'
 
 // Minimal suggestion factory for pickAccepted test only. Matches the core
 // Suggestion shape enough for filtering-by-id behavior; other fields are
@@ -68,6 +70,7 @@ describe('session — createSession', () => {
       history: [],
       backedUp: false,
       lastSavedAt: null,
+      fluidModeOverride: null,
     })
   })
 })
@@ -494,6 +497,38 @@ describe('session — updateVariantContent (WP-028 Phase 4)', () => {
     const s2 = updateVariantContent(saved, 'sm', { html: '<h2>new</h2>', css: '' })
     expect(isDirty(s2)).toBe(true)
     expect(isDirty(undo(s2))).toBe(false)
+  })
+})
+
+describe('session — setFluidModeOverride (WP-030 redesign)', () => {
+  it('sets the override + pushes a fluid-mode history entry carrying prev=null', () => {
+    const s = setFluidModeOverride(createSession(), { tablet: 'off', mobile: 'on' })
+    expect(s.fluidModeOverride).toEqual({ tablet: 'off', mobile: 'on' })
+    expect(s.history).toEqual([
+      { type: 'fluid-mode', mode: { tablet: 'off', mobile: 'on' }, prev: null },
+    ])
+  })
+
+  it('isDirty becomes true on override; clearAfterSave resets back to null', () => {
+    const s = setFluidModeOverride(createSession(), { tablet: 'off', mobile: 'off' })
+    expect(isDirty(s)).toBe(true)
+    const cleared = clearAfterSave(s)
+    expect(cleared.fluidModeOverride).toBeNull()
+    expect(isDirty(cleared)).toBe(false)
+  })
+
+  it('undo restores the previous override (chain: A → B → undo → A)', () => {
+    const s1 = setFluidModeOverride(createSession(), { tablet: 'off', mobile: 'on' })
+    const s2 = setFluidModeOverride(s1, { tablet: 'off', mobile: 'off' })
+    const undone = undo(s2)
+    expect(undone.fluidModeOverride).toEqual({ tablet: 'off', mobile: 'on' })
+  })
+
+  it('undo of the first override restores null (back to fall-through to block.html)', () => {
+    const s = setFluidModeOverride(createSession(), FLUID_DEFAULT)
+    const undone = undo(s)
+    expect(undone.fluidModeOverride).toBeNull()
+    expect(undone.history).toEqual([])
   })
 })
 

@@ -14,6 +14,7 @@ import { applySuggestions, type Tweak } from '@cmsmasters/block-forge-core'
 import type { BlockJson } from './types'
 import { getBlock, listBlocks, saveBlock } from './lib/api-client'
 import { useAnalysis } from './lib/useAnalysis'
+import { FLUID_DEFAULT, parseFluidMode, setFluidMode, type FluidMode } from './lib/fluid-mode'
 import {
   accept as acceptFn,
   addTweak,
@@ -27,6 +28,7 @@ import {
   reject as rejectFn,
   removeTweaksFor,
   renameVariant as renameVariantFn,
+  setFluidModeOverride,
   updateVariantContent as updateVariantContentFn,
   type SessionState,
 } from './lib/session'
@@ -148,9 +150,14 @@ export function App() {
     const css = session.tweaks.length > 0
       ? composeTweakedCss(block.css, session.tweaks)
       : block.css
+    // WP-030 hotfix — apply pending fluid-mode override on top of base html.
+    const html =
+      session.fluidModeOverride !== null
+        ? setFluidMode(block.html, session.fluidModeOverride)
+        : block.html
     const variants = Object.keys(session.variants).length > 0 ? session.variants : undefined
-    return { ...block, css, variants }
-  }, [block, session.tweaks, session.variants])
+    return { ...block, html, css, variants }
+  }, [block, session.tweaks, session.variants, session.fluidModeOverride])
 
   // WP-028 Phase 2 — TweakPanel selection state + element-click listener.
   const [selection, setSelection] = useState<TweakSelection | null>(null)
@@ -217,6 +224,19 @@ export function App() {
     setSession((prev) => removeTweaksFor(prev, selection.selector, selection.bp))
   }, [selection])
 
+  // WP-030 redesign — per-BP fluid toggle (rendered next to each non-desktop
+  // panel header in PreviewTriptych). Derived from session override with
+  // fall-through to block.html parse.
+  const currentFluidMode = useMemo<FluidMode>(() => {
+    if (session.fluidModeOverride !== null) return session.fluidModeOverride
+    if (!block) return FLUID_DEFAULT
+    return parseFluidMode(block.html)
+  }, [session.fluidModeOverride, block])
+
+  const handleFluidModeChange = useCallback((mode: FluidMode) => {
+    setSession((prev) => setFluidModeOverride(prev, mode))
+  }, [])
+
   const handleClose = useCallback(() => {
     setSelection(null)
   }, [])
@@ -276,13 +296,18 @@ export function App() {
         session.tweaks.length > 0
           ? composeTweakedCss(block.css, session.tweaks)
           : block.css
+      // WP-030 hotfix — apply pending fluid-mode override into html before save.
+      const composedHtml =
+        session.fluidModeOverride !== null
+          ? setFluidMode(block.html, session.fluidModeOverride)
+          : block.html
       const applied =
         accepted.length > 0
           ? applySuggestions(
-              { slug: block.slug, html: block.html, css: composedCss },
+              { slug: block.slug, html: composedHtml, css: composedCss },
               accepted,
             )
-          : { html: block.html, css: composedCss }
+          : { html: composedHtml, css: composedCss }
       // Merge applied html/css back into the full BlockJson so we preserve
       // non-engine fields (name, id, block_type, hooks, metadata, etc.).
       // WP-028 Phase 3 — serialize session.variants; emit the non-populated
@@ -347,7 +372,11 @@ export function App() {
           data-region="triptych"
           className="overflow-auto border-r border-[hsl(var(--border-default))]"
         >
-          <PreviewTriptych block={composedBlock} />
+          <PreviewTriptych
+            block={composedBlock}
+            fluidMode={currentFluidMode}
+            onFluidModeChange={handleFluidModeChange}
+          />
         </section>
         <aside data-region="suggestions" className="flex flex-col overflow-hidden">
           <div className="flex-1 overflow-hidden">
