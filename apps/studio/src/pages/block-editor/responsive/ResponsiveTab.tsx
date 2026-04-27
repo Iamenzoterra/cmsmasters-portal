@@ -33,6 +33,10 @@ import { VariantsDrawer, type VariantAction } from './VariantsDrawer'
 import { Inspector, type InspectorBp } from './inspector/Inspector'
 import { dispatchInspectorEdit } from './inspector/lib/dispatchInspectorEdit'
 
+// WP-033 Phase 5 OQ2: re-export so block-editor.tsx can import VariantAction
+// from ResponsiveTab (its actual definition lives in VariantsDrawer).
+export type { VariantAction } from './VariantsDrawer'
+
 interface ResponsiveTabProps {
   block: Block | null
   /** Parent callback — wraps form.setValue('code', blockToFormData(appliedBlock).code, { shouldDirty: true }). */
@@ -515,16 +519,25 @@ export function ResponsiveTab({
     setSession((prev) => rejectFn(prev, id))
   }, [])
 
-  // displayBlock for preview — pending accepts only; tweaks live in form.code directly.
+  // WP-033 Phase 5 OQ1: displayBlock follows watchedFormCode so Inspector +
+  // TweakPanel + SuggestionList tweaks reflect in the visible iframe immediately
+  // (DevTools mental model). Falls back to suggestions-applied derivation on
+  // initial mount when no form.code is threaded (e.g. test contexts).
   const displayBlock = useMemo(() => {
-    if (!block || session.pending.length === 0) return block
+    if (!block) return block
+    const liveCode = watchedFormCode ?? ''
+    if (liveCode) {
+      const { html: liveHtml, css: liveCss } = splitCode(liveCode)
+      return { ...block, html: liveHtml || block.html, css: liveCss || block.css }
+    }
+    if (session.pending.length === 0) return block
     const accepted = pickAccepted(session, suggestions)
     const applied = applySuggestions(
       { slug: block.slug, html: block.html ?? '', css: block.css ?? '' },
       accepted,
     )
     return { ...block, html: applied.html, css: applied.css }
-  }, [block, session, suggestions])
+  }, [block, session, suggestions, watchedFormCode])
 
   // WP-028 Phase 2 — debounced dispatcher; 300ms on dispatch side (Ruling I).
   const onTweakDispatchRef = useRef(onTweakDispatch)

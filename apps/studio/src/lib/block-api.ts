@@ -75,7 +75,10 @@ export async function updateBlockApi(
     metadata?: Record<string, unknown>
     // WP-027 Phase 4: forward-compat for WP-028 variants drawer. Backend
     // updateBlockSchema already validates this field (Phase 0 §0.4).
-    variants?: BlockVariants
+    // WP-033 Phase 5 OQ2: `null` is intentional NULL sentinel (WP-028 Phase 5
+    // Ruling HH) so Supabase update({ variants: null }) actually NULLs the
+    // column. Matches backend schema `variantsSchema.nullable().optional()`.
+    variants?: BlockVariants | null
   }
 ): Promise<Block> {
   const res = await fetch(`${apiUrl}/api/blocks/${id}`, {

@@ -321,6 +321,8 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       // WP-029 Phase 1 (Task A): variant CSS scoping advisory validator + unit pins.
       'apps/studio/src/pages/block-editor/responsive/validateVariantCss.ts',
       'apps/studio/src/pages/block-editor/responsive/__tests__/validateVariantCss.test.ts',
+      // WP-033 Phase 5 OQ1: live-rerender test pins displayBlock follows watchedFormCode.
+      'apps/studio/src/pages/block-editor/responsive/__tests__/responsive-tab-live-rerender.test.tsx',
       // WP-033 Phase 4: Inspector cross-surface mirror (Studio side). Sibling
       // subdirectory `inspector/` per Phase 4 Ruling 1 (REIMPLEMENT, not extract).
       // 5 component files + 2 hook files + 2 lib helpers + 10 test files = 19.
