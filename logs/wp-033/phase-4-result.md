@@ -276,7 +276,6 @@ All 3 PARITY.md files gain a new `## Inspector (Phase 4 — WP-033)` section (or
 
 Phase 4 commits land on `main`:
 
-1. `feat(studio): WP-033 phase 4 — inspector cross-surface mirror + PARITY trio sync [WP-033 phase 4]` — 19 NEW + 14 MOD = 33 files (impl + tests + manifest + PARITY trio + packages/ui exports + IIFE port + chip tooltip + integration test scope tighten)
-2. `docs(wp-033): phase 4 result — Studio Inspector mirror GREEN [WP-033 phase 4 followup]` — this file
-
-**(SHAs to be filled in after commit lands.)**
+1. `a94c2792` — `docs(wp-033): phase 4 task prompt — Studio cross-surface mirror + PARITY trio [WP-033 phase 4]` (committed by Brain pre-handoff)
+2. `745a5bbc` — `feat(studio): WP-033 phase 4 — inspector cross-surface mirror + PARITY trio sync [WP-033 phase 4]` — 33 files changed (5477 insertions, 14 deletions): 21 NEW (9 sources + 10 tests + 2 snapshots) + 12 MOD (impl + tests + manifest + PARITY trio + packages/ui exports + IIFE port + chip tooltip + integration test scope tighten + tsconfig paths + studio block-editor + ResponsiveTab + preview-assets)
+3. `06df405b` — `docs(wp-033): phase 4 result — Studio Inspector mirror GREEN [WP-033 phase 4 followup]` — this file
