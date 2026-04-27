@@ -253,9 +253,13 @@ export function composeSrcDoc(input: ComposeSrcDocInput): string {
           margin: cs.margin, marginTop: cs.marginTop, marginRight: cs.marginRight,
           marginBottom: cs.marginBottom, marginLeft: cs.marginLeft,
           fontSize: cs.fontSize, fontWeight: cs.fontWeight, lineHeight: cs.lineHeight,
+          letterSpacing: cs.letterSpacing, textAlign: cs.textAlign,
           color: cs.color, backgroundColor: cs.backgroundColor,
           gap: cs.gap, rowGap: cs.rowGap, columnGap: cs.columnGap,
-          display: cs.display, width: cs.width, height: cs.height,
+          display: cs.display, flexDirection: cs.flexDirection,
+          alignItems: cs.alignItems, justifyContent: cs.justifyContent,
+          gridTemplateColumns: cs.gridTemplateColumns,
+          width: cs.width, height: cs.height,
           borderRadius: cs.borderRadius,
         };
       }
