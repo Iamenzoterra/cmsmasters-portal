@@ -273,11 +273,31 @@ Studio mirror at `apps/studio/src/pages/block-editor/responsive/preview-assets.t
 
 Inspector internals are byte-identical mod 3-line JSDoc headers. Emit handlers diverge at the boundary — block-forge: `addTweak/removeTweakFor` against `session.tweaks`; Studio: `dispatchInspectorEdit(form, edit)` against `form.code` via PostCSS. Both produce the same DB-stored shape (CSS rules under `@container slot (max-width: Npx)`).
 
-### Known limitations (Phase 3 Issue #3 carryover)
+### Cascade-override fix (WP-034 — RESOLVED)
 
-When a block has pre-existing `@container slot` rules for a property and the user clicks `[Use --token ✓]`, the chip emits a single bp:0 tweak — but the existing @container rule may still take precedence in the cascade. The TokenChip tooltip surfaces this with the suffix `· Note: existing breakpoint overrides may still apply.`
+WP-033 Phase 3 Issue #3 / Phase 4 Open Question 5 closed by WP-034 Path A
+(commit `ead09eb7`).
 
-To clear the override, the author edits the inactive cells individually first via the ↗ tab-switch, OR uses TweakPanel Reset (which removes all per-bp tweaks for the selector at that BP). To be revisited in a follow-up Inspector-polish WP that decides between (a) chip emits 1 vs 3-or-4 tweaks, (b) chip clears existing @container rules first, or (c) chip emits a marker that takes cascade precedence.
+**Behaviour:** clicking `[Use --token ✓]` now emits **4 tweaks** at canonical
+BPs `[0, 375, 768, 1440]` instead of the previous single bp:0 emit. The fan-out
+overrides any pre-existing `@container slot (max-width: Npx)` cascade conflicts:
+
+- **bp:0** sets the top-level rule.
+- **bp:375 / 768 / 1440** dedupe-update existing `@container` blocks for that
+  selector + property (per `emitTweak` Case C — replaces decl in place,
+  preserves sibling decls like `line-height` / `color`); creates new
+  `@container` blocks (Case A) when absent.
+
+`TokenChip` tooltip caveat removed — new format: `"Sets X/Y/Z at M/T/D"`.
+
+**Known minor tradeoff:** when a canonical BP @container block didn't exist
+in the source, Path A creates a redundant block (e.g., adds `@container slot
+(max-width: 1440px) { font-size: var(--token) }` to a block that previously
+had only top-level + @container 768 + @container 375). Cascade resolves
+correctly at every viewport (browser's clamp does the per-BP interpolation);
+source CSS gains 1-3 cosmetic blocks. Acceptable for the simplicity gain.
+Future polish — Smart Path A scan-then-emit — can drop the redundant blocks
+if author feedback warrants.
 
 ### postMessage types (Phase 1 protocol — Phase 4 reuses unchanged)
 

@@ -289,11 +289,20 @@ Inspector internals are byte-identical mod 3-line JSDoc headers. Emit handlers d
 
 The Inspector receives a single `onInspectorEdit?: (edit: InspectorEdit) => void` callback prop on ResponsiveTab; ResponsiveTab translates the 3 Inspector callbacks (cell-edit, apply-token, visibility-toggle) into `InspectorEdit` shapes internally. block-editor.tsx wraps `dispatchInspectorEdit(form, edit)` to enforce the OQ4 LIVE-read invariant.
 
-### Known limitations (Phase 3 Issue #3 carryover)
+### Cascade-override fix (WP-034 — RESOLVED)
 
-When a block has pre-existing `@container slot` rules for a property and the user clicks `[Use --token ✓]`, the chip emits a single bp:0 tweak — but the existing @container rule may still take precedence in the cascade. The TokenChip tooltip surfaces this with the suffix `· Note: existing breakpoint overrides may still apply.`
+WP-033 Phase 3 Issue #3 / Phase 4 Open Question 5 closed by WP-034 Path A
+(commit `ead09eb7`). Studio's `dispatchInspectorEdit.ts` 'apply-token' kind
+now emits 4 tweaks via `emitTweak` for bp ∈ `[0, 375, 768, 1440]` instead
+of the previous single bp:0 emit. Cascade conflicts at canonical @container
+blocks are dedupe-updated in place (per `emitTweak` Case C — preserves
+sibling decls); missing canonical BPs get new `@container` blocks (Case A).
 
-To clear the override, the author edits the inactive cells individually first via the ↗ tab-switch. To be revisited in a follow-up Inspector-polish WP.
+`TokenChip` tooltip caveat removed — new format: `"Sets X/Y/Z at M/T/D"`.
+
+Path A's minor tradeoff (redundant @container block creation when
+canonical BP missing from source) documented in
+`tools/block-forge/PARITY.md` §Cascade-override fix; same applies here.
 
 ### postMessage types (Phase 1 protocol — Phase 4 reuses unchanged)
 

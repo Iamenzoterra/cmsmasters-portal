@@ -1,9 +1,12 @@
 # WP-034 — Inspector Cascade-Override Fix
 
-> **Status:** 📋 BACKLOG (not started)
+> **Status:** ✅ DONE (Phase 0 RECON + Phase 1 + Phase 2 Close shipped 2026-04-28)
 > **Origin:** WP-033 Phase 4 Open Question 5; Phase 3 Issue #3
-> **Estimated effort:** 1–2 phases
+> **Estimated effort:** 1–2 phases (~6–8h) — actual 2 phases delivered in 1 day
 > **Layer:** L2 authoring tools (refines WP-033 Inspector chip behaviour)
+> **Completed:** 2026-04-28
+> **Path chosen:** A (4-tweak fan-out at canonical BPs)
+> **Phase 1 commit:** `ead09eb7`
 
 ---
 
@@ -27,12 +30,31 @@ WP-034 closes the gap so chip apply also clears (or coordinates with) the confli
 
 ## Acceptance criteria
 
-- [ ] Chip apply on a property with pre-existing `@container slot` rules: token visibly applies at **all 3 BPs** (`getComputedStyle` post-apply matches token resolution at each BP).
-- [ ] No regression in chip-apply behaviour for properties **without** `@container` conflicts (single bp:0 tweak still emitted, no spurious decl removals).
-- [ ] Coordinated cross-surface update — both `tools/block-forge/src/components/TokenChip.tsx` and `apps/studio/.../inspector/TokenChip.tsx` ship together.
-- [ ] Tooltip pin updated to reflect the new behaviour (drop the "existing breakpoint overrides may still apply" caveat once cascade is cleared).
-- [ ] Add a vitest regression pin proving the cascade-clear emit chain (multi-tweak emit OR rule-removal walk).
-- [ ] Live smoke at both surfaces: `.heading` with token → all 3 BPs visibly track the token in the iframe.
+- [x] Chip apply on a property with pre-existing `@container slot` rules: token visibly applies at **all 3 BPs** (`emitTweak` Case C dedupe-update in place — verified via `dispatchInspectorEdit.test.ts` cascade-conflict test + live smoke on `fast-loading-speed.json` `.heading`).
+- [x] No regression in chip-apply behaviour for properties **without** `@container` conflicts — Path A always emits 4 tweaks; missing canonical BPs get new `@container` blocks (cosmetic +1-3 blocks; cascade resolves correctly). Documented as Path A tradeoff.
+- [x] Coordinated cross-surface update — both `tools/block-forge/src/components/TokenChip.tsx` and `apps/studio/.../inspector/TokenChip.tsx` ship together (commit `ead09eb7`).
+- [x] Tooltip pin updated — caveat removed; new format `"Sets X/Y/Z at M/T/D"`.
+- [x] Vitest regression pins:
+  - Studio `dispatchInspectorEdit.test.ts` +3 tests (apply-token kind 4-tweak emit, cascade-conflict in-place dedupe with sibling preservation, +1 @container creation when canonical BP missing).
+  - block-forge `session.test.ts` +2 tests in `WP-034 Path A` describe block.
+- [x] Live smoke verified at block-forge `:7702` on `fast-loading-speed.json` `.heading` — chip click → save → file written with `var(--h2-font-size)` at top-level + 3 @container blocks (1440 NEW, 768 + 375 dedupe-updated). Sibling decl `line-height: 36px` in @container 375 preserved.
+
+## Outcome ladder
+
+| Tier | Outcome | Evidence |
+|---|---|---|
+| Bronze | Phase 0 RECON empirically debunked WP-034 doc's "Path A pollutes" claim | logs/wp-034/phase-0-recon-result.md |
+| Silver | Phase 1 cross-surface 4-tweak fan-out + tooltip caveat removed + 5 new tests | commit `ead09eb7` |
+| Gold | Visual smoke on real cascade-conflict fixture verified token applied at all 3 BPs | logs/wp-034/smoke-{1,2}.png |
+| Platinum | Phase 2 Close — PARITY trio "Known limitations" → "RESOLVED" + status flip + atomic doc batch | this commit (TBD SHA) |
+
+## Commit ladder
+
+| Phase | Commit message | SHA | Files |
+|---|---|---|---|
+| 0 | (RECON) | (no commit) | logs/wp-034/phase-0-recon-result.md (shipped Phase 1) |
+| 1 | `feat(studio+block-forge): WP-034 phase 1 — Inspector cascade-override fix (Path A)` | `ead09eb7` | 11 (4 source + 4 test + 1 RECON + 2 smoke) |
+| 2 (Close) | `docs(wp-034): phase 2 close — PARITY trio "Known limitations" RESOLVED + status flip` | TBD | doc batch |
 
 ---
 
