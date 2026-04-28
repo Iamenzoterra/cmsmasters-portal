@@ -876,3 +876,134 @@ References:
 - `workplan/WP-033-block-forge-inspector.md` (full WP doc)
 - `workplan/WP-034-inspector-cascade-override.md` (BACKLOG)
 (`logs/wp-029/phase-1-result.md`).
+
+## Inspector UX Polish patterns (WP-036)
+
+Three-pattern bundle from WP-036 — Inspector UX polish polishing primitives:
+sidebar-to-iframe hover broadcast, per-id Undo reducer, and render-time
+group-by-tuple. All cross-surface mirrored byte-identical between block-forge
+and Studio (PARITY trio audit).
+
+### 1. Sidebar→iframe hover-highlight protocol (cross-surface; locked)
+
+When the parent UI (sidebar, suggestion list, etc.) needs to outline an
+element inside the preview iframe, use a NEW dedicated attribute slot —
+NOT the iframe's native `[data-bf-hover]` (which races with the iframe's
+own mouseover handler).
+
+```
+Direction       │ Type                                      │ Purpose
+────────────────┼───────────────────────────────────────────┼─────────────────
+parent → iframe │ block-forge:inspector-request-hover       │ Apply transient hover
+                │ payload: {slug, selector | '__clear__'}   │ outline to selector
+```
+
+Iframe IIFE listener:
+```js
+window.addEventListener('message', (e) => {
+  if (e.data?.type !== 'block-forge:inspector-request-hover') return
+  if (e.data.slug !== SLUG) return
+
+  // Clear-all-then-apply for multi-match safety.
+  document.querySelectorAll('[data-bf-hover-from-suggestion]')
+    .forEach((el) => el.removeAttribute('data-bf-hover-from-suggestion'))
+
+  if (!e.data.selector || e.data.selector === '__clear__') return
+
+  let target = null
+  try { target = document.querySelector(e.data.selector) } catch {}
+  if (!target) return
+  target.setAttribute('data-bf-hover-from-suggestion', '')
+})
+```
+
+Outline rule (`@layer shared`, alongside `[data-bf-hover]` and `[data-bf-pin]`):
+```css
+[data-bf-hover-from-suggestion] {
+  outline-style: solid;
+  outline-width: 2px;
+  outline-color: hsl(var(--text-link)); /* same blue as native hover */
+  outline-offset: -2px;
+}
+```
+
+Parent broadcast:
+```ts
+const handlePreviewHover = useCallback((selector: string | null) => {
+  if (!currentSlug) return
+  const iframes = document.querySelectorAll<HTMLIFrameElement>(
+    `iframe[title^="${CSS.escape(currentSlug)}-"]`,
+  )
+  iframes.forEach((iframe) => {
+    iframe.contentWindow?.postMessage(
+      { type: 'block-forge:inspector-request-hover', slug: currentSlug, selector: selector ?? '__clear__' },
+      '*',
+    )
+  })
+}, [currentSlug])
+```
+
+`querySelectorAll` (not `querySelector`) is intentional — Studio's responsive
+triptych broadcasts to all 3 BPs simultaneously; block-forge's tabbed UI
+matches the single visible iframe. Same handler shape both surfaces.
+
+### 2. Per-id Undo reducer pattern (`removeFromPending`)
+
+When a state machine has an `accept(id)` reducer that puts ids into a
+"pending" set with an early-exit guard against duplicates, the natural
+"undo this specific accept" affordance can NOT use `reject(id)` —
+`reject` shares the same guard and silently no-ops. A dedicated
+`removeFromPending(id)` reducer is required:
+
+```ts
+export function removeFromPending(state: SessionState, id: string): SessionState {
+  if (!state.pending.includes(id)) return state
+  return {
+    ...state,
+    pending: state.pending.filter((p) => p !== id),
+    history: state.history.filter(
+      (h) => !(h.type === 'accept' && h.id === id),
+    ),
+  }
+}
+```
+
+**History filter is precise** (filter by matching `accept` action, NOT
+pop-last) so subsequent global `undo()` doesn't try to roll back a phantom
+action that was already removed.
+
+**Idempotent**: no-op when id is not in pending. Safe to call repeatedly.
+
+### 3. Render-time group-by-tuple pattern (`SuggestionGroupCard`)
+
+When an engine emits N atomic items that share a "visually-identical" intent,
+the UX layer can collapse them at render time WITHOUT changing engine emit
+semantics. Group key tuple should capture the dimensions of "looks the same":
+
+```ts
+function groupKey(s: Suggestion): string {
+  return `${s.heuristic}|${s.bp}|${s.property}|${s.value}|${s.rationale}`
+}
+```
+
+Embedding the rationale text (which itself often embeds px/N/etc.) naturally
+separates items that share heuristic+bp but differ in scale (e.g.
+`font-clamp 60px` vs `font-clamp 48px` keep separate cards).
+
+`buildEntries(sorted)` returns `(Suggestion | Group)[]` — singletons keep
+using the existing row component (`SuggestionRow`); N≥2 groups render via
+the new card component (`SuggestionGroupCard`). Save composition reads
+individual ids from `session.pending` unchanged.
+
+**Default state collapsed** when grouping is not free vertically (Studio
+rail layout has no max-height). Click chevron to expand → per-item rows
+with individual Accept/Reject + per-row hover-highlight integration with
+pattern #1.
+
+References:
+- `tools/block-forge/PARITY.md` §Inspector UX Polish (WP-036)
+- `apps/studio/src/pages/block-editor/responsive/PARITY.md` §Inspector UX Polish
+- `.claude/skills/domains/infra-tooling/SKILL.md` §Inspector UX Polish
+- `.claude/skills/domains/studio-blocks/SKILL.md` §Inspector UX Polish cross-surface mirror
+- `workplan/WP-036-inspector-ux-polish.md` (full WP doc)
+- `logs/wp-036/phase-{0..3}-result.md`

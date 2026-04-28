@@ -306,3 +306,53 @@ Phase 4 introduces NO new postMessage types. Inspector reuses the 4 listeners + 
 ### Ruling 5 — `responsive-config.json` import path
 
 Phase 4 added `./responsive-config.json` to `packages/ui/package.json` exports. Both surfaces consume via `import responsiveConfig from '@cmsmasters/ui/responsive-config.json'`. Replaces Phase 3 block-forge's relative-path workaround. tsconfig path mapping added in both `apps/studio/tsconfig.json` + `tools/block-forge/tsconfig.json` for type resolution.
+
+## Inspector UX Polish (WP-036)
+
+Cross-surface mirror of `tools/block-forge/PARITY.md` "Inspector UX Polish (WP-036)"
+section — see that file for protocol shape, code excerpts, and design rationale.
+This section pins Studio-specific details only.
+
+### Phase 1 — sidebar→iframe hover-highlight
+
+Studio's `preview-assets.ts` mirrors block-forge's IIFE listener byte-identical.
+The `[data-bf-hover-from-suggestion]` outline rule lives in the same
+`@layer shared` block. Same `--text-link` blue token.
+
+**Studio multi-iframe broadcast:** `handlePreviewHover` at `ResponsiveTab.tsx`
+uses `querySelectorAll('iframe[title^="${slug}-"]')` to broadcast to ALL 3
+triptych iframes simultaneously. This is a deliberate UX bonus over block-forge's
+tabbed UI (which renders one iframe at a time at the active BP). When author
+hovers a suggestion in the Studio rail, the matching element outlines in
+desktop + tablet + mobile previews at once — useful for spotting per-BP
+layout differences instantly.
+
+### Phase 2 — Undo fix + heuristic group
+
+`removeFromPending` reducer at `session-state.ts` is byte-identical to the
+block-forge `session.ts` mirror. The reducer fills the gap left by `reject`'s
+pending-guard that made the original "Undo via reject" MVP shortcut a silent
+no-op.
+
+**Studio SuggestionRow Undo parity:** before WP-036 Phase 2, Studio's pending
+rows showed Accept + Reject buttons (Reject silently no-op'd via the same
+guard — bug presented less visibly than block-forge's labeled Undo button).
+Phase 2 brings parity: pending mode now renders single Undo button (block-forge
+style) wired to `onUndo`.
+
+`SuggestionGroupCard` at Studio uses inline-style flavour (matches Studio's
+existing SuggestionRow pattern); block-forge uses Tailwind classes. Token
+usage byte-identical. Component logic identical.
+
+### Owned files (Studio surface) ↔ block-forge mirror
+
+| Studio file | block-forge mirror file |
+|---|---|
+| `./SuggestionGroupCard.tsx` | `tools/block-forge/src/components/SuggestionGroupCard.tsx` |
+| `./__tests__/suggestion-grouping.test.ts` | `tools/block-forge/src/__tests__/suggestion-grouping.test.ts` |
+| `./session-state.ts` (`removeFromPending`) | `tools/block-forge/src/lib/session.ts` (`removeFromPending`) |
+
+### postMessage types (Phase 1+2 — Studio mirror is byte-identical)
+
+Studio adds the SAME `block-forge:inspector-request-hover` listener at
+`preview-assets.ts` IIFE. No Studio-specific postMessage divergence.

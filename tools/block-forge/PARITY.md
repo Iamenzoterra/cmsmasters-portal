@@ -290,3 +290,158 @@ Probe iframes spawned by `useInspectorPerBpValues` MUST run html through `render
 ### Ruling 5 — `responsive-config.json` import path
 
 Phase 4 added `./responsive-config.json` to `packages/ui/package.json` exports (no source-file edits — only the manifest). Both surfaces consume via `import responsiveConfig from '@cmsmasters/ui/responsive-config.json'`. Replaces Phase 3 block-forge's relative-path workaround `../../../../packages/ui/...`. tsconfig path mapping added for both (`apps/studio/tsconfig.json`, `tools/block-forge/tsconfig.json`) so TypeScript resolves the JSON without traversing the export field.
+
+## Inspector UX Polish (WP-036)
+
+### Phase 1 — sidebar→iframe hover-highlight protocol
+
+New postMessage type `block-forge:inspector-request-hover` (parent → iframe).
+Hovering a `SuggestionRow` card in the parent rail outlines the matching CSS
+target inside the iframe. Cross-surface byte-identical mirror.
+
+**Outline rule** (`@layer shared` block, alongside `[data-bf-hover]` and `[data-bf-pin]`):
+
+```css
+[data-bf-hover-from-suggestion] {
+  outline-style: solid;
+  outline-width: 2px;
+  outline-color: hsl(var(--text-link));  /* same blue as native [data-bf-hover] */
+  outline-offset: -2px;
+}
+```
+
+**Why a separate attribute** (vs. reusing `[data-bf-hover]`): the iframe's
+native `mouseover` handler also toggles `[data-bf-hover]`. Reusing the same
+attribute would race when author hovers iframe element X while sidebar hovers
+card Y. Separate `data-bf-hover-from-suggestion` slot keeps the two outlines
+on different elements without contention.
+
+**Iframe IIFE listener** (additive to Phase 1 inspector IIFE):
+
+```js
+window.addEventListener('message', (e) => {
+  if (e.data?.type !== 'block-forge:inspector-request-hover') return
+  if (e.data.slug !== SLUG) return
+
+  // Always clear before applying — querySelectorAll for multi-match safety.
+  document.querySelectorAll('[data-bf-hover-from-suggestion]')
+    .forEach((el) => el.removeAttribute('data-bf-hover-from-suggestion'))
+
+  if (!e.data.selector || e.data.selector === '__clear__') return
+
+  let target = null
+  try { target = document.querySelector(e.data.selector) } catch {}
+  if (!target) return
+  target.setAttribute('data-bf-hover-from-suggestion', '')
+})
+```
+
+**Parent broadcast** (App.tsx for block-forge; ResponsiveTab.tsx for Studio):
+
+```ts
+const handlePreviewHover = useCallback((selector: string | null) => {
+  if (!currentSlug) return
+  const iframes = document.querySelectorAll<HTMLIFrameElement>(
+    `iframe[title^="${CSS.escape(currentSlug)}-"]`,
+  )
+  iframes.forEach((iframe) => {
+    iframe.contentWindow?.postMessage(
+      {
+        type: 'block-forge:inspector-request-hover',
+        slug: currentSlug,
+        selector: selector ?? '__clear__',
+      },
+      '*',
+    )
+  })
+}, [currentSlug])
+```
+
+**Multi-iframe broadcast** (Studio bonus): Studio's responsive triptych
+renders 3 iframes simultaneously — the `querySelectorAll` lights up all 3
+BPs at once, useful for spotting per-BP layout differences instantly.
+Block-forge's tabbed UI shows one iframe at a time so the broadcast
+lands on a single target there.
+
+**`beforeunload` cleanup** (added to existing teardown listener): clears
+all `[data-bf-hover-from-suggestion]` attributes on iframe unload, mirroring
+the existing pin-clear logic.
+
+### Phase 2 — per-id Undo + heuristic group rendering
+
+**`removeFromPending(state, id)` reducer** at `src/lib/session.ts` (mirror at
+Studio `session-state.ts`):
+
+```ts
+export function removeFromPending(state: SessionState, id: string): SessionState {
+  if (!state.pending.includes(id)) return state
+  return {
+    ...state,
+    pending: state.pending.filter((p) => p !== id),
+    history: state.history.filter(
+      (h) => !(h.type === 'accept' && h.id === id),
+    ),
+  }
+}
+```
+
+**History filter is precise** (filter by matching `accept` action, not pop-last)
+so subsequent global `undo()` doesn't double-pop a phantom action. Idempotent:
+no-op when id is not in `pending`.
+
+**`SuggestionRow` pending-button rewire** — pending-mode Undo button now wires
+to `onUndo` (`removeFromPending`) instead of `onReject` (which silently no-op'd
+via the pending guard). Studio mirror: pending mode renders single Undo button
+(was Accept+Reject, also no-op'd via Reject's pending guard).
+
+**`SuggestionGroupCard` component** — collapses N≥2 suggestions sharing
+`(heuristic, bp, property, value, rationale)` tuple into one card. Engine
+emit semantics atomic (zero engine package edits) — grouping is consumer-side
+render-time only.
+
+```ts
+function groupKey(s: Suggestion): string {
+  return `${s.heuristic}|${s.bp}|${s.property}|${s.value}|${s.rationale}`
+}
+```
+
+Group-key tuple naturally separates `font-clamp 60px` from `font-clamp 48px`
+(different rationale text embeds the px) — only truly visually-identical
+suggestions group.
+
+**Card UX:**
+- Default: collapsed. Header = heuristic + bp + "N selectors" badge +
+  confidence + ▾ chevron. CSS line shows `… { property: value }` with
+  selector elided. Group action buttons: Accept all (N) / Reject all.
+- Expanded: ▴ chevron, same header + CSS line + rationale, plus N
+  per-selector rows. Each row has Accept/Reject (or single Undo when
+  pending) + `onMouseEnter`/`onMouseLeave` firing the Phase 1 hover-highlight
+  protocol.
+
+**Singletons keep using `SuggestionRow`** (Option A "additive" path —
+minimal blast radius). Group entries with all members rejected hide
+entirely.
+
+### Owned files (block-forge surface) ↔ Studio mirror
+
+| block-forge file | Studio mirror file |
+|---|---|
+| `src/components/SuggestionGroupCard.tsx` | `…/SuggestionGroupCard.tsx` |
+| `src/__tests__/suggestion-grouping.test.ts` | `…/__tests__/suggestion-grouping.test.ts` |
+| `src/lib/session.ts` (`removeFromPending`) | `…/session-state.ts` (`removeFromPending`) |
+
+Component internals are functionally identical mod inline-style flavour
+(block-forge: Tailwind classes; Studio: inline-style values). Token usage
+byte-identical.
+
+### postMessage types (cumulative — Phase 1+2)
+
+| Direction | Type | Purpose | Phase |
+|---|---|---|---|
+| iframe → parent | `block-forge:iframe-height` | ResizeObserver size sync | WP-026 |
+| iframe → parent | `block-forge:element-click` | TweakPanel selection seed | WP-028 |
+| iframe → parent | `block-forge:inspector-hover` | Native iframe-hover broadcast | WP-033 |
+| iframe → parent | `block-forge:inspector-unhover` | Native iframe-leave clear | WP-033 |
+| iframe → parent | `block-forge:inspector-pin-applied` | Pin reply + computedStyle | WP-033 |
+| parent → iframe | `block-forge:inspector-request-pin` | Apply pin to selector | WP-033 |
+| parent → iframe | `block-forge:inspector-request-hover` | Apply transient hover to selector | **WP-036 P1** |

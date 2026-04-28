@@ -295,3 +295,37 @@ status: full
 1. **Run Inspector live smoke at block-forge:** `npm run block-forge` → `:7702` → load fast-loading-speed → click pin on `.gauge-score` → cell-edit padding 60→48 at active BP → blur → iframe re-renders. Verify pin persists across ↗ BP switches.
 2. **Add a new chip-detectable token category** — extend `responsive-config.json` `categories[]` (in responsive-tokens-editor flow) → `useChipDetection.ts` consumes via the package import. Mirror to Studio identically.
 3. **Debug Inspector probe iframe staleness** — DevTools → Network → check 3 hidden iframe srcdocs at `:7702` after pin → verify `data-block-shell="{slug}"` wrap present. If missing, `renderForPreview` step was skipped (Phase 3 §3.3 regression).
+
+## Inspector UX Polish (WP-036, ADR-025 Layer 2)
+
+### Start Here (Inspector UX polish / block-forge)
+1. `tools/block-forge/PARITY.md` §Inspector UX Polish (WP-036) — postMessage protocol + outline rule + group-key tuple
+2. `tools/block-forge/src/components/SuggestionGroupCard.tsx` — collapsed-by-default group card; expand reveals per-selector rows
+3. `tools/block-forge/src/components/SuggestionList.tsx` — `groupKey` + `buildEntries` primitives + branch render (singleton via `SuggestionRow`, N≥2 via `SuggestionGroupCard`)
+4. `tools/block-forge/src/lib/session.ts` `removeFromPending` — per-id Undo reducer with precise history filter
+5. `tools/block-forge/src/lib/preview-assets.ts` — `[data-bf-hover-from-suggestion]` outline rule + `inspector-request-hover` IIFE listener (Phase 1)
+
+### Invariants (Inspector UX polish / block-forge)
+- **`data-bf-hover-from-suggestion` is a SEPARATE attribute slot** from native `[data-bf-hover]`. Reusing the native slot would race with the iframe's own mouseover handler. Outline color matches (`--text-link` blue) so author cognition stays consistent.
+- **Hover broadcast uses `querySelectorAll('iframe[title^="${slug}-"]')`** — block-forge's tabbed UI lands on a single iframe; Studio's triptych lights up all 3 BPs at once. Same handler shape both surfaces.
+- **`removeFromPending` history filter is precise** — filters the matching `accept` action by id, NOT pop-last. Prevents subsequent global `undo()` from double-popping a phantom entry.
+- **Group-key tuple = `(heuristic, bp, property, value, rationale)`** — captures "visually-identical fix on different selectors". Different rationale text (e.g. font-clamp 60px vs 48px) keeps suggestions separate.
+- **Singletons keep using `SuggestionRow`** — Option A "additive" path. N≥2 groups render via `SuggestionGroupCard`. `SuggestionList` branch logic at render time only; engine emit semantics atomic.
+- **Pending-row Undo button wires to `onUndo` (NOT `onReject`)** — `reject(state, id)` early-exits when id is in pending → silent no-op. The original "Undo via reject" MVP shortcut never worked. Phase 2 fixes via `removeFromPending` reducer + `onUndo` prop chain.
+
+### Traps & Gotchas (Inspector UX polish / block-forge)
+- **Backticks inside template-literal IIFE comments break parsing.** When editing the inline JS in `preview-assets.ts`, use plain quotes in comments — backticks close the outer template literal early. Caught at typecheck (`error TS1443: Module declaration names`).
+- **React's `onMouseEnter` doesn't fire on programmatic `dispatchEvent('mouseenter')`** — synthetic events use direct DOM event delegation. Tests must use Playwright real-cursor hover or click `data-action="accept"` directly via `.click()`.
+- **Group entries with all members rejected hide entirely** — `entry.suggestions.some((s) => !rejectedSet.has(s.id))` gates render. If author rejects-all from collapsed view, group disappears.
+- **Group degenerates to singleton when N-1 members rejected** — `buildEntries` emits `kind: 'single'` if bucket length is 1. UX flips between SuggestionGroupCard and SuggestionRow during interaction; functional but slightly jarring.
+
+### Blast Radius (Inspector UX polish / block-forge)
+- **Outline rule additions in `INSPECTOR_OUTLINE_RULE`** affect both surfaces simultaneously — coordinated edit required.
+- **`removeFromPending` reducer changes** ripple to App.tsx `handleUndo` + SuggestionRow Undo wiring + SuggestionGroupCard "Reject all" routing (which routes pending ids through `onUndo` instead of `onReject`).
+- **Group-key tuple changes** break test fixtures (`__tests__/suggestion-grouping.test.ts`) at both surfaces. PARITY trio (`tools/block-forge/PARITY.md` + `apps/studio/.../PARITY.md`) is the audit trail.
+- **Postmessage type `inspector-request-hover` rename** breaks both surfaces' IIFE listeners simultaneously.
+
+### Recipes (Inspector UX polish / block-forge)
+1. **Live smoke the group + Undo cycle:** `npm run block-forge` → `:7702` → load `global-settings` → see 1 grouped card with "3 selectors" badge → click chevron to expand → click Accept on row 1 → row gets pending pill + Undo button → click Undo → row returns to default Accept/Reject. Round-trip GREEN.
+2. **Verify hover-highlight in expanded group:** above setup, expand group → hover any selector row → that element outlines blue in iframe. Mouse-leave clears.
+3. **Add a new heuristic that should never group** — emit per-selector rationale that embeds something unique to that selector (e.g. childCount, px value). The 5-tuple `groupKey` will naturally separate them.

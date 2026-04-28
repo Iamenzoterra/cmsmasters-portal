@@ -193,3 +193,34 @@ Reference: WP-030 Phase 0 Ruling #4 reduced Studio-side Phase 6 work to docs-onl
 1. **Run Inspector live smoke at Studio:** `npm -w @cmsmasters/studio run dev` → `:5173/block-editor/{id}` → switch to Responsive tab → click pin on element → cell-edit at active BP → blur → visible iframe re-renders IMMEDIATELY (post-Phase 5 OQ1 fix). Verify TweakPanel + Inspector populate same selection.
 2. **Add a new edit kind to dispatchInspectorEdit** — extend `InspectorEdit` type union, add switch branch in `dispatchInspectorEdit`, add Inspector callsite (e.g. new button in PropertyRow), add test in `dispatchInspectorEdit.test.ts`. Studio is the canonical site; block-forge has its own emit reducer (no parallel needed unless engine-level change).
 3. **Debug "Inspector pin doesn't post message"** — check Studio's `preview-assets.ts` Inspector IIFE block matches block-forge byte-identically (Phase 4 Issue #2 was missing IIFE → no message dispatch). Compare ranges with diff or grep for `block-forge:inspector-`.
+
+## Inspector UX Polish cross-surface mirror (WP-036, ADR-025 Layer 2)
+
+### Start Here (Inspector UX polish / Studio mirror)
+1. `apps/studio/src/pages/block-editor/responsive/PARITY.md` §Inspector UX Polish — Studio-side cross-surface contract + multi-iframe broadcast
+2. `apps/studio/src/pages/block-editor/responsive/SuggestionGroupCard.tsx` — collapsed-by-default group card with inline-style flavour
+3. `apps/studio/src/pages/block-editor/responsive/SuggestionList.tsx` — `groupKey` + `buildEntries` primitives + branch render (singleton SuggestionRow vs N≥2 SuggestionGroupCard)
+4. `apps/studio/src/pages/block-editor/responsive/session-state.ts` `removeFromPending` — per-id Undo reducer
+5. `apps/studio/src/pages/block-editor/responsive/preview-assets.ts` — `[data-bf-hover-from-suggestion]` outline rule + `inspector-request-hover` IIFE listener (Phase 1 mirror)
+
+### Invariants (Inspector UX polish / Studio mirror)
+- **Cross-surface PARITY** — `removeFromPending` reducer + `SuggestionGroupCard` component logic byte-identical to block-forge (mod Tailwind→inline-style). Group key tuple `(heuristic, bp, property, value, rationale)` is the same.
+- **Studio multi-iframe broadcast** — `handlePreviewHover` at ResponsiveTab.tsx uses `querySelectorAll('iframe[title^="${slug}-"]')` to broadcast to ALL 3 triptych iframes simultaneously. Author's hover lights up element across desktop/tablet/mobile previews at once.
+- **Studio SuggestionRow Undo parity** — Phase 2 brings Studio in line with block-forge: pending mode renders single Undo button (block-forge style, was Accept+Reject which silently no-op'd via Reject's pending guard).
+- **`[data-bf-hover-from-suggestion]` is SEPARATE from native `[data-bf-hover]`** — same separation rationale as block-forge: avoid race with iframe's own mouseover handler.
+- **Group rendering preserves engine atomicity** — `session.pending` still stores individual suggestion ids; grouping is render-time only. Save composition unchanged.
+
+### Traps & Gotchas (Inspector UX polish / Studio mirror)
+- **Studio rail layout has NO max-height** (block-forge uses `40vh shrink-0`); grouped cards MUST default to COLLAPSED to avoid pushing Inspector below the fold. Phase 0 RECON §Probe E concern; Phase 2 default-collapsed render fixes it.
+- **Studio's existing `sorted = sortSuggestions(visible)` filters rejected before grouping** — group entries never see rejected ids. Defensive `rejectedIds.has(s.id)` in SuggestionGroupCard is redundant at Studio but matches block-forge byte-identically.
+- **`tsc --noEmit` lint may fail with concurrent agent's PropertyRow drift** — those errors live in `tools/block-forge` only. Studio typecheck via `npm run lint` should be CLEAN (Phase 2 verified 245/245 + 53 new = 298 tests).
+
+### Blast Radius (Inspector UX polish / Studio mirror)
+- **`removeFromPending` reducer changes** — coordinated with block-forge mirror; both surfaces' SuggestionRow Undo wiring + SuggestionGroupCard "Reject all" routing depend on it.
+- **Group key tuple changes** — break test fixtures at both surfaces (`__tests__/suggestion-grouping.test.ts`).
+- **`SuggestionGroupCard` prop changes** — coordinated with `SuggestionList.tsx` branch render; both surfaces edit in lockstep.
+
+### Recipes (Inspector UX polish / Studio mirror)
+1. **Live smoke at Studio:** `npm -w @cmsmasters/studio run dev` → `:5173/blocks/080da794-b6cd-4865-9c2a-7d7586ceaff7` (global-settings UUID) → switch to Responsive tab → 1 grouped card with "3 selectors" badge appears (instead of 3 separate cards) → expand → 3 selector rows visible → Accept on row 1 → row gets pending pill + Undo → click Undo → row returns to default. Round-trip GREEN.
+2. **Multi-iframe hover broadcast verification:** above setup, hover any selector row in expanded group → `data-bf-hover-from-suggestion` attribute appears on the matching element in ALL 3 iframes (1440 + 768 + 375). Confirmable via DevTools or Playwright `page.evaluate(...querySelectorAll('iframe').map(...contentDocument.querySelectorAll(...)))`.
+3. **Add a new heuristic suggestion that should never group** — emit per-selector rationale with selector-unique data (childCount, computed px, etc.). The 5-tuple groupKey will keep them separate.

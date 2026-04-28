@@ -1,9 +1,32 @@
 # WP-036 — Inspector UX Polish (Hover-Highlight + Undo Fix + Heuristic Group)
 
-> **Status:** 📋 BACKLOG (not started)
+> **Status:** ✅ DONE (Phase 0 RECON + Phase 1 + Phase 2 + Phase 3 Close shipped 2026-04-28)
 > **Origin:** User feedback 2026-04-28 post-WP-033 close (block-forge live use)
-> **Estimated effort:** 2–3 phases (~6–10h)
+> **Estimated effort:** 2–3 phases (~6–10h) — actual 3 phases delivered in 1 day
 > **Layer:** L2 authoring tools (refines WP-033 Inspector + WP-027/WP-028 SuggestionList behaviour)
+> **Completed:** 2026-04-28
+
+---
+
+## Outcome ladder
+
+| Tier | Outcome | Evidence |
+|---|---|---|
+| Bronze | Phase 1 hover-highlight protocol cross-surface | commit `81de7729`; preview-assets test 27/27 + 21/21 |
+| Silver | Phase 2 Undo fix + per-id `removeFromPending` reducer | commit `e09c8cc5`; session test 63/63 + 23/23 |
+| Gold | Phase 2 SuggestionGroupCard collapsed-by-default + expand/Accept-all | suggestion-grouping test 10/10 + 10/10; live smoke 3→1 collapse at both surfaces |
+| Platinum | Phase 3 Close — PARITY trio + SKILL flips + CONVENTIONS + status flip + atomic doc batch | this commit (TBD SHA) |
+
+---
+
+## Commit ladder
+
+| Phase | Commit message | SHA | Files |
+|---|---|---|---|
+| 0 | (RECON) | (no commit) | logs/wp-036/phase-0-recon-result.md (shipped Phase 1) |
+| 1 | `feat(studio+block-forge): WP-036 phase 1 — sidebar hover-highlight protocol` | `81de7729` | 14 (10 source + 4 doc) |
+| 2 | `feat(studio+block-forge): WP-036 phase 2 — undo fix + heuristic group` | `e09c8cc5` | 16 (12 source + 2 manifest + result.md + screenshots) |
+| 3 (Close) | `docs(wp-036): phase 3 close — PARITY trio + SKILL flips + CONVENTIONS + status flip` | TBD | 7+ doc files (atomic) |
 
 ---
 
@@ -62,28 +85,29 @@ Pending IDs early-exit. The Undo button at `SuggestionRow.tsx:115` calls `onReje
 ## Acceptance criteria
 
 ### Hover-highlight (Problem 1)
-- [ ] `onMouseEnter` on a `SuggestionRow` outlines the target element in the iframe (transient hover style — blue, like `[data-bf-hover]`).
-- [ ] `onMouseLeave` clears the outline.
-- [ ] Invalid / non-matching selector → silent skip (no console errors, no broken iframe).
-- [ ] Multiple rapid hovers (across 3 identical-looking cards) — outline tracks current hover, no leftover ghosts.
-- [ ] Both surfaces ship the feature (block-forge + Studio), iframe message handler mirrored in both `preview-assets.ts` files.
+- [x] `onMouseEnter` on a `SuggestionRow` outlines the target element in the iframe (transient hover style — blue, like `[data-bf-hover]`).
+- [x] `onMouseLeave` clears the outline.
+- [x] Invalid / non-matching selector → silent skip (no console errors, no broken iframe).
+- [x] Multiple rapid hovers (across 3 identical-looking cards) — outline tracks current hover, no leftover ghosts.
+- [x] Both surfaces ship the feature (block-forge + Studio), iframe message handler mirrored in both `preview-assets.ts` files.
 
 ### Undo fix (Problem 2)
-- [ ] Click Undo on a pending row → row returns to default state (Accept + Reject buttons), id removed from `session.pending`, Save button reflects updated dirty state.
-- [ ] Undo button never produces a no-op state mutation.
-- [ ] Vitest unit covers the new reducer path (`removeFromPending` or equivalent).
-- [ ] Live smoke at both surfaces: accept → undo → accept again works without page reload.
+- [x] Click Undo on a pending row → row returns to default state (Accept + Reject buttons), id removed from `session.pending`, Save button reflects updated dirty state.
+- [x] Undo button never produces a no-op state mutation.
+- [x] Vitest unit covers the new reducer path (`removeFromPending` or equivalent).
+- [x] Live smoke at both surfaces: accept → undo → accept again works without page reload.
 
 ### Heuristic group (Problem 3)
-- [ ] When ≥2 suggestions share `(heuristic, bp, rationale, property, value)`, they collapse into one card showing N selectors as a list (or a "+N more" counter).
-- [ ] Each grouped row has per-selector Accept / Reject affordance OR an "Accept all / Reject all" group action (RECON to choose).
-- [ ] Single-selector suggestions render as today (no regression).
-- [ ] Hover-highlight from Problem 1 supports per-selector hover within the grouped card.
+- [x] When ≥2 suggestions share `(heuristic, bp, rationale, property, value)`, they collapse into one card showing N selectors as a list (or a "+N more" counter). — implemented as expanded list with per-selector rows + group Accept-all/Reject-all
+- [x] Each grouped row has per-selector Accept / Reject affordance OR an "Accept all / Reject all" group action (RECON to choose). — RECON Path A: BOTH (per-row in expanded view + group-level when collapsed)
+- [x] Single-selector suggestions render as today (no regression). — Option A "additive" path; singletons keep using SuggestionRow
+- [x] Hover-highlight from Problem 1 supports per-selector hover within the grouped card.
 
 ### Cross-surface
-- [ ] Both `tools/block-forge/src/components/SuggestionRow.tsx` and `apps/studio/src/pages/block-editor/responsive/SuggestionRow.tsx` ship the same UX in the same commit.
-- [ ] Both `preview-assets.ts` files receive the same iframe message-handler addition.
-- [ ] PARITY trio cross-references updated (`tools/block-forge/PARITY.md`, `apps/studio/.../PARITY.md`, `tools/responsive-tokens-editor/PARITY.md` where relevant).
+- [x] Both `tools/block-forge/src/components/SuggestionRow.tsx` and `apps/studio/src/pages/block-editor/responsive/SuggestionRow.tsx` ship the same UX in the same commit.
+- [x] Both `preview-assets.ts` files receive the same iframe message-handler addition.
+- [x] PARITY trio cross-references updated (`tools/block-forge/PARITY.md`, `apps/studio/.../PARITY.md`).
+  - `tools/responsive-tokens-editor/PARITY.md` not affected — no Inspector consumer changes there.
 
 ---
 
