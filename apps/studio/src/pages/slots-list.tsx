@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { SLOT_DEFINITIONS, META_SLOTS, HOOK_SHORTCUTS } from '@cmsmasters/db'
 import { Layers, GitBranch, Copy, Check } from 'lucide-react'
+import { Tooltip } from '@cmsmasters/ui'
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false)
@@ -10,21 +11,22 @@ function CopyButton({ text }: { text: string }) {
     setTimeout(() => setCopied(false), 1500)
   }
   return (
-    <button
-      onClick={handleCopy}
-      title="Copy to clipboard"
-      style={{
-        background: 'none',
-        border: 'none',
-        cursor: 'pointer',
-        padding: '2px',
-        color: copied ? 'hsl(var(--status-success-fg))' : 'hsl(var(--text-muted))',
-        display: 'inline-flex',
-        alignItems: 'center',
-      }}
-    >
-      {copied ? <Check size={14} /> : <Copy size={14} />}
-    </button>
+    <Tooltip content="Copy to clipboard">
+      <button
+        onClick={handleCopy}
+        style={{
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          padding: '2px',
+          color: copied ? 'hsl(var(--status-success-fg))' : 'hsl(var(--text-muted))',
+          display: 'inline-flex',
+          alignItems: 'center',
+        }}
+      >
+        {copied ? <Check size={14} /> : <Copy size={14} />}
+      </button>
+    </Tooltip>
   )
 }
 

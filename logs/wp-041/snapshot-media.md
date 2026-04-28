@@ -1,0 +1,213 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e11]:
+    - banner [ref=e12]:
+      - generic [ref=e13]:
+        - generic [ref=e15]: C
+        - generic [ref=e16]: Content Studio
+      - generic [ref=e17]:
+        - generic [ref=e19]: DM
+        - generic [ref=e20]: dmitri.smelov
+    - generic [ref=e21]:
+      - complementary [ref=e22]:
+        - navigation [ref=e23]:
+          - generic [ref=e24]:
+            - button "Themes" [ref=e25] [cursor=pointer]:
+              - generic: Themes
+              - img
+            - generic [ref=e27]:
+              - link "Themes" [ref=e28] [cursor=pointer]:
+                - /url: /
+                - img [ref=e29]
+                - text: Themes
+              - link "Theme Meta" [ref=e34] [cursor=pointer]:
+                - /url: /theme-meta
+                - img [ref=e35]
+                - text: Theme Meta
+              - link "Theme Blocks" [ref=e38] [cursor=pointer]:
+                - /url: /blocks
+                - img [ref=e39]
+                - text: Theme Blocks
+              - link "Templates" [ref=e49] [cursor=pointer]:
+                - /url: /templates
+                - img [ref=e50]
+                - text: Templates
+          - generic [ref=e54]:
+            - button "Pages" [ref=e55] [cursor=pointer]:
+              - generic: Pages
+              - img
+            - generic:
+              - generic:
+                - link "Layouts" [ref=e56] [cursor=pointer]:
+                  - /url: /layouts
+                  - img [ref=e57]
+                  - text: Layouts
+                - link "Static Pages" [ref=e59] [cursor=pointer]:
+                  - /url: /static-pages
+                  - img [ref=e60]
+                  - text: Static Pages
+                - link "Slots" [ref=e63] [cursor=pointer]:
+                  - /url: /slots
+                  - img [ref=e64]
+                  - text: Slots
+                - link "Global Elements" [ref=e68] [cursor=pointer]:
+                  - /url: /global-elements
+                  - img [ref=e69]
+                  - text: Global Elements
+                - link "Elements" [ref=e72] [cursor=pointer]:
+                  - /url: /elements
+                  - img [ref=e73]
+                  - text: Elements
+          - generic [ref=e78]:
+            - button "Media" [ref=e79] [cursor=pointer]:
+              - generic: Media
+              - img
+            - link "Icons" [ref=e82] [cursor=pointer]:
+              - /url: /media/icons
+              - img [ref=e83]
+              - text: Icons
+        - generic [ref=e87]:
+          - link "Help" [ref=e90] [cursor=pointer]:
+            - /url: https://cmsmasters.net/support
+            - img [ref=e91]
+            - text: Help
+          - button "Logout" [ref=e94] [cursor=pointer]:
+            - img [ref=e95]
+            - text: Logout
+      - main [ref=e98]:
+        - generic [ref=e99]:
+          - generic [ref=e101]:
+            - heading "Icons" [level=1] [ref=e102]
+            - generic [ref=e103]: 0 icons in 0 categories
+          - generic [ref=e104]:
+            - generic [ref=e105]: Upload
+            - generic [ref=e106]:
+              - generic [ref=e107]:
+                - combobox [ref=e108] [cursor=pointer]:
+                  - option "Category..." [selected]
+                - img
+              - button [ref=e109] [cursor=pointer]:
+                - img [ref=e110]
+            - button "Upload SVG" [disabled]:
+              - img
+              - generic: Upload SVG
+          - generic [ref=e112]:
+            - img
+            - textbox "Search icons..." [ref=e113]
+          - generic [ref=e114]:
+            - img [ref=e115]
+            - generic [ref=e118]: No icons yet. Upload SVG files above.
+  - button "v3.0.2 Output Detail Standard React Components Hide Until Restart Marker Color Clear on copy/send Block page interactions Manage MCP & Webhooks Manage MCP & Webhooks MCP Connection Disconnected MCP connection allows agents to receive and act on annotations. Learn more Webhooks Auto-Send The webhook URL will receive live annotation changes and annotation data." [ref=e119] [cursor=pointer]:
+    - img [ref=e8]
+    - generic:
+      - generic:
+        - button:
+          - img
+      - generic:
+        - button:
+          - img
+      - generic:
+        - button [disabled]:
+          - img
+      - generic:
+        - button [disabled]:
+          - img
+      - generic:
+        - button [disabled]:
+          - img
+      - generic:
+        - button [disabled]:
+          - img
+      - generic:
+        - button:
+          - img
+      - generic:
+        - button:
+          - img
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - link:
+              - /url: https://agentation.com
+              - img
+            - paragraph: v3.0.2
+            - button "Switch to light mode":
+              - generic:
+                - generic:
+                  - img
+          - generic:
+            - generic:
+              - generic:
+                - text: Output Detail
+                - generic:
+                  - img
+              - button "Standard":
+                - generic: Standard
+            - generic:
+              - generic:
+                - text: React Components
+                - generic:
+                  - img
+              - generic:
+                - checkbox [checked]
+            - generic:
+              - generic:
+                - text: Hide Until Restart
+                - generic:
+                  - img
+              - generic:
+                - checkbox
+          - generic:
+            - generic: Marker Color
+            - generic:
+              - button "Indigo"
+              - button "Blue"
+              - button "Cyan"
+              - button "Green"
+              - button "Yellow"
+              - button "Orange"
+              - button "Red"
+          - generic:
+            - generic:
+              - generic:
+                - checkbox "Clear on copy/send"
+                - img
+              - generic: Clear on copy/send
+              - generic:
+                - img
+            - generic:
+              - generic:
+                - checkbox "Block page interactions" [checked]
+                - img
+              - generic: Block page interactions
+          - button "Manage MCP & Webhooks":
+            - generic: Manage MCP & Webhooks
+            - generic:
+              - img
+        - generic:
+          - button "Manage MCP & Webhooks":
+            - img
+            - generic: Manage MCP & Webhooks
+          - generic:
+            - generic:
+              - generic:
+                - text: MCP Connection
+                - generic:
+                  - img
+              - generic "Disconnected"
+            - paragraph:
+              - text: MCP connection allows agents to receive and act on annotations.
+              - link "Learn more":
+                - /url: https://agentation.dev/mcp
+          - generic:
+            - generic:
+              - generic:
+                - text: Webhooks
+                - generic:
+                  - img
+              - generic:
+                - generic: Auto-Send
+                - generic:
+                  - checkbox "Auto-Send" [checked] [disabled]
+            - paragraph: The webhook URL will receive live annotation changes and annotation data.
+            - textbox "Webhook URL"

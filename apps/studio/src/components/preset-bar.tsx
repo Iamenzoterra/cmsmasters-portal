@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Save, Download, Trash2, Loader2 } from 'lucide-react'
-import { Button } from '@cmsmasters/ui'
+import { Button, Tooltip } from '@cmsmasters/ui'
 import { fetchPresets, fetchPreset, savePreset, deletePreset } from '../lib/block-api'
 import type { PresetSummary } from '../lib/block-api'
 import { StyledSelect } from './styled-select'
@@ -93,35 +93,38 @@ export function PresetBar({ type, getItems, onLoad }: PresetBarProps) {
         ))}
       </StyledSelect>
 
-      <Button
-        variant="ghost"
-        size="mini"
-        onClick={handleLoad}
-        disabled={!selectedSlug || loading}
-        title="Load preset"
-      >
-        {loading ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
-      </Button>
-
-      <Button
-        variant="ghost"
-        size="mini"
-        onClick={handleSave}
-        disabled={saving}
-        title="Save as preset"
-      >
-        {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
-      </Button>
-
-      {selectedSlug && (
+      <Tooltip content="Load preset">
         <Button
           variant="ghost"
           size="mini"
-          onClick={handleDelete}
-          title="Delete preset"
+          onClick={handleLoad}
+          disabled={!selectedSlug || loading}
         >
-          <Trash2 size={12} />
+          {loading ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
         </Button>
+      </Tooltip>
+
+      <Tooltip content="Save as preset">
+        <Button
+          variant="ghost"
+          size="mini"
+          onClick={handleSave}
+          disabled={saving}
+        >
+          {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+        </Button>
+      </Tooltip>
+
+      {selectedSlug && (
+        <Tooltip content="Delete preset">
+          <Button
+            variant="ghost"
+            size="mini"
+            onClick={handleDelete}
+          >
+            <Trash2 size={12} />
+          </Button>
+        </Tooltip>
       )}
     </div>
   )

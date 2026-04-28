@@ -4,7 +4,7 @@ import type { ThemeFormData } from '@cmsmasters/validators'
 import type { Theme } from '@cmsmasters/db'
 import { useController } from 'react-hook-form'
 import { Star } from 'lucide-react'
-import { Button } from '@cmsmasters/ui'
+import { Button, Tooltip } from '@cmsmasters/ui'
 import { StatusSelect } from './status-select'
 import { TaxonomyPickerModal } from './taxonomy-picker-modal'
 import { TagInput } from './tag-input'
@@ -261,9 +261,11 @@ export function EditorSidebar({ control, watch, setValue, existingTheme, allCate
               <Button variant="ghost" size="mini" onClick={() => setDiscountPricePickerOpen(true)}>
                 change
               </Button>
-              <Button variant="ghost" size="mini" onClick={() => onDiscountPriceChange(null)} title="Remove discount">
-                ×
-              </Button>
+              <Tooltip content="Remove discount">
+                <Button variant="ghost" size="mini" onClick={() => onDiscountPriceChange(null)}>
+                  ×
+                </Button>
+              </Tooltip>
             </div>
           ) : (
             <Button variant="ghost" size="mini" onClick={() => setDiscountPricePickerOpen(true)}>

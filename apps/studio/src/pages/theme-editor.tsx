@@ -6,7 +6,7 @@ import { themeSchema, type ThemeFormData } from '@cmsmasters/validators'
 import type { Theme, Template, Block, ThemeBlockFill, Category, Tag, Price, UseCase } from '@cmsmasters/db'
 import { upsertTheme, logAction, themeRowToFormData, formDataToThemeInsert, getCategories, getThemeCategories, setThemeCategories, getTags, getThemeTags, setThemeTags, getPrices, getThemePrices, setThemePrices, getUseCases, getThemeUseCases, setThemeUseCases, searchUseCases, createUseCase, deleteUseCase, getProfile } from '@cmsmasters/db'
 import { AlertTriangle, ChevronLeft, ExternalLink, LayoutTemplate, Plus, Trash2 } from 'lucide-react'
-import { Button } from '@cmsmasters/ui'
+import { Button, Tooltip } from '@cmsmasters/ui'
 import { fetchThemeBySlug, deleteTheme } from '../lib/queries'
 import { supabase } from '../lib/supabase'
 import { getDefaults, nameToSlug } from '../lib/form-defaults'
@@ -954,27 +954,28 @@ function DetailRow({ index, control, register, inputStyle: iStyle, fieldName, on
         borderRadius: 'var(--rounded-lg)',
       }}
     >
-      <button
-        type="button"
-        onClick={onPickIcon}
-        className="flex shrink-0 items-center justify-center border-0"
-        style={{
-          width: '36px',
-          height: '36px',
-          borderRadius: 'var(--rounded-lg)',
-          backgroundColor: 'hsl(var(--input))',
-          border: '1px solid hsl(var(--border))',
-          cursor: 'pointer',
-          overflow: 'hidden',
-        }}
-        title="Select icon"
-      >
-        {iconUrl ? (
-          <img src={iconUrl} alt="" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
-        ) : (
-          <Plus size={14} style={{ color: 'hsl(var(--text-muted))' }} />
-        )}
-      </button>
+      <Tooltip content="Select icon">
+        <button
+          type="button"
+          onClick={onPickIcon}
+          className="flex shrink-0 items-center justify-center border-0"
+          style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: 'var(--rounded-lg)',
+            backgroundColor: 'hsl(var(--input))',
+            border: '1px solid hsl(var(--border))',
+            cursor: 'pointer',
+            overflow: 'hidden',
+          }}
+        >
+          {iconUrl ? (
+            <img src={iconUrl} alt="" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
+          ) : (
+            <Plus size={14} style={{ color: 'hsl(var(--text-muted))' }} />
+          )}
+        </button>
+      </Tooltip>
 
       <div className="flex flex-1 flex-col" style={{ gap: '4px' }}>
         <input
@@ -991,20 +992,21 @@ function DetailRow({ index, control, register, inputStyle: iStyle, fieldName, on
         />
       </div>
 
-      <button
-        type="button"
-        onClick={onRemove}
-        className="flex shrink-0 items-center justify-center border-0 bg-transparent"
-        style={{
-          width: '36px',
-          height: '36px',
-          cursor: 'pointer',
-          color: 'hsl(var(--text-muted))',
-        }}
-        title="Remove"
-      >
-        <Trash2 size={14} />
-      </button>
+      <Tooltip content="Remove">
+        <button
+          type="button"
+          onClick={onRemove}
+          className="flex shrink-0 items-center justify-center border-0 bg-transparent"
+          style={{
+            width: '36px',
+            height: '36px',
+            cursor: 'pointer',
+            color: 'hsl(var(--text-muted))',
+          }}
+        >
+          <Trash2 size={14} />
+        </button>
+      </Tooltip>
     </div>
   )
 }

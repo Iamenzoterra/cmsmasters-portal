@@ -1,0 +1,505 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e11]:
+    - banner [ref=e12]:
+      - generic [ref=e13]:
+        - generic [ref=e15]: C
+        - generic [ref=e16]: Content Studio
+      - generic [ref=e17]:
+        - generic [ref=e19]: DM
+        - generic [ref=e20]: dmitri.smelov
+    - generic [ref=e21]:
+      - complementary [ref=e22]:
+        - navigation [ref=e23]:
+          - generic [ref=e24]:
+            - button "Themes" [ref=e25] [cursor=pointer]:
+              - generic: Themes
+              - img
+            - generic [ref=e27]:
+              - link "Themes" [ref=e28] [cursor=pointer]:
+                - /url: /
+                - img [ref=e29]
+                - text: Themes
+              - link "Theme Meta" [ref=e34] [cursor=pointer]:
+                - /url: /theme-meta
+                - img [ref=e35]
+                - text: Theme Meta
+              - link "Theme Blocks" [ref=e38] [cursor=pointer]:
+                - /url: /blocks
+                - img [ref=e39]
+                - text: Theme Blocks
+              - link "Templates" [ref=e49] [cursor=pointer]:
+                - /url: /templates
+                - img [ref=e50]
+                - text: Templates
+          - generic [ref=e54]:
+            - button "Pages" [ref=e55] [cursor=pointer]:
+              - generic: Pages
+              - img
+            - generic [ref=e57]:
+              - link "Layouts" [ref=e58] [cursor=pointer]:
+                - /url: /layouts
+                - img [ref=e59]
+                - text: Layouts
+              - link "Static Pages" [ref=e61] [cursor=pointer]:
+                - /url: /static-pages
+                - img [ref=e62]
+                - text: Static Pages
+              - link "Slots" [ref=e65] [cursor=pointer]:
+                - /url: /slots
+                - img [ref=e66]
+                - text: Slots
+              - link "Global Elements" [ref=e70] [cursor=pointer]:
+                - /url: /global-elements
+                - img [ref=e71]
+                - text: Global Elements
+              - link "Elements" [ref=e74] [cursor=pointer]:
+                - /url: /elements
+                - img [ref=e75]
+                - text: Elements
+          - generic [ref=e80]:
+            - button "Media" [ref=e81] [cursor=pointer]:
+              - generic: Media
+              - img
+            - link "Icons" [ref=e82] [cursor=pointer]:
+              - /url: /media/icons
+              - img [ref=e83]
+              - text: Icons
+        - generic [ref=e87]:
+          - link "Help" [ref=e90] [cursor=pointer]:
+            - /url: https://cmsmasters.net/support
+            - img [ref=e91]
+            - text: Help
+          - button "Logout" [ref=e94] [cursor=pointer]:
+            - img [ref=e95]
+            - text: Logout
+      - main [ref=e98]:
+        - generic [ref=e100]:
+          - heading "Slot Reference" [level=1] [ref=e101]
+          - paragraph [ref=e102]: All available slots for layouts, blocks, and theme pages. Use these placeholders in block HTML.
+        - textbox "Filter slots..." [ref=e104]
+        - generic [ref=e105]:
+          - generic [ref=e106]:
+            - img [ref=e107]
+            - heading "Layout Slots" [level=2] [ref=e111]
+          - paragraph [ref=e112]: Used in layout page HTML. Each slot is filled by a global element or a per-layout override block.
+          - table [ref=e114]:
+            - rowgroup [ref=e115]:
+              - row "Name Category Syntax" [ref=e116]:
+                - columnheader "Name" [ref=e117]
+                - columnheader "Category" [ref=e118]
+                - columnheader "Syntax" [ref=e119]
+            - rowgroup [ref=e120]:
+              - 'row "Header header {{slot:header}} <div data-slot=\"header\"></div> <!-- SLOT: HEADER -->" [ref=e121]':
+                - cell "Header" [ref=e122]
+                - cell "header" [ref=e123]
+                - 'cell "{{slot:header}} <div data-slot=\"header\"></div> <!-- SLOT: HEADER -->" [ref=e124]':
+                  - generic [ref=e125]:
+                    - generic [ref=e126]:
+                      - code [ref=e127]: "{{slot:header}}"
+                      - button [ref=e128] [cursor=pointer]:
+                        - img [ref=e129]
+                    - generic [ref=e132]:
+                      - code [ref=e133]: <div data-slot="header"></div>
+                      - button [ref=e134] [cursor=pointer]:
+                        - img [ref=e135]
+                    - generic [ref=e138]:
+                      - code [ref=e139]: "<!-- SLOT: HEADER -->"
+                      - button [ref=e140] [cursor=pointer]:
+                        - img [ref=e141]
+              - 'row "Footer footer {{slot:footer}} <div data-slot=\"footer\"></div> <!-- SLOT: FOOTER -->" [ref=e144]':
+                - cell "Footer" [ref=e145]
+                - cell "footer" [ref=e146]
+                - 'cell "{{slot:footer}} <div data-slot=\"footer\"></div> <!-- SLOT: FOOTER -->" [ref=e147]':
+                  - generic [ref=e148]:
+                    - generic [ref=e149]:
+                      - code [ref=e150]: "{{slot:footer}}"
+                      - button [ref=e151] [cursor=pointer]:
+                        - img [ref=e152]
+                    - generic [ref=e155]:
+                      - code [ref=e156]: <div data-slot="footer"></div>
+                      - button [ref=e157] [cursor=pointer]:
+                        - img [ref=e158]
+                    - generic [ref=e161]:
+                      - code [ref=e162]: "<!-- SLOT: FOOTER -->"
+                      - button [ref=e163] [cursor=pointer]:
+                        - img [ref=e164]
+              - 'row "Sidebar Left sidebar {{slot:sidebar-left}} <div data-slot=\"sidebar-left\"></div> <!-- SLOT: SIDEBAR-LEFT -->" [ref=e167]':
+                - cell "Sidebar Left" [ref=e168]
+                - cell "sidebar" [ref=e169]
+                - 'cell "{{slot:sidebar-left}} <div data-slot=\"sidebar-left\"></div> <!-- SLOT: SIDEBAR-LEFT -->" [ref=e170]':
+                  - generic [ref=e171]:
+                    - generic [ref=e172]:
+                      - code [ref=e173]: "{{slot:sidebar-left}}"
+                      - button [ref=e174] [cursor=pointer]:
+                        - img [ref=e175]
+                    - generic [ref=e178]:
+                      - code [ref=e179]: <div data-slot="sidebar-left"></div>
+                      - button [ref=e180] [cursor=pointer]:
+                        - img [ref=e181]
+                    - generic [ref=e184]:
+                      - code [ref=e185]: "<!-- SLOT: SIDEBAR-LEFT -->"
+                      - button [ref=e186] [cursor=pointer]:
+                        - img [ref=e187]
+              - 'row "Sidebar Right sidebar {{slot:sidebar-right}} <div data-slot=\"sidebar-right\"></div> <!-- SLOT: SIDEBAR-RIGHT -->" [ref=e190]':
+                - cell "Sidebar Right" [ref=e191]
+                - cell "sidebar" [ref=e192]
+                - 'cell "{{slot:sidebar-right}} <div data-slot=\"sidebar-right\"></div> <!-- SLOT: SIDEBAR-RIGHT -->" [ref=e193]':
+                  - generic [ref=e194]:
+                    - generic [ref=e195]:
+                      - code [ref=e196]: "{{slot:sidebar-right}}"
+                      - button [ref=e197] [cursor=pointer]:
+                        - img [ref=e198]
+                    - generic [ref=e201]:
+                      - code [ref=e202]: <div data-slot="sidebar-right"></div>
+                      - button [ref=e203] [cursor=pointer]:
+                        - img [ref=e204]
+                    - generic [ref=e207]:
+                      - code [ref=e208]: "<!-- SLOT: SIDEBAR-RIGHT -->"
+                      - button [ref=e209] [cursor=pointer]:
+                        - img [ref=e210]
+        - generic [ref=e213]:
+          - generic [ref=e214]:
+            - img [ref=e215]
+            - heading "Nested Slots" [level=2] [ref=e219]
+          - paragraph [ref=e220]:
+            - text: Layout-scoped slots that live inside a container slot. Not global — only present in layouts that declare them via
+            - code [ref=e221]: nested-slots
+            - text: in slot_config.
+          - table [ref=e223]:
+            - rowgroup [ref=e224]:
+              - row "Name Parent Layout Description Syntax" [ref=e225]:
+                - columnheader "Name" [ref=e226]
+                - columnheader "Parent" [ref=e227]
+                - columnheader "Layout" [ref=e228]
+                - columnheader "Description" [ref=e229]
+                - columnheader "Syntax" [ref=e230]
+            - rowgroup [ref=e231]:
+              - row "theme-blocks content theme-page-layout Template blocks per theme <div data-slot=\"theme-blocks\"></div>" [ref=e232]:
+                - cell "theme-blocks" [ref=e233]
+                - cell "content" [ref=e234]
+                - cell "theme-page-layout" [ref=e235]
+                - cell "Template blocks per theme" [ref=e236]
+                - cell "<div data-slot=\"theme-blocks\"></div>" [ref=e237]:
+                  - generic [ref=e238]:
+                    - code [ref=e239]: <div data-slot="theme-blocks"></div>
+                    - button [ref=e240] [cursor=pointer]:
+                      - img [ref=e241]
+        - generic [ref=e244]:
+          - generic [ref=e245]:
+            - img [ref=e246]
+            - heading "Meta Slots" [level=2] [ref=e250]
+          - paragraph [ref=e251]: Resolved from theme.meta at build time. Use in block HTML for dynamic theme data.
+          - table [ref=e253]:
+            - rowgroup [ref=e254]:
+              - row "Field Description Syntax" [ref=e255]:
+                - columnheader "Field" [ref=e256]
+                - columnheader "Description" [ref=e257]
+                - columnheader "Syntax" [ref=e258]
+            - rowgroup [ref=e259]:
+              - 'row "name Theme display name {{meta:name}}" [ref=e260]':
+                - cell "name" [ref=e261]
+                - cell "Theme display name" [ref=e262]
+                - 'cell "{{meta:name}}" [ref=e263]':
+                  - generic [ref=e264]:
+                    - code [ref=e265]: "{{meta:name}}"
+                    - button [ref=e266] [cursor=pointer]:
+                      - img [ref=e267]
+              - 'row "tagline Short tagline {{meta:tagline}}" [ref=e270]':
+                - cell "tagline" [ref=e271]
+                - cell "Short tagline" [ref=e272]
+                - 'cell "{{meta:tagline}}" [ref=e273]':
+                  - generic [ref=e274]:
+                    - code [ref=e275]: "{{meta:tagline}}"
+                    - button [ref=e276] [cursor=pointer]:
+                      - img [ref=e277]
+              - 'row "description Full description {{meta:description}}" [ref=e280]':
+                - cell "description" [ref=e281]
+                - cell "Full description" [ref=e282]
+                - 'cell "{{meta:description}}" [ref=e283]':
+                  - generic [ref=e284]:
+                    - code [ref=e285]: "{{meta:description}}"
+                    - button [ref=e286] [cursor=pointer]:
+                      - img [ref=e287]
+              - 'row "category Theme category {{meta:category}}" [ref=e290]':
+                - cell "category" [ref=e291]
+                - cell "Theme category" [ref=e292]
+                - 'cell "{{meta:category}}" [ref=e293]':
+                  - generic [ref=e294]:
+                    - code [ref=e295]: "{{meta:category}}"
+                    - button [ref=e296] [cursor=pointer]:
+                      - img [ref=e297]
+              - 'row "price Regular price (number) {{meta:price}}" [ref=e300]':
+                - cell "price" [ref=e301]
+                - cell "Regular price (number)" [ref=e302]
+                - 'cell "{{meta:price}}" [ref=e303]':
+                  - generic [ref=e304]:
+                    - code [ref=e305]: "{{meta:price}}"
+                    - button [ref=e306] [cursor=pointer]:
+                      - img [ref=e307]
+              - 'row "discount_price Discount price (number) {{meta:discount_price}}" [ref=e310]':
+                - cell "discount_price" [ref=e311]
+                - cell "Discount price (number)" [ref=e312]
+                - 'cell "{{meta:discount_price}}" [ref=e313]':
+                  - generic [ref=e314]:
+                    - code [ref=e315]: "{{meta:discount_price}}"
+                    - button [ref=e316] [cursor=pointer]:
+                      - img [ref=e317]
+              - 'row "demo_url Live demo link {{meta:demo_url}}" [ref=e320]':
+                - cell "demo_url" [ref=e321]
+                - cell "Live demo link" [ref=e322]
+                - 'cell "{{meta:demo_url}}" [ref=e323]':
+                  - generic [ref=e324]:
+                    - code [ref=e325]: "{{meta:demo_url}}"
+                    - button [ref=e326] [cursor=pointer]:
+                      - img [ref=e327]
+              - 'row "themeforest_url ThemeForest product page {{meta:themeforest_url}}" [ref=e330]':
+                - cell "themeforest_url" [ref=e331]
+                - cell "ThemeForest product page" [ref=e332]
+                - 'cell "{{meta:themeforest_url}}" [ref=e333]':
+                  - generic [ref=e334]:
+                    - code [ref=e335]: "{{meta:themeforest_url}}"
+                    - button [ref=e336] [cursor=pointer]:
+                      - img [ref=e337]
+              - 'row "themeforest_id ThemeForest item ID {{meta:themeforest_id}}" [ref=e340]':
+                - cell "themeforest_id" [ref=e341]
+                - cell "ThemeForest item ID" [ref=e342]
+                - 'cell "{{meta:themeforest_id}}" [ref=e343]':
+                  - generic [ref=e344]:
+                    - code [ref=e345]: "{{meta:themeforest_id}}"
+                    - button [ref=e346] [cursor=pointer]:
+                      - img [ref=e347]
+              - 'row "thumbnail_url Theme thumbnail image {{meta:thumbnail_url}}" [ref=e350]':
+                - cell "thumbnail_url" [ref=e351]
+                - cell "Theme thumbnail image" [ref=e352]
+                - 'cell "{{meta:thumbnail_url}}" [ref=e353]':
+                  - generic [ref=e354]:
+                    - code [ref=e355]: "{{meta:thumbnail_url}}"
+                    - button [ref=e356] [cursor=pointer]:
+                      - img [ref=e357]
+              - 'row "rating Star rating (number) {{meta:rating}}" [ref=e360]':
+                - cell "rating" [ref=e361]
+                - cell "Star rating (number)" [ref=e362]
+                - 'cell "{{meta:rating}}" [ref=e363]':
+                  - generic [ref=e364]:
+                    - code [ref=e365]: "{{meta:rating}}"
+                    - button [ref=e366] [cursor=pointer]:
+                      - img [ref=e367]
+              - 'row "sales Total sales count {{meta:sales}}" [ref=e370]':
+                - cell "sales" [ref=e371]
+                - cell "Total sales count" [ref=e372]
+                - 'cell "{{meta:sales}}" [ref=e373]':
+                  - generic [ref=e374]:
+                    - code [ref=e375]: "{{meta:sales}}"
+                    - button [ref=e376] [cursor=pointer]:
+                      - img [ref=e377]
+        - generic [ref=e380]:
+          - generic [ref=e381]:
+            - img [ref=e382]
+            - heading "Hook Shortcuts" [level=2] [ref=e386]
+          - paragraph [ref=e387]: Convenience hooks that resolve with special formatting (e.g. $ prefix for prices).
+          - table [ref=e389]:
+            - rowgroup [ref=e390]:
+              - row "Pattern Resolves to Description" [ref=e391]:
+                - columnheader "Pattern" [ref=e392]
+                - columnheader "Resolves to" [ref=e393]
+                - columnheader "Description" [ref=e394]
+            - rowgroup [ref=e395]:
+              - 'row "{{price}} theme.meta.price Price with $ prefix" [ref=e396]':
+                - 'cell "{{price}}" [ref=e397]':
+                  - generic [ref=e398]:
+                    - code [ref=e399]: "{{price}}"
+                    - button [ref=e400] [cursor=pointer]:
+                      - img [ref=e401]
+                - cell "theme.meta.price" [ref=e404]:
+                  - code [ref=e405]: theme.meta.price
+                - cell "Price with $ prefix" [ref=e406]
+              - 'row "{{discount_price}} theme.meta.discount_price Discount price with $ prefix" [ref=e407]':
+                - 'cell "{{discount_price}}" [ref=e408]':
+                  - generic [ref=e409]:
+                    - code [ref=e410]: "{{discount_price}}"
+                    - button [ref=e411] [cursor=pointer]:
+                      - img [ref=e412]
+                - cell "theme.meta.discount_price" [ref=e415]:
+                  - code [ref=e416]: theme.meta.discount_price
+                - cell "Discount price with $ prefix" [ref=e417]
+              - 'row "{{link:field}} theme.meta[field] URL from meta field (e.g. {{link:demo_url}})" [ref=e418]':
+                - 'cell "{{link:field}}" [ref=e419]':
+                  - generic [ref=e420]:
+                    - code [ref=e421]: "{{link:field}}"
+                    - button [ref=e422] [cursor=pointer]:
+                      - img [ref=e423]
+                - cell "theme.meta[field]" [ref=e426]:
+                  - code [ref=e427]: theme.meta[field]
+                - 'cell "URL from meta field (e.g. {{link:demo_url}})" [ref=e428]'
+              - 'row "{{primary_categories}} theme_categories (is_primary=true) join categories Badge pills for primary categories" [ref=e429]':
+                - 'cell "{{primary_categories}}" [ref=e430]':
+                  - generic [ref=e431]:
+                    - code [ref=e432]: "{{primary_categories}}"
+                    - button [ref=e433] [cursor=pointer]:
+                      - img [ref=e434]
+                - cell "theme_categories (is_primary=true) join categories" [ref=e437]:
+                  - code [ref=e438]: theme_categories (is_primary=true) join categories
+                - cell "Badge pills for primary categories" [ref=e439]
+              - 'row "{{perfect_for}} theme_use_cases join use_cases HTML list of use cases (\"Perfect for\" sidebar)" [ref=e440]':
+                - 'cell "{{perfect_for}}" [ref=e441]':
+                  - generic [ref=e442]:
+                    - code [ref=e443]: "{{perfect_for}}"
+                    - button [ref=e444] [cursor=pointer]:
+                      - img [ref=e445]
+                - cell "theme_use_cases join use_cases" [ref=e448]:
+                  - code [ref=e449]: theme_use_cases join use_cases
+                - cell "HTML list of use cases (\"Perfect for\" sidebar)" [ref=e450]
+              - 'row "{{tags}} theme_tags join tags Comma-separated tag names" [ref=e451]':
+                - 'cell "{{tags}}" [ref=e452]':
+                  - generic [ref=e453]:
+                    - code [ref=e454]: "{{tags}}"
+                    - button [ref=e455] [cursor=pointer]:
+                      - img [ref=e456]
+                - cell "theme_tags join tags" [ref=e459]:
+                  - code [ref=e460]: theme_tags join tags
+                - cell "Comma-separated tag names" [ref=e461]
+              - 'row "{{theme_details}} theme.meta.theme_details Icon + label + value list (Theme Details sidebar)" [ref=e462]':
+                - 'cell "{{theme_details}}" [ref=e463]':
+                  - generic [ref=e464]:
+                    - code [ref=e465]: "{{theme_details}}"
+                    - button [ref=e466] [cursor=pointer]:
+                      - img [ref=e467]
+                - cell "theme.meta.theme_details" [ref=e470]:
+                  - code [ref=e471]: theme.meta.theme_details
+                - cell "Icon + label + value list (Theme Details sidebar)" [ref=e472]
+              - 'row "{{help_and_support}} theme.meta.help_and_support Icon + label + value list (Help & Support sidebar)" [ref=e473]':
+                - 'cell "{{help_and_support}}" [ref=e474]':
+                  - generic [ref=e475]:
+                    - code [ref=e476]: "{{help_and_support}}"
+                    - button [ref=e477] [cursor=pointer]:
+                      - img [ref=e478]
+                - cell "theme.meta.help_and_support" [ref=e481]:
+                  - code [ref=e482]: theme.meta.help_and_support
+                - cell "Icon + label + value list (Help & Support sidebar)" [ref=e483]
+        - generic [ref=e484]:
+          - heading "Agent Skills" [level=3] [ref=e485]
+          - generic [ref=e486]:
+            - generic [ref=e487]:
+              - code [ref=e488]: /block-craft
+              - generic [ref=e489]: Create blocks from Figma designs. Contains the full slot/hook syntax reference for agents.
+            - generic [ref=e490]:
+              - code [ref=e491]: /register-slot
+              - generic [ref=e492]: Add a new slot (layout, meta, or hook). Step-by-step checklist to update all touchpoints.
+        - paragraph [ref=e493]:
+          - text: "Source of truth:"
+          - code [ref=e494]: packages/db/src/slot-registry.ts
+  - button "v3.0.2 Output Detail Standard React Components Hide Until Restart Marker Color Clear on copy/send Block page interactions Manage MCP & Webhooks Manage MCP & Webhooks MCP Connection Disconnected MCP connection allows agents to receive and act on annotations. Learn more Webhooks Auto-Send The webhook URL will receive live annotation changes and annotation data." [ref=e495] [cursor=pointer]:
+    - img [ref=e8]
+    - generic:
+      - generic:
+        - button:
+          - img
+      - generic:
+        - button:
+          - img
+      - generic:
+        - button [disabled]:
+          - img
+      - generic:
+        - button [disabled]:
+          - img
+      - generic:
+        - button [disabled]:
+          - img
+      - generic:
+        - button [disabled]:
+          - img
+      - generic:
+        - button:
+          - img
+      - generic:
+        - button:
+          - img
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - link:
+              - /url: https://agentation.com
+              - img
+            - paragraph: v3.0.2
+            - button "Switch to light mode":
+              - generic:
+                - generic:
+                  - img
+          - generic:
+            - generic:
+              - generic:
+                - text: Output Detail
+                - generic:
+                  - img
+              - button "Standard":
+                - generic: Standard
+            - generic:
+              - generic:
+                - text: React Components
+                - generic:
+                  - img
+              - generic:
+                - checkbox [checked]
+            - generic:
+              - generic:
+                - text: Hide Until Restart
+                - generic:
+                  - img
+              - generic:
+                - checkbox
+          - generic:
+            - generic: Marker Color
+            - generic:
+              - button "Indigo"
+              - button "Blue"
+              - button "Cyan"
+              - button "Green"
+              - button "Yellow"
+              - button "Orange"
+              - button "Red"
+          - generic:
+            - generic:
+              - generic:
+                - checkbox "Clear on copy/send"
+                - img
+              - generic: Clear on copy/send
+              - generic:
+                - img
+            - generic:
+              - generic:
+                - checkbox "Block page interactions" [checked]
+                - img
+              - generic: Block page interactions
+          - button "Manage MCP & Webhooks":
+            - generic: Manage MCP & Webhooks
+            - generic:
+              - img
+        - generic:
+          - button "Manage MCP & Webhooks":
+            - img
+            - generic: Manage MCP & Webhooks
+          - generic:
+            - generic:
+              - generic:
+                - text: MCP Connection
+                - generic:
+                  - img
+              - generic "Disconnected"
+            - paragraph:
+              - text: MCP connection allows agents to receive and act on annotations.
+              - link "Learn more":
+                - /url: https://agentation.dev/mcp
+          - generic:
+            - generic:
+              - generic:
+                - text: Webhooks
+                - generic:
+                  - img
+              - generic:
+                - generic: Auto-Send
+                - generic:
+                  - checkbox "Auto-Send" [checked] [disabled]
+            - paragraph: The webhook URL will receive live annotation changes and annotation data.
+            - textbox "Webhook URL"

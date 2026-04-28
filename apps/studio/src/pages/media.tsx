@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Upload, Loader2, X, Search, Plus, Trash2 } from 'lucide-react'
-import { Button } from '@cmsmasters/ui'
+import { Button, Tooltip } from '@cmsmasters/ui'
 import { fetchIcons, uploadIcon, deleteIcon } from '../lib/block-api'
 import type { IconItem, IconCategory } from '../lib/block-api'
 import { StyledSelect } from '../components/styled-select'
@@ -131,15 +131,16 @@ export function MediaPage() {
                 <option key={cat.name} value={cat.name}>{cat.name}</option>
               ))}
             </StyledSelect>
-            <button
-              type="button"
-              onClick={() => setShowNewCategory(true)}
-              className="flex shrink-0 items-center justify-center border-0 bg-transparent"
-              style={{ cursor: 'pointer', color: 'hsl(var(--text-muted))', width: '32px', height: '32px' }}
-              title="New category"
-            >
-              <Plus size={16} />
-            </button>
+            <Tooltip content="New category">
+              <button
+                type="button"
+                onClick={() => setShowNewCategory(true)}
+                className="flex shrink-0 items-center justify-center border-0 bg-transparent"
+                style={{ cursor: 'pointer', color: 'hsl(var(--text-muted))', width: '32px', height: '32px' }}
+              >
+                <Plus size={16} />
+              </button>
+            </Tooltip>
           </div>
         ) : (
           <div className="flex items-center" style={{ gap: '4px', flex: 1, maxWidth: '300px' }}>
@@ -345,24 +346,25 @@ export function MediaPage() {
               </span>
 
               {/* Delete button */}
-              <button
-                type="button"
-                onClick={() => handleDelete(icon)}
-                className="absolute flex items-center justify-center border-0 opacity-0 transition-opacity group-hover:opacity-100"
-                style={{
-                  top: '4px',
-                  right: '4px',
-                  width: '24px',
-                  height: '24px',
-                  borderRadius: 'var(--rounded-lg)',
-                  backgroundColor: 'hsl(var(--destructive))',
-                  color: 'hsl(var(--destructive-foreground))',
-                  cursor: 'pointer',
-                }}
-                title="Delete icon"
-              >
-                <Trash2 size={12} />
-              </button>
+              <Tooltip content="Delete icon">
+                <button
+                  type="button"
+                  onClick={() => handleDelete(icon)}
+                  className="absolute flex items-center justify-center border-0 opacity-0 transition-opacity group-hover:opacity-100"
+                  style={{
+                    top: '4px',
+                    right: '4px',
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: 'var(--rounded-lg)',
+                    backgroundColor: 'hsl(var(--destructive))',
+                    color: 'hsl(var(--destructive-foreground))',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Trash2 size={12} />
+                </button>
+              </Tooltip>
             </div>
           ))}
         </div>
