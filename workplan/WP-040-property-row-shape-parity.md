@@ -103,7 +103,7 @@ Total: ~4–5h across 2–3 phases.
 |---|---|---|---|
 | 0 | (RECON) | (no commit — shipped with Phase 1) | `logs/wp-040/phase-0-recon-result.md` |
 | 1 | `feat(studio): WP-040 phase 1 — port Studio Inspector to single-cell row shape (Path B)` | `a8275e25` | 11 (2 source + 4 test/snapshot + 5 RECON+result+smoke) |
-| 2 (Close) | `docs(wp-040): phase 2 close — PARITY trio Ruling 1B RETIRED + status flip` | TBD | 5 (PARITY pair + WP-040 doc + WP-037 doc + ROADMAP) + result.md |
+| 2 (Close) | `docs(wp-040): phase 2 close — PARITY trio Ruling 1B RETIRED + status flip` | `acbc208c` | 5 (PARITY pair + WP-040 doc + WP-037 doc + ROADMAP) + result.md |
 
 **Total WP-040 footprint: ~80 LOC source delta + test mirror across 2 commits over 1 day.**
 
