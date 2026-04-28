@@ -45,6 +45,8 @@ interface SuggestionListProps {
   session: SessionState
   onAccept: (id: string) => void
   onReject: (id: string) => void
+  /** WP-036 Phase 1 — hover a row → highlight target in iframe. Pass null to clear. */
+  onPreviewHover?: (selector: string | null) => void
 }
 
 export function SuggestionList({
@@ -54,6 +56,7 @@ export function SuggestionList({
   session,
   onAccept,
   onReject,
+  onPreviewHover,
 }: SuggestionListProps) {
   // Error state — something threw inside analyzeBlock or generateSuggestions
   if (error) {
@@ -129,6 +132,7 @@ export function SuggestionList({
           isPending={session.pending.includes(s.id)}
           onAccept={onAccept}
           onReject={onReject}
+          onPreviewHover={onPreviewHover}
         />
       ))}
     </div>

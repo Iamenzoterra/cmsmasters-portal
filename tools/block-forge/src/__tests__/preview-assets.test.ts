@@ -282,3 +282,56 @@ describe('injected click-handler — source contract', () => {
     expect(iife).toMatch(/computedStyle:\s*\{\s*padding:/)
   })
 })
+
+/**
+ * WP-036 Phase 1 — sidebar-to-iframe hover-highlight protocol contracts.
+ * Pin the SHAPE of the new request-hover IIFE listener without booting a full
+ * postMessage pipeline. Snapshot test (`(z) body region — pre-wrapped pass-through`)
+ * covers the full body block; these are targeted invariants.
+ */
+describe('injected hover-highlight handler — source contract (WP-036 Phase 1)', () => {
+  const srcdoc = composeSrcDoc({ html: 'x', css: '', width: 768, slug: 'test' })
+
+  it('declares [data-bf-hover-from-suggestion] outline rule', () => {
+    expect(srcdoc).toContain('[data-bf-hover-from-suggestion]')
+    // Same blue token as native [data-bf-hover] — coexistence design.
+    const block = srcdoc.match(
+      /\[data-bf-hover-from-suggestion\][\s\S]+?outline-color:\s*hsl\(var\(--text-link\)\)/,
+    )
+    expect(block).not.toBeNull()
+  })
+
+  it('listens for the inspector-request-hover postMessage type', () => {
+    expect(srcdoc).toContain("'block-forge:inspector-request-hover'")
+  })
+
+  it('clears all data-bf-hover-from-suggestion attrs before applying new (multi-match safety)', () => {
+    expect(srcdoc).toMatch(
+      /document\.querySelectorAll\(['"]\[data-bf-hover-from-suggestion\]['"]\)\s*\.\s*forEach/,
+    )
+  })
+
+  it('honors the __clear__ sentinel (selector falsy/sentinel returns without setAttr)', () => {
+    expect(srcdoc).toMatch(/!msg\.selector\s*\|\|\s*msg\.selector\s*===\s*['"]__clear__['"]/)
+  })
+
+  it('wraps querySelector in try/catch (invalid selectors silent)', () => {
+    // The hover handler block specifically — guard isolates from request-pin which
+    // also uses try/catch. We pattern-match on the surrounding setAttribute call.
+    const hoverBlock = srcdoc.match(
+      /inspector-request-hover[\s\S]+?setAttribute\(['"]data-bf-hover-from-suggestion['"]/,
+    )
+    expect(hoverBlock).not.toBeNull()
+    expect(hoverBlock![0]).toMatch(/try\s*\{/)
+    expect(hoverBlock![0]).toContain('catch')
+  })
+
+  it('beforeunload cleanup clears the new external-hover attribute', () => {
+    // Anchor on the outermost teardown — the one that pin-clears (WP-033) AND
+    // hover-suggestion-clears (WP-036). Pattern walks across the closing }).
+    const teardown = srcdoc.match(
+      /addEventListener\(['"]beforeunload['"][\s\S]+?data-bf-hover-from-suggestion[\s\S]+?\}\);/,
+    )
+    expect(teardown).not.toBeNull()
+  })
+})

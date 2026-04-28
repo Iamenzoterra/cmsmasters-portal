@@ -272,3 +272,52 @@ describe('injected click-handler script — selector derivation via DOM harness'
     expect(sel).not.toContain('animate-pulse')
   })
 })
+
+/**
+ * WP-036 Phase 1 — sidebar-to-iframe hover-highlight protocol contracts.
+ * Studio mirror of tools/block-forge/src/__tests__/preview-assets.ts. Same 6
+ * source-level invariants pinning the new request-hover IIFE listener.
+ * PARITY: any drift here vs. the block-forge reference signals cross-surface
+ * divergence that must be reconciled in the same commit.
+ */
+describe('injected hover-highlight handler — source contract (WP-036 Phase 1)', () => {
+  const srcdoc = composeSrcDoc({ html: 'x', css: '', width: 768, slug: 'test' })
+
+  it('declares [data-bf-hover-from-suggestion] outline rule', () => {
+    expect(srcdoc).toContain('[data-bf-hover-from-suggestion]')
+    const block = srcdoc.match(
+      /\[data-bf-hover-from-suggestion\][\s\S]+?outline-color:\s*hsl\(var\(--text-link\)\)/,
+    )
+    expect(block).not.toBeNull()
+  })
+
+  it('listens for the inspector-request-hover postMessage type', () => {
+    expect(srcdoc).toContain("'block-forge:inspector-request-hover'")
+  })
+
+  it('clears all data-bf-hover-from-suggestion attrs before applying new (multi-match safety)', () => {
+    expect(srcdoc).toMatch(
+      /document\.querySelectorAll\(['"]\[data-bf-hover-from-suggestion\]['"]\)\s*\.\s*forEach/,
+    )
+  })
+
+  it('honors the __clear__ sentinel (selector falsy/sentinel returns without setAttr)', () => {
+    expect(srcdoc).toMatch(/!msg\.selector\s*\|\|\s*msg\.selector\s*===\s*['"]__clear__['"]/)
+  })
+
+  it('wraps querySelector in try/catch (invalid selectors silent)', () => {
+    const hoverBlock = srcdoc.match(
+      /inspector-request-hover[\s\S]+?setAttribute\(['"]data-bf-hover-from-suggestion['"]/,
+    )
+    expect(hoverBlock).not.toBeNull()
+    expect(hoverBlock![0]).toMatch(/try\s*\{/)
+    expect(hoverBlock![0]).toContain('catch')
+  })
+
+  it('beforeunload cleanup clears the new external-hover attribute', () => {
+    const teardown = srcdoc.match(
+      /addEventListener\(['"]beforeunload['"][\s\S]+?data-bf-hover-from-suggestion[\s\S]+?\}\);/,
+    )
+    expect(teardown).not.toBeNull()
+  })
+})

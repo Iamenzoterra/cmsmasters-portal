@@ -519,6 +519,32 @@ export function ResponsiveTab({
     setSession((prev) => rejectFn(prev, id))
   }, [])
 
+  // WP-036 Phase 1 — sidebar→iframe hover-highlight broadcast (Studio mirror of
+  // tools/block-forge/src/App.tsx handlePreviewHover). Posts
+  // `block-forge:inspector-request-hover` to ALL triptych iframes for the
+  // current slug. selector === null sends the __clear__ sentinel. Iframe IIFE
+  // resolves + outlines; fire-and-forget shape.
+  const handlePreviewHover = useCallback(
+    (selector: string | null) => {
+      if (!currentSlug) return
+      const iframes = document.querySelectorAll<HTMLIFrameElement>(
+        `iframe[title^="${CSS.escape(currentSlug)}-"]`,
+      )
+      iframes.forEach((iframe) => {
+        if (!iframe.contentWindow) return
+        iframe.contentWindow.postMessage(
+          {
+            type: 'block-forge:inspector-request-hover',
+            slug: currentSlug,
+            selector: selector ?? '__clear__',
+          },
+          '*',
+        )
+      })
+    },
+    [currentSlug],
+  )
+
   // WP-033 Phase 5 OQ1: displayBlock follows watchedFormCode so Inspector +
   // TweakPanel + SuggestionList tweaks reflect in the visible iframe immediately
   // (DevTools mental model). Falls back to suggestions-applied derivation on
@@ -694,6 +720,7 @@ export function ResponsiveTab({
         session={session}
         onAccept={handleAccept}
         onReject={handleReject}
+        onPreviewHover={handlePreviewHover}
       />
       <TweakPanel
         selection={selection}

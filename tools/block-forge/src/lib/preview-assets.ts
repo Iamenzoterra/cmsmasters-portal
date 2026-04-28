@@ -52,7 +52,19 @@ const SLOT_CONTAINMENT_RULE = `.slot-inner {
 // (green) for pin. The standalone outline-color line is defensive — when an
 // inner element already has outline (button focus rings, etc.) the shorthand
 // can fail to fully override, so we explicitly re-state color/style/width.
+// WP-036 Phase 1 — `data-bf-hover-from-suggestion` is the dedicated attribute
+// for sidebar→iframe highlight (hovering a SuggestionRow in the parent rail).
+// SEPARATE from `data-bf-hover` to avoid race with the iframe's native mouseover
+// handler — the two outlines coexist on different elements without competing for
+// the same attribute slot. Visual style mirrors `[data-bf-hover]` (blue, transient)
+// so author cognition stays consistent: "blue = current hover target, green = pinned".
 const INSPECTOR_OUTLINE_RULE = `[data-bf-hover] {
+  outline-style: solid;
+  outline-width: 2px;
+  outline-color: hsl(var(--text-link));
+  outline-offset: -2px;
+}
+[data-bf-hover-from-suggestion] {
   outline-style: solid;
   outline-width: 2px;
   outline-color: hsl(var(--text-link));
@@ -306,6 +318,31 @@ export function composeSrcDoc(input: ComposeSrcDocInput): string {
         parent.postMessage({ type: 'block-forge:inspector-unhover', slug: SLUG }, '*');
       });
 
+      // WP-036 Phase 1 — sidebar to iframe hover-highlight protocol.
+      // Parent posts 'block-forge:inspector-request-hover' with {slug, selector}.
+      // Resolves via document.querySelector, sets data-bf-hover-from-suggestion=""
+      // (CSS gives blue outline, see INSPECTOR_OUTLINE_RULE). selector === '__clear__'
+      // or null clears all. Try/catch silences invalid-selector exceptions.
+      // No postback — fire-and-forget; the parent doesn't need confirmation for
+      // transient hover. Pin protocol below stays unchanged.
+      window.addEventListener('message', (e) => {
+        const msg = e.data;
+        if (!msg || typeof msg !== 'object' || msg.type !== 'block-forge:inspector-request-hover') return;
+        if (msg.slug !== SLUG) return;
+
+        // Always clear previous external-hover attrs first — same selector re-hover is a no-op visually
+        // but coverage of multi-match selectors makes querySelectorAll the safer clear.
+        document.querySelectorAll('[data-bf-hover-from-suggestion]')
+          .forEach((el) => el.removeAttribute('data-bf-hover-from-suggestion'));
+
+        if (!msg.selector || msg.selector === '__clear__') return;
+
+        let target = null;
+        try { target = document.querySelector(msg.selector); } catch (_err) { /* invalid selector */ }
+        if (!target) return;
+        target.setAttribute('data-bf-hover-from-suggestion', '');
+      });
+
       window.addEventListener('message', (e) => {
         const msg = e.data;
         if (!msg || typeof msg !== 'object' || msg.type !== 'block-forge:inspector-request-pin') return;
@@ -353,6 +390,9 @@ export function composeSrcDoc(input: ComposeSrcDocInput): string {
         clearHover();
         const pinned = document.querySelector('[data-bf-pin]');
         if (pinned) pinned.removeAttribute('data-bf-pin');
+        // WP-036 Phase 1 — clear external-hover attr on iframe teardown.
+        document.querySelectorAll('[data-bf-hover-from-suggestion]')
+          .forEach((el) => el.removeAttribute('data-bf-hover-from-suggestion'));
       });
     })();
   </script>

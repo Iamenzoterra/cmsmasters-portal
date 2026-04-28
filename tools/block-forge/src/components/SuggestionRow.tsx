@@ -21,6 +21,8 @@ type Props = {
   isPending: boolean
   onAccept: (id: string) => void
   onReject: (id: string) => void
+  /** WP-036 Phase 1 — fires on hover-enter (selector) and hover-leave (null). */
+  onPreviewHover?: (selector: string | null) => void
 }
 
 const CONFIDENCE_STYLES: Record<
@@ -72,6 +74,7 @@ export function SuggestionRow({
   isPending,
   onAccept,
   onReject,
+  onPreviewHover,
 }: Props) {
   const { heuristic, selector, bp, rationale, confidence, property, value } =
     suggestion
@@ -80,6 +83,12 @@ export function SuggestionRow({
     <div
       data-suggestion-id={suggestion.id}
       data-pending={isPending || undefined}
+      // WP-036 Phase 1 — sidebar→iframe hover-highlight. Mouse-enter fires
+      // selector to iframe IIFE which outlines the matching element; leave
+      // clears. Optional handler — gracefully no-ops in test contexts that
+      // don't pass the prop.
+      onMouseEnter={onPreviewHover ? () => onPreviewHover(suggestion.selector) : undefined}
+      onMouseLeave={onPreviewHover ? () => onPreviewHover(null) : undefined}
       className="flex flex-col gap-2 rounded border border-[hsl(var(--border-default))] bg-[hsl(var(--bg-surface))] p-3"
     >
       <div className="flex items-center gap-2">

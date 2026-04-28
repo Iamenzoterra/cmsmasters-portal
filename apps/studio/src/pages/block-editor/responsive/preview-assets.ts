@@ -45,7 +45,18 @@ const SLOT_CONTAINMENT_RULE = `.slot-inner {
 // tools/block-forge/src/lib/preview-assets.ts:55-66 byte-identical).
 // `[data-bf-hover]` and `[data-bf-pin]` attributes are toggled by the Inspector
 // IIFE below; CSS draws the visual indicator (blue for hover, green for pin).
+// WP-036 Phase 1 — `data-bf-hover-from-suggestion` mirror of
+// tools/block-forge/src/lib/preview-assets.ts byte-identical. SEPARATE attribute
+// from `data-bf-hover` to avoid race with the iframe's native mouseover handler.
+// PARITY trio: any change here MUST update the block-forge reference and the
+// surface PARITY.md in the same commit.
 const INSPECTOR_OUTLINE_RULE = `[data-bf-hover] {
+  outline-style: solid;
+  outline-width: 2px;
+  outline-color: hsl(var(--text-link));
+  outline-offset: -2px;
+}
+[data-bf-hover-from-suggestion] {
   outline-style: solid;
   outline-width: 2px;
   outline-color: hsl(var(--text-link));
@@ -297,6 +308,28 @@ export function composeSrcDoc(input: ComposeSrcDocInput): string {
         parent.postMessage({ type: 'block-forge:inspector-unhover', slug: SLUG }, '*');
       });
 
+      // WP-036 Phase 1 — sidebar to iframe hover-highlight protocol (Studio mirror of
+      // tools/block-forge/src/lib/preview-assets.ts). Parent posts
+      // 'block-forge:inspector-request-hover' with {slug, selector}. Resolves via
+      // document.querySelector, sets data-bf-hover-from-suggestion="". selector
+      // === '__clear__' or null clears all. Try/catch silences invalid-selector
+      // exceptions. No postback — fire-and-forget for transient hover.
+      window.addEventListener('message', (e) => {
+        const msg = e.data;
+        if (!msg || typeof msg !== 'object' || msg.type !== 'block-forge:inspector-request-hover') return;
+        if (msg.slug !== SLUG) return;
+
+        document.querySelectorAll('[data-bf-hover-from-suggestion]')
+          .forEach((el) => el.removeAttribute('data-bf-hover-from-suggestion'));
+
+        if (!msg.selector || msg.selector === '__clear__') return;
+
+        let target = null;
+        try { target = document.querySelector(msg.selector); } catch (_err) { /* invalid selector */ }
+        if (!target) return;
+        target.setAttribute('data-bf-hover-from-suggestion', '');
+      });
+
       window.addEventListener('message', (e) => {
         const msg = e.data;
         if (!msg || typeof msg !== 'object' || msg.type !== 'block-forge:inspector-request-pin') return;
@@ -344,6 +377,9 @@ export function composeSrcDoc(input: ComposeSrcDocInput): string {
         clearHover();
         const pinned = document.querySelector('[data-bf-pin]');
         if (pinned) pinned.removeAttribute('data-bf-pin');
+        // WP-036 Phase 1 — clear external-hover attr on iframe teardown.
+        document.querySelectorAll('[data-bf-hover-from-suggestion]')
+          .forEach((el) => el.removeAttribute('data-bf-hover-from-suggestion'));
       });
     })();
   </script>

@@ -315,6 +315,31 @@ export function onVisible(element, callback, opts = {}) {
         parent.postMessage({ type: 'block-forge:inspector-unhover', slug: SLUG }, '*');
       });
 
+      // WP-036 Phase 1 — sidebar to iframe hover-highlight protocol.
+      // Parent posts 'block-forge:inspector-request-hover' with {slug, selector}.
+      // Resolves via document.querySelector, sets data-bf-hover-from-suggestion=""
+      // (CSS gives blue outline, see INSPECTOR_OUTLINE_RULE). selector === '__clear__'
+      // or null clears all. Try/catch silences invalid-selector exceptions.
+      // No postback — fire-and-forget; the parent doesn't need confirmation for
+      // transient hover. Pin protocol below stays unchanged.
+      window.addEventListener('message', (e) => {
+        const msg = e.data;
+        if (!msg || typeof msg !== 'object' || msg.type !== 'block-forge:inspector-request-hover') return;
+        if (msg.slug !== SLUG) return;
+
+        // Always clear previous external-hover attrs first — same selector re-hover is a no-op visually
+        // but coverage of multi-match selectors makes querySelectorAll the safer clear.
+        document.querySelectorAll('[data-bf-hover-from-suggestion]')
+          .forEach((el) => el.removeAttribute('data-bf-hover-from-suggestion'));
+
+        if (!msg.selector || msg.selector === '__clear__') return;
+
+        let target = null;
+        try { target = document.querySelector(msg.selector); } catch (_err) { /* invalid selector */ }
+        if (!target) return;
+        target.setAttribute('data-bf-hover-from-suggestion', '');
+      });
+
       window.addEventListener('message', (e) => {
         const msg = e.data;
         if (!msg || typeof msg !== 'object' || msg.type !== 'block-forge:inspector-request-pin') return;
@@ -362,6 +387,9 @@ export function onVisible(element, callback, opts = {}) {
         clearHover();
         const pinned = document.querySelector('[data-bf-pin]');
         if (pinned) pinned.removeAttribute('data-bf-pin');
+        // WP-036 Phase 1 — clear external-hover attr on iframe teardown.
+        document.querySelectorAll('[data-bf-hover-from-suggestion]')
+          .forEach((el) => el.removeAttribute('data-bf-hover-from-suggestion'));
       });
     })();
   </script>
@@ -683,6 +711,31 @@ export function onVisible(element, callback, opts = {}) {
         parent.postMessage({ type: 'block-forge:inspector-unhover', slug: SLUG }, '*');
       });
 
+      // WP-036 Phase 1 — sidebar to iframe hover-highlight protocol.
+      // Parent posts 'block-forge:inspector-request-hover' with {slug, selector}.
+      // Resolves via document.querySelector, sets data-bf-hover-from-suggestion=""
+      // (CSS gives blue outline, see INSPECTOR_OUTLINE_RULE). selector === '__clear__'
+      // or null clears all. Try/catch silences invalid-selector exceptions.
+      // No postback — fire-and-forget; the parent doesn't need confirmation for
+      // transient hover. Pin protocol below stays unchanged.
+      window.addEventListener('message', (e) => {
+        const msg = e.data;
+        if (!msg || typeof msg !== 'object' || msg.type !== 'block-forge:inspector-request-hover') return;
+        if (msg.slug !== SLUG) return;
+
+        // Always clear previous external-hover attrs first — same selector re-hover is a no-op visually
+        // but coverage of multi-match selectors makes querySelectorAll the safer clear.
+        document.querySelectorAll('[data-bf-hover-from-suggestion]')
+          .forEach((el) => el.removeAttribute('data-bf-hover-from-suggestion'));
+
+        if (!msg.selector || msg.selector === '__clear__') return;
+
+        let target = null;
+        try { target = document.querySelector(msg.selector); } catch (_err) { /* invalid selector */ }
+        if (!target) return;
+        target.setAttribute('data-bf-hover-from-suggestion', '');
+      });
+
       window.addEventListener('message', (e) => {
         const msg = e.data;
         if (!msg || typeof msg !== 'object' || msg.type !== 'block-forge:inspector-request-pin') return;
@@ -730,6 +783,9 @@ export function onVisible(element, callback, opts = {}) {
         clearHover();
         const pinned = document.querySelector('[data-bf-pin]');
         if (pinned) pinned.removeAttribute('data-bf-pin');
+        // WP-036 Phase 1 — clear external-hover attr on iframe teardown.
+        document.querySelectorAll('[data-bf-hover-from-suggestion]')
+          .forEach((el) => el.removeAttribute('data-bf-hover-from-suggestion'));
       });
     })();
   </script>

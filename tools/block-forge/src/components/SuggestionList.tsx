@@ -14,6 +14,8 @@ type Props = {
   session: SessionState
   onAccept: (id: string) => void
   onReject: (id: string) => void
+  /** WP-036 Phase 1 — hover a row → highlight target in iframe. Pass null to clear. */
+  onPreviewHover?: (selector: string | null) => void
 }
 
 /** Dispatcher order from WP-025 — stable list ordering. */
@@ -42,6 +44,7 @@ export function SuggestionList({
   session,
   onAccept,
   onReject,
+  onPreviewHover,
 }: Props) {
   const sorted = sortSuggestions(suggestions)
   // Rejected rows hide; pending rows stay visible so the author can Undo.
@@ -81,6 +84,7 @@ export function SuggestionList({
               isPending={session.pending.includes(s.id)}
               onAccept={onAccept}
               onReject={onReject}
+              onPreviewHover={onPreviewHover}
             />
           ))}
         </div>

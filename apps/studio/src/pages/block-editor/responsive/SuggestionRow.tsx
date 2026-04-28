@@ -18,6 +18,8 @@ interface SuggestionRowProps {
   onReject: (id: string) => void
   /** Visual state — suggestion is accepted locally but not yet saved to DB. */
   isPending: boolean
+  /** WP-036 Phase 1 — fires on hover-enter (selector) and hover-leave (null). */
+  onPreviewHover?: (selector: string | null) => void
 }
 
 // Confidence → token mapping verbatim from tools/block-forge/src/components/SuggestionRow.tsx:26-45.
@@ -83,12 +85,23 @@ function PendingPill() {
   )
 }
 
-export function SuggestionRow({ suggestion, onAccept, onReject, isPending }: SuggestionRowProps) {
+export function SuggestionRow({
+  suggestion,
+  onAccept,
+  onReject,
+  isPending,
+  onPreviewHover,
+}: SuggestionRowProps) {
   const { id, heuristic, selector, bp, property, value, rationale, confidence } = suggestion
 
   return (
     <div
       data-suggestion-id={id}
+      // WP-036 Phase 1 — sidebar→iframe hover-highlight (Studio mirror of
+      // tools/block-forge/src/components/SuggestionRow.tsx). Optional handler —
+      // no-ops gracefully when prop omitted (test contexts).
+      onMouseEnter={onPreviewHover ? () => onPreviewHover(selector) : undefined}
+      onMouseLeave={onPreviewHover ? () => onPreviewHover(null) : undefined}
       style={{
         display: 'flex',
         flexDirection: 'column',
