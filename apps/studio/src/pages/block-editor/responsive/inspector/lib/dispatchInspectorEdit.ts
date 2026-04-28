@@ -55,13 +55,19 @@ export function dispatchInspectorEdit(form: FormSubset, edit: InspectorEdit): vo
       break
     }
     case 'apply-token': {
-      const tweak: Tweak = {
-        selector: edit.selector,
-        bp: 0,
-        property: edit.property,
-        value: `var(${edit.tokenName})`,
-      }
-      nextCss = emitTweak(tweak, css)
+      // WP-034 Path A — fan-out emit at canonical BPs to override any
+      // pre-existing @container slot (max-width: Npx) cascade conflicts.
+      // bp:0 sets the top-level rule; 375/768/1440 dedupe-update existing
+      // @container blocks (emitTweak Case C — replaces decl in place,
+      // preserves other decls) OR create new ones (Case A) when absent.
+      const value = `var(${edit.tokenName})`
+      const tweaks: Tweak[] = [
+        { selector: edit.selector, bp: 0, property: edit.property, value },
+        { selector: edit.selector, bp: 375, property: edit.property, value },
+        { selector: edit.selector, bp: 768, property: edit.property, value },
+        { selector: edit.selector, bp: 1440, property: edit.property, value },
+      ]
+      nextCss = tweaks.reduce((acc, t) => emitTweak(t, acc), css)
       break
     }
     case 'remove-decl': {

@@ -673,3 +673,73 @@ describe('session — composeTweakedCss (WP-028 Phase 2)', () => {
     )
   })
 })
+
+describe('WP-034 Path A — chip-apply 4-tweak fan-out cascade fix', () => {
+  it('4 sequential addTweak calls at canonical BPs override @container conflicts', () => {
+    // Mirrors fast-loading-speed.json shape: top-level + 2 @container with
+    // same property + sibling decls.
+    const baseCss = [
+      '.heading { font-size: 42px; color: black; }',
+      '@container slot (max-width: 768px) {',
+      '  .heading { font-size: 32px; line-height: 1.2; }',
+      '}',
+      '@container slot (max-width: 375px) {',
+      '  .heading { font-size: 30px; line-height: 36px; }',
+      '}',
+    ].join('\n')
+
+    // Mimic block-forge App.tsx::handleInspectorApplyToken WP-034 fan-out.
+    let session = createSession()
+    const value = 'var(--h2-font-size)'
+    for (const bp of [0, 375, 768, 1440] as const) {
+      session = addTweak(session, {
+        selector: '.heading',
+        bp,
+        property: 'font-size',
+        value,
+      })
+    }
+    expect(session.tweaks).toHaveLength(4)
+
+    const out = composeTweakedCss(baseCss, session.tweaks)
+    // Old hardcoded values gone.
+    expect(out).not.toContain('font-size: 42px')
+    expect(out).not.toContain('font-size: 32px')
+    expect(out).not.toContain('font-size: 30px')
+    // Token at top-level + 3 @container (1440 newly created; 768 + 375
+    // dedupe-updated in place per emitTweak Case C).
+    const matches = out.match(/font-size:\s*var\(--h2-font-size\)/g) ?? []
+    expect(matches.length).toBe(4)
+    // Sibling decls preserved.
+    expect(out).toContain('color: black')
+    expect(out).toContain('line-height: 1.2')
+    expect(out).toContain('line-height: 36px')
+    // 3 canonical @container blocks present.
+    expect(out).toContain('@container slot (max-width: 1440px)')
+    expect(out).toContain('@container slot (max-width: 768px)')
+    expect(out).toContain('@container slot (max-width: 375px)')
+  })
+
+  it('chip apply on property without pre-existing @container conflicts creates 3 redundant blocks (acceptable Path A tradeoff)', () => {
+    // Author had only top-level rule, no @container overrides. Path A still
+    // emits 4 tweaks → 3 new @container blocks created with same token value.
+    // Cascade resolves correctly (browser's clamp does the work); source CSS
+    // gains 3 redundant blocks — documented Path A tradeoff.
+    const baseCss = '.x { font-size: 16px; }'
+    let session = createSession()
+    for (const bp of [0, 375, 768, 1440] as const) {
+      session = addTweak(session, {
+        selector: '.x',
+        bp,
+        property: 'font-size',
+        value: 'var(--text-sm-font-size)',
+      })
+    }
+    const out = composeTweakedCss(baseCss, session.tweaks)
+    expect(out).toContain('@container slot (max-width: 1440px)')
+    expect(out).toContain('@container slot (max-width: 768px)')
+    expect(out).toContain('@container slot (max-width: 375px)')
+    const matches = out.match(/font-size:\s*var\(--text-sm-font-size\)/g) ?? []
+    expect(matches.length).toBe(4)
+  })
+})

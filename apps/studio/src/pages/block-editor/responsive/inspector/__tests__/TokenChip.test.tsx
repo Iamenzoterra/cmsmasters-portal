@@ -76,14 +76,14 @@ describe('TokenChip — available mode', () => {
   })
 })
 
-describe('TokenChip — title attr (Phase 4 Ruling 2 cascade-override note)', () => {
-  it('contains M/T/D triple + cascade-override note', () => {
+describe('TokenChip — title attr (WP-034 cascade-override fixed; caveat removed)', () => {
+  it('contains M/T/D triple (cascade-override caveat removed post-WP-034)', () => {
     const { getByTestId } = render(
       <TokenChip mode="available" tokenName="--h2-font-size" valuesByBp={VALUES} />,
     )
     const chip = getByTestId('token-chip---h2-font-size')
     expect(chip.getAttribute('title')).toBe(
-      'Sets 34/37/42px at M/T/D · Note: existing breakpoint overrides may still apply.',
+      'Sets 34/37/42px at M/T/D',
     )
   })
 
@@ -93,7 +93,7 @@ describe('TokenChip — title attr (Phase 4 Ruling 2 cascade-override note)', ()
     )
     const chip = getByTestId('token-chip---h2-font-size')
     expect(chip.getAttribute('title')).toBe(
-      'Sets 34/37/42px at M/T/D · Note: existing breakpoint overrides may still apply.',
+      'Sets 34/37/42px at M/T/D',
     )
   })
 })

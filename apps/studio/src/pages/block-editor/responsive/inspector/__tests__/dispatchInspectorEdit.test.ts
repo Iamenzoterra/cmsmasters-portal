@@ -59,8 +59,8 @@ describe('dispatchInspectorEdit — tweak kind', () => {
   })
 })
 
-describe('dispatchInspectorEdit — apply-token kind', () => {
-  it('emits bp:0 tweak with var(--token) value', () => {
+describe('dispatchInspectorEdit — apply-token kind (WP-034 Path A fan-out)', () => {
+  it('emits 4 tweaks at canonical BPs (0/375/768/1440) with var(--token) value', () => {
     const initial = `<style>\n.x { font-size: 16px; }\n</style>\n\n<div class="x">Hi</div>`
     const f = makeForm(initial)
     dispatchInspectorEdit(f.form, {
@@ -70,8 +70,78 @@ describe('dispatchInspectorEdit — apply-token kind', () => {
       tokenName: '--h2-font-size',
     })
     expect(f.form.setValue).toHaveBeenCalledTimes(1)
-    expect(f.getCurrent()).toContain('font-size: var(--h2-font-size)')
-    expect(f.getCurrent()).not.toContain('@container slot')
+    const out = f.getCurrent()
+    // Top-level rule has var(--token).
+    expect(out).toContain('font-size: var(--h2-font-size)')
+    // 3 @container slot blocks created at canonical BPs.
+    expect(out).toContain('@container slot (max-width: 375px)')
+    expect(out).toContain('@container slot (max-width: 768px)')
+    expect(out).toContain('@container slot (max-width: 1440px)')
+    // var() value appears at all 4 spots (top-level + 3 @container).
+    const matches = out.match(/font-size:\s*var\(--h2-font-size\)/g) ?? []
+    expect(matches.length).toBe(4)
+  })
+
+  it('cascade-conflict case — pre-existing @container overrides DEDUPE-UPDATE in place (Case C), preserving sibling decls', () => {
+    // Mirrors fast-loading-speed.json shape: top-level + 2 @container blocks
+    // with the same property + sibling decls in those blocks.
+    const initial = [
+      '<style>',
+      '.heading { font-size: 42px; color: black; }',
+      '@container slot (max-width: 768px) {',
+      '  .heading { font-size: 32px; line-height: 1.2; }',
+      '}',
+      '@container slot (max-width: 375px) {',
+      '  .heading { font-size: 30px; line-height: 36px; }',
+      '}',
+      '</style>',
+      '',
+      '<h2 class="heading">Hi</h2>',
+    ].join('\n')
+    const f = makeForm(initial)
+    dispatchInspectorEdit(f.form, {
+      kind: 'apply-token',
+      selector: '.heading',
+      property: 'font-size',
+      tokenName: '--h2-font-size',
+    })
+    const out = f.getCurrent()
+    // Old hardcoded values gone.
+    expect(out).not.toContain('font-size: 42px')
+    expect(out).not.toContain('font-size: 32px')
+    expect(out).not.toContain('font-size: 30px')
+    // Token applied at top-level + @container 768 + @container 375 (in place
+    // dedupe per emitTweak Case C).
+    const matches = out.match(/font-size:\s*var\(--h2-font-size\)/g) ?? []
+    expect(matches.length).toBe(4) // top-level + 1440 (NEW) + 768 + 375
+    // Sibling decls preserved per emitTweak Case C contract.
+    expect(out).toContain('color: black')
+    expect(out).toContain('line-height: 1.2')
+    expect(out).toContain('line-height: 36px')
+  })
+
+  it('+1 @container block created when canonical BP missing from base CSS', () => {
+    // Base has @container 768 + 375, missing 1440. Path A creates 1440.
+    const initial = [
+      '<style>',
+      '.x { font-size: 16px; }',
+      '@container slot (max-width: 768px) { .x { font-size: 14px; } }',
+      '</style>',
+      '',
+      '<div class="x">Hi</div>',
+    ].join('\n')
+    const f = makeForm(initial)
+    dispatchInspectorEdit(f.form, {
+      kind: 'apply-token',
+      selector: '.x',
+      property: 'font-size',
+      tokenName: '--text-sm-font-size',
+    })
+    const out = f.getCurrent()
+    // 1440 + 375 newly created (768 dedupe-updated).
+    expect(out).toContain('@container slot (max-width: 1440px)')
+    expect(out).toContain('@container slot (max-width: 375px)')
+    expect(out).toContain('@container slot (max-width: 768px)')
   })
 })
 

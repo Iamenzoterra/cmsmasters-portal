@@ -247,9 +247,19 @@ export function App() {
   )
   const handleInspectorApplyToken = useCallback(
     (selector: string, property: string, tokenName: string) => {
-      setSession((prev) =>
-        addTweak(prev, { selector, bp: 0, property, value: `var(${tokenName})` }),
-      )
+      // WP-034 Path A — fan-out emit at canonical BPs to override any
+      // pre-existing @container slot (max-width: Npx) cascade conflicts.
+      // bp:0 sets the top-level rule; 375/768/1440 dedupe-update existing
+      // @container blocks (emitTweak Case C — replaces decl in place,
+      // preserves other decls) OR create new ones (Case A) when absent.
+      const value = `var(${tokenName})`
+      setSession((prev) => {
+        let next = prev
+        for (const bp of [0, 375, 768, 1440] as const) {
+          next = addTweak(next, { selector, bp, property, value })
+        }
+        return next
+      })
     },
     [],
   )

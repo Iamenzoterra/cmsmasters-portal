@@ -82,7 +82,7 @@ describe('TokenChip — title attr', () => {
     )
     const chip = getByTestId('token-chip---h2-font-size')
     expect(chip.getAttribute('title')).toBe(
-      'Sets 34/37/42px at M/T/D · Note: existing breakpoint overrides may still apply.',
+      'Sets 34/37/42px at M/T/D',
     )
   })
 
@@ -92,7 +92,7 @@ describe('TokenChip — title attr', () => {
     )
     const chip = getByTestId('token-chip---h2-font-size')
     expect(chip.getAttribute('title')).toBe(
-      'Sets 34/37/42px at M/T/D · Note: existing breakpoint overrides may still apply.',
+      'Sets 34/37/42px at M/T/D',
     )
   })
 })

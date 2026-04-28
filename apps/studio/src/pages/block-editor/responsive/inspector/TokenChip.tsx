@@ -4,10 +4,15 @@
 // Two modes:
 //   - in-use:    subdued span; "Using --<token>"; non-clickable (no onApply).
 //   - available: clickable button; "Use --<token> ✓"; clicking calls onApply
-//                which emits a bp:0 tweak with `var(--<token>)` (fluid token
-//                resolves correctly across all 3 BPs via clamp).
+//                which (WP-034 Path A) routes through dispatchInspectorEdit's
+//                'apply-token' kind → emits 4 tweaks at canonical BPs
+//                (0/375/768/1440) so any pre-existing @container slot
+//                cascade overrides are dedupe-updated to the same token
+//                value. Fluid token resolves correctly across all 3 BPs
+//                via clamp.
 //
-// Hover title carries the M/T/D triple + Phase 4 Ruling 2 cascade-override note.
+// Hover title carries the M/T/D triple. Cascade-override caveat removed
+// post-WP-034 — Path A fan-out handles the conflict.
 
 import type { InspectorBp } from './Inspector'
 
@@ -23,8 +28,9 @@ export interface TokenChipProps {
 export function TokenChip(props: TokenChipProps) {
   const { mode, tokenName, valuesByBp, onApply } = props
   const testId = props['data-testid'] ?? `token-chip-${tokenName}`
-  // Phase 4 Ruling 2: tooltip surfaces cascade-override known limitation.
-  const title = `Sets ${valuesByBp[375]}/${valuesByBp[768]}/${valuesByBp[1440]}px at M/T/D · Note: existing breakpoint overrides may still apply.`
+  // WP-034 — cascade-override caveat removed (Path A fan-out at canonical
+  // BPs now handles pre-existing @container conflicts via dedupe-update).
+  const title = `Sets ${valuesByBp[375]}/${valuesByBp[768]}/${valuesByBp[1440]}px at M/T/D`
 
   if (mode === 'in-use') {
     return (
