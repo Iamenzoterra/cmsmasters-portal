@@ -445,3 +445,117 @@ byte-identical.
 | iframe → parent | `block-forge:inspector-pin-applied` | Pin reply + computedStyle | WP-033 |
 | parent → iframe | `block-forge:inspector-request-pin` | Apply pin to selector | WP-033 |
 | parent → iframe | `block-forge:inspector-request-hover` | Apply transient hover to selector | **WP-036 P1** |
+
+## Inspector Typed Inputs + Tooltips (WP-037)
+
+> **Studio mirror:** `apps/studio/src/pages/block-editor/responsive/inspector/property-meta.ts` + `PropertyRow.tsx`. PROPERTY_META content byte-identical between surfaces.
+
+### PARITY divergence formalized (Phase 0 RECON Ruling 1B)
+
+The §"Inspector (Phase 4 — WP-033)" claim above that "Inspector internals are byte-identical mod 3-line JSDoc headers" is **not currently true for `PropertyRow.tsx` + `InspectorPanel.tsx`**:
+
+| File | block-forge shape | Studio shape |
+|---|---|---|
+| `PropertyRow.tsx` | Single-cell (post-WP-033 polish: `value` / `onEdit` / `onRevert` + unit-handling via `parseValueUnit` / `normalizeWithUnit`) | 3-BP M/T/D grid (`valuesByBp` / `activeBp` / `onBpSwitch` / `onCellEdit`) |
+| `InspectorPanel.tsx` | Single-cell wiring (`value={valueOf(prop)}` + `onEdit={editProp(prop)}`) | M/T/D wiring (`valuesByBp={sourceByBp(prop)}` + `onCellEdit={editProp(prop)}`) |
+
+WP-037 **does not** restore parity at the row-shape level — that is a separate larger workpackage. Instead WP-037 introduces a shape-agnostic content layer (`PROPERTY_META`) and renders enum `<select>` adapted per surface:
+
+- **block-forge**: single editable cell renders `<select>` for enum properties.
+- **Studio**: only the active M/T/D cell renders `<select>`; inactive cells stay text spans (per the existing "switch via ↗ to edit elsewhere" UX).
+
+### Phase 1 — typed enum inputs
+
+New file: `tools/block-forge/src/lib/property-meta.ts` (byte-identical body to Studio mirror mod 3-line JSDoc header).
+
+Schema:
+
+```ts
+export type PropertyKind = 'numeric' | 'enum'
+export interface PropertyMeta {
+  kind: PropertyKind
+  tooltip: string                // Phase 2 consumes via Radix Tooltip
+  options?: readonly string[]    // required when kind === 'enum'
+}
+export const PROPERTY_META: Readonly<Record<string, PropertyMeta>> = { /* ... */ }
+export function getPropertyMeta(property: string): PropertyMeta | undefined
+```
+
+Initial enum entries (LAYOUT-only V1 scope):
+
+| Property | Options |
+|---|---|
+| `display` | `block`, `flex`, `inline`, `inline-block`, `inline-flex`, `grid`, `inline-grid`, `none`, `contents` |
+| `flex-direction` | `row`, `row-reverse`, `column`, `column-reverse` |
+| `align-items` | `stretch`, `flex-start`, `flex-end`, `center`, `baseline` |
+| `justify-content` | `flex-start`, `flex-end`, `center`, `space-between`, `space-around`, `space-evenly`, `stretch` |
+
+`grid-template-columns` is NOT enum (free-form template strings) — stays text input.
+
+**Custom-value fallback** (RECON Ruling 4B): when a current value is not in `meta.options` (e.g. legacy `display: table-cell` tweak), the dropdown prepends a disabled `<option>` labeled `"<value> (custom)"` so the value survives + is clearly flagged as outside the curated list.
+
+### Phase 2 — Tooltip primitive + label hints
+
+New primitive: `packages/ui/src/primitives/tooltip.tsx` (first Tooltip in the DS).
+
+- Underpinning: `@radix-ui/react-tooltip ^1.2.7` (+1 new dep).
+- API: convenience `<Tooltip content="...">{trigger}</Tooltip>` + compound `TooltipProvider/Root/Trigger/Content/Arrow/Portal` exports.
+- Empty-content escape: returns children unwrapped when `content` is falsy → no Provider needed when meta.tooltip absent.
+- Tokens used: `--popover` / `--popover-foreground` (intentionally inverted vs body for hover-distinct contrast), `--shadow-md`, `--rounded-md`, `--spacing-xs` / `--spacing-2xs`, `--text-xs-font-size` / `--text-xs-line-height`.
+- Defaults: `delayDuration={400}`, `skipDelayDuration={150}` at the Provider level (faster than Radix 700ms default for power-user authoring tools); `side="right"`, `align="start"`, `sideOffset={8}` per Tooltip; `avoidCollisions=true` (Radix default — auto-flips when right edge would overflow).
+
+`PropertyRow` integration (both surfaces):
+
+```tsx
+{meta?.tooltip ? (
+  <Tooltip content={meta.tooltip}>
+    <button type="button" data-testid="property-row-{label}-label-trigger"
+            className="...cursor-help underline decoration-dotted...">{label}</button>
+  </Tooltip>
+) : (
+  <div className="..." title={label}>{label}</div>
+)}
+```
+
+Branch render avoids inconsistent UX — properties without `meta.tooltip` keep the existing plain-`<div>` label with browser-native `title` attribute.
+
+App-root wrappers added: `tools/block-forge/src/main.tsx` and `apps/studio/src/main.tsx` wrap with `<TooltipProvider>` so `skipDelayDuration` coordinates across the entire app instance.
+
+### Owned files (block-forge surface) ↔ Studio mirror
+
+| block-forge file | Studio mirror file |
+|---|---|
+| `src/lib/property-meta.ts` | `…/inspector/property-meta.ts` |
+| (n/a — DS package) | (n/a — DS package: `packages/ui/src/primitives/tooltip.tsx`) |
+
+### Pre-flight commit (WP-033 post-close polish)
+
+Phase 0 RECON surfaced an uncommitted body of work in the working tree — the WP-033 "post-close polish" that migrated `PropertyRow.tsx` + `InspectorPanel.tsx` + `Inspector.tsx` + `useInspectorPerBpValues.ts` to single-cell layout. Stale tests against this polish were misdiagnosed as "test rot from WP-033 close"; reality was: HEAD had M/T/D grid + matching tests, working tree had single-cell + stale tests.
+
+Pre-flight commit `3a4f345c` landed the polish + regenerated tests in one atomic unit so HEAD remains green at every commit. WP-037 Phase 1 then proceeded against the now-committed single-cell baseline.
+
+### Known limitations
+
+- **PARITY divergence on PropertyRow row-shape persists** — restoring it (porting Studio to single-cell, or porting block-forge back to M/T/D) is a separate WP candidate; WP-037 does not touch.
+- **Tooltip primitive is desktop-only by design** — Radix mobile fallback is long-press; Inspector authoring is not a mobile use case.
+- **Native `<select>` chevron rendering is OS-controlled** — visual smoke at WP-037 Phase 2 confirmed Chromium rendering is acceptable. Future polish could swap to Radix Select for cross-browser consistency if field data warrants.
+
+## WP-035 — Sandbox + Export (Forge-only; asymmetric by design)
+
+**Surface:** `tools/block-forge/src/components/ExportDialog.tsx` + `tools/block-forge/vite.config.ts` POST `/api/blocks/clone` middleware route + first-run seed for `tools/block-forge/blocks/`. StatusBar `[+ Clone]` + `[Export]` buttons in `tools/block-forge/src/components/StatusBar.tsx`; App-level wiring in `tools/block-forge/src/App.tsx`.
+
+**Studio mirror:** **NONE.** This asymmetry is intentional — Forge is the sandbox; export is one-way (Forge → manual paste/download → Studio Import). Adding a Studio-side ExportDialog or Clone would defeat the production gate model (Studio doesn't need to "export" anything; the DB IS the export surface). See saved memory `feedback_forge_sandbox_isolation` for the full architectural reasoning.
+
+**Contract:**
+- ExportDialog payload: `JSON.stringify(block, null, 2) + '\n'` — byte-parity with Vite middleware writeFile format (pinned in `tools/block-forge/src/__tests__/clone-endpoint.test.ts` "byte-parity" case).
+- Clone slug: `<sourceSlug>-copy-N` (auto-increment 1–99); `id` field stripped on clone; race-safe `wx`-flag atomic write.
+- Sandbox writes: ONLY `tools/block-forge/blocks/`; production seed at `content/db/blocks/` is READ-ONLY from Forge's POV (load-bearing assertion: `git diff content/db/blocks/` empty after any Forge session — empirically verified at WP-035 Phase 3 close).
+- First-run seed: one-shot per dev process; copies `content/db/blocks/*.json` → sandbox iff empty (`.gitkeep` tolerated; `*.bak` filtered); skipped when `BLOCK_FORGE_SOURCE_DIR` override is active.
+- `BLOCK_FORGE_SOURCE_DIR` env override: undocumented escape hatch for legacy direct-edit; not a UI feature.
+- Pure helpers `seedSandboxIfEmpty(sandboxDir, seedDir, sandboxDefault)` and `performCloneInSandbox(sandboxDir, sourceSlug)` exported from `tools/block-forge/vite.config.ts` so unit tests cover the middleware contract without spinning up the dev server.
+
+**Inverted-mirror contract on the Studio side:** `apps/studio/src/pages/block-editor/responsive/PARITY.md` documents the matching asymmetry under §"WP-035 — Studio Import (Studio-only; asymmetric by design)".
+
+**Tests:**
+- `tools/block-forge/src/__tests__/clone-endpoint.test.ts` — 12 cases (happy path; error paths 404/400×3/500; payload shape `id` stripped + byte-parity + variants/hooks/metadata preserved; SAFE_SLUG regex on derived suffix).
+- `tools/block-forge/src/__tests__/sandbox-seed.test.ts` — 7 cases (empty sandbox copy; populated skip; unreadable seed; SOURCE_DIR override; `.gitkeep` tolerance; `.bak` filtering; sandbox dir creation).

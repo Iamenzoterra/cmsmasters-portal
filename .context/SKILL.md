@@ -121,6 +121,44 @@ The person who completes a layer is responsible for updating context for the nex
 
 ---
 
+## Block authoring loop (post-WP-035, 2026-04-28)
+
+Forge is the **sandbox**; Studio is the **production gate**. The two surfaces never cross-write.
+
+```
+┌────────────────────────────────────┐
+│ Block Forge (tools/block-forge/)   │
+│ Sandbox: tools/block-forge/blocks/ │
+│   [Save]    → sandbox file         │
+│   [+ Clone] → <slug>-copy-N.json   │
+│   [Export]  → ExportDialog →       │
+│               Download JSON OR     │
+│               Copy payload         │
+└──────────────┬─────────────────────┘
+               │ (manual paste / file)
+               ▼
+┌────────────────────────────────────┐
+│ Studio (apps/studio/)              │
+│ block-editor: [Import JSON] →      │
+│   ImportDialog →                   │
+│   POST /api/blocks/import →        │
+│   Hono upserts by slug →           │
+│   server-side fire-and-forget      │
+│   revalidate → portal sees edit    │
+└────────────────────────────────────┘
+```
+
+**Key invariants:**
+- Forge NEVER writes to `content/db/blocks/` (production seed); that path is read-only from Forge's POV. `/content-push` skill remains the legacy push primitive but is no longer the Forge-edit pathway.
+- Studio Import is the ONLY DB write path triggered by manual block authoring. `POST /api/blocks/import` resolves create-vs-update via `getBlockBySlug`; `id` field in payload is ignored.
+- Server-side revalidate uses canonical `'{}'` body (cache-wide invalidation per saved memory `feedback_revalidate_default`).
+- First-run seed (one-shot per Forge dev process) copies `content/db/blocks/*.json` into sandbox if empty; never overwrites populated sandbox.
+- Cloned blocks strip the `id` field; sandbox doesn't enforce id uniqueness (DB resolves at next import).
+
+**See:** `workplan/WP-035-block-forge-sandbox-export-import.md`, saved memory `feedback_forge_sandbox_isolation`.
+
+---
+
 ## For Dmitry
 
 To start any new agent session:

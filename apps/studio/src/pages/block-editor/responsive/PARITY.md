@@ -356,3 +356,102 @@ usage byte-identical. Component logic identical.
 
 Studio adds the SAME `block-forge:inspector-request-hover` listener at
 `preview-assets.ts` IIFE. No Studio-specific postMessage divergence.
+
+## Inspector Typed Inputs + Tooltips (WP-037)
+
+> Cross-surface mirror — block-forge owns `tools/block-forge/src/lib/property-meta.ts` + `packages/ui/src/primitives/tooltip.tsx`. Studio mirrors property-meta.ts byte-identically (mod 3-line JSDoc header).
+
+### PARITY divergence formalized (Phase 0 RECON Ruling 1B)
+
+Studio's `PropertyRow.tsx` + `InspectorPanel.tsx` are on the **3-BP M/T/D
+grid** shape (per WP-033 Phase 4 mirror); block-forge's are on **single-cell
+post-WP-033 polish** shape. The "byte-identical mod 3-line JSDoc header"
+claim in §"Inspector (Phase 4 — WP-033)" above is **stale at the row-shape
+level**. WP-037 introduces shape-agnostic content metadata and renders
+adapt to each shape:
+
+- **Studio**: only the active M/T/D cell renders `<select>` for enum
+  properties; inactive cells stay text spans. Switch BP via ↗ first to
+  edit a different BP.
+- **block-forge**: the single editable cell renders `<select>`.
+
+### Phase 1 — typed enum inputs
+
+`apps/studio/src/pages/block-editor/responsive/inspector/property-meta.ts`
+mirrors `tools/block-forge/src/lib/property-meta.ts` byte-identically mod
+3-line JSDoc header.
+
+`PropertyRow.tsx` adds optional `meta?: PropertyMeta` prop with
+`getPropertyMeta(label)` fallback. When `meta.kind === 'enum'`, the active
+cell branches to `<select>` (with `data-testid="...-select-{bp}"`); custom
+values prepended as disabled `(custom)` option.
+
+PROPERTY_META covers 4 enum properties: `display`, `flex-direction`,
+`align-items`, `justify-content`. Tooltip text shipped Phase 1 in the same
+SoT, consumed Phase 2.
+
+### Phase 2 — Tooltip primitive (DS-package level)
+
+Studio imports `Tooltip` + `TooltipProvider` from `@cmsmasters/ui`. The
+primitive lives in `packages/ui/src/primitives/tooltip.tsx` (first
+DS-level tooltip). `apps/studio/src/main.tsx` wraps the React tree with
+`<TooltipProvider>` so `skipDelayDuration` works across all label
+tooltips.
+
+`PropertyRow.tsx` branch-renders the label:
+
+```tsx
+{meta?.tooltip ? (
+  <Tooltip content={meta.tooltip}>
+    <button type="button" data-testid="property-row-{label}-label-trigger"
+            className="...cursor-help underline decoration-dotted...">{label}</button>
+  </Tooltip>
+) : (
+  <div className="..." title={label}>{label}</div>
+)}
+```
+
+Properties without `meta.tooltip` (margin/padding/font-size/etc.) keep the
+existing plain `<div>` label with browser-native `title` — no UX
+inconsistency.
+
+### Owned files (Studio surface) ↔ block-forge mirror
+
+| Studio file | block-forge mirror file |
+|---|---|
+| `./inspector/property-meta.ts` | `tools/block-forge/src/lib/property-meta.ts` |
+| (consumes from `@cmsmasters/ui`) | (consumes from `@cmsmasters/ui`) |
+
+### Test patterns
+
+- `renderRow(ui)` / `renderPanel(ui)` / `renderInspector(ui)` helpers in
+  `__tests__/PropertyRow.test.tsx`, `…/InspectorPanel.test.tsx`,
+  `…/Inspector.test.tsx` wrap with `<TooltipProvider>` so enum-label tests
+  (which now render `<Tooltip>`) get the required Provider.
+- `rerender(...)` calls (RTL re-render of an already-rendered tree) MUST
+  wrap their argument in `<TooltipProvider>` explicitly — `rerender` does
+  not reuse the original wrapper.
+
+### Known limitations
+
+- **Row-shape PARITY divergence persists** — same as block-forge §Known
+  limitations. Restoring is out of WP-037 scope.
+- **Native `<select>` styling is OS-controlled** at the chevron + open
+  popover. Cross-browser smoke is desktop-Chromium only at WP-037 close.
+
+## WP-035 — Studio Import (Studio-only; asymmetric by design)
+
+**Surface:** `apps/studio/src/components/block-import-json-dialog.tsx` + `apps/studio/src/pages/block-editor.tsx` `[Import JSON]` toolbar button + `apps/studio/src/lib/block-api.ts` `importBlockApi` wrapper + `apps/api/src/routes/blocks.ts` POST `/api/blocks/import` route + `packages/validators/src/block.ts` `importBlockSchema`.
+
+**Forge mirror:** **NONE.** This asymmetry is intentional — Studio is the production gate; import is one-way (manual paste/upload from Forge → DB → portal revalidate). Adding a Forge-side ImportDialog would defeat the sandbox model (Forge already reads from its own sandbox via the existing `listBlocks` / `getBlock` middleware; nothing else to import). See saved memory `feedback_forge_sandbox_isolation` for the full architectural reasoning.
+
+**Contract:**
+- POST `/api/blocks/import` — atomic find-or-create-by-slug via `getBlockBySlug`; payload `id` ignored; auto-revalidate body `'{}'` (canonical per saved memory `feedback_revalidate_default`); failures non-fatal (revalidated boolean returned in response).
+- ImportDialog: paste textarea OR file upload; validates against `importBlockSchema` (relaxed superset of `createBlockSchema` — `slug`, `name`, `html` required; `css`/`js`/`block_type` defaulted to empty string; `hooks`/`metadata`/`variants` optional); slug-collision warning surfaces "Overwrite & Import" CTA when `getBlockBySlug` resolves.
+- Auth gate: `authMiddleware + requireRole('content_manager', 'admin')` — same as POST `/blocks`.
+- Returns: `{ data: Block, action: 'created' | 'updated', revalidated: boolean }`; HTTP 201 on create, 200 on update.
+
+**Inverted-mirror contract on the Forge side:** `tools/block-forge/PARITY.md` documents the matching asymmetry under §"WP-035 — Sandbox + Export (Forge-only; asymmetric by design)".
+
+**Tests:**
+- `apps/studio/src/components/__tests__/block-import-json-dialog.test.tsx` — 18 cases (render, close paths, parse states, file upload, slug collision, import flow).

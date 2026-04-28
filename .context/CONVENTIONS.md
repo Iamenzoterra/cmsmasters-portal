@@ -1007,3 +1007,150 @@ References:
 - `.claude/skills/domains/studio-blocks/SKILL.md` §Inspector UX Polish cross-surface mirror
 - `workplan/WP-036-inspector-ux-polish.md` (full WP doc)
 - `logs/wp-036/phase-{0..3}-result.md`
+
+## Inspector typed inputs + Tooltip primitive (WP-037)
+
+Two patterns introduced together. Both apply to Inspector PropertyRow on
+both authoring surfaces (block-forge + Studio Responsive tab).
+
+### Pattern 1 — Property metadata source-of-truth (PROPERTY_META)
+
+Static map keyed by CSS property name → `{ kind, options?, tooltip }`.
+Drives input affordance (text vs select) AND tooltip text from a single
+file per surface. Byte-identical mirror at the second surface mod 3-line
+JSDoc header per cross-surface mirror discipline.
+
+Schema:
+
+```ts
+export type PropertyKind = 'numeric' | 'enum'
+export interface PropertyMeta {
+  kind: PropertyKind
+  tooltip: string                // 1-2 sentence "what does this do" hint
+  options?: readonly string[]    // required when kind === 'enum'
+}
+export const PROPERTY_META: Readonly<Record<string, PropertyMeta>> = { /* ... */ }
+export function getPropertyMeta(property: string): PropertyMeta | undefined
+```
+
+Live at:
+- `tools/block-forge/src/lib/property-meta.ts`
+- `apps/studio/src/pages/block-editor/responsive/inspector/property-meta.ts`
+
+Initial scope (WP-037 V1) — 4 LAYOUT enum properties: `display`,
+`flex-direction`, `align-items`, `justify-content`. Numeric properties
+have NO entry → `getPropertyMeta` returns `undefined` → PropertyRow falls
+back to text input. Adding an entry to ONE surface MUST add to the OTHER
+in the same commit.
+
+Custom-value fallback (Phase 0 RECON Ruling 4B): if the current value
+is not in `meta.options` (e.g. legacy `display: table-cell` tweak), the
+dropdown prepends a disabled `<option>` labeled `"<value> (custom)"`.
+Value survives, clearly flagged as outside the curated list.
+
+### Pattern 2 — Radix Tooltip primitive (`packages/ui`)
+
+First Tooltip in the DS. Underpinned by `@radix-ui/react-tooltip`.
+
+Convenience + compound APIs:
+
+```tsx
+// 90% case
+<Tooltip content="...">
+  <button type="button">trigger</button>
+</Tooltip>
+
+// Compound for rich content / non-default positioning
+<TooltipRoot>
+  <TooltipTrigger asChild><button>...</button></TooltipTrigger>
+  <TooltipPortal>
+    <TooltipContent side="top" align="center">
+      <Rich>...</Rich>
+      <TooltipArrow />
+    </TooltipContent>
+  </TooltipPortal>
+</TooltipRoot>
+```
+
+Tokens used: `--popover` / `--popover-foreground` (intentionally inverted
+vs body — dark popover on light surface), `--shadow-md`, `--rounded-md`,
+`--spacing-xs` / `--spacing-2xs`, `--text-xs-font-size` /
+`--text-xs-line-height`. No new tokens introduced.
+
+Defaults: `delayDuration={400}` (Provider-level — faster than Radix 700ms
+default for power-user tooling), `skipDelayDuration={150}`, `side="right"`,
+`align="start"`, `sideOffset={8}`. Mobile fallback is long-press (Radix
+default — desktop-only authoring tools accept this).
+
+App-root requirement: wrap the React tree with `<TooltipProvider>` once
+at `main.tsx` so `skipDelayDuration` coordinates across all instances:
+
+```tsx
+import { TooltipProvider } from '@cmsmasters/ui'
+createRoot(rootEl).render(
+  <StrictMode>
+    <TooltipProvider>
+      <App />
+    </TooltipProvider>
+  </StrictMode>
+)
+```
+
+Empty-content escape: `<Tooltip content={undefined}>` returns children
+unwrapped (no Radix machinery, no Provider needed). Use for properties
+that have no curated tooltip text — branch-render label as plain `<div>`
+in that case to keep UX consistent (some labels show tooltip, others
+don't but visually all look identical otherwise).
+
+Test pattern: every render of a component that may invoke `<Tooltip>`
+internally needs `<TooltipProvider>` wrapping. Add a `renderRow(ui)` /
+`renderPanel(ui)` / `renderInspector(ui)` helper at the top of each test
+file:
+
+```ts
+function renderRow(ui: ReactElement) {
+  return render(<TooltipProvider>{ui}</TooltipProvider>)
+}
+```
+
+`rerender(...)` calls (RTL re-render of an already-mounted root) MUST
+wrap their argument in `<TooltipProvider>` explicitly — `rerender` does
+not reuse the original wrapper.
+
+References:
+- `tools/block-forge/PARITY.md` §Inspector Typed Inputs + Tooltips (WP-037)
+- `apps/studio/src/pages/block-editor/responsive/PARITY.md` §Inspector Typed Inputs + Tooltips (WP-037)
+- `.claude/skills/domains/infra-tooling/SKILL.md` §Inspector typed inputs + tooltips
+- `.claude/skills/domains/studio-blocks/SKILL.md` §Inspector typed inputs + tooltips
+- `.claude/skills/domains/pkg-ui/SKILL.md` Recipes (Tooltip)
+- `workplan/WP-037-inspector-typed-inputs.md` (full WP doc)
+- `logs/wp-037/phase-{0,3}-result.md`
+
+---
+
+## Block authoring (WP-035 — 2026-04-28)
+
+Block Forge is the sandbox; Studio is the production gate. The two surfaces never cross-write. See saved memory `feedback_forge_sandbox_isolation` for the full architectural reasoning.
+
+| Action | Path | Notes |
+|---|---|---|
+| Edit a block visually | Forge `[Save]` writes to `tools/block-forge/blocks/<slug>.json` (sandbox) | Production seed at `content/db/blocks/` is read-only from Forge |
+| Duplicate for experiment | Forge `[+ Clone]` creates `<slug>-copy-N.json` (auto-suffix 1–99) | `id` stripped; same sandbox; race-safe `wx`-flag write |
+| Ship to production | Forge `[Export]` → Copy payload OR Download JSON → Studio `[Import JSON]` → DB via `POST /api/blocks/import` | Server-side auto-revalidate (body `'{}'`); failures non-fatal |
+| Legacy direct-edit | `BLOCK_FORGE_SOURCE_DIR=<abs>` env override | Escape hatch only; undocumented in UI |
+| Bulk seed → DB (legacy) | `/content-push` skill | Reads `content/db/blocks/`; not affected by Forge |
+
+**Don't:**
+- Add a "publish from Forge" button that bypasses Studio (defeats the gate; saved memory `feedback_forge_sandbox_isolation`)
+- Modify `content/db/blocks/` from Forge code paths (production seed is read-only from Forge)
+- Hardcode `id` in cloned payloads (sandbox doesn't enforce; DB resolves on next import)
+- Use path-scoped revalidate body (always `'{}'` per saved memory `feedback_revalidate_default`)
+
+**First-run seed:** one-shot per Forge dev process — copies `content/db/blocks/*.json` into sandbox iff empty (`.gitkeep` tolerated; `*.bak` filtered). Skipped when `BLOCK_FORGE_SOURCE_DIR` override is active. Sandbox dir is git-tracked (Phase 0 Ruling B = COMMIT for cross-machine continuity); `tools/block-forge/blocks/*.bak` is gitignored.
+
+References:
+- `tools/block-forge/PARITY.md` §WP-035 — Sandbox + Export
+- `apps/studio/src/pages/block-editor/responsive/PARITY.md` §WP-035 — Studio Import
+- `.context/SKILL.md` §Block authoring loop
+- `workplan/WP-035-block-forge-sandbox-export-import.md`
+- `logs/wp-035/phase-{0,1,2,3,5}-result.md`
