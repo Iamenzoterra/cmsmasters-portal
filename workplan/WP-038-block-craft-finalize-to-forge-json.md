@@ -2,7 +2,7 @@
 
 > Rewrite the `/block-craft` skill so the iteration loop stays at `tools/studio-mockups/<name>.html` (fast HTML preview at :7777), and on a user signal ("забираю", "готово", "ок", whatever natural-language phrasing) the skill ASSEMBLES an 11-key BlockJson and writes it to `tools/block-forge/blocks/<slug>.json` (the WP-035 sandbox). Closes the post-WP-035 architectural gap: blocks created from external sources (Figma → block-craft → ???) had no clean path INTO the Forge sandbox; only first-run seed (one-shot copy from `content/db/blocks/`) and Clone (sandbox-internal duplication) seeded Forge. After WP-038, `/block-craft` becomes the third seed source — a deliberate, user-confirmed FINALIZE step that splits HTML preview into BlockJson and lands it in Forge ready for responsive polish + Export → Studio Import → DB.
 
-**Status:** 🟡 IN PROGRESS — drafted 2026-04-28 after user surfaced the gap during WP-035 close
+**Status:** ✅ DONE — closed 2026-04-28; FINALIZE protocol shipped; cross-doc batch + saved memory + Forge PARITY entry + figma-use plugin-namespaced ratification documented
 **Priority:** P1 — closes the architectural seam left by WP-035; without it `/block-craft` outputs HTML that user must hand-convert to BlockJson before Forge can see it
 **Prerequisites:** WP-035 ✅ (sandbox dir exists, Vite middleware reads sandbox on every GET, Studio Import endpoint live)
 **Milestone/Wave:** ADR-025 Layer 2 polish — close the authoring loop end-to-end

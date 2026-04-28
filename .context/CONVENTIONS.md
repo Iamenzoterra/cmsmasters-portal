@@ -431,19 +431,20 @@ export async function fetchAllBlocks(): Promise<Block[]> {
 
 ---
 
-## Block creation workflow (WP-006, ADR-023, ADR-024)
+## Block creation workflow (WP-006, ADR-023, ADR-024, WP-035, WP-038)
 
-### Pipeline
-1. Figma design → `/block-craft` skill → Claude Code generates HTML+CSS+JS → preview on `localhost:7777`
-2. Iterate animations, interactions, layout until approved
-3. Studio → Import HTML → Process panel:
-   - Token scanner maps hardcoded CSS → `var(--token)` (auto-enabled suggestions, CM unchecks if broken)
-   - R2 image upload replaces Figma MCP URLs with permanent CDN URLs (`POST /api/upload/batch`)
-   - Component detection suggests `.cms-btn` classes for button-like elements
-   - Animation classes (`reveal`, `animate`) preserved — not tokenized
-   - JS extracted from `<script>` into separate `js` field
-4. Save → block stored in Supabase (`html`, `css`, `js` columns)
-5. Portal (Astro SSG) renders blocks at build time
+### Pipeline (post-WP-038 — 2026-04-28)
+1. Figma design → `/block-craft` skill → Claude Code generates HTML+CSS+JS → preview at `localhost:7777`
+2. Iterate animations, interactions, layout in `tools/studio-mockups/<name>.html` until approved (many cycles)
+3. User signals FINALIZE in natural language ("забираю", "готово", "ship", etc. — see `feedback_block_craft_finalize_protocol`); skill confirms slug + name (filename-first proposal); SPLIT contract assembles 11-key BlockJson and writes to `tools/block-forge/blocks/<slug>.json`. `id` field omitted (Studio Import server-resolves). `studio-mockups/<name>.html` stays on disk for further iterate cycles.
+4. User refreshes Forge `:7702` → block appears in picker → polish responsive variants, fluid mode, Inspector tweaks (WP-019/028/033 surfaces)
+5. Forge `[Export]` → Download JSON or Copy payload → Studio `[Import JSON]` → `POST /api/blocks/import` (Hono upserts by slug) → server-side fire-and-forget revalidate
+6. Process panel runs on Studio side post-Import only when needed for image upload (R2) — token scanning is no longer required for block-craft output (skill emits scoped tokens already). Component detection (`.cms-btn` classes) is still a Studio Process step for legacy HTML imports.
+7. Portal (Next.js, post-WP-007) renders blocks at request time via `BlockRenderer`; revalidate from step 5 flushes cache so the next request picks up the new HTML/CSS/JS.
+
+### Re-finalize loop (post-Phase 1 broadening)
+
+After step 5 lands the block in DB, the user may return to step 2 for desktop tweaks in `studio-mockups/<name>.html`. Re-finalize is idempotent: skill re-extracts html/css/js from updated mockup; preserves all other 8 fields (`slug`, `name`, `block_type`, `is_default`, `sort_order`, `hooks`, `metadata`, `variants`) from existing `tools/block-forge/blocks/<slug>.json`. Forge UI mutations (e.g. responsive variants, Inspector edits, slot-category overrides) are durable across re-finalize cycles. Mental model: studio-mockups HTML owns *content*; Forge sandbox JSON owns *about* the block.
 
 ### Block structure rules
 - HTML wrapped in `<section class="block-{slug}" data-block>`
@@ -1128,12 +1129,13 @@ References:
 
 ---
 
-## Block authoring (WP-035 — 2026-04-28)
+## Block authoring (WP-035 + WP-038 — 2026-04-28)
 
 Block Forge is the sandbox; Studio is the production gate. The two surfaces never cross-write. See saved memory `feedback_forge_sandbox_isolation` for the full architectural reasoning.
 
 | Action | Path | Notes |
 |---|---|---|
+| Create new block from Figma | `/block-craft` skill iterates `tools/studio-mockups/<name>.html` at `:7777`; on user signal, FINALIZE writes 11-key BlockJson to `tools/block-forge/blocks/<slug>.json` (sandbox) | Third sandbox seed source (alongside first-run + Clone); see saved memory `feedback_block_craft_finalize_protocol`; `id` field omitted; re-finalize preserves 8 metadata fields |
 | Edit a block visually | Forge `[Save]` writes to `tools/block-forge/blocks/<slug>.json` (sandbox) | Production seed at `content/db/blocks/` is read-only from Forge |
 | Duplicate for experiment | Forge `[+ Clone]` creates `<slug>-copy-N.json` (auto-suffix 1–99) | `id` stripped; same sandbox; race-safe `wx`-flag write |
 | Ship to production | Forge `[Export]` → Copy payload OR Download JSON → Studio `[Import JSON]` → DB via `POST /api/blocks/import` | Server-side auto-revalidate (body `'{}'`); failures non-fatal |
@@ -1145,6 +1147,8 @@ Block Forge is the sandbox; Studio is the production gate. The two surfaces neve
 - Modify `content/db/blocks/` from Forge code paths (production seed is read-only from Forge)
 - Hardcode `id` in cloned payloads (sandbox doesn't enforce; DB resolves on next import)
 - Use path-scoped revalidate body (always `'{}'` per saved memory `feedback_revalidate_default`)
+- Auto-finalize from `/block-craft` without an explicit user signal (FINALIZE is opt-in; saved memory `feedback_block_craft_finalize_protocol`)
+- Narrow re-finalize preservation to just `variants` (preserve all 8 metadata fields: slug, name, block_type, is_default, sort_order, hooks, metadata, variants)
 
 **First-run seed:** one-shot per Forge dev process — copies `content/db/blocks/*.json` into sandbox iff empty (`.gitkeep` tolerated; `*.bak` filtered). Skipped when `BLOCK_FORGE_SOURCE_DIR` override is active. Sandbox dir is git-tracked (Phase 0 Ruling B = COMMIT for cross-machine continuity); `tools/block-forge/blocks/*.bak` is gitignored.
 
@@ -1154,3 +1158,5 @@ References:
 - `.context/SKILL.md` §Block authoring loop
 - `workplan/WP-035-block-forge-sandbox-export-import.md`
 - `logs/wp-035/phase-{0,1,2,3,5}-result.md`
+- `workplan/WP-038-block-craft-finalize-to-forge-json.md`
+- `logs/wp-038/phase-{0,1,2}-result.md`

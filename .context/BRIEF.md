@@ -172,7 +172,7 @@ Display order (WP-023): CSS `order` per slot, per breakpoint. Controls stacking 
 - ⭐ Premium: Priority Support, Megakit Access (Epic 2 prep)
 
 **Block model (WP-005B + WP-006):**
-- **Block** = HTML + scoped CSS + JS in `blocks` table. Has hooks for dynamic data. Created via Figma → `/block-craft` skill → Studio import → Process panel. Animations: CSS scroll-driven (entrance) + animate-utils.js (behavioral). Components: `.cms-btn` classes from portal-blocks.css. ADR-023, ADR-024.
+- **Block** = HTML + scoped CSS + JS in `blocks` table. Has hooks for dynamic data. Created via Figma → `/block-craft` skill iterate at `:7777` → FINALIZE → Forge sandbox (`tools/block-forge/blocks/`) → responsive polish → Export → Studio Import → DB. Animations: CSS scroll-driven (entrance) + animate-utils.js (behavioral). Components: `.cms-btn` classes from portal-blocks.css. ADR-023, ADR-024, WP-035, WP-038.
 - **Template** = ordered position grid in `templates` table. Positions: `[{ position: 1, block_id: uuid|null }]`. One template → many themes.
 - **Theme** = `template_id` (FK→templates) + `block_fills` (CM fills empty positions per-theme). Dynamic data (price, links) lives in `theme.meta` → hooks inject at render time.
 

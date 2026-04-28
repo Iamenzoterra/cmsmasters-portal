@@ -577,3 +577,28 @@ Pre-flight commit `3a4f345c` landed the polish + regenerated tests in one atomic
 **Tests:**
 - `tools/block-forge/src/__tests__/clone-endpoint.test.ts` — 12 cases (happy path; error paths 404/400×3/500; payload shape `id` stripped + byte-parity + variants/hooks/metadata preserved; SAFE_SLUG regex on derived suffix).
 - `tools/block-forge/src/__tests__/sandbox-seed.test.ts` — 7 cases (empty sandbox copy; populated skip; unreadable seed; SOURCE_DIR override; `.gitkeep` tolerance; `.bak` filtering; sandbox dir creation).
+
+## WP-038 — `/block-craft` FINALIZE to Forge sandbox (Forge-only; asymmetric by design)
+
+**Surface:** `.claude/skills/block-craft/SKILL.md` Step 6 (FINALIZE Protocol) + SPLIT Contract section. The skill writes directly to `tools/block-forge/blocks/<slug>.json` via the Write tool — NOT through Forge's `POST /api/blocks/:slug` middleware route (that endpoint is overwrite-only with 404-if-absent semantics; the skill creates new files OR overwrites existing sandbox JSONs).
+
+**Studio mirror:** **NONE.** `/block-craft` is upstream of Forge. Studio's role (`POST /api/blocks/import` upsert-by-slug) is unchanged by WP-038 — the third seed source is sandbox-INPUT only, not production-roundtrip output. The WP-035 production-roundtrip asymmetry (ExportDialog in Forge with NO Studio mirror; ImportDialog in Studio with NO Forge mirror) is orthogonal and remains intact.
+
+**Contract:**
+- **Trigger interpretation** — natural-language only with PROCEED/DECLINE/CLARIFY precedence. Iterate verb (`change`, `поправ`, `додай`) wins over save signal (`забираю`, `ship`, `finalize`); explicit decline (`ні`, `wait`) wins over both. Pure affirmative (`ок`, `норм`) → CLARIFY (ask once); default → DECLINE (finalize is opt-in).
+- **CONFIRM step always runs** — slug + name with filename-first proposal (`<h1>`/`<h2>` fallback when filename is generic); collision warning shows mtime + size; user confirms / overrides / aborts. Maximum 2 confirm rounds.
+- **SPLIT contract is deterministic + idempotent** — strip `<!DOCTYPE>` / `<head>` / `<body>` / `<style data-preview-only>` wrappers; preserve outer `<section class="block-{slug}" data-block>...</section>` verbatim; strip global resets (`*, *::before, *::after { ... }`) and `body`/`html` rules from CSS; strip `<script>` tag wrappers from JS body; skip preview-only scripts. Works on full preview pages AND pre-stripped fragments.
+- **`id` field OMITTED** — Studio Import server-resolves on insert via `importBlockSchema.id` optional (`packages/validators/src/block.ts:89`); empirical safety: `performCloneInSandbox` strips id and Forge handles id-less files identically; no consumer in `tools/block-forge/src` reads `block.id`.
+- **Re-finalize preserves 8 metadata fields** from existing sandbox JSON: `slug`, `name`, `block_type`, `is_default`, `sort_order`, `hooks`, `metadata`, `variants`. Only `html`, `css`, `js` are recomputed from current studio-mockups HTML. Mental model: studio-mockups HTML owns *content*; Forge sandbox JSON owns everything *about* the block. Narrow `variants`-only preservation would silently overwrite block_type / is_default mutations from Forge UI — real data-loss bug.
+- **WRITE format** — `JSON.stringify(payload, null, 2) + '\n'`; byte-parity with Forge's `POST /api/blocks/:slug` writeFile convention (`tools/block-forge/vite.config.ts:333`); same shape as ExportDialog payload + Clone output.
+- **LEAVE-AS-IS** — `tools/studio-mockups/<name>.html` stays on disk post-finalize (sticky iterate target); user may return for desktop tweaks; re-finalize is allowed and idempotent.
+
+**Inverted-mirror contract:** none on Studio side — `/block-craft` is upstream of both surfaces. Cross-reference: see `## WP-035 — Sandbox + Export` (above) for the shared sandbox-isolation contract; WP-038 adds a third seed source (alongside first-run + Clone) without modifying the production roundtrip.
+
+**Tests:**
+- Skill behavior validated via live smoke (deferred from Phase 1 §1.7 — first user-driven `/block-craft` post-Phase-1-commit is the natural smoke point).
+- Cross-doc parity captured in: `.context/SKILL.md` §Block authoring loop (3 seed sources diagram); `.context/CONVENTIONS.md` §Block creation workflow (7-step pipeline) + §Block authoring action table (Create new block from Figma row).
+
+**Skill commit reference:** `13c029b5` — `feat(skill): WP-038 Phase 1 — /block-craft FINALIZE protocol + SPLIT contract + Ruling fixes`.
+
+**See:** `workplan/WP-038-block-craft-finalize-to-forge-json.md`, saved memory `feedback_block_craft_finalize_protocol`, sister memory `feedback_forge_sandbox_isolation` (WP-035 production roundtrip asymmetry — third sandbox seed source orthogonal).

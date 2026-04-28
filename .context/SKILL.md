@@ -121,11 +121,24 @@ The person who completes a layer is responsible for updating context for the nex
 
 ---
 
-## Block authoring loop (post-WP-035, 2026-04-28)
+## Block authoring loop (post-WP-035 + WP-038, 2026-04-28)
 
-Forge is the **sandbox**; Studio is the **production gate**. The two surfaces never cross-write.
+Forge is the **sandbox**; Studio is the **production gate**. Three seed sources feed Forge sandbox; one one-way path (Forge → Studio) ships to production. The two surfaces never cross-write.
 
 ```
+┌─────────────────────────────────────────┐
+│ Sandbox seed sources (3 — input only)   │
+│   1. First-run seed (one-shot per       │
+│      Forge dev process; copies          │
+│      content/db/blocks/*.json if empty) │
+│   2. [+ Clone] in Forge (sandbox-       │
+│      internal duplication)              │
+│   3. /block-craft FINALIZE (writes      │
+│      tools/block-forge/blocks/<slug>    │
+│      .json from studio-mockups HTML)    │
+└──────────────┬──────────────────────────┘
+               │ (sandbox writes)
+               ▼
 ┌────────────────────────────────────┐
 │ Block Forge (tools/block-forge/)   │
 │ Sandbox: tools/block-forge/blocks/ │
@@ -154,8 +167,9 @@ Forge is the **sandbox**; Studio is the **production gate**. The two surfaces ne
 - Server-side revalidate uses canonical `'{}'` body (cache-wide invalidation per saved memory `feedback_revalidate_default`).
 - First-run seed (one-shot per Forge dev process) copies `content/db/blocks/*.json` into sandbox if empty; never overwrites populated sandbox.
 - Cloned blocks strip the `id` field; sandbox doesn't enforce id uniqueness (DB resolves at next import).
+- `/block-craft` FINALIZE writes `tools/block-forge/blocks/<slug>.json` from current `tools/studio-mockups/<name>.html` per SPLIT contract (id-omitted; variants:null on first finalize). Re-finalize preserves 8 metadata fields from existing sandbox JSON; only html/css/js are recomputed. `studio-mockups/<name>.html` stays on disk post-finalize for further iterate cycles.
 
-**See:** `workplan/WP-035-block-forge-sandbox-export-import.md`, saved memory `feedback_forge_sandbox_isolation`.
+**See:** `workplan/WP-035-block-forge-sandbox-export-import.md`, `workplan/WP-038-block-craft-finalize-to-forge-json.md`, saved memory `feedback_forge_sandbox_isolation`, saved memory `feedback_block_craft_finalize_protocol`.
 
 ---
 
