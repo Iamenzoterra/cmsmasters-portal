@@ -257,8 +257,26 @@ export function composeSrcDoc(input: ComposeSrcDocInput): string {
         return path.join(' > ');
       }
 
+      // Mirror of TEXT_TAGS in useInspectorPerBpValues.ts harvestSnapshot.
+      const TEXT_TAGS = ['H1','H2','H3','H4','H5','H6','P','SPAN','A','BUTTON','LABEL','LI','TD','TH',
+                         'CAPTION','LEGEND','SUMMARY','DT','DD','BLOCKQUOTE','CITE','EM','STRONG','I',
+                         'B','U','S','CODE','PRE','SMALL','SUB','SUP','MARK','TIME','Q','FIGCAPTION'];
+
       function snapshotComputed(el) {
         const cs = getComputedStyle(el);
+        let hasDirectText = false;
+        for (let i = 0; i < el.childNodes.length; i++) {
+          const node = el.childNodes[i];
+          if (node.nodeType === 3 && (node.textContent || '').trim().length > 0) {
+            hasDirectText = true;
+            break;
+          }
+        }
+        const isTextTag = TEXT_TAGS.indexOf(el.tagName) !== -1;
+        const parentEl = el.parentElement;
+        const parentFs = parentEl ? getComputedStyle(parentEl).fontSize : '';
+        const fontIntentional = !!cs.fontSize && cs.fontSize !== parentFs;
+        const hasText = hasDirectText || isTextTag || fontIntentional ? '1' : '0';
         return {
           padding: cs.padding, paddingTop: cs.paddingTop, paddingRight: cs.paddingRight,
           paddingBottom: cs.paddingBottom, paddingLeft: cs.paddingLeft,
@@ -273,6 +291,9 @@ export function composeSrcDoc(input: ComposeSrcDocInput): string {
           gridTemplateColumns: cs.gridTemplateColumns,
           width: cs.width, height: cs.height,
           borderRadius: cs.borderRadius,
+          transform: cs.transform, transformOrigin: cs.transformOrigin,
+          hasText: hasText,
+          childCount: String(el.children.length),
         };
       }
 

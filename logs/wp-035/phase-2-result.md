@@ -82,4 +82,5 @@ Studio-side production gate for the WP-035 manual roundtrip. New `BlockImportJso
 
 ## Git
 
-- Commit: `<sha>` — `feat(studio,api): WP-035 phase 2 — Studio ImportDialog + POST /api/blocks/import [WP-035 phase 2]`
+- Commit: `5b29f9a7` — `feat(studio,api): WP-035 phase 2 — Studio ImportDialog + POST /api/blocks/import [WP-035 phase 2]` (9 files, +1036/-3)
+- Pre-commit lint-ds hook ran on 7 staged files: ✅ clean.

@@ -43,12 +43,23 @@ function buildClamp(maxPx: number): string {
   return `clamp(${minPx}px, ${fluidVw}vw, ${maxPx}px)`
 }
 
+/** True iff an adaptive (@container/@media) rule for `selector` declares `prop`. */
+function hasAdaptiveDecl(rules: readonly Rule[], selector: string, prop: string): boolean {
+  for (const r of rules) {
+    if (r.selector !== selector) continue
+    if (!r.atRuleChain.some(a => a.startsWith('@container') || a.startsWith('@media'))) continue
+    if (r.declarations.some(d => d.prop === prop)) return true
+  }
+  return false
+}
+
 export function heuristicSpacingClamp(analysis: BlockAnalysis): Suggestion[] {
   const out: Suggestion[] = []
   for (const rule of analysis.rules) {
     if (isAlreadyAdaptive(rule)) continue
     for (const decl of rule.declarations) {
       if (!SPACING_PROPS.has(decl.prop)) continue
+      if (hasAdaptiveDecl(analysis.rules, rule.selector, decl.prop)) continue
       const maxPx = maxPxFromValue(decl.value)
       if (maxPx === null || maxPx < 40) continue
       const value = buildClamp(maxPx)

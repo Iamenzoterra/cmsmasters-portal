@@ -6,7 +6,7 @@ grid:
   desktop:
     min-width: 1440px
     columns:
-      sidebar-left: 1fr
+      sidebar-left: 360px
       content: 1fr
       sidebar-right: 1fr
     column-gap: '0'

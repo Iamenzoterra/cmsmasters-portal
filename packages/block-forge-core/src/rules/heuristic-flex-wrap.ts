@@ -33,11 +33,22 @@ function isTopLevelParent(parentTag: string | null): boolean {
   return parentTag === null || parentTag === 'body'
 }
 
+/** True iff an adaptive (@container/@media) rule for `selector` declares `prop`. */
+function hasAdaptiveDecl(rules: readonly Rule[], selector: string, prop: string): boolean {
+  for (const r of rules) {
+    if (r.selector !== selector) continue
+    if (!r.atRuleChain.some(a => a.startsWith('@container') || a.startsWith('@media'))) continue
+    if (r.declarations.some(d => d.prop === prop)) return true
+  }
+  return false
+}
+
 export function heuristicFlexWrap(analysis: BlockAnalysis): Suggestion[] {
   const out: Suggestion[] = []
   for (const rule of analysis.rules) {
     if (isAlreadyAdaptive(rule)) continue
     if (!isFlexRow(rule)) continue
+    if (hasAdaptiveDecl(analysis.rules, rule.selector, 'flex-wrap')) continue
     const matches = matchedElements(rule, analysis.elements)
     if (matches.length === 0) continue
 

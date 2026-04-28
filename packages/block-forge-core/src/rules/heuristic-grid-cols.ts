@@ -20,6 +20,16 @@ function parseRepeatColumns(value: string): number | null {
   return Number.isFinite(n) ? n : null
 }
 
+/** True iff an adaptive (@container/@media) rule for `selector` declares `prop`. */
+function hasAdaptiveDecl(rules: readonly Rule[], selector: string, prop: string): boolean {
+  for (const r of rules) {
+    if (r.selector !== selector) continue
+    if (!r.atRuleChain.some(a => a.startsWith('@container') || a.startsWith('@media'))) continue
+    if (r.declarations.some(d => d.prop === prop)) return true
+  }
+  return false
+}
+
 export function heuristicGridCols(analysis: BlockAnalysis): Suggestion[] {
   const out: Suggestion[] = []
   for (const rule of analysis.rules) {
@@ -30,6 +40,7 @@ export function heuristicGridCols(analysis: BlockAnalysis): Suggestion[] {
     if (!cols) continue
     const n = parseRepeatColumns(cols)
     if (n === null || n < 2) continue
+    if (hasAdaptiveDecl(analysis.rules, rule.selector, 'grid-template-columns')) continue
 
     const rationale = `grid with ${n} columns — collapse to ${n >= 3 ? '2 at 768px (and 1 at 480px)' : '1 at 480px'}`
 
