@@ -398,5 +398,8 @@ export default defineConfig({
     // `?raw` imports in preview-assets.ts. `css: true` processes CSS through
     // Vite's pipeline so `?raw` returns the actual file content.
     css: true,
+    // WP-042 — e2e specs use @playwright/test (not Vitest); exclude the dir
+    // so `npm test` doesn't try to import them as Vitest specs.
+    exclude: ['e2e/**', 'node_modules/**', 'dist/**'],
   },
 })

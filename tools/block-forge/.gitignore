@@ -5,3 +5,8 @@ dist/
 .vite/
 # WP-035 Phase 3 — sandbox .bak files are local recovery snapshots, not committed.
 blocks/*.bak
+
+# WP-042 — Playwright artifacts (auto-generated test output)
+test-results/
+playwright-report/
+playwright/.cache/

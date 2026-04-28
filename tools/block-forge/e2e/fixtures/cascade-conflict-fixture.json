@@ -1,0 +1,13 @@
+{
+  "id": "cascade-conflict-fixture-id",
+  "slug": "cascade-conflict-fixture",
+  "name": "Cascade Conflict Fixture",
+  "block_type": "element",
+  "is_default": false,
+  "sort_order": 0,
+  "hooks": {},
+  "metadata": {},
+  "html": "<section class=\"block-cascade-conflict\" data-block=\"\">\n  <h2 class=\"heading\">Heading</h2>\n  <p class=\"body-text\">Body text — used for typed-input + tooltip + hover-target paths.</p>\n  <div class=\"hidden-toggle\">Visibility toggle target.</div>\n</section>",
+  "css": ".block-cascade-conflict { padding: 24px; background: hsl(var(--bg-surface)); }\n.block-cascade-conflict .heading { font-size: 34px; line-height: 1.2; margin: 0; color: hsl(var(--text-primary)); font-family: var(--font-family-headings); }\n.block-cascade-conflict .body-text { font-size: 16px; margin: 8px 0 0 0; color: hsl(var(--text-muted)); display: block; }\n.block-cascade-conflict .hidden-toggle { display: block; margin-top: 12px; padding: 8px; background: hsl(var(--bg-surface-alt)); }\n@container slot (min-width: 768px) { .block-cascade-conflict .heading { font-size: 64px; } }\n",
+  "js": ""
+}
