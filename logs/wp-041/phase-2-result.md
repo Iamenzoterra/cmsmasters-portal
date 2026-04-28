@@ -126,7 +126,7 @@ commit immediately.
 |---|---|---|---|
 | 0 | (RECON) | (no commit — shipped with Phase 1) | logs/wp-041/phase-0-audit.md |
 | 1 | `feat(studio): WP-041 phase 1 — adopt Tooltip primitive across 9 studio sites` | `d218c695` | 15 (5 source + 7 smoke/snapshot + 3 RECON+result+misc) |
-| 2 (Close) | `docs(wp-041): phase 2 close — CONVENTIONS native-title policy + PARITY pair WP-041 cross-refs + status flip` | TBD | 6 (CONVENTIONS + PARITY pair + WP doc + ROADMAP + result.md) |
+| 2 (Close) | `docs(wp-041): phase 2 close — CONVENTIONS native-title policy + PARITY pair WP-041 cross-refs + status flip` | `38b1d9ef` | 6 (CONVENTIONS + PARITY pair + WP doc + ROADMAP + result.md) |
 
 **Total WP-041 footprint: ~28 LOC source delta + ~95 LOC docs across 21 files
 in 2 commits over ~1.5h.**
