@@ -3,16 +3,13 @@
 // Two visual modes:
 //   (a) default — Accept (success-green) + Reject (neutral, hover-red)
 //   (b) pending — "will apply on save" pill in header + single "Undo" button
-//       that moves id to `rejected` (hides the row). MVP shortcut: undo-via-
-//       reject keeps the state machine simple; session.undo(state) is wired
-//       separately through history for precise rollback.
+//       that moves id BACK to non-pending state (row returns to default mode).
 //
-// Token grep (all verified in Phase 3):
-//   --status-success-bg/-fg, --status-info-bg/-fg, --status-error-fg,
-//   --bg-surface, --bg-page, --text-primary, --text-muted, --border-default.
-//
-// ConfidencePill retains its dynamic inline-style pattern from Phase 3 (per
-// CONVENTIONS "truly dynamic" exception).
+// WP-036 Phase 2 — pending-mode Undo button now wires to a dedicated `onUndo`
+// reducer (`removeFromPending` in session.ts) instead of the old MVP shortcut
+// to `onReject`. The MVP shortcut never worked because `reject(state, id)`
+// guards against ids already in pending → silent no-op. The new `onUndo` filters
+// id from pending + the matching `accept` history entry; row returns to default.
 
 import type { Suggestion, Confidence } from '@cmsmasters/block-forge-core'
 
@@ -21,6 +18,12 @@ type Props = {
   isPending: boolean
   onAccept: (id: string) => void
   onReject: (id: string) => void
+  /**
+   * WP-036 Phase 2 — per-id Undo (pending → not-pending). Optional — when
+   * undefined, falls back to onReject (legacy no-op behaviour preserved for
+   * test contexts that don't supply onUndo).
+   */
+  onUndo?: (id: string) => void
   /** WP-036 Phase 1 — fires on hover-enter (selector) and hover-leave (null). */
   onPreviewHover?: (selector: string | null) => void
 }
@@ -74,6 +77,7 @@ export function SuggestionRow({
   isPending,
   onAccept,
   onReject,
+  onUndo,
   onPreviewHover,
 }: Props) {
   const { heuristic, selector, bp, rationale, confidence, property, value } =
@@ -121,7 +125,7 @@ export function SuggestionRow({
           <button
             type="button"
             data-action="undo"
-            onClick={() => onReject(suggestion.id)}
+            onClick={() => (onUndo ?? onReject)(suggestion.id)}
             className="rounded border border-[hsl(var(--border-default))] bg-[hsl(var(--bg-surface))] px-3 py-1 text-xs text-[hsl(var(--text-muted))] hover:border-[hsl(var(--status-error-fg))] hover:text-[hsl(var(--status-error-fg))]"
           >
             Undo

@@ -21,6 +21,7 @@ import { Button } from '@cmsmasters/ui'
 import {
   accept as acceptFn,
   reject as rejectFn,
+  removeFromPending as removeFromPendingFn,
   clearAfterSave,
   pickAccepted,
   createSession,
@@ -519,6 +520,14 @@ export function ResponsiveTab({
     setSession((prev) => rejectFn(prev, id))
   }, [])
 
+  // WP-036 Phase 2 — per-id Undo (Studio mirror of block-forge App.tsx).
+  // Distinct from `handleReject` which guards against pending ids — Undo is
+  // specifically "I clicked Accept by mistake, take it back". Filters pending +
+  // matching `accept` history. Idempotent: no-op when id not in pending.
+  const handleUndo = useCallback((id: string) => {
+    setSession((prev) => removeFromPendingFn(prev, id))
+  }, [])
+
   // WP-036 Phase 1 — sidebar→iframe hover-highlight broadcast (Studio mirror of
   // tools/block-forge/src/App.tsx handlePreviewHover). Posts
   // `block-forge:inspector-request-hover` to ALL triptych iframes for the
@@ -720,6 +729,7 @@ export function ResponsiveTab({
         session={session}
         onAccept={handleAccept}
         onReject={handleReject}
+        onUndo={handleUndo}
         onPreviewHover={handlePreviewHover}
       />
       <TweakPanel

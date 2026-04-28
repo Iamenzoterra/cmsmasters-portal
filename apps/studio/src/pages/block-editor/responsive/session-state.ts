@@ -58,6 +58,29 @@ export function reject(state: SessionState, id: string): SessionState {
   }
 }
 
+/**
+ * WP-036 Phase 2 — per-id Undo (Studio mirror of block-forge session.ts).
+ * Removes id from `pending` AND pops the matching `accept` history entry.
+ *
+ * `reject(state, id)` early-exits on pending ids → silent no-op (the original
+ * "Undo via Reject" MVP shortcut never worked). `undo(state)` is global pop,
+ * also wrong here. This reducer fills the per-suggestion-id Undo gap.
+ *
+ * No-op if id not in pending. History filter is precise — only matching
+ * `{ type: 'accept', id }` entries removed; concurrent accepts on other ids
+ * stay in history for their own undo.
+ */
+export function removeFromPending(state: SessionState, id: string): SessionState {
+  if (!state.pending.includes(id)) return state
+  return {
+    ...state,
+    pending: state.pending.filter((p) => p !== id),
+    history: state.history.filter(
+      (h) => !(h.type === 'accept' && h.id === id),
+    ),
+  }
+}
+
 /** Roll back the latest action. No-op on empty history. */
 export function undo(state: SessionState): SessionState {
   const last = state.history[state.history.length - 1]

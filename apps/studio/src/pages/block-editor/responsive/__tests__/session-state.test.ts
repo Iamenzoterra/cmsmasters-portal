@@ -15,6 +15,7 @@ import {
   isDirty,
   pickAccepted,
   reject,
+  removeFromPending,
   undo,
   type SessionState,
 } from '../session-state'
@@ -177,5 +178,72 @@ describe('session-state', () => {
     expect(s.history).toHaveLength(20)
     expect(s.history[0]).toEqual({ type: 'accept', id: 'sugg-0' })
     expect(s.history[19]).toEqual({ type: 'accept', id: 'sugg-19' })
+  })
+})
+
+describe('session-state — removeFromPending (WP-036 Phase 2)', () => {
+  it('no-op when id is not in pending (idempotent)', () => {
+    const s = createSession()
+    const after = removeFromPending(s, 'sugg-x')
+    expect(after).toBe(s)
+  })
+
+  it('removes id from pending and pops the matching accept history entry', () => {
+    const s1 = accept(createSession(), 'sugg-x')
+    expect(s1.pending).toEqual(['sugg-x'])
+    expect(s1.history).toEqual([{ type: 'accept', id: 'sugg-x' }])
+
+    const s2 = removeFromPending(s1, 'sugg-x')
+    expect(s2.pending).toEqual([])
+    expect(s2.history).toEqual([])
+  })
+
+  it('preserves history for OTHER pending ids (precise filter, not pop-last)', () => {
+    let s = createSession()
+    s = accept(s, 'sugg-a')
+    s = accept(s, 'sugg-b')
+    s = accept(s, 'sugg-c')
+
+    const after = removeFromPending(s, 'sugg-b')
+    expect(after.pending).toEqual(['sugg-a', 'sugg-c'])
+    expect(after.history).toEqual([
+      { type: 'accept', id: 'sugg-a' },
+      { type: 'accept', id: 'sugg-c' },
+    ])
+  })
+
+  it('does not touch rejected ids (Undo is for pending only)', () => {
+    let s = createSession()
+    s = accept(s, 'sugg-x')
+    s = reject(s, 'sugg-y')
+    const after = removeFromPending(s, 'sugg-y')
+    expect(after).toBe(s)
+  })
+
+  it('subsequent global undo does NOT double-pop the removed id', () => {
+    let s = createSession()
+    s = accept(s, 'sugg-a')
+    s = accept(s, 'sugg-b')
+    s = removeFromPending(s, 'sugg-a')
+    s = undo(s) // pops {accept, b}
+    expect(s.pending).toEqual([])
+    expect(s.history).toEqual([])
+  })
+
+  it('isDirty reflects true after removeFromPending of one of two accepts', () => {
+    let s = createSession()
+    s = accept(s, 'sugg-a')
+    s = accept(s, 'sugg-b')
+    s = removeFromPending(s, 'sugg-a')
+    expect(isDirty(s)).toBe(true)
+  })
+
+  it('isDirty reflects false after removeFromPending of the only pending id', () => {
+    let s = createSession()
+    s = accept(s, 'sugg-a')
+    s = removeFromPending(s, 'sugg-a')
+    expect(isDirty(s)).toBe(false)
+    expect(s.pending).toEqual([])
+    expect(s.history).toEqual([])
   })
 })

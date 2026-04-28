@@ -26,6 +26,7 @@ import {
   isDirty,
   pickAccepted,
   reject as rejectFn,
+  removeFromPending as removeFromPendingFn,
   removeTweakFor,
   removeTweaksFor,
   renameVariant as renameVariantFn,
@@ -323,6 +324,14 @@ export function App() {
     setSession((prev) => rejectFn(prev, id))
   }, [])
 
+  // WP-036 Phase 2 — per-id Undo. Distinct from `reject` (which is "no, I don't
+  // want this suggestion") — Undo means "I clicked Accept by mistake, take it
+  // back". Calls `removeFromPending` reducer which filters pending + matching
+  // `accept` history entry. Idempotent: clicking Undo when not pending is a no-op.
+  const handleUndo = useCallback((id: string) => {
+    setSession((prev) => removeFromPendingFn(prev, id))
+  }, [])
+
   // WP-036 Phase 1 — sidebar→iframe hover-highlight broadcast.
   // Posts `block-forge:inspector-request-hover` to ALL triptych iframes for the
   // current slug (querySelectorAll, not querySelector — Inspector's per-BP probe
@@ -565,6 +574,7 @@ export function App() {
               session={session}
               onAccept={handleAccept}
               onReject={handleReject}
+              onUndo={handleUndo}
               onPreviewHover={handlePreviewHover}
             />
           </div>

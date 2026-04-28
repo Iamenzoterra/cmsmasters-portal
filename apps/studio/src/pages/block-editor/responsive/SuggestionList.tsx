@@ -16,6 +16,7 @@
 import type { Suggestion, Heuristic } from '@cmsmasters/block-forge-core'
 import type { SessionState } from './session-state'
 import { SuggestionRow } from './SuggestionRow'
+import { SuggestionGroupCard } from './SuggestionGroupCard'
 
 // Verbatim from tools/block-forge/src/components/SuggestionList.tsx:20-27
 const HEURISTIC_ORDER: readonly Heuristic[] = [
@@ -38,6 +39,37 @@ function sortSuggestions(suggestions: Suggestion[]): Suggestion[] {
   })
 }
 
+// WP-036 Phase 2 — group suggestions sharing
+// (heuristic, bp, property, value, rationale). Studio mirror of
+// tools/block-forge/src/components/SuggestionList.tsx buildEntries.
+function groupKey(s: Suggestion): string {
+  return `${s.heuristic}|${s.bp}|${s.property}|${s.value}|${s.rationale}`
+}
+
+type ListEntry =
+  | { kind: 'single'; suggestion: Suggestion }
+  | { kind: 'group'; key: string; suggestions: Suggestion[] }
+
+function buildEntries(sorted: Suggestion[]): ListEntry[] {
+  const buckets = new Map<string, Suggestion[]>()
+  const order: string[] = []
+  for (const s of sorted) {
+    const k = groupKey(s)
+    if (!buckets.has(k)) {
+      buckets.set(k, [])
+      order.push(k)
+    }
+    buckets.get(k)!.push(s)
+  }
+  return order.map((k) => {
+    const arr = buckets.get(k)!
+    if (arr.length === 1) return { kind: 'single', suggestion: arr[0] }
+    return { kind: 'group', key: k, suggestions: arr }
+  })
+}
+
+export { groupKey, buildEntries }
+
 interface SuggestionListProps {
   suggestions: Suggestion[]
   warnings: string[]
@@ -45,6 +77,8 @@ interface SuggestionListProps {
   session: SessionState
   onAccept: (id: string) => void
   onReject: (id: string) => void
+  /** WP-036 Phase 2 — per-id Undo (pending → not-pending; preserves history coherence). */
+  onUndo?: (id: string) => void
   /** WP-036 Phase 1 — hover a row → highlight target in iframe. Pass null to clear. */
   onPreviewHover?: (selector: string | null) => void
 }
@@ -56,6 +90,7 @@ export function SuggestionList({
   session,
   onAccept,
   onReject,
+  onUndo,
   onPreviewHover,
 }: SuggestionListProps) {
   // Error state — something threw inside analyzeBlock or generateSuggestions
@@ -125,16 +160,42 @@ export function SuggestionList({
           </ul>
         </div>
       )}
-      {sorted.map((s) => (
-        <SuggestionRow
-          key={s.id}
-          suggestion={s}
-          isPending={session.pending.includes(s.id)}
-          onAccept={onAccept}
-          onReject={onReject}
-          onPreviewHover={onPreviewHover}
-        />
-      ))}
+      {(() => {
+        const entries = buildEntries(sorted)
+        const pendingSet = new Set(session.pending)
+        const rejectedSet = new Set(session.rejected)
+        return entries.map((entry) => {
+          if (entry.kind === 'single') {
+            const s = entry.suggestion
+            return (
+              <SuggestionRow
+                key={s.id}
+                suggestion={s}
+                isPending={pendingSet.has(s.id)}
+                onAccept={onAccept}
+                onReject={onReject}
+                onUndo={onUndo}
+                onPreviewHover={onPreviewHover}
+              />
+            )
+          }
+          // Group: hide entirely if every member rejected.
+          const stillVisible = entry.suggestions.some((s) => !rejectedSet.has(s.id))
+          if (!stillVisible) return null
+          return (
+            <SuggestionGroupCard
+              key={entry.key}
+              suggestions={entry.suggestions}
+              pendingIds={pendingSet}
+              rejectedIds={rejectedSet}
+              onAccept={onAccept}
+              onReject={onReject}
+              onUndo={onUndo}
+              onPreviewHover={onPreviewHover}
+            />
+          )
+        })
+      })()}
     </div>
   )
 }

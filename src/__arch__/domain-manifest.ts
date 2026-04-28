@@ -329,6 +329,9 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'apps/studio/src/pages/block-editor/responsive/__tests__/validateVariantCss.test.ts',
       // WP-033 Phase 5 OQ1: live-rerender test pins displayBlock follows watchedFormCode.
       'apps/studio/src/pages/block-editor/responsive/__tests__/responsive-tab-live-rerender.test.tsx',
+      // WP-036 Phase 2: SuggestionGroupCard component + grouping primitives test (Studio mirror).
+      'apps/studio/src/pages/block-editor/responsive/SuggestionGroupCard.tsx',
+      'apps/studio/src/pages/block-editor/responsive/__tests__/suggestion-grouping.test.ts',
       // WP-033 Phase 4: Inspector cross-surface mirror (Studio side). Sibling
       // subdirectory `inspector/` per Phase 4 Ruling 1 (REIMPLEMENT, not extract).
       // 5 component files + 2 hook files + 2 lib helpers + 10 test files = 19.
@@ -684,6 +687,10 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       // layout-maker pattern; payload is in-memory state, no server roundtrip.
       // Clone affordance deferred to Phase 3 (bundles with sandbox migration).
       'tools/block-forge/src/components/ExportDialog.tsx',
+      // WP-036 Phase 2: SuggestionGroupCard for collapsed-by-default grouping
+      // of visually-identical suggestions sharing (heuristic, bp, property,
+      // value, rationale).
+      'tools/block-forge/src/components/SuggestionGroupCard.tsx',
       // WP-033 Phase 3: hooks/ directory established this phase. Per-BP value
       // sourcing (3 hidden iframes, Ruling E Option A) + chip detection
       // (Option B-subset PostCSS walk, Ruling 2).
@@ -701,6 +708,8 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'tools/block-forge/src/__tests__/integration.test.tsx',
       'tools/block-forge/src/__tests__/session.test.ts',
       'tools/block-forge/src/__tests__/fluid-mode.test.ts',
+      // WP-036 Phase 2: grouping primitives unit tests (groupKey + buildEntries).
+      'tools/block-forge/src/__tests__/suggestion-grouping.test.ts',
       // WP-028 Phase 1: parity tests for TweakPanel + VariantsDrawer placeholders.
       'tools/block-forge/src/__tests__/TweakPanel.test.tsx',
       'tools/block-forge/src/__tests__/VariantsDrawer.test.tsx',

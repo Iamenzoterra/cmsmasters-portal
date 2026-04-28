@@ -18,6 +18,12 @@ interface SuggestionRowProps {
   onReject: (id: string) => void
   /** Visual state — suggestion is accepted locally but not yet saved to DB. */
   isPending: boolean
+  /**
+   * WP-036 Phase 2 — per-id Undo on pending rows. Pending mode renders single
+   * Undo button (block-forge parity) wired to `removeFromPending` reducer.
+   * Optional — fallback to onReject for test contexts (legacy no-op behaviour).
+   */
+  onUndo?: (id: string) => void
   /** WP-036 Phase 1 — fires on hover-enter (selector) and hover-leave (null). */
   onPreviewHover?: (selector: string | null) => void
 }
@@ -90,6 +96,7 @@ export function SuggestionRow({
   onAccept,
   onReject,
   isPending,
+  onUndo,
   onPreviewHover,
 }: SuggestionRowProps) {
   const { id, heuristic, selector, bp, property, value, rationale, confidence } = suggestion
@@ -163,43 +170,69 @@ export function SuggestionRow({
         {rationale}
       </p>
 
-      {/* Accept/Reject — enabled in Phase 4; dispatch to session-state via parent callbacks. */}
+      {/*
+        WP-027 Phase 4: Accept/Reject buttons.
+        WP-036 Phase 2: pending mode renders single Undo button (block-forge parity).
+        Default mode: Accept + Reject. Pending mode: Undo only.
+      */}
       <div style={{ display: 'flex', gap: 'var(--spacing-xs)', marginTop: 'var(--spacing-2xs)' }}>
-        <button
-          type="button"
-          data-action="accept"
-          onClick={() => onAccept(id)}
-          aria-label="Accept suggestion"
-          style={{
-            padding: '4px var(--spacing-sm)',
-            borderRadius: 'var(--rounded-sm)',
-            border: '1px solid hsl(var(--status-success-fg))',
-            backgroundColor: 'hsl(var(--status-success-bg))',
-            color: 'hsl(var(--status-success-fg))',
-            fontSize: 'var(--text-xs-font-size)',
-            fontWeight: 'var(--font-weight-semibold)',
-            cursor: 'pointer',
-          }}
-        >
-          Accept
-        </button>
-        <button
-          type="button"
-          data-action="reject"
-          onClick={() => onReject(id)}
-          aria-label="Reject suggestion"
-          style={{
-            padding: '4px var(--spacing-sm)',
-            borderRadius: 'var(--rounded-sm)',
-            border: '1px solid hsl(var(--border-default))',
-            backgroundColor: 'hsl(var(--bg-surface))',
-            color: 'hsl(var(--text-muted))',
-            fontSize: 'var(--text-xs-font-size)',
-            cursor: 'pointer',
-          }}
-        >
-          Reject
-        </button>
+        {isPending ? (
+          <button
+            type="button"
+            data-action="undo"
+            onClick={() => (onUndo ?? onReject)(id)}
+            aria-label="Undo accept"
+            style={{
+              padding: '4px var(--spacing-sm)',
+              borderRadius: 'var(--rounded-sm)',
+              border: '1px solid hsl(var(--border-default))',
+              backgroundColor: 'hsl(var(--bg-surface))',
+              color: 'hsl(var(--text-muted))',
+              fontSize: 'var(--text-xs-font-size)',
+              cursor: 'pointer',
+            }}
+          >
+            Undo
+          </button>
+        ) : (
+          <>
+            <button
+              type="button"
+              data-action="accept"
+              onClick={() => onAccept(id)}
+              aria-label="Accept suggestion"
+              style={{
+                padding: '4px var(--spacing-sm)',
+                borderRadius: 'var(--rounded-sm)',
+                border: '1px solid hsl(var(--status-success-fg))',
+                backgroundColor: 'hsl(var(--status-success-bg))',
+                color: 'hsl(var(--status-success-fg))',
+                fontSize: 'var(--text-xs-font-size)',
+                fontWeight: 'var(--font-weight-semibold)',
+                cursor: 'pointer',
+              }}
+            >
+              Accept
+            </button>
+            <button
+              type="button"
+              data-action="reject"
+              onClick={() => onReject(id)}
+              aria-label="Reject suggestion"
+              style={{
+                padding: '4px var(--spacing-sm)',
+                borderRadius: 'var(--rounded-sm)',
+                border: '1px solid hsl(var(--border-default))',
+                backgroundColor: 'hsl(var(--bg-surface))',
+                color: 'hsl(var(--text-muted))',
+                fontSize: 'var(--text-xs-font-size)',
+                cursor: 'pointer',
+              }}
+            >
+              Reject
+            </button>
+          </>
+        )}
       </div>
     </div>
   )

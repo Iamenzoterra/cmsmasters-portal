@@ -127,6 +127,31 @@ export function reject(state: SessionState, id: string): SessionState {
 }
 
 /**
+ * WP-036 Phase 2 — per-id Undo (specific to "Undo this Accept" UX).
+ * Removes id from `pending` AND pops the matching `accept` history entry
+ * (so a subsequent global `undo()` doesn't double-pop a phantom action).
+ *
+ * Rationale: `reject(state, id)` early-exits when id is already in pending,
+ * which made the original "Undo via reject" MVP shortcut a silent no-op.
+ * `undo(state)` (history pop) is also wrong here — it rolls back the LAST
+ * action, not this specific one. So this reducer fills the gap.
+ *
+ * No-op if id not in pending. History entry pop is precise: only the
+ * matching `{ type: 'accept', id }` entries are removed (filter, not pop-last)
+ * so concurrent accepts on other ids stay in history for their own undo.
+ */
+export function removeFromPending(state: SessionState, id: string): SessionState {
+  if (!state.pending.includes(id)) return state
+  return {
+    ...state,
+    pending: state.pending.filter((p) => p !== id),
+    history: state.history.filter(
+      (h) => !(h.type === 'accept' && h.id === id),
+    ),
+  }
+}
+
+/**
  * Append a tweak (WP-028 Phase 2, Ruling D).
  * Pure reducer — no dedupe/merge logic. `composeTweakedCss` applies in order.
  * Caller may send duplicate (selector, bp, property) tweaks — `emitTweak`
