@@ -47,6 +47,7 @@ if (typeof Element !== 'undefined') {
 
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react'
+import { TooltipProvider } from '@cmsmasters/ui'
 import { App } from '../App'
 import * as apiClient from '../lib/api-client'
 import type { BlockJson } from '../types'
@@ -94,7 +95,13 @@ async function mountAppAndSelectBlock(initialBlock: BlockJson) {
     backupCreated: true,
   })
 
-  const renderResult = render(<App />)
+  // WP-037 Phase 2: Inspector PropertyRow renders <Tooltip> for enum
+  // properties — TooltipProvider must wrap the App render.
+  const renderResult = render(
+    <TooltipProvider>
+      <App />
+    </TooltipProvider>,
+  )
 
   // Wait for listBlocks to populate the picker.
   await waitFor(() => {
@@ -122,33 +129,54 @@ async function mountAppAndSelectBlock(initialBlock: BlockJson) {
 }
 
 /**
- * Dispatches the element-click postMessage that App's window listener
- * (App.tsx L165–185) consumes to populate the TweakPanel selection. Then
- * switches BP to 768 so subsequent tweaks compose into an `@container slot
- * (max-width: 768px)` chunk (rather than the 1440-base bp).
+ * Dispatches the inspector-pin-applied postMessage to populate App's
+ * `pinned` state directly (bypassing the iframe round-trip — jsdom has no
+ * iframe to apply data-bf-pin and post back).
+ *
+ * WP-037 follow-up: replaces previous element-click → TweakPanel flow.
+ * TweakPanel was sunset post-WP-033 polish (App.tsx:609 — Inspector
+ * replaces it). This helper now drives the equivalent Inspector flow:
+ * pin-applied → Inspector renders → switch BP via Inspector's BP picker
+ * → toggle visibility via `inspector-hide-at-bp` checkbox.
  */
 async function dispatchElementClickAndSwitchBp(slug: string, selector: string) {
   await act(async () => {
     window.dispatchEvent(
       new MessageEvent('message', {
         data: {
-          type: 'block-forge:element-click',
+          type: 'block-forge:inspector-pin-applied',
           slug,
           selector,
-          computedStyle: { padding: '16px', fontSize: '16px', gap: '0px', display: 'block' },
+          rect: { x: 0, y: 0, w: 100, h: 50 },
+          computedStyle: {
+            padding: '16px',
+            paddingTop: '16px',
+            paddingRight: '16px',
+            paddingBottom: '16px',
+            paddingLeft: '16px',
+            marginTop: '0px',
+            marginRight: '0px',
+            marginBottom: '0px',
+            marginLeft: '0px',
+            fontSize: '16px',
+            gap: '0px',
+            display: 'block',
+            hasText: '1',
+          },
         },
       }),
     )
   })
 
-  // Switch to 768 BP so the tweak composes into a reveal chunk.
+  // Switch to 768 BP via Inspector's BP picker so the tweak composes into a
+  // reveal chunk (`@container slot (max-width: 768px)`).
   await waitFor(() => {
     expect(
-      document.querySelector('[data-testid="tweak-panel-bp-768"]'),
+      document.querySelector('[data-testid="inspector-bp-768"]'),
     ).not.toBeNull()
   })
   const bp768 = document.querySelector(
-    '[data-testid="tweak-panel-bp-768"]',
+    '[data-testid="inspector-bp-768"]',
   ) as HTMLButtonElement
   await act(async () => {
     fireEvent.click(bp768)
@@ -156,14 +184,22 @@ async function dispatchElementClickAndSwitchBp(slug: string, selector: string) {
 }
 
 async function clickHideTweak() {
-  const hideBtn = document.querySelector(
-    '[data-testid="tweak-panel-visibility-hide"]',
-  ) as HTMLButtonElement
-  expect(hideBtn).not.toBeNull()
-  await act(async () => {
-    fireEvent.click(hideBtn)
+  // Inspector's "Hide at {bp}" checkbox routes through
+  // handleInspectorVisibilityToggle → addTweak(`display: none`) at active BP.
+  await waitFor(() => {
+    expect(
+      document.querySelector('[data-testid="inspector-hide-at-bp"]'),
+    ).not.toBeNull()
   })
-  // Flush 300ms tweak debounce (App.tsx L195–201). Real timers; brief sleep.
+  const hideCheckbox = document.querySelector(
+    '[data-testid="inspector-hide-at-bp"]',
+  ) as HTMLInputElement
+  expect(hideCheckbox).not.toBeNull()
+  await act(async () => {
+    fireEvent.click(hideCheckbox)
+  })
+  // Flush 300ms tweak debounce (App.tsx — Inspector edits debounced same as
+  // legacy TweakPanel slider).
   await act(async () => {
     await new Promise((r) => setTimeout(r, 350))
   })

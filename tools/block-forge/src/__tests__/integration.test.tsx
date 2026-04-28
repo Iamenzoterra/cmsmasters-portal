@@ -218,6 +218,9 @@ function SaveHarness({ initialBlock }: { initialBlock: BlockJson }) {
         sourcePath="/mock/block-spacing-font.json"
         session={session}
         onSave={handleSave}
+        onExport={() => undefined}
+        onClone={() => undefined}
+        cloneInFlight={false}
         saveInFlight={saveInFlight}
         saveError={saveError}
       />
