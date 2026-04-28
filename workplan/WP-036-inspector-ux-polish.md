@@ -26,7 +26,7 @@
 | 0 | (RECON) | (no commit) | logs/wp-036/phase-0-recon-result.md (shipped Phase 1) |
 | 1 | `feat(studio+block-forge): WP-036 phase 1 — sidebar hover-highlight protocol` | `81de7729` | 14 (10 source + 4 doc) |
 | 2 | `feat(studio+block-forge): WP-036 phase 2 — undo fix + heuristic group` | `e09c8cc5` | 16 (12 source + 2 manifest + result.md + screenshots) |
-| 3 (Close) | `docs(wp-036): phase 3 close — PARITY trio + SKILL flips + CONVENTIONS + status flip` | TBD | 7+ doc files (atomic) |
+| 3 (Close) | `docs(wp-036): phase 3 close — PARITY trio + SKILL flips + CONVENTIONS + status flip` | `b3764aa0` | 9 (8 doc + result.md) |
 
 ---
 

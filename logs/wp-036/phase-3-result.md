@@ -118,7 +118,7 @@ commit. This batch is **8 doc files** + the Phase 3 result.md.
 | 0 | (RECON) | (no commit) | logs/wp-036/phase-0-recon-result.md |
 | 1 | `feat(studio+block-forge): WP-036 phase 1 — sidebar hover-highlight protocol` | `81de7729` | 14 (10 source + 4 doc) |
 | 2 | `feat(studio+block-forge): WP-036 phase 2 — undo fix + heuristic group` | `e09c8cc5` | 16 (12 source + 2 manifest + result.md) |
-| 3 (Close) | `docs(wp-036): phase 3 close — PARITY trio + SKILL flips + CONVENTIONS + status flip` | TBD | 9 (8 doc + result.md) |
+| 3 (Close) | `docs(wp-036): phase 3 close — PARITY trio + SKILL flips + CONVENTIONS + status flip` | `b3764aa0` | 9 (8 doc + result.md) |
 
 **Total WP-036 footprint: ~2,100 LOC across 39 files in 3 commits over 1 day.**
 
