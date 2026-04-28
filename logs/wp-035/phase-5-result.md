@@ -77,8 +77,8 @@ None. WP-035 closes with all phase deliverables shipped; saved memory locks the 
 
 ## Git
 
-- Close commit: `{sha}` — `docs(wp-035): WP-035 close — SKILL + CONVENTIONS + PARITY trio + memory + status flip [WP-035 phase 5]`
-- SHA backfill follow-up: `{sha}` — `docs(wp-035): backfill close SHA in workplan + result.md [WP-035 phase 5 followup]`
+- Close commit: `6223cb23` — `docs(wp-035): WP-035 close — SKILL + CONVENTIONS + PARITY trio + memory + status flip [WP-035 phase 5]`
+- SHA backfill follow-up: (this commit) — `docs(wp-035): backfill close SHA in workplan + result.md [WP-035 phase 5 followup]`
 
 ## WP-035 Final State
 

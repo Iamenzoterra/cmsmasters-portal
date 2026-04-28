@@ -31,7 +31,7 @@
 | 1 | logs/wp-035/phase-1-task.md | `0b52f1f5` + `3b8a9721` | `6d5a2337` |
 | 2 | logs/wp-035/phase-2-task.md | `5b29f9a7` | (incl. in `5b29f9a7`) |
 | 3 | logs/wp-035/phase-3-task.md | `6a08d1f1` | `5967a090` |
-| 5 | logs/wp-035/phase-5-task.md | (this commit; SHA backfilled post-commit) | (this commit) |
+| 5 | logs/wp-035/phase-5-task.md | `6223cb23` | (incl. in `6223cb23`; SHA-backfill follow-up commit) |
 
 ### Phase 4 — collapsed into Phase 3 (2026-04-28)
 
