@@ -124,7 +124,7 @@ commit immediately.
 |---|---|---|---|
 | 0 | (RECON) | (no commit — shipped with Phase 1) | logs/wp-039/phase-0-recon-result.md |
 | 1 | `feat(studio+block-forge): WP-039 phase 1 — Smart Path A scan-then-emit` | `d4e17a4c` | 10 (2 NEW core + 5 MOD + 2 RECON+result.md + 1 manifest) |
-| 2 (Close) | `docs(wp-039): phase 2 close — PARITY trio "Path A tradeoff" RETIRED + status flip` | TBD | 6 (5 doc + result.md) |
+| 2 (Close) | `docs(wp-039): phase 2 close — PARITY trio "Path A tradeoff" RETIRED + status flip` | `a8f3a7d7` | 6 (5 doc + result.md) |
 
 **Total WP-039 footprint: ~145 LOC across 16 files in 2 commits over 1 day.**
 
