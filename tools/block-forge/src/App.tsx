@@ -12,7 +12,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button } from '@cmsmasters/ui'
 import { applySuggestions, type Tweak } from '@cmsmasters/block-forge-core'
 import type { BlockJson } from './types'
-import { getBlock, listBlocks, saveBlock } from './lib/api-client'
+import { cloneBlock, getBlock, listBlocks, saveBlock } from './lib/api-client'
 import { useAnalysis } from './lib/useAnalysis'
 import { FLUID_DEFAULT, parseFluidMode, setFluidMode, type FluidMode } from './lib/fluid-mode'
 import {
@@ -83,6 +83,11 @@ export function App() {
   const [saveInFlight, setSaveInFlight] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [sourceDir, setSourceDir] = useState<string | null>(null)
+  // WP-035 Phase 3 — Clone state. refreshNonce forces BlockPicker to refetch
+  // its list after a successful clone (BlockPicker holds its own `blocks`
+  // state; the prop change re-runs its mount effect).
+  const [cloneInFlight, setCloneInFlight] = useState(false)
+  const [pickerRefreshNonce, setPickerRefreshNonce] = useState(0)
 
   // One-time sourceDir fetch for the status bar. Tolerates failure silently.
   useEffect(() => {
@@ -517,11 +522,34 @@ export function App() {
   const sourcePath =
     block && sourceDir ? `${sourceDir}/${block.slug}.json` : null
 
+  // WP-035 Phase 3 — Clone handler. Server is the slug-suffix authority
+  // (`<slug>-copy-N`). On success: refresh the picker, switch to the new slug
+  // (existing useEffect at App.tsx:101 resets session on slug change).
+  const handleClone = useCallback(async () => {
+    const slug = block?.slug
+    if (!slug || cloneInFlight) return
+    setCloneInFlight(true)
+    setSaveError(null)
+    try {
+      const result = await cloneBlock(slug)
+      setPickerRefreshNonce((n) => n + 1)
+      setSelectedSlug(result.newSlug)
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setCloneInFlight(false)
+    }
+  }, [block, cloneInFlight])
+
   return (
     <div className="grid h-screen grid-rows-[auto_1fr_auto] bg-[hsl(var(--bg-page))] text-[hsl(var(--text-primary))]">
       <header className="flex items-center gap-6 border-b border-[hsl(var(--border-default))] px-6 py-3">
         <strong className="font-semibold">Block Forge</strong>
-        <BlockPicker selected={selectedSlug} onSelect={handlePickerSelect} />
+        <BlockPicker
+          selected={selectedSlug}
+          onSelect={handlePickerSelect}
+          refreshNonce={pickerRefreshNonce}
+        />
         <Button
           data-testid="variants-drawer-trigger"
           variant="outline"
@@ -606,6 +634,8 @@ export function App() {
           session={session}
           onSave={handleSave}
           onExport={() => setShowExportDialog(true)}
+          onClone={handleClone}
+          cloneInFlight={cloneInFlight}
           saveInFlight={saveInFlight}
           saveError={saveError}
         />

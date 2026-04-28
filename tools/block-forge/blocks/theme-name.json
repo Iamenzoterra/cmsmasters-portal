@@ -1,0 +1,13 @@
+{
+  "id": "6bda8908-6b1b-4ef4-ab3a-03c397aec5c5",
+  "slug": "theme-name",
+  "name": "theme name",
+  "block_type": "element",
+  "is_default": false,
+  "sort_order": 0,
+  "hooks": {},
+  "metadata": {},
+  "html": "<section class=\"block-theme-name\" data-block=\"\">\n    <h1 class=\"block-theme-name__heading reveal\">{{meta:name}}</h1>\n  </section>",
+  "css": "body { font-family: 'Manrope', system-ui, sans-serif; margin: 0; background: hsl(20 23% 97%); display: flex; justify-content: center; align-items: center; min-height: 100vh; }\n  \n\n\n    /* ══════════════════════════════════════\n       BLOCK: theme-name\n       Scoped under .block-theme-name\n       ══════════════════════════════════════ */\n\n    .block-theme-name {\n      display: flex;\n      justify-content: center;\n      width: 100%;\n    }\n\n    .block-theme-name__heading {\n      max-width: 680px;\n      color: hsl(var(--text-primary));\n      text-align: center;\n      font-family: var(--font-family-headings);\n      font-size: var(--h1-font-size);\n      font-style: normal;\n      font-weight: var(--h1-font-weight);\n      line-height: var(--h1-line-height);\n      letter-spacing: var(--h1-letter-spacing);\n      margin: 0;\n    }",
+  "js": "const block = document.querySelector('.block-theme-name');\n    const io = new IntersectionObserver((entries) => {\n      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });\n    }, { threshold: 0.15 });\n    block.querySelectorAll('.reveal').forEach(el => io.observe(el));"
+}

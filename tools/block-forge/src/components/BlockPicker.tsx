@@ -13,9 +13,11 @@ import { listBlocks } from '../lib/api-client'
 type Props = {
   selected: string | null
   onSelect: (slug: string) => void
+  // WP-035 Phase 3 — increment to force a list refetch (e.g. after Clone).
+  refreshNonce?: number
 }
 
-export function BlockPicker({ selected, onSelect }: Props) {
+export function BlockPicker({ selected, onSelect, refreshNonce = 0 }: Props) {
   const [blocks, setBlocks] = useState<BlockListEntry[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
@@ -38,7 +40,7 @@ export function BlockPicker({ selected, onSelect }: Props) {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [refreshNonce])
 
   if (error) {
     return (

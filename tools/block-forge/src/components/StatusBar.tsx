@@ -15,6 +15,8 @@ type Props = {
   session: SessionState
   onSave: () => void
   onExport: () => void
+  onClone: () => void
+  cloneInFlight: boolean
   saveInFlight: boolean
   saveError: string | null
 }
@@ -24,6 +26,8 @@ export function StatusBar({
   session,
   onSave,
   onExport,
+  onClone,
+  cloneInFlight,
   saveInFlight,
   saveError,
 }: Props) {
@@ -69,6 +73,16 @@ export function StatusBar({
           {saveError}
         </span>
       )}
+
+      <button
+        type="button"
+        data-action="clone"
+        disabled={!sourcePath || cloneInFlight || saveInFlight}
+        onClick={onClone}
+        className="rounded border border-[hsl(var(--border-default))] bg-[hsl(var(--bg-surface))] px-3 py-1 text-xs font-semibold text-[hsl(var(--text-default))] hover:bg-[hsl(var(--bg-surface-alt))] disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {cloneInFlight ? 'Cloning…' : '+ Clone'}
+      </button>
 
       <button
         type="button"

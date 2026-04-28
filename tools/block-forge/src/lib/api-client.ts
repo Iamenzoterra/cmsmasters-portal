@@ -67,3 +67,29 @@ export async function saveBlock(
   }
   return (await res.json()) as SaveBlockResponse
 }
+
+// WP-035 Phase 3 — Clone an existing sandbox block with auto-incrementing
+// `<slug>-copy-N` suffix. Server is the slug-suffix authority; client just
+// echoes the returned newSlug into App.tsx state.
+export type CloneBlockResponse = {
+  ok: true
+  sourceSlug: string
+  newSlug: string
+}
+
+export async function cloneBlock(
+  sourceSlug: string,
+): Promise<CloneBlockResponse> {
+  const res = await fetch('/api/blocks/clone', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ sourceSlug }),
+  })
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({ error: 'unknown' }))
+    throw new Error(
+      `cloneBlock failed: ${res.status} ${JSON.stringify(errBody)}`,
+    )
+  }
+  return (await res.json()) as CloneBlockResponse
+}

@@ -685,8 +685,20 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'tools/block-forge/src/components/TokenChip.tsx',
       // WP-035 Phase 1: ExportDialog (Forge-side payload export gate). Ports
       // layout-maker pattern; payload is in-memory state, no server roundtrip.
-      // Clone affordance deferred to Phase 3 (bundles with sandbox migration).
+      // Clone affordance landed in Phase 3 (bundled with sandbox migration).
       'tools/block-forge/src/components/ExportDialog.tsx',
+      // WP-035 Phase 3: sandbox decouple — Forge writes go to tools/block-forge/blocks/
+      // (NOT content/db/blocks/). First-run seed copies production seed if sandbox
+      // empty. Clone affordance writes new <slug>-copy-N.json into the sandbox.
+      // Phase 4 collapsed (Ruling F): empirical zero-callers grep on
+      // BLOCK_FORGE_ALLOW_DIRECT_EDIT confirmed no escape-hatch flag needed —
+      // existing BLOCK_FORGE_SOURCE_DIR env override is sufficient. Sandbox
+      // *.json drafts are git-tracked but NOT manifest-tracked (volatile, like
+      // content/db/blocks/*.json); .gitkeep preserves the empty dir.
+      'tools/block-forge/blocks/.gitkeep',
+      'tools/block-forge/.gitignore',
+      'tools/block-forge/src/__tests__/sandbox-seed.test.ts',
+      'tools/block-forge/src/__tests__/clone-endpoint.test.ts',
       // WP-036 Phase 2: SuggestionGroupCard for collapsed-by-default grouping
       // of visually-identical suggestions sharing (heuristic, bp, property,
       // value, rationale).

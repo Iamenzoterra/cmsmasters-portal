@@ -3,3 +3,5 @@ dist/
 *.png
 *.local
 .vite/
+# WP-035 Phase 3 — sandbox .bak files are local recovery snapshots, not committed.
+blocks/*.bak

@@ -1,7 +1,7 @@
 /// <reference types="vitest/config" />
 import { defineConfig, type PluginOption } from 'vite'
 import react from '@vitejs/plugin-react'
-import { access, readdir, readFile, writeFile } from 'node:fs/promises'
+import { access, copyFile, mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { constants } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -10,16 +10,154 @@ import { fileURLToPath } from 'node:url'
 // the config robust across Node versions and WSL/Windows path quirks.
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
+// WP-035 Phase 3 — sandbox decouple. Default writeable target is now the
+// Forge-local sandbox, NOT the production seed at content/db/blocks/.
+// Override via BLOCK_FORGE_SOURCE_DIR for advanced workflows (escape hatch
+// for legacy direct-edit). Phase 0 Ruling F collapsed Phase 4 — empirical
+// grep confirmed BLOCK_FORGE_ALLOW_DIRECT_EDIT had zero callers.
+const SANDBOX_DIR_DEFAULT = path.resolve(__dirname, 'blocks')
+const PRODUCTION_SEED_DIR = path.resolve(__dirname, '../../content/db/blocks')
+
 const SOURCE_DIR = process.env.BLOCK_FORGE_SOURCE_DIR
   ? path.resolve(process.env.BLOCK_FORGE_SOURCE_DIR)
-  : path.resolve(__dirname, '../../content/db/blocks')
+  : SANDBOX_DIR_DEFAULT
 
 const SAFE_SLUG = /^[a-z0-9][a-z0-9-]*$/i
+
+export type SeedResult = {
+  seeded: boolean
+  filesCopied: number
+  reason?: string
+}
+
+export type CloneResult =
+  | { ok: true; sourceSlug: string; newSlug: string }
+  | { ok: false; error: string; status: number; sourceSlug?: string }
+
+// Pure helper for the Clone HTTP handler. Validates the source slug,
+// reads + parses the source file, strips `id`, finds the first unused
+// `<slug>-copy-N` (1..99), and atomically writes the cloned payload using
+// the 'wx' flag (race-safe).
+export async function performCloneInSandbox(
+  sandboxDir: string,
+  sourceSlug: unknown,
+): Promise<CloneResult> {
+  if (typeof sourceSlug !== 'string' || !SAFE_SLUG.test(sourceSlug)) {
+    return { ok: false, error: 'invalid-source-slug', status: 400 }
+  }
+
+  const sourcePath = path.join(sandboxDir, `${sourceSlug}.json`)
+  const sourceRaw = await readFile(sourcePath, 'utf8').catch(() => null)
+  if (sourceRaw === null) {
+    return { ok: false, error: 'source-not-found', status: 404, sourceSlug }
+  }
+
+  let parsed: Record<string, unknown>
+  try {
+    parsed = JSON.parse(sourceRaw) as Record<string, unknown>
+  } catch {
+    return {
+      ok: false,
+      error: 'source-parse-failed',
+      status: 500,
+      sourceSlug,
+    }
+  }
+
+  const { id: _droppedId, ...rest } = parsed
+
+  const MAX_N = 99
+  for (let n = 1; n <= MAX_N; n++) {
+    const candidate = `${sourceSlug}-copy-${n}`
+    if (!SAFE_SLUG.test(candidate)) continue
+    const candidatePath = path.join(sandboxDir, `${candidate}.json`)
+    const cloned = { ...rest, slug: candidate }
+    const serialized = JSON.stringify(cloned, null, 2) + '\n'
+    try {
+      await writeFile(candidatePath, serialized, {
+        flag: 'wx',
+        encoding: 'utf8',
+      })
+      return { ok: true, sourceSlug, newSlug: candidate }
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === 'EEXIST') continue
+      throw err
+    }
+  }
+  return { ok: false, error: 'no-available-suffix', status: 409, sourceSlug }
+}
+
+// First-run seed — copies content/db/blocks/*.json into sandbox iff sandbox
+// is empty. Runs once at configureServer boot. Never overwrites existing
+// sandbox files (silent data-loss guard per saved memory feedback_no_blocker_no_ask).
+export async function seedSandboxIfEmpty(
+  sandboxDir: string,
+  seedDir: string,
+  sandboxDefault: string = SANDBOX_DIR_DEFAULT,
+): Promise<SeedResult> {
+  // Skip if SOURCE_DIR is overridden — user opted out of sandbox semantics.
+  if (sandboxDir !== sandboxDefault) {
+    return {
+      seeded: false,
+      filesCopied: 0,
+      reason: 'BLOCK_FORGE_SOURCE_DIR override active',
+    }
+  }
+
+  await mkdir(sandboxDir, { recursive: true })
+
+  // Sandbox is "empty" iff no .json files (ignore .gitkeep + .bak).
+  const existing = await readdir(sandboxDir)
+  const populated = existing.filter(
+    (f) => f.endsWith('.json') && !f.endsWith('.bak'),
+  )
+  if (populated.length > 0) {
+    return { seeded: false, filesCopied: 0, reason: 'sandbox already populated' }
+  }
+
+  try {
+    await access(seedDir, constants.R_OK)
+  } catch {
+    return {
+      seeded: false,
+      filesCopied: 0,
+      reason: `seed source ${seedDir} unreadable`,
+    }
+  }
+
+  const seedFiles = (await readdir(seedDir)).filter(
+    (f) => f.endsWith('.json') && !f.endsWith('.bak'),
+  )
+  let copied = 0
+  for (const f of seedFiles) {
+    await copyFile(
+      path.join(seedDir, f),
+      path.join(sandboxDir, f),
+      // COPYFILE_EXCL — fail if target exists; defensive against race + symlinks
+      // (we already verified sandbox empty above).
+      constants.COPYFILE_EXCL,
+    )
+    copied++
+  }
+  return { seeded: true, filesCopied: copied }
+}
 
 function blocksApiPlugin(): PluginOption {
   return {
     name: 'block-forge:blocks-api',
-    configureServer(server) {
+    async configureServer(server) {
+      // First-run seed (one-time per process; HMR does not re-run configureServer).
+      const seedResult = await seedSandboxIfEmpty(SOURCE_DIR, PRODUCTION_SEED_DIR)
+      if (seedResult.seeded) {
+        server.config.logger.info(
+          `[block-forge] Sandbox seeded with ${seedResult.filesCopied} blocks from ${PRODUCTION_SEED_DIR}`,
+        )
+      } else if (seedResult.reason) {
+        server.config.logger.info(
+          `[block-forge] Sandbox seed skipped: ${seedResult.reason}`,
+        )
+      }
+
       server.middlewares.use(async (req, res, next) => {
         if (!req.url?.startsWith('/api/blocks')) return next()
 
@@ -42,6 +180,51 @@ function blocksApiPlugin(): PluginOption {
             )
             res.setHeader('content-type', 'application/json')
             res.end(JSON.stringify({ sourceDir: SOURCE_DIR, blocks: list }))
+            return
+          }
+
+          // POST /api/blocks/clone — duplicate an existing block with auto-
+          // incrementing `<slug>-copy-N` suffix. WP-035 Phase 3.
+          //
+          // Always writes to SOURCE_DIR (sandbox by default). Core logic lives
+          // in `performCloneInSandbox` (top-level export, unit-tested directly).
+          if (req.method === 'POST' && req.url === '/api/blocks/clone') {
+            const chunks: Buffer[] = []
+            await new Promise<void>((resolve, reject) => {
+              req.on('data', (c: Buffer) => chunks.push(c))
+              req.on('end', () => resolve())
+              req.on('error', reject)
+            })
+            const bodyRaw = Buffer.concat(chunks).toString('utf8')
+            let body: { sourceSlug?: string }
+            try {
+              body = JSON.parse(bodyRaw) as { sourceSlug?: string }
+            } catch {
+              res.statusCode = 400
+              res.setHeader('content-type', 'application/json')
+              res.end(JSON.stringify({ error: 'invalid-body-json' }))
+              return
+            }
+
+            const result = await performCloneInSandbox(SOURCE_DIR, body.sourceSlug)
+            if (!result.ok) {
+              res.statusCode = result.status
+              res.setHeader('content-type', 'application/json')
+              const payload: Record<string, unknown> = { error: result.error }
+              if (result.sourceSlug) payload.sourceSlug = result.sourceSlug
+              res.end(JSON.stringify(payload))
+              return
+            }
+
+            res.statusCode = 201
+            res.setHeader('content-type', 'application/json')
+            res.end(
+              JSON.stringify({
+                ok: true,
+                sourceSlug: result.sourceSlug,
+                newSlug: result.newSlug,
+              }),
+            )
             return
           }
 
@@ -89,7 +272,7 @@ function blocksApiPlugin(): PluginOption {
             }
             const filepath = path.join(SOURCE_DIR, `${slug}.json`)
 
-            // Reject if target doesn't exist — Phase 4 is overwrite-only.
+            // Reject if target doesn't exist — overwrite-only contract.
             try {
               await access(filepath, constants.W_OK)
             } catch {
