@@ -124,7 +124,7 @@ result.md.
 |---|---|---|---|
 | 0 | (RECON) | (no commit) | logs/wp-034/phase-0-recon-result.md (shipped Phase 1) |
 | 1 | `feat(studio+block-forge): WP-034 phase 1 — Inspector cascade-override fix (Path A)` | `ead09eb7` | 11 (4 source + 4 test + 1 RECON + 2 smoke) |
-| 2 (Close) | `docs(wp-034): phase 2 close — PARITY trio "Known limitations" RESOLVED + status flip` | TBD | 6 (5 doc + result.md) |
+| 2 (Close) | `docs(wp-034): phase 2 close — PARITY trio "Known limitations" RESOLVED + status flip` | `31cb1d43` | 6 (5 doc + result.md) |
 
 **Total WP-034 footprint: ~500 LOC across 17 files in 2 commits over 1 day.**
 
