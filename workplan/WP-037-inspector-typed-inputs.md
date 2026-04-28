@@ -27,7 +27,7 @@
 | Pre-flight | `feat(block-forge): WP-033 post-close polish — single-cell Inspector` | `3a4f345c` | 10 (5 source + 3 test + 2 snapshot) |
 | 1 | `feat(studio+block-forge): WP-037 phase 1 — Inspector typed enum inputs` | `b49c2cd7` | 13 (4 source + 4 test + 1 manifest + 4 doc) |
 | 2 | `feat(ui+studio+block-forge): WP-037 phase 2 — Tooltip primitive + label hints` | `37acf1a6` | 23 (5 source + 6 test + 1 manifest + 5 smoke screenshots + 6 misc) |
-| 3 (Close) | `docs(wp-037): phase 3 close — PARITY trio + SKILL flips + CONVENTIONS + status flip` | TBD | doc batch |
+| 3 (Close) | `docs(wp-037): phase 3 close — SKILL trio + status flip + result.md` | `af0bd290` | 7 (3 SKILL + 3 status + 1 result.md). PARITY trio + CONVENTIONS bundled into concurrent `6223cb23` (WP-035 close) that landed between Phase 2 and Phase 3. |
 
 ---
 
