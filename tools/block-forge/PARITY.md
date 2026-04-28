@@ -548,6 +548,13 @@ Branch render avoids inconsistent UX — properties without `meta.tooltip` keep 
 
 App-root wrappers added: `tools/block-forge/src/main.tsx` and `apps/studio/src/main.tsx` wrap with `<TooltipProvider>` so `skipDelayDuration` coordinates across the entire app instance.
 
+> **WP-041 (post-WP-037):** Studio adopted Tooltip in 9 sites outside the
+> Inspector (preset-bar, editor-sidebar, slots-list, theme-editor, media).
+> Forge is out of WP-041 scope per WP doc (tools, not portal apps). The
+> Inspector PropertyRow ↺ revert button retains native `title=` on **both**
+> surfaces to preserve the WP-040 PARITY mirror — see §Known limitations
+> below.
+
 ### Owned files (block-forge surface) ↔ Studio mirror
 
 | block-forge file | Studio mirror file |
@@ -565,6 +572,7 @@ Pre-flight commit `3a4f345c` landed the polish + regenerated tests in one atomic
 
 - **Tooltip primitive is desktop-only by design** — Radix mobile fallback is long-press; Inspector authoring is not a mobile use case.
 - **Native `<select>` chevron rendering is OS-controlled** — visual smoke at WP-037 Phase 2 confirmed Chromium rendering is acceptable. Future polish could swap to Radix Select for cross-browser consistency if field data warrants.
+- **PropertyRow ↺ revert button retains native `title=`** — byte-equivalent mirror with Studio (WP-040 PARITY trio). WP-041 deferred this site deliberately to avoid re-breaking the unified single-cell parity; a future coordinated mirror WP can adopt Tooltip on both surfaces in lockstep.
 
 ## WP-035 — Sandbox + Export (Forge-only; asymmetric by design)
 

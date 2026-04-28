@@ -1,11 +1,14 @@
 # WP-041 — Tooltip Primitive Portal-Wide Rollout
 
-> **Status:** 🟡 BACKLOG (drafted 2026-04-28 as WP-037 polish queue carryover)
+> **Status:** ✅ DONE (Phase 0 RECON + Phase 1 + Phase 2 Close shipped 2026-04-28)
 > **Origin:** WP-034 Phase 2 Close `logs/wp-034/phase-2-result.md` §"What's next" item 3 + WP-037 Phase 3 result.md
-> **Estimated effort:** 1–2 phases, ~2–4h depending on adoption breadth
+> **Estimated effort:** 1–2 phases, ~2–4h — actual ~1.5h across 2 phases
 > **Layer:** Cross-portal (`@cmsmasters/ui` consumers across all apps)
 > **Priority:** P3 — opportunistic; adopt as features touch label-info patterns
 > **Prerequisites:** WP-037 ✅ DONE (Tooltip primitive shipped in `packages/ui/src/primitives/tooltip.tsx`)
+> **Path chosen:** A — Opportunistic full sweep within studio (Phase 0 RECON Brain ruling)
+> **Completed:** 2026-04-28
+> **Phase 1 commit:** `d218c695`
 
 ---
 
@@ -25,13 +28,13 @@ WP-041 audits the portal apps for hand-rolled tooltip patterns (`title="..."` at
 
 ## Acceptance criteria
 
-- [ ] **Audit** (Phase 0): catalog every `title=` attr, hand-rolled tooltip, and ad-hoc Radix Tooltip in `apps/portal`, `apps/dashboard`, `apps/studio`, `apps/admin`, `apps/support`, `apps/command-center` — output to `logs/wp-041/phase-0-audit.md`.
-- [ ] **Migrate** (Phase 1): replace each catalogued instance with `<Tooltip content="...">` from `@cmsmasters/ui`. Skip command-center (own theme; out of DS scope per CLAUDE.md).
-- [ ] **TooltipProvider wiring**: each adopting app has a single `<TooltipProvider>` at root (Studio + block-forge already wired post-WP-037; verify others).
-- [ ] **Native `title=` attr policy**: deprecate raw `title=` for non-debug use cases; document in `.context/CONVENTIONS.md` §Tooltips. Hover-info MUST use `<Tooltip>`.
-- [ ] **Visual smoke**: spot-check 3+ migrated instances per app for hover delay (400ms), positioning (side="right" default works in most contexts), and z-index above modals.
-- [ ] **PARITY trio note**: add §"Tooltip primitive portal-wide" to relevant PARITY.md files (Studio + block-forge already cite it; portal/dashboard/admin/support add cross-references if they adopt).
-- [ ] No regression in existing Inspector tooltip behavior (WP-037 baseline).
+- [x] **Audit** (Phase 0): catalog every `title=` attr, hand-rolled tooltip, and ad-hoc Radix Tooltip in `apps/portal`, `apps/dashboard`, `apps/studio`, `apps/admin`, `apps/support`, `apps/command-center` — output to `logs/wp-041/phase-0-audit.md`.
+- [x] **Migrate** (Phase 1): replace each catalogued instance with `<Tooltip content="...">` from `@cmsmasters/ui`. Skip command-center (own theme; out of DS scope per CLAUDE.md).
+- [x] **TooltipProvider wiring**: each adopting app has a single `<TooltipProvider>` at root (Studio + block-forge already wired post-WP-037; verify others).
+- [x] **Native `title=` attr policy**: deprecate raw `title=` for non-debug use cases; document in `.context/CONVENTIONS.md` §Tooltips. Hover-info MUST use `<Tooltip>`.
+- [x] **Visual smoke**: spot-check 3+ migrated instances per app for hover delay (400ms), positioning (side="right" default works in most contexts), and z-index above modals.
+- [x] **PARITY trio note**: add §"Tooltip primitive portal-wide" to relevant PARITY.md files (Studio + block-forge already cite it; portal/dashboard/admin/support add cross-references if they adopt).
+- [x] No regression in existing Inspector tooltip behavior (WP-037 baseline).
 
 ---
 
@@ -76,9 +79,34 @@ Total: ~2–4h across 1–2 phases.
 
 ---
 
+## Outcome Ladder
+
+| Tier | Outcome | Evidence |
+|---|---|---|
+| Bronze | Phase 0 RECON empirically scoped migration to 9 sites in 1 app — portal/dashboard/admin had zero native title attrs (false-alarm WP doc estimate of "5 apps") | `logs/wp-041/phase-0-audit.md` |
+| Silver | Phase 1 9 sites migrated to `<Tooltip content="...">` wrapper across 5 studio source files; ~28 LOC source delta | commit `d218c695` |
+| Gold | All gates GREEN: Studio 317/317, arch-test 597/597, both tsc CLEAN, DS lint clean; visual smoke pair confirmed dark popover, side="right", 400ms delay, arrow render | `logs/wp-041/phase-1-result.md` + `smoke-{2-slots,4-media}-tooltip.png` |
+| Platinum | Phase 2 Close — CONVENTIONS native-title policy added; PARITY pair (Studio + Forge) cross-references WP-041 + ↺ deferral; status flips through WP doc + ROADMAP | this commit (Phase 2 SHA) |
+
+---
+
+## Commit Ladder
+
+| Phase | Commit message | SHA | Files |
+|---|---|---|---|
+| 0 | (RECON) | (no commit — shipped with Phase 1) | `logs/wp-041/phase-0-audit.md` |
+| 1 | `feat(studio): WP-041 phase 1 — adopt Tooltip primitive across 9 studio sites` | `d218c695` | 15 (5 source + 7 smoke/snapshot + 2 RECON+result + 1 Phase 1 result) |
+| 2 (Close) | `docs(wp-041): phase 2 close — CONVENTIONS native-title policy + PARITY pair WP-041 cross-refs + status flip` | TBD | 5 (CONVENTIONS + PARITY pair + WP doc + ROADMAP) + result.md |
+
+**Total WP-041 footprint: ~28 LOC source delta + CONVENTIONS section + PARITY pair cross-refs across 2 commits over ~1.5h.**
+
+---
+
 ## Cross-references
 
 - WP-037 Phase 1 commit: Tooltip primitive shipped (`packages/ui/src/primitives/tooltip.tsx`)
-- WP-037 PARITY trio §Inspector Typed Inputs + Tooltips
+- WP-037 PARITY trio §Inspector Typed Inputs + Tooltips (cross-ref WP-041 added Phase 2 Close)
 - WP-034 Phase 2 Close: `logs/wp-034/phase-2-result.md` §What's next item 3
+- WP-040 PARITY-locked PropertyRow ↺ deferral — see PARITY pair §"PropertyRow ↺ button — PARITY-locked native `title=` (WP-041)"
 - `CLAUDE.md` §Use `@cmsmasters/ui` components when they exist
+- `.context/CONVENTIONS.md` §Native `title=` policy (WP-041)

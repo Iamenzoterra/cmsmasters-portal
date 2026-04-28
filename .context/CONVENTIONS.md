@@ -1127,6 +1127,55 @@ References:
 - `workplan/WP-037-inspector-typed-inputs.md` (full WP doc)
 - `logs/wp-037/phase-{0,3}-result.md`
 
+### Native `title=` policy (WP-041)
+
+Use `<Tooltip>` from `@cmsmasters/ui` for hover-info on focusable elements
+(`<button>`, `<a>`, custom interactive widgets). Do NOT use the native HTML
+`title=` attr for hover-info — Radix Tooltip provides consistent surface,
+positioning, delay, and a11y across the portal.
+
+Two narrow exceptions retain native `title=`:
+
+1. **`<iframe title="...">`** — required by WCAG 2.1 SC 4.1.2 for
+   accessible name. Tooltip primitive does not apply to iframes.
+2. **PARITY-locked mirror sites** — when a button on Studio mirrors a Forge
+   button byte-equivalent (PropertyRow ↺ revert button), keep both surfaces
+   on the same hover-info pattern to preserve the WP-040 PARITY trio. A
+   future coordinated mirror WP can migrate both surfaces in lockstep.
+
+Migration pattern (WP-041 baseline):
+
+```tsx
+// Before
+<Button variant="ghost" size="mini" onClick={fn} title="Action label">
+  <Icon size={12} />
+</Button>
+
+// After
+import { Tooltip } from '@cmsmasters/ui'
+<Tooltip content="Action label">
+  <Button variant="ghost" size="mini" onClick={fn}>
+    <Icon size={12} />
+  </Button>
+</Tooltip>
+```
+
+WP-041 migrated 9 sites in studio (preset-bar, editor-sidebar, slots-list,
+theme-editor, media). portal/dashboard/admin had zero native title attrs
+on focusable elements — adopt opportunistically as those apps grow features
+that need hover-info. Each adopting app must wire `<TooltipProvider>` once
+at the React tree root before its first `<Tooltip>` consumer.
+
+Audit grep targets when reviewing for `title=` regressions:
+- `\btitle="` on `<button>`, `<a>`, focusable DOM elements (migrate)
+- `<Section title=`, `<FormSection title=`, `<DeleteConfirmModal title=`,
+  `<PageHeader title=` (component props — leave alone)
+- `<iframe title=` (a11y-required — leave alone)
+
+References:
+- `workplan/WP-041-tooltip-portal-wide-rollout.md` (full WP doc)
+- `logs/wp-041/phase-{0-audit,1-result}.md`
+
 ---
 
 ## Block authoring (WP-035 + WP-038 — 2026-04-28)

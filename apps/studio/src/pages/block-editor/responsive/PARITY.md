@@ -420,6 +420,12 @@ DS-level tooltip). `apps/studio/src/main.tsx` wraps the React tree with
 `<TooltipProvider>` so `skipDelayDuration` works across all label
 tooltips.
 
+> **WP-041 (post-WP-037):** Studio adopted Tooltip in 9 sites outside the
+> Inspector — preset-bar, editor-sidebar, slots-list, theme-editor, media.
+> The Inspector PropertyRow ↺ revert button retains native `title=` to
+> preserve PARITY with the Forge mirror — see §"PropertyRow ↺ button —
+> PARITY-locked native `title=` (WP-041)" below for the deferral rationale.
+
 `PropertyRow.tsx` branch-renders the label:
 
 ```tsx
@@ -456,10 +462,18 @@ inconsistency.
 
 ### Known limitations
 
-- **Row-shape PARITY divergence persists** — same as block-forge §Known
-  limitations. Restoring is out of WP-037 scope.
 - **Native `<select>` styling is OS-controlled** at the chevron + open
   popover. Cross-browser smoke is desktop-Chromium only at WP-037 close.
+
+### PropertyRow ↺ button — PARITY-locked native `title=` (WP-041)
+
+The `↺` revert button in `PropertyRow.tsx` retains native HTML `title=
+"Revert to base value (remove tweak)"` rather than wrapping in `<Tooltip>`.
+Rationale: the button is a byte-equivalent mirror across Studio + Forge
+(WP-040 PARITY trio); migrating one surface without the other would
+re-break the unified single-cell shape parity. WP-041 deferred this site
+deliberately — a future coordinated mirror WP can adopt Tooltip on both
+surfaces in lockstep.
 
 ## WP-035 — Studio Import (Studio-only; asymmetric by design)
 
