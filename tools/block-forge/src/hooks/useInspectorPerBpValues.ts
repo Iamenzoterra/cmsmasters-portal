@@ -37,7 +37,28 @@ function hashCss(css: string): string {
 }
 
 /** Mirrored from preview-assets.ts snapshotComputed — keep MVP keys in sync. */
-function harvestSnapshot(cs: CSSStyleDeclaration): ComputedSnapshot {
+const TEXT_TAGS_SET: ReadonlySet<string> = new Set([
+  'H1','H2','H3','H4','H5','H6','P','SPAN','A','BUTTON','LABEL','LI','TD','TH',
+  'CAPTION','LEGEND','SUMMARY','DT','DD','BLOCKQUOTE','CITE','EM','STRONG','I',
+  'B','U','S','CODE','PRE','SMALL','SUB','SUP','MARK','TIME','Q','FIGCAPTION',
+])
+
+function harvestSnapshot(el: Element, cs: CSSStyleDeclaration): ComputedSnapshot {
+  let hasDirectText = false
+  for (let i = 0; i < el.childNodes.length; i++) {
+    const node = el.childNodes[i]
+    if (node.nodeType === 3 && (node.textContent || '').trim().length > 0) {
+      hasDirectText = true
+      break
+    }
+  }
+  const isTextTag = TEXT_TAGS_SET.has(el.tagName)
+  const parentEl = el.parentElement
+  const parentFs = parentEl
+    ? (parentEl.ownerDocument?.defaultView?.getComputedStyle(parentEl).fontSize ?? '')
+    : ''
+  const fontIntentional = !!cs.fontSize && cs.fontSize !== parentFs
+  const hasText = hasDirectText || isTextTag || fontIntentional ? '1' : '0'
   return {
     marginTop: cs.marginTop,
     marginRight: cs.marginRight,
@@ -60,6 +81,12 @@ function harvestSnapshot(cs: CSSStyleDeclaration): ComputedSnapshot {
     alignItems: cs.alignItems,
     justifyContent: cs.justifyContent,
     gridTemplateColumns: cs.gridTemplateColumns,
+    width: cs.width,
+    height: cs.height,
+    transform: cs.transform,
+    transformOrigin: cs.transformOrigin,
+    hasText,
+    childCount: String(el.children.length),
   }
 }
 
@@ -126,7 +153,7 @@ export function useInspectorPerBpValues(args: {
           const target = doc?.querySelector(pinned.selector) ?? null
           if (target && doc && view) {
             const cs = view.getComputedStyle(target)
-            result[bp] = harvestSnapshot(cs)
+            result[bp] = harvestSnapshot(target, cs)
           }
         } catch {
           result[bp] = null

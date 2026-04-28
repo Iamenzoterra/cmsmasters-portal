@@ -1,37 +1,43 @@
-// WP-033 Phase 2 — InspectorPanel UI shell + 4 property sections.
-// WP-033 Phase 3 — wires:
-//   - onCellEdit (active cell becomes editable input on focus)
-//   - valuesByBp from useInspectorPerBpValues (inactive cells now populated)
-//   - tokenChip slot rendered via ChipForRow + useChipDetection
-//   - Visibility checkbox enabled (hide-only emit at active BP)
+// WP-033 post-close polish — context-aware single-cell layout.
 //
-// Pure presentational. All state owned by Inspector.tsx; this component just
-// renders.
+// Sections (auto-curated by element role):
+//   SPACING      margin (4 axes), padding (4 axes), gap (only if flex/grid)
+//   DIMENSIONS   width, height (always — element size is universally relevant)
+//   TYPOGRAPHY   font-size, line-height, font-weight, letter-spacing, text-align
+//                — only rendered when the pinned element has text content
+//   LAYOUT       display, flex-direction (only if flex), align-items,
+//                justify-content, grid-template-columns (only if grid)
+//   VISIBILITY   hide-at-BP checkbox (always)
 //
-// Sections (4):
-//   SPACING       margin (4 axes), padding (4 axes), gap (conditional)
-//   TYPOGRAPHY    font-size, line-height, font-weight, letter-spacing, text-align
-//   LAYOUT        display, flex-direction (conditional), align-items,
-//                 justify-content, grid-template-columns (conditional)
-//   VISIBILITY    hide-at-BP checkbox (Phase 3 wires emit)
+// Each property row shows ONE editable cell for the currently-active BP.
+// To inspect another BP, switch via the BP picker (top of panel) or via the
+// PreviewTriptych tab (lockstep wired in App.tsx).
 //
-// Per-axis margin/padding (4 rows each, NOT collapsed) so emit stays 1:1
-// with selectable rows.
-//
-// Conditional rows fire only when display matches: flex-direction when
-// display.includes('flex'); grid-template-columns when display.includes('grid').
-//
-// Per-BP cell sourcing precedence (Phase 3, escalation §5):
-//   1. valuesByBp[bp] when present (from useInspectorPerBpValues hook)
-//   2. pinned.computedStyle for activeBp as fallback (Phase 1 visible iframe)
+// Sourcing precedence:
+//   1. pinned.computedStyle for activeBp (Phase 1 visible iframe — what user sees)
+//   2. valuesByBp[activeBp] from the probe hook as fallback
 //   3. null → renders `—`
+//
+// Note: `valuesByBp` (multi-BP probe map) is kept as a prop for inspector-level
+// debug + tests, even though the row-level UI only consumes activeBp slice.
 
-import type { ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
+import type { Tweak } from '@cmsmasters/block-forge-core'
 import { BreadcrumbNav } from './BreadcrumbNav'
 import type { ComputedSnapshot, HoverState, InspectorBp, PinState } from './Inspector'
 import { PropertyRow } from './PropertyRow'
 import { TokenChip } from './TokenChip'
 import { useChipDetection } from '../hooks/useChipDetection'
+
+/** Parse computed `transform` matrix back into a 0-200% percentage. */
+function parseScalePct(transform: string | undefined): number {
+  if (!transform || transform === 'none') return 100
+  const matrix = transform.match(/matrix\(([^,)]+)/)
+  if (matrix) return Math.round(parseFloat(matrix[1]) * 100)
+  const scale = transform.match(/scale\(([^,)]+)/)
+  if (scale) return Math.round(parseFloat(scale[1]) * 100)
+  return 100
+}
 
 const INSPECTOR_BPS: readonly InspectorBp[] = [1440, 768, 375] as const
 
@@ -44,37 +50,21 @@ export interface InspectorPanelProps {
   activeBp: InspectorBp
   onActiveBpChange: (bp: InspectorBp) => void
   onClearPin: () => void
-  /**
-   * Phase 3 — per-BP value map (from useInspectorPerBpValues). When undefined
-   * (e.g. probe iframes still loading or not wired), falls back to
-   * pinned.computedStyle for activeBp only.
-   */
   valuesByBp?: InspectorValuesByBp
-  /**
-   * Phase 3 — emit a tweak from the active cell. Curried with selector +
-   * property by this component before invoking parent handler.
-   */
   onCellEdit?: (selector: string, bp: InspectorBp, property: string, value: string) => void
-  /**
-   * Phase 3 — apply a fluid token (bp:0 emit). Wired by App.tsx → addTweak
-   * with `{bp:0, value: 'var(--token)'}`. Fluid token applies at all 3 BPs.
-   */
   onApplyToken?: (selector: string, property: string, tokenName: string) => void
-  /**
-   * Phase 3 — visibility toggle. Check → addTweak({display:none}). Uncheck →
-   * removeTweakFor(selector, bp, 'display').
-   */
   onVisibilityToggle?: (bp: InspectorBp, hide: boolean) => void
-  /**
-   * Phase 3 — derived in App.tsx from session.tweaks. True iff a
-   * (selector, activeBp, display=none) tweak exists.
-   */
   isHiddenAtActiveBp?: boolean
-  /**
-   * Phase 3 — base CSS used by useChipDetection to walk source declarations.
-   * When undefined, chip detection skips (returns null).
-   */
   effectiveCss?: string
+  /**
+   * Tweak slice for the active selector. Used to gate the ↺ revert button
+   * per row (only show when a tweak exists for this property at active BP).
+   */
+  tweaks?: ReadonlyArray<Tweak>
+  /** Revert handler — remove tweak for (selector, bp, property). */
+  onCellRevert?: (selector: string, bp: InspectorBp, property: string) => void
+  /** Phase C — bake current scale into per-child tweaks (Apply button). */
+  onApplyScale?: (scaleFactor: number) => void
   'data-testid'?: string
 }
 
@@ -91,6 +81,9 @@ export function InspectorPanel({
   onVisibilityToggle,
   isHiddenAtActiveBp,
   effectiveCss,
+  tweaks,
+  onCellRevert,
+  onApplyScale,
   ...rest
 }: InspectorPanelProps) {
   const testId = rest['data-testid'] ?? 'inspector-panel'
@@ -162,13 +155,15 @@ export function InspectorPanel({
         <PropertySections
           pinned={pinned}
           activeBp={activeBp}
-          onActiveBpChange={onActiveBpChange}
           valuesByBp={valuesByBp}
           onCellEdit={onCellEdit}
           onApplyToken={onApplyToken}
           onVisibilityToggle={onVisibilityToggle}
           isHiddenAtActiveBp={isHiddenAtActiveBp}
           effectiveCss={effectiveCss}
+          tweaks={tweaks}
+          onCellRevert={onCellRevert}
+          onApplyScale={onApplyScale}
         />
       ) : (
         <div
@@ -185,52 +180,39 @@ export function InspectorPanel({
 function PropertySections({
   pinned,
   activeBp,
-  onActiveBpChange,
   valuesByBp,
   onCellEdit,
   onApplyToken,
   onVisibilityToggle,
   isHiddenAtActiveBp,
   effectiveCss,
+  tweaks,
+  onCellRevert,
+  onApplyScale,
 }: {
   pinned: PinState
   activeBp: InspectorBp
-  onActiveBpChange: (bp: InspectorBp) => void
   valuesByBp?: InspectorValuesByBp
   onCellEdit?: (selector: string, bp: InspectorBp, property: string, value: string) => void
   onApplyToken?: (selector: string, property: string, tokenName: string) => void
   onVisibilityToggle?: (bp: InspectorBp, hide: boolean) => void
   isHiddenAtActiveBp?: boolean
   effectiveCss?: string
+  tweaks?: ReadonlyArray<Tweak>
+  onCellRevert?: (selector: string, bp: InspectorBp, property: string) => void
+  onApplyScale?: (scaleFactor: number) => void
 }) {
   const cs = pinned.computedStyle
 
-  /**
-   * Source per-BP value for property `key`. Phase 3 sourcing precedence:
-   *   1. valuesByBp[bp][key] when probe hook has populated it (all 3 cells)
-   *   2. pinned.computedStyle[key] for activeBp as fallback
-   *   3. null otherwise → renders `—`
-   *
-   * Sourcing precedence rationale (escalation §5): if hook + visible iframe
-   * disagree on activeBp, we keep what's actually rendered (pinned.computedStyle).
-   * Inactive BPs always come from the hook.
-   */
-  const sourceByBp = (key: keyof ComputedSnapshot): Record<InspectorBp, string | null> => {
-    return {
-      375: valueAt(375, key),
-      768: valueAt(768, key),
-      1440: valueAt(1440, key),
-    }
-    function valueAt(bp: InspectorBp, k: keyof ComputedSnapshot): string | null {
-      if (bp === activeBp) {
-        // Prefer Phase 1 visible iframe; fall back to hook.
-        return cs[k as string] ?? valuesByBp?.[bp]?.[k as string] ?? null
-      }
-      return valuesByBp?.[bp]?.[k as string] ?? null
-    }
+  /** Resolve value for property at current active BP. */
+  const valueOf = (key: keyof ComputedSnapshot): string | null => {
+    const visible = cs[key as string] as string | undefined
+    if (visible !== undefined && visible !== '') return visible
+    const probe = valuesByBp?.[activeBp]?.[key as string] as string | undefined
+    return probe ?? null
   }
 
-  const sourceGapByBp = (): Record<InspectorBp, string | null> => {
+  const gapValue = (): string | null => {
     const pickGap = (snap: ComputedSnapshot | undefined): string | null => {
       if (!snap) return null
       const g = snap.gap
@@ -240,65 +222,108 @@ function PropertySections({
       if (r && c) return `${r} ${c}`
       return r ?? c ?? null
     }
-    return {
-      375: activeBp === 375 ? pickGap(cs) ?? pickGap(valuesByBp?.[375] ?? undefined) : pickGap(valuesByBp?.[375] ?? undefined),
-      768: activeBp === 768 ? pickGap(cs) ?? pickGap(valuesByBp?.[768] ?? undefined) : pickGap(valuesByBp?.[768] ?? undefined),
-      1440: activeBp === 1440 ? pickGap(cs) ?? pickGap(valuesByBp?.[1440] ?? undefined) : pickGap(valuesByBp?.[1440] ?? undefined),
-    }
+    return pickGap(cs) ?? pickGap(valuesByBp?.[activeBp] ?? undefined)
   }
 
   const display = cs.display ?? ''
   const isFlex = display.includes('flex')
   const isGrid = display.includes('grid')
   const hasGap = Boolean(cs.gap || cs.rowGap || cs.columnGap)
+  // hasText flag emitted by snapshotComputed in preview-assets.ts. Element has
+  // any non-whitespace text content (self or descendants) → render TYPOGRAPHY.
+  const hasText = cs.hasText === '1'
 
-  const editProp =
-    (property: string) =>
+  const editProp = (property: string) =>
     onCellEdit
-      ? (bp: InspectorBp, value: string) =>
-          onCellEdit(pinned.selector, bp, property, value)
+      ? (value: string) => onCellEdit(pinned.selector, activeBp, property, value)
       : undefined
+
+  // Revert button gating: show only if a tweak exists at active BP for this
+  // property (or at bp:0 — covers token-apply revert).
+  const revertProp = (property: string) => {
+    if (!onCellRevert || !tweaks) return undefined
+    const has = tweaks.some(
+      (t) =>
+        t.selector === pinned.selector &&
+        (t.bp === activeBp || t.bp === 0) &&
+        t.property === property,
+    )
+    if (!has) return undefined
+    return () => onCellRevert(pinned.selector, activeBp, property)
+  }
 
   return (
     <div className="flex flex-col gap-3">
       <Section testId="inspector-section-spacing" title="Spacing">
-        <PropertyRowWithChip property="margin-top" valuesByBp={sourceByBp('marginTop')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('margin-top')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
-        <PropertyRowWithChip property="margin-right" valuesByBp={sourceByBp('marginRight')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('margin-right')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
-        <PropertyRowWithChip property="margin-bottom" valuesByBp={sourceByBp('marginBottom')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('margin-bottom')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
-        <PropertyRowWithChip property="margin-left" valuesByBp={sourceByBp('marginLeft')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('margin-left')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
-        <PropertyRowWithChip property="padding-top" valuesByBp={sourceByBp('paddingTop')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('padding-top')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
-        <PropertyRowWithChip property="padding-right" valuesByBp={sourceByBp('paddingRight')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('padding-right')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
-        <PropertyRowWithChip property="padding-bottom" valuesByBp={sourceByBp('paddingBottom')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('padding-bottom')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
-        <PropertyRowWithChip property="padding-left" valuesByBp={sourceByBp('paddingLeft')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('padding-left')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
+        <PropertyRowWithChip property="margin-top" value={valueOf('marginTop')} onEdit={editProp('margin-top')} onRevert={revertProp('margin-top')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
+        <PropertyRowWithChip property="margin-right" value={valueOf('marginRight')} onEdit={editProp('margin-right')} onRevert={revertProp('margin-right')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
+        <PropertyRowWithChip property="margin-bottom" value={valueOf('marginBottom')} onEdit={editProp('margin-bottom')} onRevert={revertProp('margin-bottom')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
+        <PropertyRowWithChip property="margin-left" value={valueOf('marginLeft')} onEdit={editProp('margin-left')} onRevert={revertProp('margin-left')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
+        <PropertyRowWithChip property="padding-top" value={valueOf('paddingTop')} onEdit={editProp('padding-top')} onRevert={revertProp('padding-top')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
+        <PropertyRowWithChip property="padding-right" value={valueOf('paddingRight')} onEdit={editProp('padding-right')} onRevert={revertProp('padding-right')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
+        <PropertyRowWithChip property="padding-bottom" value={valueOf('paddingBottom')} onEdit={editProp('padding-bottom')} onRevert={revertProp('padding-bottom')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
+        <PropertyRowWithChip property="padding-left" value={valueOf('paddingLeft')} onEdit={editProp('padding-left')} onRevert={revertProp('padding-left')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
         {hasGap && (
-          <PropertyRowWithChip property="gap" valuesByBp={sourceGapByBp()} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('gap')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
+          <PropertyRowWithChip property="gap" value={gapValue()} onEdit={editProp('gap')} onRevert={revertProp('gap')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
         )}
       </Section>
 
-      <Section testId="inspector-section-typography" title="Typography">
-        <PropertyRowWithChip property="font-size" valuesByBp={sourceByBp('fontSize')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('font-size')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
-        <PropertyRowWithChip property="line-height" valuesByBp={sourceByBp('lineHeight')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('line-height')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
-        <PropertyRowWithChip property="font-weight" valuesByBp={sourceByBp('fontWeight')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('font-weight')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
-        <PropertyRowWithChip property="letter-spacing" valuesByBp={sourceByBp('letterSpacing')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('letter-spacing')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
-        <PropertyRowWithChip property="text-align" valuesByBp={sourceByBp('textAlign')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('text-align')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
+      <Section testId="inspector-section-dimensions" title="Dimensions">
+        <PropertyRowWithChip property="width" value={valueOf('width')} onEdit={editProp('width')} onRevert={revertProp('width')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
+        <PropertyRowWithChip property="height" value={valueOf('height')} onEdit={editProp('height')} onRevert={revertProp('height')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
       </Section>
+
+      {hasText && (
+        <Section testId="inspector-section-typography" title="Typography">
+          <PropertyRowWithChip property="font-size" value={valueOf('fontSize')} onEdit={editProp('font-size')} onRevert={revertProp('font-size')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
+          <PropertyRowWithChip property="line-height" value={valueOf('lineHeight')} onEdit={editProp('line-height')} onRevert={revertProp('line-height')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
+          <PropertyRowWithChip property="font-weight" value={valueOf('fontWeight')} onEdit={editProp('font-weight')} onRevert={revertProp('font-weight')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
+          <PropertyRowWithChip property="letter-spacing" value={valueOf('letterSpacing')} onEdit={editProp('letter-spacing')} onRevert={revertProp('letter-spacing')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
+          <PropertyRowWithChip property="text-align" value={valueOf('textAlign')} onEdit={editProp('text-align')} onRevert={revertProp('text-align')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
+        </Section>
+      )}
 
       <Section testId="inspector-section-layout" title="Layout">
-        <PropertyRowWithChip property="display" valuesByBp={sourceByBp('display')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('display')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
+        <PropertyRowWithChip property="display" value={valueOf('display')} onEdit={editProp('display')} onRevert={revertProp('display')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
         {isFlex && (
-          <PropertyRowWithChip property="flex-direction" valuesByBp={sourceByBp('flexDirection')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('flex-direction')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
+          <PropertyRowWithChip property="flex-direction" value={valueOf('flexDirection')} onEdit={editProp('flex-direction')} onRevert={revertProp('flex-direction')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
         )}
-        <PropertyRowWithChip property="align-items" valuesByBp={sourceByBp('alignItems')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('align-items')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
-        <PropertyRowWithChip property="justify-content" valuesByBp={sourceByBp('justifyContent')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('justify-content')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
+        <PropertyRowWithChip property="align-items" value={valueOf('alignItems')} onEdit={editProp('align-items')} onRevert={revertProp('align-items')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
+        <PropertyRowWithChip property="justify-content" value={valueOf('justifyContent')} onEdit={editProp('justify-content')} onRevert={revertProp('justify-content')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
         {isGrid && (
-          <PropertyRowWithChip property="grid-template-columns" valuesByBp={sourceByBp('gridTemplateColumns')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('grid-template-columns')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
+          <PropertyRowWithChip property="grid-template-columns" value={valueOf('gridTemplateColumns')} onEdit={editProp('grid-template-columns')} onRevert={revertProp('grid-template-columns')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
         )}
       </Section>
+
+      {parseInt(cs.childCount ?? '0', 10) > 0 && (
+        <Section testId="inspector-section-group" title="Group">
+          <GroupScaleRow
+            valuePct={parseScalePct(cs.transform)}
+            onScaleChange={(pct) => {
+              if (pct === 100) {
+                onCellRevert?.(pinned.selector, activeBp, 'transform')
+                onCellRevert?.(pinned.selector, activeBp, 'transform-origin')
+                return
+              }
+              onCellEdit?.(pinned.selector, activeBp, 'transform', `scale(${(pct / 100).toFixed(3)})`)
+              onCellEdit?.(pinned.selector, activeBp, 'transform-origin', 'top left')
+            }}
+            onApply={
+              onApplyScale
+                ? (pct) => {
+                    if (pct === 100) return
+                    onApplyScale(pct / 100)
+                  }
+                : undefined
+            }
+          />
+        </Section>
+      )}
 
       <Section testId="inspector-section-visibility" title="Visibility">
         <label
           className="flex cursor-pointer items-center gap-2 text-[length:var(--text-xs-font-size)] text-[hsl(var(--text-primary))]"
-          title={`Hide .${pinned.selector} at ${activeBp}px breakpoint`}
+          title={`Hide ${pinned.selector} at ${activeBp}px breakpoint`}
         >
           <input
             type="checkbox"
@@ -315,35 +340,29 @@ function PropertySections({
   )
 }
 
-/**
- * Wraps PropertyRow with chip detection. Internal-only — keeps the section
- * grid above readable by hiding the per-row chip wiring boilerplate. Calls
- * useChipDetection and feeds the result into PropertyRow's `tokenChip` slot.
- */
 function PropertyRowWithChip({
   property,
-  valuesByBp,
-  activeBp,
-  onBpSwitch,
-  onCellEdit,
+  value,
+  onEdit,
+  onRevert,
   pinned,
   effectiveCss,
+  activeBp,
   onApplyToken,
 }: {
   property: string
-  valuesByBp: Record<InspectorBp, string | null>
-  activeBp: InspectorBp
-  onBpSwitch: (bp: InspectorBp) => void
-  onCellEdit?: (bp: InspectorBp, value: string) => void
+  value: string | null
+  onEdit?: (value: string) => void
+  onRevert?: () => void
   pinned: PinState
   effectiveCss?: string
+  activeBp: InspectorBp
   onApplyToken?: (selector: string, property: string, tokenName: string) => void
 }) {
-  const valueAtActiveBp = valuesByBp[activeBp]
   const chip = useChipDetection({
     selector: pinned.selector,
     property,
-    valueAtActiveBp,
+    valueAtActiveBp: value,
     activeBp,
     effectiveCss: effectiveCss ?? '',
   })
@@ -364,12 +383,102 @@ function PropertyRowWithChip({
   return (
     <PropertyRow
       label={property}
-      valuesByBp={valuesByBp}
-      activeBp={activeBp}
-      onBpSwitch={onBpSwitch}
-      onCellEdit={onCellEdit}
+      value={value}
+      onEdit={onEdit}
+      onRevert={onRevert}
       tokenChip={tokenChip}
     />
+  )
+}
+
+/**
+ * Group scaling — Phase A of parent-driven multiplier UX. Visually scales the
+ * pinned element (and its children) via `transform: scale()` at the active BP.
+ * Phase C ("Apply to children") will later bake the scale into per-child
+ * tweaks; for now this is preview-only.
+ */
+function GroupScaleRow({
+  valuePct,
+  onScaleChange,
+  onApply,
+}: {
+  valuePct: number
+  onScaleChange: (pct: number) => void
+  onApply?: (pct: number) => void
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    const el = inputRef.current
+    if (!el) return
+    if (document.activeElement === el) return
+    if (el.value !== String(valuePct)) el.value = String(valuePct)
+  }, [valuePct])
+
+  return (
+    <div
+      data-testid="property-row-scale-children"
+      className="flex items-center gap-2 py-1 text-[length:var(--text-xs-font-size)]"
+    >
+      <div
+        className="w-32 shrink-0 truncate font-mono text-[hsl(var(--text-muted))]"
+        title="scale children (visual preview — does not bake into per-child values)"
+      >
+        scale children
+      </div>
+      <div className="flex min-w-0 flex-1 items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]">
+        <input
+          ref={inputRef}
+          type="number"
+          min={50}
+          max={150}
+          step={5}
+          defaultValue={valuePct}
+          data-testid="scale-children-input"
+          onBlur={(e) => {
+            const next = parseInt(e.currentTarget.value, 10)
+            if (!Number.isFinite(next) || next < 50 || next > 150) {
+              e.currentTarget.classList.add('!text-[hsl(var(--status-error-fg))]')
+              window.setTimeout(() => {
+                e.currentTarget.classList.remove('!text-[hsl(var(--status-error-fg))]')
+                e.currentTarget.value = String(valuePct)
+              }, 600)
+              return
+            }
+            if (next === valuePct) return
+            onScaleChange(next)
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.currentTarget.blur()
+            } else if (e.key === 'Escape') {
+              e.currentTarget.value = String(valuePct)
+              e.currentTarget.blur()
+            }
+          }}
+          onWheel={(e) => {
+            // Blur prevents number-input's default wheel-scroll value-step,
+            // which is the most common cause of accidental value drift.
+            e.currentTarget.blur()
+          }}
+          className="min-w-0 flex-1 bg-transparent font-mono text-[hsl(var(--text-primary))] outline-none [appearance:textfield]"
+          style={{ fieldSizing: 'content' } as React.CSSProperties}
+          size={4}
+        />
+        <span className="font-mono text-[hsl(var(--text-muted))]">%</span>
+      </div>
+      {onApply && (
+        <button
+          type="button"
+          onClick={() => onApply(valuePct)}
+          disabled={valuePct === 100}
+          data-testid="scale-children-apply"
+          title="Bake current scale into per-child tweaks (real CSS values, no blur)"
+          className="shrink-0 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--text-link))] px-2 py-0.5 text-[hsl(var(--bg-page))] hover:opacity-90 disabled:cursor-not-allowed disabled:border-[hsl(var(--border-default))] disabled:bg-transparent disabled:text-[hsl(var(--text-muted))] disabled:opacity-100"
+        >
+          Apply {valuePct}%
+        </button>
+      )}
+    </div>
   )
 }
 

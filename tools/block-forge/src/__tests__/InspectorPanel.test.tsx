@@ -1,13 +1,13 @@
 // @vitest-environment jsdom
-// WP-033 Phase 2 — InspectorPanel snapshot + section structure. Pins the
-// rendered shape of the shell + the 4 property sections (Spacing, Typography,
-// Layout, Visibility) so any unintended class / structure churn during
-// Phase 3 shows up as a snap diff.
+// WP-033 post-close polish — InspectorPanel snapshot + section structure tests.
 //
-// Phase 1 baseline: 6 tests (empty / populated-no-state / hover-only /
-// pinned / BP picker structure × 2). Phase 2 adds 5 new tests to cover the
-// section grouping + conditional flex/grid rows + disabled visibility
-// checkbox. Snapshots regenerated due to placeholder → 4-section render.
+// Pins the shell + 5 property sections (SPACING, DIMENSIONS, TYPOGRAPHY-iff-hasText,
+// LAYOUT, VISIBILITY) for the single-cell layout. Conditional row tests cover
+// flex/grid sub-rows + gap row gating.
+//
+// Note (WP-037 Phase 0 RECON repair): test fixtures updated post-WP-033 polish.
+// `hasText: '1'` flag added to PINNED_BLOCK so Typography section renders for
+// "renders 4 property sections" assertion. Snapshots auto-regenerate on next run.
 
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup } from '@testing-library/react'
@@ -38,6 +38,7 @@ const PINNED_BLOCK: PinState = {
     justifyContent: 'normal',
     flexDirection: 'row',
     gridTemplateColumns: 'none',
+    hasText: '1',
   },
 }
 

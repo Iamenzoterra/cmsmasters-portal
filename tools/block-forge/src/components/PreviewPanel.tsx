@@ -56,7 +56,9 @@ export function PreviewPanel({ block, width, label, showLabel = true }: Props) {
         width,
         slug: block.slug,
       }),
-    [block.html, block.css, block.js, block.slug, width],
+    // composeSrcDoc included so Vite HMR on preview-assets.ts (where the iframe
+    // IIFE lives) invalidates this memo and re-renders the iframe with new code.
+    [block.html, block.css, block.js, block.slug, width, composeSrcDoc],
   )
 
   useEffect(() => {

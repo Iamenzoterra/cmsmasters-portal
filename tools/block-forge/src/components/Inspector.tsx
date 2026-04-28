@@ -54,6 +54,19 @@ type Props = {
   onApplyToken?: (selector: string, property: string, tokenName: string) => void
   /** Phase 3 — visibility toggle. App.tsx → addTweak / removeTweakFor for `display`. */
   onVisibilityToggle?: (selector: string, bp: InspectorBp, hide: boolean) => void
+  /** Revert handler — App.tsx dispatches removeTweakFor(selector, bp, property). */
+  onCellRevert?: (selector: string, bp: InspectorBp, property: string) => void
+  /**
+   * Phase C — bake `transform: scale` into per-child tweaks. Inspector posts
+   * bake-scale-request to iframe; iframe responds with tweaks array; this
+   * callback applies them via App's session reducer (and clears the parent's
+   * transform tweaks).
+   */
+  onBakeScale?: (
+    parentSelector: string,
+    bp: InspectorBp,
+    tweaks: ReadonlyArray<{ selector: string; property: string; value: string }>,
+  ) => void
   /**
    * Phase 3 — session.tweaks slice. Used to derive `isHiddenAtActiveBp`
    * (checkbox state) inline at this level since pin selector lives here.
@@ -76,6 +89,8 @@ export function Inspector({
   onCellEdit,
   onApplyToken,
   onVisibilityToggle,
+  onCellRevert,
+  onBakeScale,
   tweaks,
   effectiveCss,
   blockHtml,
@@ -120,6 +135,42 @@ export function Inspector({
     requestPinRef.current = requestPin
   }, [requestPin])
 
+  // Refs for bake-scale-result handler (registered in onMessage at slug-mount;
+  // needs latest pinned selector + activeBp without re-subscribing).
+  const pinnedRef = useRef<PinState | null>(null)
+  const activeBpRef = useRef<InspectorBp>(activeBp)
+  useEffect(() => {
+    pinnedRef.current = pinned
+  }, [pinned])
+  useEffect(() => {
+    activeBpRef.current = activeBp
+  }, [activeBp])
+
+  // Phase C — send bake-scale-request to active iframe.
+  const requestBakeScale = useCallback(
+    (parentSelector: string, scaleFactor: number) => {
+      if (!slug) return
+      const iframe = document.querySelector(
+        `iframe[title^="${cssEscape(slug)}-"]`,
+      ) as HTMLIFrameElement | null
+      if (!iframe?.contentWindow) return
+      iframe.contentWindow.postMessage(
+        {
+          type: 'block-forge:inspector-bake-scale-request',
+          slug,
+          parentSelector,
+          scaleFactor,
+        },
+        '*',
+      )
+    },
+    [slug],
+  )
+  const requestBakeScaleRef = useRef(requestBakeScale)
+  useEffect(() => {
+    requestBakeScaleRef.current = requestBakeScale
+  }, [requestBakeScale])
+
   useEffect(() => {
     if (!slug) {
       setHovered(null)
@@ -135,9 +186,17 @@ export function Inspector({
             selector?: string | null
             rect?: Rect
             computedStyle?: ComputedSnapshot
+            tweaks?: ReadonlyArray<{ selector: string; property: string; value: string }>
           }
         | undefined
       if (!d || typeof d !== 'object' || d.slug !== slug || !d.type) return
+
+      if (d.type === 'block-forge:inspector-bake-scale-result') {
+        if (Array.isArray(d.tweaks) && onBakeScale && pinnedRef.current?.selector) {
+          onBakeScale(pinnedRef.current.selector, activeBpRef.current, d.tweaks)
+        }
+        return
+      }
 
       if (d.type === 'block-forge:inspector-hover') {
         if (typeof d.selector === 'string' && d.rect) {
@@ -203,6 +262,26 @@ export function Inspector({
     }
   }, [activeBp, pinned?.selector])
 
+  // Re-pin on effectiveCss-change (proxy for "iframe re-mounted with new srcdoc"
+  // — happens after every cell edit / token apply / visibility toggle). Without
+  // this, pinned.computedStyle stays stale from the destroyed iframe and the
+  // user sees pre-edit values. 120ms covers iframe re-mount + IIFE attach.
+  const lastSentCssRef = useRef<string | undefined>(undefined)
+  useEffect(() => {
+    if (lastSentCssRef.current === undefined) {
+      lastSentCssRef.current = effectiveCss
+      return
+    }
+    if (lastSentCssRef.current === effectiveCss) return
+    lastSentCssRef.current = effectiveCss
+    if (pinned?.selector) {
+      const id = window.setTimeout(() => {
+        requestPinRef.current(pinned.selector)
+      }, 120)
+      return () => window.clearTimeout(id)
+    }
+  }, [effectiveCss, pinned?.selector])
+
   // Phase 3 — bind selector to onVisibilityToggle so InspectorPanel doesn't
   // need to know the selector explicitly.
   const handleVisibilityToggle = useCallback(
@@ -239,6 +318,13 @@ export function Inspector({
       onVisibilityToggle={onVisibilityToggle ? handleVisibilityToggle : undefined}
       isHiddenAtActiveBp={isHiddenAtActiveBp}
       effectiveCss={effectiveCss}
+      tweaks={tweaks}
+      onCellRevert={onCellRevert}
+      onApplyScale={
+        onBakeScale && pinned?.selector
+          ? (scaleFactor: number) => requestBakeScaleRef.current(pinned.selector, scaleFactor)
+          : undefined
+      }
     />
   )
 }
