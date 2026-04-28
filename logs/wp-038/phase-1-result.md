@@ -85,5 +85,4 @@ The current session is autonomous mode handoff (no Figma node, no iterate state,
 
 ## Git
 
-- Commit: `<sha>` — `feat(skill): WP-038 Phase 1 — /block-craft FINALIZE protocol + SPLIT contract + Ruling fixes [WP-038 phase 1]`
-- (SHA backfilled to WP-038 Commit Ladder + this result.md after commit lands.)
+- Commit: `13c029b5` — `feat(skill): WP-038 Phase 1 — /block-craft FINALIZE protocol + SPLIT contract + Ruling fixes [WP-038 phase 1]`
