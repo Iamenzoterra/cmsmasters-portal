@@ -1,9 +1,10 @@
-// WP-033 Phase 4 — Studio mirror of tools/block-forge/src/components/InspectorPanel.tsx
-// (byte-identical body mod 3-line JSDoc header per Phase 4 Ruling 1 mirror discipline).
+// WP-040 Phase 1 — Studio mirror of tools/block-forge/src/components/InspectorPanel.tsx
+// (single-cell row shape per Phase 0 RECON Brain ruling Option B; retires WP-037 Ruling 1B).
+// Pure presentational. State owned by Inspector.tsx.
 //
-// Pure presentational. All state owned by Inspector.tsx; this component just
-// renders. 4 sections (SPACING / TYPOGRAPHY / LAYOUT / VISIBILITY) with
-// per-axis margin/padding and conditional rows by display.
+// Note: Studio mirror omits Forge-only `tweaks` prop + revert-button gating and
+// `onApplyScale` GroupScale row — those are separate feature gaps tracked
+// outside row-shape PARITY.
 
 import type { ReactNode } from 'react'
 import { BreadcrumbNav } from './BreadcrumbNav'
@@ -116,7 +117,6 @@ export function InspectorPanel({
         <PropertySections
           pinned={pinned}
           activeBp={activeBp}
-          onActiveBpChange={onActiveBpChange}
           valuesByBp={valuesByBp}
           onCellEdit={onCellEdit}
           onApplyToken={onApplyToken}
@@ -139,7 +139,6 @@ export function InspectorPanel({
 function PropertySections({
   pinned,
   activeBp,
-  onActiveBpChange,
   valuesByBp,
   onCellEdit,
   onApplyToken,
@@ -149,7 +148,6 @@ function PropertySections({
 }: {
   pinned: PinState
   activeBp: InspectorBp
-  onActiveBpChange: (bp: InspectorBp) => void
   valuesByBp?: InspectorValuesByBp
   onCellEdit?: (selector: string, bp: InspectorBp, property: string, value: string) => void
   onApplyToken?: (selector: string, property: string, tokenName: string) => void
@@ -159,21 +157,15 @@ function PropertySections({
 }) {
   const cs = pinned.computedStyle
 
-  const sourceByBp = (key: keyof ComputedSnapshot): Record<InspectorBp, string | null> => {
-    return {
-      375: valueAt(375, key),
-      768: valueAt(768, key),
-      1440: valueAt(1440, key),
-    }
-    function valueAt(bp: InspectorBp, k: keyof ComputedSnapshot): string | null {
-      if (bp === activeBp) {
-        return cs[k as string] ?? valuesByBp?.[bp]?.[k as string] ?? null
-      }
-      return valuesByBp?.[bp]?.[k as string] ?? null
-    }
+  /** Resolve value for property at current active BP. */
+  const valueOf = (key: keyof ComputedSnapshot): string | null => {
+    const visible = cs[key as string] as string | undefined
+    if (visible !== undefined && visible !== '') return visible
+    const probe = valuesByBp?.[activeBp]?.[key as string] as string | undefined
+    return probe ?? null
   }
 
-  const sourceGapByBp = (): Record<InspectorBp, string | null> => {
+  const gapValue = (): string | null => {
     const pickGap = (snap: ComputedSnapshot | undefined): string | null => {
       if (!snap) return null
       const g = snap.gap
@@ -183,11 +175,7 @@ function PropertySections({
       if (r && c) return `${r} ${c}`
       return r ?? c ?? null
     }
-    return {
-      375: activeBp === 375 ? pickGap(cs) ?? pickGap(valuesByBp?.[375] ?? undefined) : pickGap(valuesByBp?.[375] ?? undefined),
-      768: activeBp === 768 ? pickGap(cs) ?? pickGap(valuesByBp?.[768] ?? undefined) : pickGap(valuesByBp?.[768] ?? undefined),
-      1440: activeBp === 1440 ? pickGap(cs) ?? pickGap(valuesByBp?.[1440] ?? undefined) : pickGap(valuesByBp?.[1440] ?? undefined),
-    }
+    return pickGap(cs) ?? pickGap(valuesByBp?.[activeBp] ?? undefined)
   }
 
   const display = cs.display ?? ''
@@ -195,46 +183,44 @@ function PropertySections({
   const isGrid = display.includes('grid')
   const hasGap = Boolean(cs.gap || cs.rowGap || cs.columnGap)
 
-  const editProp =
-    (property: string) =>
+  const editProp = (property: string) =>
     onCellEdit
-      ? (bp: InspectorBp, value: string) =>
-          onCellEdit(pinned.selector, bp, property, value)
+      ? (value: string) => onCellEdit(pinned.selector, activeBp, property, value)
       : undefined
 
   return (
     <div className="flex flex-col gap-3">
       <Section testId="inspector-section-spacing" title="Spacing">
-        <PropertyRowWithChip property="margin-top" valuesByBp={sourceByBp('marginTop')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('margin-top')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
-        <PropertyRowWithChip property="margin-right" valuesByBp={sourceByBp('marginRight')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('margin-right')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
-        <PropertyRowWithChip property="margin-bottom" valuesByBp={sourceByBp('marginBottom')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('margin-bottom')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
-        <PropertyRowWithChip property="margin-left" valuesByBp={sourceByBp('marginLeft')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('margin-left')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
-        <PropertyRowWithChip property="padding-top" valuesByBp={sourceByBp('paddingTop')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('padding-top')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
-        <PropertyRowWithChip property="padding-right" valuesByBp={sourceByBp('paddingRight')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('padding-right')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
-        <PropertyRowWithChip property="padding-bottom" valuesByBp={sourceByBp('paddingBottom')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('padding-bottom')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
-        <PropertyRowWithChip property="padding-left" valuesByBp={sourceByBp('paddingLeft')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('padding-left')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
+        <PropertyRowWithChip property="margin-top" value={valueOf('marginTop')} onEdit={editProp('margin-top')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
+        <PropertyRowWithChip property="margin-right" value={valueOf('marginRight')} onEdit={editProp('margin-right')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
+        <PropertyRowWithChip property="margin-bottom" value={valueOf('marginBottom')} onEdit={editProp('margin-bottom')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
+        <PropertyRowWithChip property="margin-left" value={valueOf('marginLeft')} onEdit={editProp('margin-left')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
+        <PropertyRowWithChip property="padding-top" value={valueOf('paddingTop')} onEdit={editProp('padding-top')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
+        <PropertyRowWithChip property="padding-right" value={valueOf('paddingRight')} onEdit={editProp('padding-right')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
+        <PropertyRowWithChip property="padding-bottom" value={valueOf('paddingBottom')} onEdit={editProp('padding-bottom')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
+        <PropertyRowWithChip property="padding-left" value={valueOf('paddingLeft')} onEdit={editProp('padding-left')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
         {hasGap && (
-          <PropertyRowWithChip property="gap" valuesByBp={sourceGapByBp()} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('gap')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
+          <PropertyRowWithChip property="gap" value={gapValue()} onEdit={editProp('gap')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
         )}
       </Section>
 
       <Section testId="inspector-section-typography" title="Typography">
-        <PropertyRowWithChip property="font-size" valuesByBp={sourceByBp('fontSize')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('font-size')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
-        <PropertyRowWithChip property="line-height" valuesByBp={sourceByBp('lineHeight')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('line-height')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
-        <PropertyRowWithChip property="font-weight" valuesByBp={sourceByBp('fontWeight')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('font-weight')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
-        <PropertyRowWithChip property="letter-spacing" valuesByBp={sourceByBp('letterSpacing')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('letter-spacing')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
-        <PropertyRowWithChip property="text-align" valuesByBp={sourceByBp('textAlign')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('text-align')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
+        <PropertyRowWithChip property="font-size" value={valueOf('fontSize')} onEdit={editProp('font-size')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
+        <PropertyRowWithChip property="line-height" value={valueOf('lineHeight')} onEdit={editProp('line-height')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
+        <PropertyRowWithChip property="font-weight" value={valueOf('fontWeight')} onEdit={editProp('font-weight')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
+        <PropertyRowWithChip property="letter-spacing" value={valueOf('letterSpacing')} onEdit={editProp('letter-spacing')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
+        <PropertyRowWithChip property="text-align" value={valueOf('textAlign')} onEdit={editProp('text-align')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
       </Section>
 
       <Section testId="inspector-section-layout" title="Layout">
-        <PropertyRowWithChip property="display" valuesByBp={sourceByBp('display')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('display')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
+        <PropertyRowWithChip property="display" value={valueOf('display')} onEdit={editProp('display')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
         {isFlex && (
-          <PropertyRowWithChip property="flex-direction" valuesByBp={sourceByBp('flexDirection')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('flex-direction')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
+          <PropertyRowWithChip property="flex-direction" value={valueOf('flexDirection')} onEdit={editProp('flex-direction')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
         )}
-        <PropertyRowWithChip property="align-items" valuesByBp={sourceByBp('alignItems')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('align-items')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
-        <PropertyRowWithChip property="justify-content" valuesByBp={sourceByBp('justifyContent')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('justify-content')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
+        <PropertyRowWithChip property="align-items" value={valueOf('alignItems')} onEdit={editProp('align-items')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
+        <PropertyRowWithChip property="justify-content" value={valueOf('justifyContent')} onEdit={editProp('justify-content')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
         {isGrid && (
-          <PropertyRowWithChip property="grid-template-columns" valuesByBp={sourceByBp('gridTemplateColumns')} activeBp={activeBp} onBpSwitch={onActiveBpChange} onCellEdit={editProp('grid-template-columns')} pinned={pinned} effectiveCss={effectiveCss} onApplyToken={onApplyToken} />
+          <PropertyRowWithChip property="grid-template-columns" value={valueOf('gridTemplateColumns')} onEdit={editProp('grid-template-columns')} pinned={pinned} effectiveCss={effectiveCss} activeBp={activeBp} onApplyToken={onApplyToken} />
         )}
       </Section>
 
@@ -260,28 +246,25 @@ function PropertySections({
 
 function PropertyRowWithChip({
   property,
-  valuesByBp,
-  activeBp,
-  onBpSwitch,
-  onCellEdit,
+  value,
+  onEdit,
   pinned,
   effectiveCss,
+  activeBp,
   onApplyToken,
 }: {
   property: string
-  valuesByBp: Record<InspectorBp, string | null>
-  activeBp: InspectorBp
-  onBpSwitch: (bp: InspectorBp) => void
-  onCellEdit?: (bp: InspectorBp, value: string) => void
+  value: string | null
+  onEdit?: (value: string) => void
   pinned: PinState
   effectiveCss?: string
+  activeBp: InspectorBp
   onApplyToken?: (selector: string, property: string, tokenName: string) => void
 }) {
-  const valueAtActiveBp = valuesByBp[activeBp]
   const chip = useChipDetection({
     selector: pinned.selector,
     property,
-    valueAtActiveBp,
+    valueAtActiveBp: value,
     activeBp,
     effectiveCss: effectiveCss ?? '',
   })
@@ -302,10 +285,8 @@ function PropertyRowWithChip({
   return (
     <PropertyRow
       label={property}
-      valuesByBp={valuesByBp}
-      activeBp={activeBp}
-      onBpSwitch={onBpSwitch}
-      onCellEdit={onCellEdit}
+      value={value}
+      onEdit={onEdit}
       tokenChip={tokenChip}
     />
   )

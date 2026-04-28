@@ -1,0 +1,266 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`PropertyRow — snapshot > matches snapshot — editable cell with revert button 1`] = `
+<div>
+  <div
+    class="flex items-center gap-2 py-1 text-[length:var(--text-xs-font-size)]"
+    data-property="font-size"
+    data-testid="property-row-font-size"
+  >
+    <div
+      class="w-32 shrink-0 truncate font-mono text-[hsl(var(--text-muted))]"
+      title="font-size"
+    >
+      font-size
+    </div>
+    <div
+      class="flex min-w-0 flex-1 items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
+      data-active="true"
+      data-editable="true"
+      data-empty="false"
+    >
+      <input
+        class="min-w-0 flex-1 bg-transparent font-mono text-[hsl(var(--text-primary))] outline-none"
+        data-testid="property-row-font-size-input"
+        size="4"
+        type="text"
+        value="16"
+      />
+      <span
+        class="font-mono text-[hsl(var(--text-muted))]"
+      >
+        px
+      </span>
+    </div>
+    <button
+      aria-label="Revert font-size to base value"
+      class="shrink-0 rounded text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
+      data-testid="property-row-font-size-revert"
+      title="Revert to base value (remove tweak)"
+      type="button"
+    >
+      ↺
+    </button>
+  </div>
+</div>
+`;
+
+exports[`PropertyRow — snapshot > matches snapshot — empty cell renders em-dash 1`] = `
+<div>
+  <div
+    class="flex items-center gap-2 py-1 text-[length:var(--text-xs-font-size)]"
+    data-property="font-size"
+    data-testid="property-row-font-size"
+  >
+    <div
+      class="w-32 shrink-0 truncate font-mono text-[hsl(var(--text-muted))]"
+      title="font-size"
+    >
+      font-size
+    </div>
+    <div
+      class="flex min-w-0 flex-1 items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
+      data-active="true"
+      data-editable="false"
+      data-empty="true"
+    >
+      <span
+        class="font-mono text-[hsl(var(--text-muted))]"
+      >
+        —
+      </span>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`PropertyRow — snapshot > matches snapshot — enum property renders select with options 1`] = `
+<div>
+  <div
+    class="flex items-center gap-2 py-1 text-[length:var(--text-xs-font-size)]"
+    data-property="display"
+    data-testid="property-row-display"
+  >
+    <button
+      class="w-32 shrink-0 cursor-help truncate rounded text-left font-mono text-[hsl(var(--text-muted))] underline decoration-dotted underline-offset-2 hover:text-[hsl(var(--text-primary))] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[hsl(var(--ring))]"
+      data-state="closed"
+      data-testid="property-row-display-label-trigger"
+      type="button"
+    >
+      display
+    </button>
+    <div
+      class="flex min-w-0 flex-1 items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
+      data-active="true"
+      data-editable="true"
+      data-empty="false"
+    >
+      <select
+        class="min-w-0 flex-1 bg-transparent font-mono text-[hsl(var(--text-primary))] outline-none"
+        data-testid="property-row-display-select"
+      >
+        <option
+          value="block"
+        >
+          block
+        </option>
+        <option
+          selected=""
+          value="flex"
+        >
+          flex
+        </option>
+        <option
+          value="inline"
+        >
+          inline
+        </option>
+        <option
+          value="inline-block"
+        >
+          inline-block
+        </option>
+        <option
+          value="inline-flex"
+        >
+          inline-flex
+        </option>
+        <option
+          value="grid"
+        >
+          grid
+        </option>
+        <option
+          value="inline-grid"
+        >
+          inline-grid
+        </option>
+        <option
+          value="none"
+        >
+          none
+        </option>
+        <option
+          value="contents"
+        >
+          contents
+        </option>
+      </select>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`PropertyRow — snapshot > matches snapshot — enum with custom (legacy) value 1`] = `
+<div>
+  <div
+    class="flex items-center gap-2 py-1 text-[length:var(--text-xs-font-size)]"
+    data-property="display"
+    data-testid="property-row-display"
+  >
+    <button
+      class="w-32 shrink-0 cursor-help truncate rounded text-left font-mono text-[hsl(var(--text-muted))] underline decoration-dotted underline-offset-2 hover:text-[hsl(var(--text-primary))] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[hsl(var(--ring))]"
+      data-state="closed"
+      data-testid="property-row-display-label-trigger"
+      type="button"
+    >
+      display
+    </button>
+    <div
+      class="flex min-w-0 flex-1 items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
+      data-active="true"
+      data-editable="true"
+      data-empty="false"
+    >
+      <select
+        class="min-w-0 flex-1 bg-transparent font-mono text-[hsl(var(--text-primary))] outline-none"
+        data-testid="property-row-display-select"
+      >
+        <option
+          disabled=""
+          selected=""
+          value="table-cell"
+        >
+          table-cell
+           (custom)
+        </option>
+        <option
+          value="block"
+        >
+          block
+        </option>
+        <option
+          value="flex"
+        >
+          flex
+        </option>
+        <option
+          value="inline"
+        >
+          inline
+        </option>
+        <option
+          value="inline-block"
+        >
+          inline-block
+        </option>
+        <option
+          value="inline-flex"
+        >
+          inline-flex
+        </option>
+        <option
+          value="grid"
+        >
+          grid
+        </option>
+        <option
+          value="inline-grid"
+        >
+          inline-grid
+        </option>
+        <option
+          value="none"
+        >
+          none
+        </option>
+        <option
+          value="contents"
+        >
+          contents
+        </option>
+      </select>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`PropertyRow — snapshot > matches snapshot — read-only cell with value 1`] = `
+<div>
+  <div
+    class="flex items-center gap-2 py-1 text-[length:var(--text-xs-font-size)]"
+    data-property="padding-left"
+    data-testid="property-row-padding-left"
+  >
+    <div
+      class="w-32 shrink-0 truncate font-mono text-[hsl(var(--text-muted))]"
+      title="padding-left"
+    >
+      padding-left
+    </div>
+    <div
+      class="flex min-w-0 flex-1 items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
+      data-active="true"
+      data-editable="false"
+      data-empty="false"
+    >
+      <span
+        class="font-mono"
+        data-testid="property-row-padding-left-cell"
+      >
+        8px
+      </span>
+    </div>
+  </div>
+</div>
+`;

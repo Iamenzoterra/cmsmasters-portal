@@ -1,86 +1,92 @@
-// WP-033 Phase 4 — Studio mirror of tools/block-forge/src/components/PropertyRow.tsx.
-// PARITY note: post-WP-033 polish migrated block-forge to single-cell layout.
-// Studio remains on the 3-BP M/T/D grid (see WP-037 Phase 0 RECON Ruling 1B).
-// PROPERTY_META content is byte-identical between surfaces; render adapts to
-// each shape (Studio: select renders only in active cell).
-//
-// Single property row inside an InspectorPanel section. 3 BP cells (M/T/D)
-// each rendered with active-vs-inactive distinction. Active cell becomes an
-// editable <input> when `onCellEdit` is provided.
-//
-// YELLOW caveat slots:
-//   1. tokenChip?       — Phase 3 fills via <TokenChip /> from useChipDetection.
-//   2. inheritedFrom?   — DEFERRED Phase 3+ (Phase 0 §0.11.b). Slot stays empty.
-//   3. ↗ view icon      — Inactive cell only.
-//
-// Validation: trim whitespace, reject empty (cancel semantics), reject `em`
-// per pkg-block-forge-core SKILL Trap (use `rem` / `px` / `%` / `var(...)` /
-// unitless number).
-//
-// WP-037 Phase 1 — typed enum inputs (active cell only).
-// When `meta.kind === 'enum'` (looked up via `getPropertyMeta(label)` or
-// passed explicitly), the active editable cell renders <select> with
-// `meta.options` instead of <input>. Inactive cells stay as text spans —
-// switch BP via ↗ first to edit elsewhere.
+// WP-040 Phase 1 — Studio mirror of tools/block-forge/src/components/PropertyRow.tsx
+// (byte-equivalent body mod 3-line JSDoc header per Phase 4 Ruling 1 mirror discipline).
+// Restores PARITY by porting Studio to the single-cell shape; retires WP-037 Ruling 1B.
 
-import type { ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { Tooltip } from '@cmsmasters/ui'
-import type { InspectorBp } from './Inspector'
 import { getPropertyMeta, type PropertyMeta } from './property-meta'
 
 export interface PropertyRowProps {
   /** Display label, e.g. "font-size", "padding-left". */
   label: string
-  /** Per-BP value strings. Null cells render `—`. */
-  valuesByBp: Record<InspectorBp, string | null>
-  /** Active BP — cell at this BP is highlighted; others are dimmed. */
-  activeBp: InspectorBp
-  /** Switch PreviewTriptych + Inspector to that BP via lockstep. */
-  onBpSwitch: (bp: InspectorBp) => void
-  /** YELLOW caveat 2 — DEFERRED Phase 3+. */
+  /** Current value at the active BP. `null` = unset; renders `—`. */
+  value: string | null
+  /** Optional inherited-from selector — renders subdued italic suffix. */
   inheritedFrom?: string
-  /** YELLOW caveat 1 — token-chip slot. */
+  /** Optional token chip slot — Phase 3 wires `<TokenChip />` here. */
   tokenChip?: ReactNode
+  /** When provided, cell becomes editable. Phase 3 wires App's addTweak dispatch. */
+  onEdit?: (value: string) => void
   /**
-   * Active-cell edit emit. When provided, the active cell becomes an editable
-   * input on focus. Commit on blur or Enter; cancel on Esc. Inactive cells are
-   * NEVER editable.
+   * When provided, ↺ button renders next to the cell. Click → revert to base
+   * (removes the tweak for this property at the active BP). InspectorPanel
+   * gates this prop on "tweak exists" so the button only shows when there's
+   * something to revert.
    */
-  onCellEdit?: (bp: InspectorBp, value: string) => void
+  onRevert?: () => void
   /**
    * WP-037 Phase 1 — optional metadata override. When omitted, looked up via
-   * `getPropertyMeta(label)`. Drives select-vs-input rendering on the active
-   * cell and (Phase 2) tooltip text.
+   * `getPropertyMeta(label)`. Drives select-vs-input rendering for the
+   * editable cell and (Phase 2) tooltip text.
    */
   meta?: PropertyMeta
   'data-testid'?: string
 }
 
-const BPs: ReadonlyArray<InspectorBp> = [375, 768, 1440] as const
-const BP_SHORT: Record<InspectorBp, string> = {
-  375: 'M',
-  768: 'T',
-  1440: 'D',
-}
-
-/**
- * Validate a user-typed cell value. `em` is rejected because per-element
- * em-units cascade-multiply through ancestor font-size — see pkg-block-forge-core
- * SKILL Trap. `rem`, `px`, `%`, `var(...)`, unitless numbers, keyword values
- * (e.g. `none`, `flex`) all pass.
- */
-function isValidCellValue(v: string): boolean {
+function isValidNumericInput(v: string): boolean {
   const trimmed = v.trim()
   if (trimmed === '') return false
   if (/(?<!r)em\b/i.test(trimmed)) return false
   return true
 }
 
+/**
+ * Parse a CSS value into editable numeric portion + static unit suffix.
+ *   "48px" → { numeric: "48", unit: "px" }
+ *   "1.5rem" → { numeric: "1.5", unit: "rem" }
+ *   "100%" → { numeric: "100", unit: "%" }
+ *   "auto" / "flex" / "normal" → { numeric: "auto", unit: "" } (keyword passthrough)
+ *   "var(--token)" → { numeric: "var(--token)", unit: "" }
+ */
+function parseValueUnit(raw: string | null | undefined): { numeric: string; unit: string } {
+  if (raw == null) return { numeric: '', unit: '' }
+  const m = raw.trim().match(/^(-?\d+(?:\.\d+)?)([a-z%]+)?$/i)
+  if (m) return { numeric: m[1], unit: m[2] ?? '' }
+  return { numeric: raw.trim(), unit: '' }
+}
+
+/**
+ * Re-attach unit to numeric input on emit.
+ * - bare number + prior unit → "<n><unit>" (e.g. "60" + "px" → "60px")
+ * - bare number + no prior unit → "<n>px" (auto-default)
+ * - keyword/non-numeric → passthrough
+ */
+function normalizeWithUnit(input: string, priorUnit: string): string {
+  const trimmed = input.trim()
+  if (/^-?\d+(\.\d+)?$/.test(trimmed)) return trimmed + (priorUnit || 'px')
+  return trimmed
+}
+
 export function PropertyRow(props: PropertyRowProps) {
-  const testId = props['data-testid'] ?? `property-row-${props.label}`
-  const { label, valuesByBp, activeBp, onBpSwitch, inheritedFrom, tokenChip, onCellEdit } = props
+  const { label, value, inheritedFrom, tokenChip, onEdit, onRevert } = props
   const meta = props.meta ?? getPropertyMeta(label)
+  const testId = props['data-testid'] ?? `property-row-${label}`
+  const isEmpty = value === null
+  const isEditable = !isEmpty && Boolean(onEdit)
   const isEnum = meta?.kind === 'enum' && meta.options !== undefined
+  const { numeric, unit } = parseValueUnit(value)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // Sync prop value → input.value when value changes externally (e.g. user
+  // pinned a different element). React's `defaultValue` is honored only on
+  // mount; without this effect, the input keeps the old element's value.
+  // Skip sync if user is currently editing (input has focus).
+  useEffect(() => {
+    const el = inputRef.current
+    if (!el) return
+    if (document.activeElement === el) return
+    if (el.value !== numeric) el.value = numeric
+  }, [numeric])
 
   return (
     <div
@@ -107,103 +113,91 @@ export function PropertyRow(props: PropertyRowProps) {
         </div>
       )}
 
-      <div className="flex grow items-center gap-1">
-        {BPs.map((bp) => {
-          const value = valuesByBp[bp]
-          const isActive = bp === activeBp
-          const isEmpty = value === null
-          const isEditable = isActive && !isEmpty && Boolean(onCellEdit)
-          return (
-            <div
-              key={bp}
-              data-cell-bp={bp}
-              data-active={isActive ? 'true' : 'false'}
-              data-empty={isEmpty ? 'true' : 'false'}
-              data-editable={isEditable ? 'true' : 'false'}
-              className={
-                isActive
-                  ? 'flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]'
-                  : 'flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]'
-              }
-            >
-              <span
-                className="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-                aria-label={`Breakpoint ${bp}`}
-              >
-                {BP_SHORT[bp]}
-              </span>
-              {isEditable && isEnum && meta?.options ? (
-                <select
-                  defaultValue={value ?? ''}
-                  data-testid={`${testId}-select-${bp}`}
-                  onChange={(e) => {
-                    const next = e.currentTarget.value
-                    if (next === value) return
-                    onCellEdit?.(bp, next)
-                  }}
-                  className="min-w-0 flex-1 bg-transparent font-mono text-[hsl(var(--text-primary))] outline-none"
-                >
-                  {value && !meta.options.includes(value) && (
-                    <option key="__custom__" value={value} disabled>
-                      {value} (custom)
-                    </option>
-                  )}
-                  {meta.options.map((opt) => (
-                    <option key={opt} value={opt}>
-                      {opt}
-                    </option>
-                  ))}
-                </select>
-              ) : isEditable ? (
-                <input
-                  type="text"
-                  defaultValue={value ?? ''}
-                  data-testid={`${testId}-input-${bp}`}
-                  onBlur={(e) => {
-                    const next = e.currentTarget.value
-                    if (next === value) return
-                    if (!isValidCellValue(next)) {
-                      e.currentTarget.value = value ?? ''
-                      return
-                    }
-                    onCellEdit?.(bp, next.trim())
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.currentTarget.blur()
-                    } else if (e.key === 'Escape') {
-                      e.currentTarget.value = value ?? ''
-                      e.currentTarget.blur()
-                    }
-                  }}
-                  className="min-w-0 flex-1 bg-transparent font-mono text-[hsl(var(--text-primary))] outline-none placeholder:text-[hsl(var(--text-muted))]"
-                  style={{ fieldSizing: 'content' } as React.CSSProperties}
-                  size={Math.max((value ?? '').length, 4)}
-                />
-              ) : (
-                <span
-                  data-testid={`${testId}-cell-${bp}`}
-                  className="font-mono"
-                >
-                  {isEmpty ? '—' : value}
-                </span>
-              )}
-              {!isActive && (
-                <button
-                  type="button"
-                  onClick={() => onBpSwitch(bp)}
-                  data-testid={`${testId}-switch-${bp}`}
-                  className="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                  title={`Switch preview to ${bp}px`}
-                  aria-label={`Switch to ${bp}px breakpoint`}
-                >
-                  ↗
-                </button>
-              )}
-            </div>
-          )
-        })}
+      <div
+        data-active="true"
+        data-empty={isEmpty ? 'true' : 'false'}
+        data-editable={isEditable ? 'true' : 'false'}
+        className="flex min-w-0 flex-1 items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
+      >
+        {isEmpty ? (
+          <span className="font-mono text-[hsl(var(--text-muted))]">—</span>
+        ) : isEditable && isEnum && meta?.options ? (
+          <select
+            defaultValue={value ?? ''}
+            data-testid={`${testId}-select`}
+            onChange={(e) => {
+              const next = e.currentTarget.value
+              if (next === value) return
+              onEdit?.(next)
+            }}
+            className="min-w-0 flex-1 bg-transparent font-mono text-[hsl(var(--text-primary))] outline-none"
+          >
+            {value && !meta.options.includes(value) && (
+              <option key="__custom__" value={value} disabled>
+                {value} (custom)
+              </option>
+            )}
+            {meta.options.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+        ) : isEditable ? (
+          <>
+            <input
+              ref={inputRef}
+              type="text"
+              defaultValue={numeric}
+              data-testid={`${testId}-input`}
+              onBlur={(e) => {
+                const next = e.currentTarget.value
+                if (next === numeric) return
+                if (!isValidNumericInput(next)) {
+                  e.currentTarget.classList.add('!text-[hsl(var(--status-error-fg))]')
+                  window.setTimeout(() => {
+                    e.currentTarget.classList.remove('!text-[hsl(var(--status-error-fg))]')
+                    e.currentTarget.value = numeric
+                  }, 600)
+                  return
+                }
+                onEdit?.(normalizeWithUnit(next, unit))
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.currentTarget.blur()
+                } else if (e.key === 'Escape') {
+                  e.currentTarget.value = numeric
+                  e.currentTarget.blur()
+                }
+              }}
+              className="min-w-0 flex-1 bg-transparent font-mono text-[hsl(var(--text-primary))] outline-none"
+              style={{ fieldSizing: 'content' } as React.CSSProperties}
+              size={Math.max(numeric.length, 4)}
+            />
+            {unit && (
+              <span className="font-mono text-[hsl(var(--text-muted))]">{unit}</span>
+            )}
+          </>
+        ) : (
+          <span data-testid={`${testId}-cell`} className="font-mono">
+            {value}
+          </span>
+        )}
       </div>
+
+      {onRevert && (
+        <button
+          type="button"
+          onClick={onRevert}
+          data-testid={`${testId}-revert`}
+          title="Revert to base value (remove tweak)"
+          aria-label={`Revert ${label} to base value`}
+          className="shrink-0 rounded text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
+        >
+          ↺
+        </button>
+      )}
 
       {inheritedFrom && (
         <span

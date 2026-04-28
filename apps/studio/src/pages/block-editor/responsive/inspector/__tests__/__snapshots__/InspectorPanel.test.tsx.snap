@@ -186,86 +186,17 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
             margin-top
           </div>
           <div
-            class="flex grow items-center gap-1"
+            class="flex min-w-0 flex-1 items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
+            data-active="true"
+            data-editable="false"
+            data-empty="false"
           >
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
-              data-active="true"
-              data-cell-bp="375"
-              data-editable="false"
-              data-empty="false"
+            <span
+              class="font-mono"
+              data-testid="property-row-margin-top-cell"
             >
-              <span
-                aria-label="Breakpoint 375"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                M
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-margin-top-cell-375"
-              >
-                0px
-              </span>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="768"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 768"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                T
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-margin-top-cell-768"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 768px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-margin-top-switch-768"
-                title="Switch preview to 768px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="1440"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 1440"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                D
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-margin-top-cell-1440"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 1440px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-margin-top-switch-1440"
-                title="Switch preview to 1440px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
+              0px
+            </span>
           </div>
         </div>
         <div
@@ -280,86 +211,17 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
             margin-right
           </div>
           <div
-            class="flex grow items-center gap-1"
+            class="flex min-w-0 flex-1 items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
+            data-active="true"
+            data-editable="false"
+            data-empty="false"
           >
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
-              data-active="true"
-              data-cell-bp="375"
-              data-editable="false"
-              data-empty="false"
+            <span
+              class="font-mono"
+              data-testid="property-row-margin-right-cell"
             >
-              <span
-                aria-label="Breakpoint 375"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                M
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-margin-right-cell-375"
-              >
-                0px
-              </span>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="768"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 768"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                T
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-margin-right-cell-768"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 768px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-margin-right-switch-768"
-                title="Switch preview to 768px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="1440"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 1440"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                D
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-margin-right-cell-1440"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 1440px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-margin-right-switch-1440"
-                title="Switch preview to 1440px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
+              0px
+            </span>
           </div>
         </div>
         <div
@@ -374,86 +236,17 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
             margin-bottom
           </div>
           <div
-            class="flex grow items-center gap-1"
+            class="flex min-w-0 flex-1 items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
+            data-active="true"
+            data-editable="false"
+            data-empty="false"
           >
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
-              data-active="true"
-              data-cell-bp="375"
-              data-editable="false"
-              data-empty="false"
+            <span
+              class="font-mono"
+              data-testid="property-row-margin-bottom-cell"
             >
-              <span
-                aria-label="Breakpoint 375"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                M
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-margin-bottom-cell-375"
-              >
-                0px
-              </span>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="768"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 768"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                T
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-margin-bottom-cell-768"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 768px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-margin-bottom-switch-768"
-                title="Switch preview to 768px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="1440"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 1440"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                D
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-margin-bottom-cell-1440"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 1440px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-margin-bottom-switch-1440"
-                title="Switch preview to 1440px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
+              0px
+            </span>
           </div>
         </div>
         <div
@@ -468,86 +261,17 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
             margin-left
           </div>
           <div
-            class="flex grow items-center gap-1"
+            class="flex min-w-0 flex-1 items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
+            data-active="true"
+            data-editable="false"
+            data-empty="false"
           >
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
-              data-active="true"
-              data-cell-bp="375"
-              data-editable="false"
-              data-empty="false"
+            <span
+              class="font-mono"
+              data-testid="property-row-margin-left-cell"
             >
-              <span
-                aria-label="Breakpoint 375"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                M
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-margin-left-cell-375"
-              >
-                0px
-              </span>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="768"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 768"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                T
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-margin-left-cell-768"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 768px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-margin-left-switch-768"
-                title="Switch preview to 768px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="1440"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 1440"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                D
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-margin-left-cell-1440"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 1440px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-margin-left-switch-1440"
-                title="Switch preview to 1440px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
+              0px
+            </span>
           </div>
         </div>
         <div
@@ -562,86 +286,17 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
             padding-top
           </div>
           <div
-            class="flex grow items-center gap-1"
+            class="flex min-w-0 flex-1 items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
+            data-active="true"
+            data-editable="false"
+            data-empty="false"
           >
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
-              data-active="true"
-              data-cell-bp="375"
-              data-editable="false"
-              data-empty="false"
+            <span
+              class="font-mono"
+              data-testid="property-row-padding-top-cell"
             >
-              <span
-                aria-label="Breakpoint 375"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                M
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-padding-top-cell-375"
-              >
-                8px
-              </span>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="768"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 768"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                T
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-padding-top-cell-768"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 768px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-padding-top-switch-768"
-                title="Switch preview to 768px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="1440"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 1440"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                D
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-padding-top-cell-1440"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 1440px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-padding-top-switch-1440"
-                title="Switch preview to 1440px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
+              8px
+            </span>
           </div>
         </div>
         <div
@@ -656,86 +311,17 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
             padding-right
           </div>
           <div
-            class="flex grow items-center gap-1"
+            class="flex min-w-0 flex-1 items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
+            data-active="true"
+            data-editable="false"
+            data-empty="false"
           >
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
-              data-active="true"
-              data-cell-bp="375"
-              data-editable="false"
-              data-empty="false"
+            <span
+              class="font-mono"
+              data-testid="property-row-padding-right-cell"
             >
-              <span
-                aria-label="Breakpoint 375"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                M
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-padding-right-cell-375"
-              >
-                12px
-              </span>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="768"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 768"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                T
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-padding-right-cell-768"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 768px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-padding-right-switch-768"
-                title="Switch preview to 768px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="1440"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 1440"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                D
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-padding-right-cell-1440"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 1440px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-padding-right-switch-1440"
-                title="Switch preview to 1440px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
+              12px
+            </span>
           </div>
         </div>
         <div
@@ -750,86 +336,17 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
             padding-bottom
           </div>
           <div
-            class="flex grow items-center gap-1"
+            class="flex min-w-0 flex-1 items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
+            data-active="true"
+            data-editable="false"
+            data-empty="false"
           >
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
-              data-active="true"
-              data-cell-bp="375"
-              data-editable="false"
-              data-empty="false"
+            <span
+              class="font-mono"
+              data-testid="property-row-padding-bottom-cell"
             >
-              <span
-                aria-label="Breakpoint 375"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                M
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-padding-bottom-cell-375"
-              >
-                8px
-              </span>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="768"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 768"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                T
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-padding-bottom-cell-768"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 768px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-padding-bottom-switch-768"
-                title="Switch preview to 768px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="1440"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 1440"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                D
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-padding-bottom-cell-1440"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 1440px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-padding-bottom-switch-1440"
-                title="Switch preview to 1440px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
+              8px
+            </span>
           </div>
         </div>
         <div
@@ -844,86 +361,17 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
             padding-left
           </div>
           <div
-            class="flex grow items-center gap-1"
+            class="flex min-w-0 flex-1 items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
+            data-active="true"
+            data-editable="false"
+            data-empty="false"
           >
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
-              data-active="true"
-              data-cell-bp="375"
-              data-editable="false"
-              data-empty="false"
+            <span
+              class="font-mono"
+              data-testid="property-row-padding-left-cell"
             >
-              <span
-                aria-label="Breakpoint 375"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                M
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-padding-left-cell-375"
-              >
-                12px
-              </span>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="768"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 768"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                T
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-padding-left-cell-768"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 768px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-padding-left-switch-768"
-                title="Switch preview to 768px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="1440"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 1440"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                D
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-padding-left-cell-1440"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 1440px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-padding-left-switch-1440"
-                title="Switch preview to 1440px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
+              12px
+            </span>
           </div>
         </div>
       </section>
@@ -949,86 +397,17 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
             font-size
           </div>
           <div
-            class="flex grow items-center gap-1"
+            class="flex min-w-0 flex-1 items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
+            data-active="true"
+            data-editable="false"
+            data-empty="false"
           >
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
-              data-active="true"
-              data-cell-bp="375"
-              data-editable="false"
-              data-empty="false"
+            <span
+              class="font-mono"
+              data-testid="property-row-font-size-cell"
             >
-              <span
-                aria-label="Breakpoint 375"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                M
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-font-size-cell-375"
-              >
-                14px
-              </span>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="768"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 768"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                T
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-font-size-cell-768"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 768px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-font-size-switch-768"
-                title="Switch preview to 768px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="1440"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 1440"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                D
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-font-size-cell-1440"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 1440px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-font-size-switch-1440"
-                title="Switch preview to 1440px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
+              14px
+            </span>
           </div>
         </div>
         <div
@@ -1043,86 +422,17 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
             line-height
           </div>
           <div
-            class="flex grow items-center gap-1"
+            class="flex min-w-0 flex-1 items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
+            data-active="true"
+            data-editable="false"
+            data-empty="false"
           >
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
-              data-active="true"
-              data-cell-bp="375"
-              data-editable="false"
-              data-empty="false"
+            <span
+              class="font-mono"
+              data-testid="property-row-line-height-cell"
             >
-              <span
-                aria-label="Breakpoint 375"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                M
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-line-height-cell-375"
-              >
-                20px
-              </span>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="768"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 768"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                T
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-line-height-cell-768"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 768px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-line-height-switch-768"
-                title="Switch preview to 768px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="1440"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 1440"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                D
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-line-height-cell-1440"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 1440px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-line-height-switch-1440"
-                title="Switch preview to 1440px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
+              20px
+            </span>
           </div>
         </div>
         <div
@@ -1137,86 +447,17 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
             font-weight
           </div>
           <div
-            class="flex grow items-center gap-1"
+            class="flex min-w-0 flex-1 items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
+            data-active="true"
+            data-editable="false"
+            data-empty="false"
           >
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
-              data-active="true"
-              data-cell-bp="375"
-              data-editable="false"
-              data-empty="false"
+            <span
+              class="font-mono"
+              data-testid="property-row-font-weight-cell"
             >
-              <span
-                aria-label="Breakpoint 375"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                M
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-font-weight-cell-375"
-              >
-                500
-              </span>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="768"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 768"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                T
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-font-weight-cell-768"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 768px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-font-weight-switch-768"
-                title="Switch preview to 768px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="1440"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 1440"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                D
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-font-weight-cell-1440"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 1440px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-font-weight-switch-1440"
-                title="Switch preview to 1440px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
+              500
+            </span>
           </div>
         </div>
         <div
@@ -1231,86 +472,17 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
             letter-spacing
           </div>
           <div
-            class="flex grow items-center gap-1"
+            class="flex min-w-0 flex-1 items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
+            data-active="true"
+            data-editable="false"
+            data-empty="false"
           >
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
-              data-active="true"
-              data-cell-bp="375"
-              data-editable="false"
-              data-empty="false"
+            <span
+              class="font-mono"
+              data-testid="property-row-letter-spacing-cell"
             >
-              <span
-                aria-label="Breakpoint 375"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                M
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-letter-spacing-cell-375"
-              >
-                0px
-              </span>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="768"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 768"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                T
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-letter-spacing-cell-768"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 768px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-letter-spacing-switch-768"
-                title="Switch preview to 768px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="1440"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 1440"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                D
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-letter-spacing-cell-1440"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 1440px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-letter-spacing-switch-1440"
-                title="Switch preview to 1440px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
+              0px
+            </span>
           </div>
         </div>
         <div
@@ -1325,86 +497,17 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
             text-align
           </div>
           <div
-            class="flex grow items-center gap-1"
+            class="flex min-w-0 flex-1 items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
+            data-active="true"
+            data-editable="false"
+            data-empty="false"
           >
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
-              data-active="true"
-              data-cell-bp="375"
-              data-editable="false"
-              data-empty="false"
+            <span
+              class="font-mono"
+              data-testid="property-row-text-align-cell"
             >
-              <span
-                aria-label="Breakpoint 375"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                M
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-text-align-cell-375"
-              >
-                left
-              </span>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="768"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 768"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                T
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-text-align-cell-768"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 768px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-text-align-switch-768"
-                title="Switch preview to 768px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="1440"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 1440"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                D
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-text-align-cell-1440"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 1440px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-text-align-switch-1440"
-                title="Switch preview to 1440px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
+              left
+            </span>
           </div>
         </div>
       </section>
@@ -1432,86 +535,17 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
             display
           </button>
           <div
-            class="flex grow items-center gap-1"
+            class="flex min-w-0 flex-1 items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
+            data-active="true"
+            data-editable="false"
+            data-empty="false"
           >
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
-              data-active="true"
-              data-cell-bp="375"
-              data-editable="false"
-              data-empty="false"
+            <span
+              class="font-mono"
+              data-testid="property-row-display-cell"
             >
-              <span
-                aria-label="Breakpoint 375"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                M
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-display-cell-375"
-              >
-                block
-              </span>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="768"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 768"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                T
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-display-cell-768"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 768px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-display-switch-768"
-                title="Switch preview to 768px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="1440"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 1440"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                D
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-display-cell-1440"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 1440px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-display-switch-1440"
-                title="Switch preview to 1440px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
+              block
+            </span>
           </div>
         </div>
         <div
@@ -1528,86 +562,17 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
             align-items
           </button>
           <div
-            class="flex grow items-center gap-1"
+            class="flex min-w-0 flex-1 items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
+            data-active="true"
+            data-editable="false"
+            data-empty="false"
           >
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
-              data-active="true"
-              data-cell-bp="375"
-              data-editable="false"
-              data-empty="false"
+            <span
+              class="font-mono"
+              data-testid="property-row-align-items-cell"
             >
-              <span
-                aria-label="Breakpoint 375"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                M
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-align-items-cell-375"
-              >
-                normal
-              </span>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="768"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 768"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                T
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-align-items-cell-768"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 768px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-align-items-switch-768"
-                title="Switch preview to 768px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="1440"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 1440"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                D
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-align-items-cell-1440"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 1440px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-align-items-switch-1440"
-                title="Switch preview to 1440px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
+              normal
+            </span>
           </div>
         </div>
         <div
@@ -1624,86 +589,17 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
             justify-content
           </button>
           <div
-            class="flex grow items-center gap-1"
+            class="flex min-w-0 flex-1 items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
+            data-active="true"
+            data-editable="false"
+            data-empty="false"
           >
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
-              data-active="true"
-              data-cell-bp="375"
-              data-editable="false"
-              data-empty="false"
+            <span
+              class="font-mono"
+              data-testid="property-row-justify-content-cell"
             >
-              <span
-                aria-label="Breakpoint 375"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                M
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-justify-content-cell-375"
-              >
-                normal
-              </span>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="768"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 768"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                T
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-justify-content-cell-768"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 768px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-justify-content-switch-768"
-                title="Switch preview to 768px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
-            <div
-              class="flex min-w-[5rem] items-center gap-1 rounded border border-[hsl(var(--border-default))] px-2 py-1 text-[hsl(var(--text-muted))]"
-              data-active="false"
-              data-cell-bp="1440"
-              data-editable="false"
-              data-empty="true"
-            >
-              <span
-                aria-label="Breakpoint 1440"
-                class="font-[number:var(--font-weight-medium)] text-[hsl(var(--text-muted))]"
-              >
-                D
-              </span>
-              <span
-                class="font-mono"
-                data-testid="property-row-justify-content-cell-1440"
-              >
-                —
-              </span>
-              <button
-                aria-label="Switch to 1440px breakpoint"
-                class="ml-auto text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-primary))]"
-                data-testid="property-row-justify-content-switch-1440"
-                title="Switch preview to 1440px"
-                type="button"
-              >
-                ↗
-              </button>
-            </div>
+              normal
+            </span>
           </div>
         </div>
       </section>
