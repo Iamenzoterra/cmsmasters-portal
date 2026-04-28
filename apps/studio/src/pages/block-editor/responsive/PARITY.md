@@ -475,6 +475,22 @@ re-break the unified single-cell shape parity. WP-041 deferred this site
 deliberately — a future coordinated mirror WP can adopt Tooltip on both
 surfaces in lockstep.
 
+### Inspector e2e coverage (WP-042 — 2026-04-28)
+
+Inspector regression-pin tests live on the BLOCK-FORGE side at
+`tools/block-forge/e2e/inspector.spec.ts` — 4 paths covering chip-apply at
+cascade conflict (WP-034 Path A), typed-input per-BP scoping, Tooltip
+portal render, and ↺ revert. Studio's Inspector is PARITY-locked
+behaviorally to Forge, so the regression-pin coverage transfers via the
+mirror contract; a separate Studio e2e was deliberately NOT spawned to
+avoid duplicate maintenance. Spin one up only if Studio-specific Inspector
+behavior diverges in a future WP.
+
+References:
+- `tools/block-forge/PARITY.md` §"Inspector e2e coverage (WP-042 — 2026-04-28)"
+- `workplan/WP-042-inspector-e2e-playwright.md`
+- `.github/workflows/e2e-block-forge.yml`
+
 ## WP-035 — Studio Import (Studio-only; asymmetric by design)
 
 **Surface:** `apps/studio/src/components/block-import-json-dialog.tsx` + `apps/studio/src/pages/block-editor.tsx` `[Import JSON]` toolbar button + `apps/studio/src/lib/block-api.ts` `importBlockApi` wrapper + `apps/api/src/routes/blocks.ts` POST `/api/blocks/import` route + `packages/validators/src/block.ts` `importBlockSchema`.

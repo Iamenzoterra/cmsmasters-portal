@@ -574,6 +574,27 @@ Pre-flight commit `3a4f345c` landed the polish + regenerated tests in one atomic
 - **Native `<select>` chevron rendering is OS-controlled** — visual smoke at WP-037 Phase 2 confirmed Chromium rendering is acceptable. Future polish could swap to Radix Select for cross-browser consistency if field data warrants.
 - **PropertyRow ↺ revert button retains native `title=`** — byte-equivalent mirror with Studio (WP-040 PARITY trio). WP-041 deferred this site deliberately to avoid re-breaking the unified single-cell parity; a future coordinated mirror WP can adopt Tooltip on both surfaces in lockstep.
 
+### Inspector e2e coverage (WP-042 — 2026-04-28)
+
+`tools/block-forge/e2e/inspector.spec.ts` pins 4 Inspector regressions at the
+real-iframe `getComputedStyle` level via Playwright (port 7799, fixture-dir
+override): WP-034 Path A chip-apply at cascade conflict, WP-037 typed-input
+per-BP scoping, WP-037 Tooltip portal render, WP-040 ↺ revert. Suite runs in
+<10s locally; CI runs on PRs touching block-forge / block-forge-core /
+Tooltip primitive / responsive-config via `.github/workflows/e2e-block-forge.yml`.
+
+**Studio mirror:** NOT YET. WP-042 was scoped to block-forge alone. Studio's
+Inspector is PARITY-locked behaviorally to Forge, so the regression-pin
+coverage is effectively shared via the mirror contract. A separate
+`apps/studio/e2e/inspector.spec.ts` would duplicate coverage; spawn it only
+if Studio-specific Inspector behavior diverges in a future WP.
+
+References:
+- `workplan/WP-042-inspector-e2e-playwright.md` (WP doc)
+- `logs/wp-042/phase-{0-audit,1-result,2-result}.md`
+- `.github/workflows/e2e-block-forge.yml`
+- `.context/CONVENTIONS.md` §"E2E test infrastructure (WP-042)"
+
 ## WP-035 — Sandbox + Export (Forge-only; asymmetric by design)
 
 **Surface:** `tools/block-forge/src/components/ExportDialog.tsx` + `tools/block-forge/vite.config.ts` POST `/api/blocks/clone` middleware route + first-run seed for `tools/block-forge/blocks/`. StatusBar `[+ Clone]` + `[Export]` buttons in `tools/block-forge/src/components/StatusBar.tsx`; App-level wiring in `tools/block-forge/src/App.tsx`.

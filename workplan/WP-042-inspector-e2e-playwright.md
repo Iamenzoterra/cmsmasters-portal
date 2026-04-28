@@ -1,11 +1,14 @@
 # WP-042 — Inspector e2e Playwright Coverage
 
-> **Status:** 🟡 BACKLOG (drafted 2026-04-28 as WP-033/WP-036 polish queue carryover)
+> **Status:** ✅ DONE (Phase 0 RECON + Phase 1 + Phase 2 Close shipped 2026-04-28)
 > **Origin:** WP-033 Phase 5 Ruling 3 DEFER + WP-034 Phase 2 Close `logs/wp-034/phase-2-result.md` §"What's next" item 4
-> **Estimated effort:** 1 phase + close (~3–4h)
+> **Estimated effort:** 1 phase + close (~3–4h) — actual ~2.5h across 2 phases (Option A full path)
 > **Layer:** L2 authoring tools (e2e gate — beyond unit + manual smoke)
 > **Priority:** P2 — locks token-apply behavior at iframe-rendered-CSS level; triggered when next Inspector regression is felt
 > **Prerequisites:** WP-034 ✅ DONE (Path A baseline locked); WP-037 ✅ DONE (typed inputs + tooltip locked)
+> **Path chosen:** A — Full Playwright install + spec + new CI workflow (Phase 0 RECON Brain ruling)
+> **Completed:** 2026-04-28
+> **Phase 1 commit:** `5ef41c27`
 
 ---
 
@@ -25,17 +28,17 @@ WP-033 Phase 5 Ruling 3 DEFER'd e2e Playwright coverage to a future WP. WP-034 P
 
 ## Acceptance criteria
 
-- [ ] Playwright spec(s) at `tools/block-forge/e2e/inspector.spec.ts` (and/or `apps/studio/e2e/inspector.spec.ts`) covering:
-  - **Chip-apply happy path** — open block, click chip, assert iframe `getComputedStyle` resolves to token value at all 3 BPs (375 / 768 / 1440 viewport).
-  - **Cascade-conflict path** — open block with pre-existing `@container` conflict, click chip, assert all 3 BPs resolve to token value (WP-034 Path A regression pin).
-  - **Typed input path** — change `display` via `<select>`, assert iframe receives the new value at active BP only (WP-037 regression pin).
-  - **Tooltip render path** — hover Inspector property label, assert tooltip portal renders with correct content + token-themed styling (WP-037 regression pin).
-  - **Hover-suggestion → highlight path** — hover over a suggestion in chip dropdown, assert target iframe element gets highlight overlay (WP-036 regression pin).
-- [ ] Playwright config + CI integration: spec runs on PR (or on Inspector-touching PR via path filter).
-- [ ] Fixture management: e2e uses dedicated test fixture (`tools/block-forge/e2e/fixtures/cascade-conflict.json`) — does NOT touch real `content/db/blocks/` or `tools/block-forge/blocks/` sandbox.
-- [ ] Smoke time budget: full Inspector e2e suite runs in <60s on CI; local dev run <30s.
-- [ ] PARITY note: add §"Inspector e2e coverage" to PARITY trio with link to spec files.
-- [ ] WP-033 Phase 5 Ruling 3 DEFER marker retired; replaced with §"e2e shipped in WP-042".
+- [x] Playwright spec(s) at `tools/block-forge/e2e/inspector.spec.ts` covering:
+  - [x] **Chip-apply at cascade conflict** — pin .heading at MOBILE (chip detection requires token-matching value at active BP); click `--h2-font-size` chip; assert all 3 BPs resolve to token (WP-034 Path A pin). *Combines "happy path" + "cascade-conflict path" — fixture has the @container conflict baked in.*
+  - [x] **Typed input path** — pin `.body-text` at MOBILE; change `display` to `flex`; assert mobile iframe shows flex AND tablet/desktop unchanged (WP-037 regression pin). *Pinned at MOBILE because tweaks emit as `@container slot (max-width: <bp>px)` — at bp=375, the rule scopes to mobile alone; at larger bp, it cascades to ALL ≤bp BPs.*
+  - [x] **Tooltip render path** — hover the `display` property label trigger; assert Radix portal `[role="tooltip"]` renders with "Layout mode" content (WP-037 regression pin).
+  - [x] **Revert ↺ path** — apply tweak via typed input; click `↺` button; assert tweak removed (WP-040 PARITY-locked native title pin).
+  - [ ] ~~Hover-suggestion → highlight path~~ — DROPPED in Phase 1: requires deterministic seeded-suggestion harness; vitest preview-assets covers the IIFE round-trip independently. Tracked as WP-042 follow-up.
+- [x] Playwright config + CI integration: `.github/workflows/e2e-block-forge.yml` runs on PR with path filter (`tools/block-forge/**`, `packages/block-forge-core/**`, Tooltip primitive, responsive-config).
+- [x] Fixture management: `tools/block-forge/e2e/fixtures/cascade-conflict-fixture.json` — does NOT touch real `content/db/blocks/` or `tools/block-forge/blocks/` sandbox (per saved memory `feedback_forge_sandbox_isolation`).
+- [x] Smoke time budget: full suite runs in **9.0s local** (<60s CI target).
+- [x] PARITY note: §"Inspector e2e coverage (WP-042 — 2026-04-28)" added to both PARITY pair files.
+- [x] WP-033 Phase 5 Ruling 3 DEFER marker retired in `logs/wp-033/phase-5-result.md`.
 
 ---
 
@@ -88,8 +91,34 @@ Total: ~3–4h across 1 phase + close.
 
 ## Cross-references
 
-- WP-033 Phase 5 Ruling 3 DEFER: `logs/wp-033/phase-5-result.md`
+- WP-033 Phase 5 Ruling 3 DEFER: `logs/wp-033/phase-5-result.md` — RETIRED 2026-04-28
 - WP-034 Phase 2 Close: `logs/wp-034/phase-2-result.md` §What's next item 4
-- WP-036 hover-suggestion → highlight target (regression pin candidate)
-- WP-037 typed inputs + Tooltip primitive (regression pin candidate)
+- WP-036 hover-suggestion → highlight target (e2e DROPPED; vitest preview-assets covers it)
+- WP-037 typed inputs + Tooltip primitive (e2e PINNED in `tools/block-forge/e2e/inspector.spec.ts`)
+- WP-040 PARITY-locked ↺ button (e2e PINNED)
 - Saved memory `feedback_forge_sandbox_isolation` (fixture isolation invariant)
+- `.context/CONVENTIONS.md` §"E2E test infrastructure (WP-042)"
+- `.github/workflows/e2e-block-forge.yml`
+
+---
+
+## Outcome Ladder
+
+| Tier | Outcome | Evidence |
+|---|---|---|
+| Bronze | Phase 0 RECON empirically caught WP doc's false assumption that Playwright was "already in monorepo"; surfaced 4 viable paths (A/B/C/D) for Brain ruling instead of silently expanding scope | `logs/wp-042/phase-0-audit.md` |
+| Silver | Phase 1 shipped 4 regression-pin specs (chip-apply / typed-input / tooltip / revert) covering WP-034/WP-037/WP-040 surfaces; suite runs in 9.0s local | commit `5ef41c27` |
+| Gold | All gates GREEN: arch-test 597/597, block-forge unit 363+6 (21 files), block-forge typecheck CLEAN, studio 317/317, e2e 4/4; CI workflow filters PRs touching Inspector-relevant paths | `logs/wp-042/phase-1-result.md` |
+| Platinum | Phase 2 Close — CONVENTIONS §"E2E test infrastructure" formalized; PARITY pair (Studio + Forge) adds §"Inspector e2e coverage"; WP-033 Phase 5 Ruling 3 DEFER explicitly retired; status flips through WP doc + ROADMAP | this commit (Phase 2 SHA) |
+
+---
+
+## Commit Ladder
+
+| Phase | Commit message | SHA | Files |
+|---|---|---|---|
+| 0 | (RECON) | (no commit — shipped with Phase 1) | `logs/wp-042/phase-0-audit.md` |
+| 1 | `feat(block-forge): WP-042 phase 1 — Playwright e2e Inspector coverage + CI workflow` | `5ef41c27` | 11 (3 root config + 4 e2e infra + 1 CI workflow + 2 result docs + 1 .gitignore) |
+| 2 (Close) | `docs(wp-042): phase 2 close — CONVENTIONS e2e infra + PARITY pair WP-042 cross-refs + WP-033 R3 DEFER retired + status flip` | TBD | 6 (CONVENTIONS + PARITY pair + WP doc + ROADMAP + WP-033 R3 marker + result.md) |
+
+**Total WP-042 footprint: ~700 LOC across 11 files in commit 1 + ~80 LOC docs in commit 2 over ~2.5h.**

@@ -186,7 +186,7 @@ Inserted 1 status row in the Layer status table (after WP-030 row): `Block Forge
 Added 3 horizon rows after the WP-030 OQ-δ row:
 1. WP-034 BACKLOG (cascade-override fix; documented at workplan/WP-034-inspector-cascade-override.md)
 2. TweakPanel sunset decision (post-WP-033) — surface field data on Inspector vs TweakPanel preference
-3. Inspector e2e Playwright coverage (post-WP-033) — established tier is unit + manual smoke (Phase 5 Ruling 3 DEFER)
+3. ~~Inspector e2e Playwright coverage (post-WP-033) — established tier is unit + manual smoke (Phase 5 Ruling 3 DEFER)~~ → **RETIRED 2026-04-28: shipped in WP-042** (`tools/block-forge/e2e/inspector.spec.ts` + `.github/workflows/e2e-block-forge.yml`)
 
 ### Acceptance
 

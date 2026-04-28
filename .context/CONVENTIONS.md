@@ -1178,6 +1178,75 @@ References:
 
 ---
 
+## E2E test infrastructure (WP-042 — 2026-04-28)
+
+Inspector regression-pin tests run through `@playwright/test` (root devDep,
+v1.59.1+). Specs live colocated with the surface they test:
+`tools/block-forge/e2e/inspector.spec.ts` + `tools/block-forge/e2e/fixtures/`.
+
+### When to add an e2e spec (vs unit)
+
+Add e2e when the regression you want to pin involves:
+- **Real iframe `getComputedStyle`** — values that depend on real layout, real
+  CSS clamp() resolution, or real `@container` query evaluation
+- **Cross-surface postMessage round-trips** — Inspector ↔ iframe IIFE
+  protocols where serialization/deserialization matters
+- **Hover/focus/click choreography** that jsdom can't fake authentically
+
+Keep using vitest+jsdom for everything else: pure render assertions, reducer
+output, snapshot diffs, hook returns, etc. Vitest is faster and more
+ergonomic when authenticity isn't required.
+
+### Fixture pattern
+
+Block-forge e2e uses `BLOCK_FORGE_SOURCE_DIR` env override (set by
+`tools/block-forge/playwright.config.ts`) so the dev server seeds blocks
+from `e2e/fixtures/` instead of `tools/block-forge/blocks/`. Each fixture is
+a minimal block JSON file; the BlockPicker picks them up like any other
+block. **Never** write fixtures to `content/db/blocks/` or
+`tools/block-forge/blocks/` (per saved memory `feedback_forge_sandbox_isolation`).
+
+### Port + binding
+
+Playwright spawns Vite at port **7799** (not 7702) to avoid colliding with a
+developer's running dev session. `--host 127.0.0.1` forces IPv4 binding so
+Playwright's webServer URL check resolves. CI gets a fresh box; port choice
+is incidental there.
+
+### Running
+
+```bash
+# Local
+npm run block-forge:test:e2e
+# Or from the package
+cd tools/block-forge && npm run test:e2e
+
+# Watch mode (Playwright UI)
+cd tools/block-forge && npx playwright test --ui
+```
+
+### CI
+
+`.github/workflows/e2e-block-forge.yml` runs on `pull_request` events
+touching `tools/block-forge/**`, `packages/block-forge-core/**`, the Tooltip
+primitive, the responsive config, or the workflow file itself. Suite
+runs in <60s including Chromium install. Reports upload as artifact on
+failure.
+
+### Vitest must exclude `e2e/**`
+
+`tools/block-forge/vite.config.ts` has `test.exclude: ['e2e/**', ...]`.
+Without this, `npm test` tries to import Playwright specs as Vitest and
+crashes on the `test.beforeEach` import.
+
+References:
+- `workplan/WP-042-inspector-e2e-playwright.md` (full WP doc)
+- `logs/wp-042/phase-{0-audit,1-result,2-result}.md`
+- `.github/workflows/e2e-block-forge.yml`
+- `tools/block-forge/playwright.config.ts`
+
+---
+
 ## Block authoring (WP-035 + WP-038 — 2026-04-28)
 
 Block Forge is the sandbox; Studio is the production gate. The two surfaces never cross-write. See saved memory `feedback_forge_sandbox_isolation` for the full architectural reasoning.
