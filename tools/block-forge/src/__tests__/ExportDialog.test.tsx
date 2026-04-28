@@ -226,4 +226,28 @@ describe('ExportDialog — Download JSON', () => {
     })
     blobConstructorSpy.mockRestore()
   })
+
+  it('sets <a download="${block.slug}.json"> on the synthetic anchor', () => {
+    const created: HTMLAnchorElement[] = []
+    const realCreateElement = document.createElement.bind(document)
+    const createElementSpy = vi
+      .spyOn(document, 'createElement')
+      .mockImplementation((tag: string) => {
+        const el = realCreateElement(tag)
+        if (tag === 'a') created.push(el as HTMLAnchorElement)
+        return el
+      })
+    const { container } = render(
+      <ExportDialog block={fixture} onClose={() => {}} onShowToast={() => {}} />,
+    )
+    const downloadBtn = container.querySelector(
+      '[data-action="download-json"]',
+    ) as HTMLElement
+    fireEvent.click(downloadBtn)
+    const anchor = created.find((el) => el.download)
+    expect(anchor).toBeDefined()
+    expect(anchor!.download).toBe('test-block.json')
+    expect(anchor!.href).toBe('blob:mock-url')
+    createElementSpy.mockRestore()
+  })
 })
