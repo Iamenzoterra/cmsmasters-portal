@@ -74,6 +74,163 @@ exports[`PropertyRow — snapshot > matches snapshot — empty cell renders em-d
 </div>
 `;
 
+exports[`PropertyRow — snapshot > matches snapshot — enum property renders select with options 1`] = `
+<div>
+  <div
+    class="flex items-center gap-2 py-1 text-[length:var(--text-xs-font-size)]"
+    data-property="display"
+    data-testid="property-row-display"
+  >
+    <div
+      class="w-32 shrink-0 truncate font-mono text-[hsl(var(--text-muted))]"
+      title="display"
+    >
+      display
+    </div>
+    <div
+      class="flex min-w-0 flex-1 items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
+      data-active="true"
+      data-editable="true"
+      data-empty="false"
+    >
+      <select
+        class="min-w-0 flex-1 bg-transparent font-mono text-[hsl(var(--text-primary))] outline-none"
+        data-testid="property-row-display-select"
+      >
+        <option
+          value="block"
+        >
+          block
+        </option>
+        <option
+          selected=""
+          value="flex"
+        >
+          flex
+        </option>
+        <option
+          value="inline"
+        >
+          inline
+        </option>
+        <option
+          value="inline-block"
+        >
+          inline-block
+        </option>
+        <option
+          value="inline-flex"
+        >
+          inline-flex
+        </option>
+        <option
+          value="grid"
+        >
+          grid
+        </option>
+        <option
+          value="inline-grid"
+        >
+          inline-grid
+        </option>
+        <option
+          value="none"
+        >
+          none
+        </option>
+        <option
+          value="contents"
+        >
+          contents
+        </option>
+      </select>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`PropertyRow — snapshot > matches snapshot — enum with custom (legacy) value 1`] = `
+<div>
+  <div
+    class="flex items-center gap-2 py-1 text-[length:var(--text-xs-font-size)]"
+    data-property="display"
+    data-testid="property-row-display"
+  >
+    <div
+      class="w-32 shrink-0 truncate font-mono text-[hsl(var(--text-muted))]"
+      title="display"
+    >
+      display
+    </div>
+    <div
+      class="flex min-w-0 flex-1 items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
+      data-active="true"
+      data-editable="true"
+      data-empty="false"
+    >
+      <select
+        class="min-w-0 flex-1 bg-transparent font-mono text-[hsl(var(--text-primary))] outline-none"
+        data-testid="property-row-display-select"
+      >
+        <option
+          disabled=""
+          selected=""
+          value="table-cell"
+        >
+          table-cell
+           (custom)
+        </option>
+        <option
+          value="block"
+        >
+          block
+        </option>
+        <option
+          value="flex"
+        >
+          flex
+        </option>
+        <option
+          value="inline"
+        >
+          inline
+        </option>
+        <option
+          value="inline-block"
+        >
+          inline-block
+        </option>
+        <option
+          value="inline-flex"
+        >
+          inline-flex
+        </option>
+        <option
+          value="grid"
+        >
+          grid
+        </option>
+        <option
+          value="inline-grid"
+        >
+          inline-grid
+        </option>
+        <option
+          value="none"
+        >
+          none
+        </option>
+        <option
+          value="contents"
+        >
+          contents
+        </option>
+      </select>
+    </div>
+  </div>
+</div>
+`;
+
 exports[`PropertyRow — snapshot > matches snapshot — read-only cell with value 1`] = `
 <div>
   <div

@@ -344,6 +344,13 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'apps/studio/src/pages/block-editor/responsive/inspector/hooks/useChipDetection.ts',
       'apps/studio/src/pages/block-editor/responsive/inspector/lib/dispatchInspectorEdit.ts',
       'apps/studio/src/pages/block-editor/responsive/inspector/lib/css-mutate.ts',
+      // WP-037 Phase 1: PROPERTY_META source-of-truth for typed-input affordances
+      // (kind: numeric|enum, options[], tooltip text). Byte-identical mirror at
+      // tools/block-forge/src/lib/property-meta.ts (drives <select> render in
+      // PropertyRow.tsx for LAYOUT enum properties: display, flex-direction,
+      // align-items, justify-content). Phase 2 will consume `tooltip` for label
+      // hover hints.
+      'apps/studio/src/pages/block-editor/responsive/inspector/property-meta.ts',
       'apps/studio/src/pages/block-editor/responsive/inspector/__tests__/Inspector.test.tsx',
       'apps/studio/src/pages/block-editor/responsive/inspector/__tests__/InspectorPanel.test.tsx',
       'apps/studio/src/pages/block-editor/responsive/inspector/__tests__/PropertyRow.test.tsx',
@@ -683,6 +690,13 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'tools/block-forge/src/components/PropertyRow.tsx',
       // WP-033 Phase 3: TokenChip render component (in-use vs available modes).
       'tools/block-forge/src/components/TokenChip.tsx',
+      // WP-037 Phase 1: PROPERTY_META source-of-truth for typed-input affordances
+      // (kind: numeric|enum, options[], tooltip text). Byte-identical mirror at
+      // apps/studio/.../inspector/property-meta.ts (drives <select> render in
+      // PropertyRow.tsx for LAYOUT enum properties: display, flex-direction,
+      // align-items, justify-content). Phase 2 will consume `tooltip` for label
+      // hover hints.
+      'tools/block-forge/src/lib/property-meta.ts',
       // WP-035 Phase 1: ExportDialog (Forge-side payload export gate). Ports
       // layout-maker pattern; payload is in-memory state, no server roundtrip.
       // Clone affordance landed in Phase 3 (bundled with sandbox migration).

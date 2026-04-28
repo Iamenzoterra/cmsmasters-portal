@@ -211,3 +211,150 @@ describe('PropertyRow — BP labels', () => {
     expect(labels).toEqual(['M', 'T', 'D'])
   })
 })
+
+describe('PropertyRow — typed enum inputs (WP-037 Phase 1)', () => {
+  it('renders <select> instead of <input> on the active cell for enum property', () => {
+    const { getByTestId, queryByTestId } = render(
+      <PropertyRow
+        label="display"
+        valuesByBp={makeValues(1440, 'block')}
+        activeBp={1440}
+        onBpSwitch={() => undefined}
+        onCellEdit={() => undefined}
+      />,
+    )
+    expect(getByTestId('property-row-display-select-1440')).toBeTruthy()
+    expect(queryByTestId('property-row-display-input-1440')).toBeNull()
+  })
+
+  it('inactive cells stay as text spans even for enum property', () => {
+    const { getByTestId, queryByTestId } = render(
+      <PropertyRow
+        label="display"
+        valuesByBp={{ 375: null, 768: null, 1440: 'block' }}
+        activeBp={1440}
+        onBpSwitch={() => undefined}
+        onCellEdit={() => undefined}
+      />,
+    )
+    expect(queryByTestId('property-row-display-select-768')).toBeNull()
+    expect(queryByTestId('property-row-display-select-375')).toBeNull()
+    // Inactive cells render as text spans / em-dash
+    expect(getByTestId('property-row-display-cell-768').textContent).toContain('—')
+    expect(getByTestId('property-row-display-cell-375').textContent).toContain('—')
+  })
+
+  it('lists all PROPERTY_META.options as <option> entries', () => {
+    const { getByTestId } = render(
+      <PropertyRow
+        label="flex-direction"
+        valuesByBp={makeValues(1440, 'row')}
+        activeBp={1440}
+        onBpSwitch={() => undefined}
+        onCellEdit={() => undefined}
+      />,
+    )
+    const select = getByTestId('property-row-flex-direction-select-1440') as HTMLSelectElement
+    const optionValues = Array.from(select.options).map((o) => o.value)
+    expect(optionValues).toEqual(['row', 'row-reverse', 'column', 'column-reverse'])
+  })
+
+  it('selecting an option fires onCellEdit(activeBp, value)', () => {
+    const onCellEdit = vi.fn()
+    const { getByTestId } = render(
+      <PropertyRow
+        label="align-items"
+        valuesByBp={makeValues(768, 'stretch')}
+        activeBp={768}
+        onBpSwitch={() => undefined}
+        onCellEdit={onCellEdit}
+      />,
+    )
+    const select = getByTestId('property-row-align-items-select-768') as HTMLSelectElement
+    fireEvent.change(select, { target: { value: 'center' } })
+    expect(onCellEdit).toHaveBeenCalledTimes(1)
+    expect(onCellEdit).toHaveBeenCalledWith(768, 'center')
+  })
+
+  it('custom value (not in PROPERTY_META.options) renders as disabled "(custom)" option', () => {
+    const { getByTestId } = render(
+      <PropertyRow
+        label="display"
+        valuesByBp={makeValues(1440, 'table-cell')}
+        activeBp={1440}
+        onBpSwitch={() => undefined}
+        onCellEdit={() => undefined}
+      />,
+    )
+    const select = getByTestId('property-row-display-select-1440') as HTMLSelectElement
+    const customOption = Array.from(select.options).find((o) => o.value === 'table-cell')
+    expect(customOption).toBeTruthy()
+    expect(customOption?.disabled).toBe(true)
+    expect(customOption?.textContent).toContain('table-cell (custom)')
+    expect(select.value).toBe('table-cell')
+  })
+
+  it('enum property in read-only mode (no onCellEdit) still renders text span', () => {
+    const { getByTestId, queryByTestId } = render(
+      <PropertyRow
+        label="display"
+        valuesByBp={makeValues(1440, 'flex')}
+        activeBp={1440}
+        onBpSwitch={() => undefined}
+      />,
+    )
+    expect(getByTestId('property-row-display-cell-1440').textContent).toContain('flex')
+    expect(queryByTestId('property-row-display-select-1440')).toBeNull()
+  })
+
+  it('selecting same value as current is a no-op (no onCellEdit call)', () => {
+    const onCellEdit = vi.fn()
+    const { getByTestId } = render(
+      <PropertyRow
+        label="justify-content"
+        valuesByBp={makeValues(1440, 'center')}
+        activeBp={1440}
+        onBpSwitch={() => undefined}
+        onCellEdit={onCellEdit}
+      />,
+    )
+    const select = getByTestId('property-row-justify-content-select-1440') as HTMLSelectElement
+    fireEvent.change(select, { target: { value: 'center' } })
+    expect(onCellEdit).not.toHaveBeenCalled()
+  })
+
+  it('non-enum property with onCellEdit still renders <input> (numeric property)', () => {
+    const { getByTestId, queryByTestId } = render(
+      <PropertyRow
+        label="font-size"
+        valuesByBp={makeValues(1440, '16px')}
+        activeBp={1440}
+        onBpSwitch={() => undefined}
+        onCellEdit={() => undefined}
+      />,
+    )
+    expect(getByTestId('property-row-font-size-input-1440')).toBeTruthy()
+    expect(queryByTestId('property-row-font-size-select-1440')).toBeNull()
+  })
+
+  it('explicit meta prop overrides PROPERTY_META lookup', () => {
+    const customMeta = {
+      kind: 'enum' as const,
+      tooltip: 'Custom',
+      options: ['x', 'y', 'z'] as const,
+    }
+    const { getByTestId } = render(
+      <PropertyRow
+        label="font-size"
+        valuesByBp={makeValues(1440, 'x')}
+        activeBp={1440}
+        onBpSwitch={() => undefined}
+        onCellEdit={() => undefined}
+        meta={customMeta}
+      />,
+    )
+    const select = getByTestId('property-row-font-size-select-1440') as HTMLSelectElement
+    const optionValues = Array.from(select.options).map((o) => o.value)
+    expect(optionValues).toEqual(['x', 'y', 'z'])
+  })
+})

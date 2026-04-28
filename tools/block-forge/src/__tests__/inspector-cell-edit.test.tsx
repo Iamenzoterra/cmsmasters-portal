@@ -83,15 +83,15 @@ describe('PropertyRow edit — commit behavior', () => {
     expect(onEdit).toHaveBeenCalledWith('24px')
   })
 
-  it('keyword passthrough — input "flex" + no prior unit emits "flex"', () => {
+  it('keyword passthrough — input "monospace" + no prior unit emits "monospace" (non-enum)', () => {
     const onEdit = vi.fn()
     const { getByTestId } = render(
-      <PropertyRow label="display" value="block" onEdit={onEdit} />,
+      <PropertyRow label="font-family" value="serif" onEdit={onEdit} />,
     )
-    const input = getByTestId('property-row-display-input') as HTMLInputElement
-    input.value = 'flex'
+    const input = getByTestId('property-row-font-family-input') as HTMLInputElement
+    input.value = 'monospace'
     fireEvent.blur(input)
-    expect(onEdit).toHaveBeenCalledWith('flex')
+    expect(onEdit).toHaveBeenCalledWith('monospace')
   })
 
   it('numeric input with no prior unit auto-appends "px"', () => {

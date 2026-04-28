@@ -9,8 +9,15 @@
 // the number; unit displays as a static suffix and is re-attached on emit.
 // Bare numeric input → auto-appended with the prior unit (or 'px' default).
 // Keyword values (e.g. "flex", "auto", "start") pass through unchanged.
+//
+// WP-037 Phase 1 — typed enum inputs.
+// When `meta.kind === 'enum'` (looked up via `getPropertyMeta(label)` or
+// passed explicitly), the editable cell renders <select> with `meta.options`
+// instead of <input>. Custom (non-listed) values stay selected as a disabled
+// "(custom)" option so legacy tweaks survive.
 
 import { useEffect, useRef, type ReactNode } from 'react'
+import { getPropertyMeta, type PropertyMeta } from '../lib/property-meta'
 
 export interface PropertyRowProps {
   /** Display label, e.g. "font-size", "padding-left". */
@@ -30,6 +37,12 @@ export interface PropertyRowProps {
    * something to revert.
    */
   onRevert?: () => void
+  /**
+   * WP-037 Phase 1 — optional metadata override. When omitted, looked up via
+   * `getPropertyMeta(label)`. Drives select-vs-input rendering for the
+   * editable cell and (Phase 2) tooltip text.
+   */
+  meta?: PropertyMeta
   'data-testid'?: string
 }
 
@@ -69,9 +82,11 @@ function normalizeWithUnit(input: string, priorUnit: string): string {
 
 export function PropertyRow(props: PropertyRowProps) {
   const { label, value, inheritedFrom, tokenChip, onEdit, onRevert } = props
+  const meta = props.meta ?? getPropertyMeta(label)
   const testId = props['data-testid'] ?? `property-row-${label}`
   const isEmpty = value === null
   const isEditable = !isEmpty && Boolean(onEdit)
+  const isEnum = meta?.kind === 'enum' && meta.options !== undefined
   const { numeric, unit } = parseValueUnit(value)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -107,6 +122,28 @@ export function PropertyRow(props: PropertyRowProps) {
       >
         {isEmpty ? (
           <span className="font-mono text-[hsl(var(--text-muted))]">—</span>
+        ) : isEditable && isEnum && meta?.options ? (
+          <select
+            defaultValue={value ?? ''}
+            data-testid={`${testId}-select`}
+            onChange={(e) => {
+              const next = e.currentTarget.value
+              if (next === value) return
+              onEdit?.(next)
+            }}
+            className="min-w-0 flex-1 bg-transparent font-mono text-[hsl(var(--text-primary))] outline-none"
+          >
+            {value && !meta.options.includes(value) && (
+              <option key="__custom__" value={value} disabled>
+                {value} (custom)
+              </option>
+            )}
+            {meta.options.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
         ) : isEditable ? (
           <>
             <input

@@ -191,12 +191,12 @@ describe('PropertyRow — unit handling', () => {
     expect(container.textContent).toContain('rem')
   })
 
-  it('keyword "flex" passes through with no unit suffix', () => {
+  it('keyword "serif" passes through with no unit suffix (non-enum property)', () => {
     const { getByTestId } = render(
-      <PropertyRow label="display" value="flex" onEdit={() => undefined} />,
+      <PropertyRow label="font-family" value="serif" onEdit={() => undefined} />,
     )
-    const input = getByTestId('property-row-display-input') as HTMLInputElement
-    expect(input.defaultValue).toBe('flex')
+    const input = getByTestId('property-row-font-family-input') as HTMLInputElement
+    expect(input.defaultValue).toBe('serif')
   })
 
   it('var(--token) passes through unchanged', () => {
@@ -205,6 +205,94 @@ describe('PropertyRow — unit handling', () => {
     )
     const input = getByTestId('property-row-font-size-input') as HTMLInputElement
     expect(input.defaultValue).toBe('var(--text-sm-font-size)')
+  })
+})
+
+describe('PropertyRow — typed enum inputs (WP-037 Phase 1)', () => {
+  it('renders <select> instead of <input> for enum property when editable', () => {
+    const { getByTestId, queryByTestId } = render(
+      <PropertyRow label="display" value="block" onEdit={() => undefined} />,
+    )
+    expect(getByTestId('property-row-display-select')).toBeTruthy()
+    expect(queryByTestId('property-row-display-input')).toBeNull()
+  })
+
+  it('lists all PROPERTY_META.options as <option> entries', () => {
+    const { getByTestId } = render(
+      <PropertyRow label="flex-direction" value="row" onEdit={() => undefined} />,
+    )
+    const select = getByTestId('property-row-flex-direction-select') as HTMLSelectElement
+    const optionValues = Array.from(select.options).map((o) => o.value)
+    // flex-direction options per PROPERTY_META
+    expect(optionValues).toEqual(['row', 'row-reverse', 'column', 'column-reverse'])
+  })
+
+  it('selecting an option fires onEdit with the option value', () => {
+    const onEdit = vi.fn()
+    const { getByTestId } = render(
+      <PropertyRow label="align-items" value="stretch" onEdit={onEdit} />,
+    )
+    const select = getByTestId('property-row-align-items-select') as HTMLSelectElement
+    fireEvent.change(select, { target: { value: 'center' } })
+    expect(onEdit).toHaveBeenCalledTimes(1)
+    expect(onEdit).toHaveBeenCalledWith('center')
+  })
+
+  it('custom value (not in PROPERTY_META.options) renders as disabled "(custom)" option', () => {
+    const { getByTestId } = render(
+      <PropertyRow label="display" value="table-cell" onEdit={() => undefined} />,
+    )
+    const select = getByTestId('property-row-display-select') as HTMLSelectElement
+    const customOption = Array.from(select.options).find((o) => o.value === 'table-cell')
+    expect(customOption).toBeTruthy()
+    expect(customOption?.disabled).toBe(true)
+    expect(customOption?.textContent).toContain('table-cell (custom)')
+  })
+
+  it('custom value is selected as current select value', () => {
+    const { getByTestId } = render(
+      <PropertyRow label="display" value="table-cell" onEdit={() => undefined} />,
+    )
+    const select = getByTestId('property-row-display-select') as HTMLSelectElement
+    expect(select.value).toBe('table-cell')
+  })
+
+  it('enum property in read-only mode (no onEdit) still renders <span>, not <select>', () => {
+    const { getByTestId, queryByTestId } = render(<PropertyRow label="display" value="flex" />)
+    expect(getByTestId('property-row-display-cell').textContent).toBe('flex')
+    expect(queryByTestId('property-row-display-select')).toBeNull()
+  })
+
+  it('selecting same value as current is a no-op (no onEdit call)', () => {
+    const onEdit = vi.fn()
+    const { getByTestId } = render(
+      <PropertyRow label="justify-content" value="center" onEdit={onEdit} />,
+    )
+    const select = getByTestId('property-row-justify-content-select') as HTMLSelectElement
+    fireEvent.change(select, { target: { value: 'center' } })
+    expect(onEdit).not.toHaveBeenCalled()
+  })
+
+  it('non-enum property with onEdit still renders <input> (numeric property)', () => {
+    const { getByTestId, queryByTestId } = render(
+      <PropertyRow label="font-size" value="16px" onEdit={() => undefined} />,
+    )
+    expect(getByTestId('property-row-font-size-input')).toBeTruthy()
+    expect(queryByTestId('property-row-font-size-select')).toBeNull()
+  })
+
+  it('explicit meta prop overrides PROPERTY_META lookup', () => {
+    const customMeta = {
+      kind: 'enum' as const,
+      tooltip: 'Custom',
+      options: ['x', 'y', 'z'] as const,
+    }
+    const { getByTestId } = render(
+      <PropertyRow label="font-size" value="x" onEdit={() => undefined} meta={customMeta} />,
+    )
+    const select = getByTestId('property-row-font-size-select') as HTMLSelectElement
+    const optionValues = Array.from(select.options).map((o) => o.value)
+    expect(optionValues).toEqual(['x', 'y', 'z'])
   })
 })
 
@@ -228,6 +316,20 @@ describe('PropertyRow — snapshot', () => {
 
   it('matches snapshot — empty cell renders em-dash', () => {
     const { container } = render(<PropertyRow label="font-size" value={null} />)
+    expect(container).toMatchSnapshot()
+  })
+
+  it('matches snapshot — enum property renders select with options', () => {
+    const { container } = render(
+      <PropertyRow label="display" value="flex" onEdit={() => undefined} />,
+    )
+    expect(container).toMatchSnapshot()
+  })
+
+  it('matches snapshot — enum with custom (legacy) value', () => {
+    const { container } = render(
+      <PropertyRow label="display" value="table-cell" onEdit={() => undefined} />,
+    )
     expect(container).toMatchSnapshot()
   })
 })

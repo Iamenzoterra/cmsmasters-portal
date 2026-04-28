@@ -1,5 +1,8 @@
-// WP-033 Phase 4 — Studio mirror of tools/block-forge/src/components/PropertyRow.tsx
-// (byte-identical body mod 3-line JSDoc header per Phase 4 Ruling 1 mirror discipline).
+// WP-033 Phase 4 — Studio mirror of tools/block-forge/src/components/PropertyRow.tsx.
+// PARITY note: post-WP-033 polish migrated block-forge to single-cell layout.
+// Studio remains on the 3-BP M/T/D grid (see WP-037 Phase 0 RECON Ruling 1B).
+// PROPERTY_META content is byte-identical between surfaces; render adapts to
+// each shape (Studio: select renders only in active cell).
 //
 // Single property row inside an InspectorPanel section. 3 BP cells (M/T/D)
 // each rendered with active-vs-inactive distinction. Active cell becomes an
@@ -13,9 +16,16 @@
 // Validation: trim whitespace, reject empty (cancel semantics), reject `em`
 // per pkg-block-forge-core SKILL Trap (use `rem` / `px` / `%` / `var(...)` /
 // unitless number).
+//
+// WP-037 Phase 1 — typed enum inputs (active cell only).
+// When `meta.kind === 'enum'` (looked up via `getPropertyMeta(label)` or
+// passed explicitly), the active editable cell renders <select> with
+// `meta.options` instead of <input>. Inactive cells stay as text spans —
+// switch BP via ↗ first to edit elsewhere.
 
 import type { ReactNode } from 'react'
 import type { InspectorBp } from './Inspector'
+import { getPropertyMeta, type PropertyMeta } from './property-meta'
 
 export interface PropertyRowProps {
   /** Display label, e.g. "font-size", "padding-left". */
@@ -36,6 +46,12 @@ export interface PropertyRowProps {
    * NEVER editable.
    */
   onCellEdit?: (bp: InspectorBp, value: string) => void
+  /**
+   * WP-037 Phase 1 — optional metadata override. When omitted, looked up via
+   * `getPropertyMeta(label)`. Drives select-vs-input rendering on the active
+   * cell and (Phase 2) tooltip text.
+   */
+  meta?: PropertyMeta
   'data-testid'?: string
 }
 
@@ -62,6 +78,8 @@ function isValidCellValue(v: string): boolean {
 export function PropertyRow(props: PropertyRowProps) {
   const testId = props['data-testid'] ?? `property-row-${props.label}`
   const { label, valuesByBp, activeBp, onBpSwitch, inheritedFrom, tokenChip, onCellEdit } = props
+  const meta = props.meta ?? getPropertyMeta(label)
+  const isEnum = meta?.kind === 'enum' && meta.options !== undefined
 
   return (
     <div
@@ -101,7 +119,29 @@ export function PropertyRow(props: PropertyRowProps) {
               >
                 {BP_SHORT[bp]}
               </span>
-              {isEditable ? (
+              {isEditable && isEnum && meta?.options ? (
+                <select
+                  defaultValue={value ?? ''}
+                  data-testid={`${testId}-select-${bp}`}
+                  onChange={(e) => {
+                    const next = e.currentTarget.value
+                    if (next === value) return
+                    onCellEdit?.(bp, next)
+                  }}
+                  className="min-w-0 flex-1 bg-transparent font-mono text-[hsl(var(--text-primary))] outline-none"
+                >
+                  {value && !meta.options.includes(value) && (
+                    <option key="__custom__" value={value} disabled>
+                      {value} (custom)
+                    </option>
+                  )}
+                  {meta.options.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              ) : isEditable ? (
                 <input
                   type="text"
                   defaultValue={value ?? ''}
