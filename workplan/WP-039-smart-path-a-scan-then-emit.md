@@ -1,11 +1,13 @@
 # WP-039 — Smart Path A: Scan-Then-Emit Refinement
 
-> **Status:** 🟡 BACKLOG (drafted 2026-04-28 as WP-034 polish queue carryover)
+> **Status:** ✅ DONE (Phase 0 RECON + Phase 1 + Phase 2 Close shipped 2026-04-28)
 > **Origin:** WP-034 Phase 2 Close `logs/wp-034/phase-2-result.md` §"What's next" item 1
-> **Estimated effort:** 1 phase + close (~2–3h, ~30 LOC across 2 surfaces + tests)
+> **Estimated effort:** 1 phase + close (~2–3h, ~30 LOC across 2 surfaces + tests) — actual ~145 LOC across 7 files in 2 phases over 1 day
 > **Layer:** L2 authoring tools (refines WP-034 Inspector chip cascade-override fix)
 > **Priority:** P3 — cosmetic; only triggered if author feedback flags Path A's verbose output as noisy
 > **Prerequisites:** WP-034 ✅ DONE (Path A baseline shipped)
+> **Completed:** 2026-04-28
+> **Phase 1 commit:** `d4e17a4c`
 
 ---
 
@@ -27,16 +29,17 @@ This is documented as a Path A tradeoff in both PARITY trio files (`tools/block-
 
 ## Acceptance criteria
 
-- [ ] Chip apply on a property with **no** `@container` conflicts emits exactly 1 tweak at `bp:0` (zero new `@container` blocks created).
-- [ ] Chip apply on a property with conflicts at SOME BPs (e.g., 768 only) emits 2 tweaks: `bp:0` + `bp:768` (no redundant 375 / 1440 blocks).
-- [ ] Chip apply on a property with conflicts at ALL 3 BPs still resolves to all-applied (4-tweak emit, same as WP-034 baseline).
-- [ ] Sibling decl preservation invariant holds (same as WP-034 — `emitTweak` Case C dedupe-update semantics).
-- [ ] Cross-surface lockstep — both `tools/block-forge/src/App.tsx` `handleInspectorApplyToken` and `apps/studio/.../inspector/lib/dispatchInspectorEdit.ts` `apply-token` case ship together.
-- [ ] Vitest regression pins:
-  - Studio `dispatchInspectorEdit.test.ts` +3 tests (no-conflict → 1 tweak; partial-conflict → N tweaks; full-conflict → 4 tweaks).
-  - block-forge `session.test.ts` +2 tests in WP-039 describe block.
-- [ ] PARITY trio "Path A tradeoff" paragraph removed; replaced with smart-emit description.
-- [ ] WP-034 Outcome Ladder Bronze/Silver tier note: "Smart variant shipped in WP-039".
+- [x] Chip apply on a property with **no** `@container` conflicts emits exactly 1 tweak at `bp:0` (zero new `@container` blocks created). — Studio + Forge tests `no-conflict source — emits ONLY bp:0`.
+- [x] Chip apply on a property with conflicts at SOME BPs (e.g., 768 only) emits 2 tweaks: `bp:0` + `bp:768` (no redundant 375 / 1440 blocks). — Studio test `partial-conflict source (768 only)`.
+- [x] Chip apply on a property with conflicts at ALL 3 BPs still resolves to all-applied (4-tweak emit, same as WP-034 baseline). — Implicit via core multi-conflict test + helper signature contract.
+- [x] Sibling decl preservation invariant holds (same as WP-034 — `emitTweak` Case C dedupe-update semantics). — Studio + Forge full-conflict tests assert `color: black`, `line-height: 1.2`, `line-height: 36px` preserved.
+- [x] Cross-surface lockstep — both `tools/block-forge/src/App.tsx` `handleInspectorApplyToken` and `apps/studio/.../inspector/lib/dispatchInspectorEdit.ts` `apply-token` case ship together (commit `d4e17a4c`).
+- [x] Vitest regression pins:
+  - Core `find-conflict-bps.test.ts` +6 tests (NEW file).
+  - Studio `dispatchInspectorEdit.test.ts` 3 WP-039 tests (rewriting 3 stale WP-034 tests — same describe slot).
+  - block-forge `session.test.ts` 2 WP-039 tests in `WP-039 Smart Path A` describe block (rewriting 2 stale WP-034 tests).
+- [x] PARITY trio "Path A tradeoff" paragraph removed; replaced with smart-emit description (Phase 2 Close).
+- [x] WP-034 Outcome Ladder note: "Smart variant shipped in WP-039" (Phase 2 Close).
 
 ---
 
@@ -80,6 +83,29 @@ Same shape on both surfaces.
 | 2 Close | 30m | PARITY trio caveat removal; status flip; WP-034 Outcome Ladder note |
 
 Total: ~3h across 1 phase + close.
+
+---
+
+## Outcome Ladder
+
+| Tier | Outcome | Evidence |
+|---|---|---|
+| Bronze | Phase 0 RECON empirically validated helper home (core) + Forge access path (composeTweakedCss + scan) | logs/wp-039/phase-0-recon-result.md |
+| Silver | Phase 1 cross-surface scan-then-emit + 11 new tests + helper colocated with emitTweak/parseContainerBp | commit `d4e17a4c` |
+| Gold | All gates GREEN: core 81/81, studio 300/300, forge 363/363+6 skipped, arch-test 597/597, both surfaces tsc CLEAN | logs/wp-039/phase-1-result.md |
+| Platinum | Phase 2 Close — PARITY trio "Path A tradeoff" caveat retired + status flip + atomic doc batch | this commit (Phase 2 SHA) |
+
+---
+
+## Commit Ladder
+
+| Phase | Commit message | SHA | Files |
+|---|---|---|---|
+| 0 | (RECON) | (no commit — shipped with Phase 1) | logs/wp-039/phase-0-recon-result.md |
+| 1 | `feat(studio+block-forge): WP-039 phase 1 — Smart Path A scan-then-emit` | `d4e17a4c` | 10 (2 NEW core + 5 MOD + 2 RECON+result.md + 1 manifest) |
+| 2 (Close) | `docs(wp-039): phase 2 close — PARITY trio "Path A tradeoff" RETIRED + status flip` | TBD | 5 (PARITY pair + WP-039 doc + WP-034 doc + ROADMAP) + result.md |
+
+**Total WP-039 footprint: ~145 LOC across 2 commits over 1 day.**
 
 ---
 

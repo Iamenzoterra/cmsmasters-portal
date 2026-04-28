@@ -46,7 +46,8 @@ WP-034 closes the gap so chip apply also clears (or coordinates with) the confli
 | Bronze | Phase 0 RECON empirically debunked WP-034 doc's "Path A pollutes" claim | logs/wp-034/phase-0-recon-result.md |
 | Silver | Phase 1 cross-surface 4-tweak fan-out + tooltip caveat removed + 5 new tests | commit `ead09eb7` |
 | Gold | Visual smoke on real cascade-conflict fixture verified token applied at all 3 BPs | logs/wp-034/smoke-{1,2}.png |
-| Platinum | Phase 2 Close — PARITY trio "Known limitations" → "RESOLVED" + status flip + atomic doc batch | this commit (TBD SHA) |
+| Platinum | Phase 2 Close — PARITY trio "Known limitations" → "RESOLVED" + status flip + atomic doc batch | commit `31cb1d43` |
+| Diamond (post-WP-034 polish) | Smart Path A scan-then-emit shipped in WP-039 — drops redundant @container blocks on no-conflict sources; behaviour at conflict BPs unchanged | WP-039 commit `d4e17a4c` |
 
 ## Commit ladder
 

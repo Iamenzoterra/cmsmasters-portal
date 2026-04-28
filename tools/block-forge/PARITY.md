@@ -273,31 +273,29 @@ Studio mirror at `apps/studio/src/pages/block-editor/responsive/preview-assets.t
 
 Inspector internals are byte-identical mod 3-line JSDoc headers. Emit handlers diverge at the boundary — block-forge: `addTweak/removeTweakFor` against `session.tweaks`; Studio: `dispatchInspectorEdit(form, edit)` against `form.code` via PostCSS. Both produce the same DB-stored shape (CSS rules under `@container slot (max-width: Npx)`).
 
-### Cascade-override fix (WP-034 — RESOLVED)
+### Cascade-override fix (WP-034 + WP-039 — RESOLVED)
 
 WP-033 Phase 3 Issue #3 / Phase 4 Open Question 5 closed by WP-034 Path A
-(commit `ead09eb7`).
+(commit `ead09eb7`); refined to Smart Path A by WP-039 (commit `d4e17a4c`).
 
-**Behaviour:** clicking `[Use --token ✓]` now emits **4 tweaks** at canonical
-BPs `[0, 375, 768, 1440]` instead of the previous single bp:0 emit. The fan-out
-overrides any pre-existing `@container slot (max-width: Npx)` cascade conflicts:
+**Behaviour:** clicking `[Use --token ✓]` scans the source CSS for
+`@container slot (max-width: Npx)` rules that already declare the chip's
+property on the active selector. It then emits `1 + N` tweaks where
+`N = canonical BPs (375 / 768 / 1440) with pre-existing conflicts`:
 
-- **bp:0** sets the top-level rule.
-- **bp:375 / 768 / 1440** dedupe-update existing `@container` blocks for that
-  selector + property (per `emitTweak` Case C — replaces decl in place,
-  preserves sibling decls like `line-height` / `color`); creates new
-  `@container` blocks (Case A) when absent.
+- **bp:0** always emitted (chip contract — sets the top-level rule).
+- **bp:375 / 768 / 1440** emitted ONLY when source already declares the
+  property at that BP. Existing blocks are dedupe-updated in place (per
+  `emitTweak` Case C — preserves sibling decls like `line-height` / `color`).
+
+No-conflict source ⇒ 1 tweak (bp:0 only); zero new `@container` blocks.
+Full-conflict source ⇒ 4 tweaks (matches WP-034 baseline output).
+
+The scan helper `findConflictBps(css, selector, property)` lives in
+`@cmsmasters/block-forge-core/src/compose/find-conflict-bps.ts`,
+colocated with `emitTweak` and `parseContainerBp`.
 
 `TokenChip` tooltip caveat removed — new format: `"Sets X/Y/Z at M/T/D"`.
-
-**Known minor tradeoff:** when a canonical BP @container block didn't exist
-in the source, Path A creates a redundant block (e.g., adds `@container slot
-(max-width: 1440px) { font-size: var(--token) }` to a block that previously
-had only top-level + @container 768 + @container 375). Cascade resolves
-correctly at every viewport (browser's clamp does the per-BP interpolation);
-source CSS gains 1-3 cosmetic blocks. Acceptable for the simplicity gain.
-Future polish — Smart Path A scan-then-emit — can drop the redundant blocks
-if author feedback warrants.
 
 ### postMessage types (Phase 1 protocol — Phase 4 reuses unchanged)
 
