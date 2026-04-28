@@ -28,7 +28,7 @@
 |---|---|---|---|
 | 0 | logs/wp-038/phase-0-task.md | (RECON-only) | `b57b69ad` |
 | 1 | logs/wp-038/phase-1-task.md (committed in `b57b69ad`) | `13c029b5` | (incl. in `13c029b5`) |
-| 2 (Close) | logs/wp-038/phase-2-task.md | TBD | TBD |
+| 2 (Close) | logs/wp-038/phase-2-task.md | `d90306b4` | (incl. in `d90306b4`) |
 
 Three-phase ladder (RECON → rewrite → close). May collapse Phase 2 into Phase 1 if Phase 0 RECON shows zero downstream doc impact (i.e. existing CONVENTIONS + SKILL.md require no edits beyond the skill file itself). Decision deferred to Phase 0 §0.5.
 

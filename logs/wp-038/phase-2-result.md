@@ -92,5 +92,5 @@ Approved by Operator post-verification with one correction: arch-test target in 
 
 ## Git
 
-- Phase 2 commit: `<sha>` — `docs(wp-038): WP-038 Close — cross-doc batch + saved memory + status flip [WP-038 phase 2]`
-- Phase 2 SHA backfill (optional follow-up): `<sha>` — `docs(wp-038): backfill phase 2 SHA in commit ladder + result.md [WP-038 phase 2 followup]`
+- Phase 2 commit: `d90306b4` — `docs(wp-038): WP-038 Close — cross-doc batch + saved memory + status flip [WP-038 phase 2]`
+- Phase 2 SHA backfill (follow-up): see commit immediately following `d90306b4` — `docs(wp-038): backfill phase 2 SHA in commit ladder + result.md [WP-038 phase 2 followup]`
