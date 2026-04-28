@@ -24,6 +24,7 @@
 // switch BP via ↗ first to edit elsewhere.
 
 import type { ReactNode } from 'react'
+import { Tooltip } from '@cmsmasters/ui'
 import type { InspectorBp } from './Inspector'
 import { getPropertyMeta, type PropertyMeta } from './property-meta'
 
@@ -87,12 +88,24 @@ export function PropertyRow(props: PropertyRowProps) {
       data-property={label}
       className="flex items-center gap-2 py-1 text-[length:var(--text-xs-font-size)]"
     >
-      <div
-        className="w-32 shrink-0 truncate font-mono text-[hsl(var(--text-muted))]"
-        title={label}
-      >
-        {label}
-      </div>
+      {meta?.tooltip ? (
+        <Tooltip content={meta.tooltip}>
+          <button
+            type="button"
+            data-testid={`${testId}-label-trigger`}
+            className="w-32 shrink-0 cursor-help truncate rounded text-left font-mono text-[hsl(var(--text-muted))] underline decoration-dotted underline-offset-2 hover:text-[hsl(var(--text-primary))] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[hsl(var(--ring))]"
+          >
+            {label}
+          </button>
+        </Tooltip>
+      ) : (
+        <div
+          className="w-32 shrink-0 truncate font-mono text-[hsl(var(--text-muted))]"
+          title={label}
+        >
+          {label}
+        </div>
+      )}
 
       <div className="flex grow items-center gap-1">
         {BPs.map((bp) => {

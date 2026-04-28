@@ -585,12 +585,14 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
           data-property="display"
           data-testid="property-row-display"
         >
-          <div
-            class="w-32 shrink-0 truncate font-mono text-[hsl(var(--text-muted))]"
-            title="display"
+          <button
+            class="w-32 shrink-0 cursor-help truncate rounded text-left font-mono text-[hsl(var(--text-muted))] underline decoration-dotted underline-offset-2 hover:text-[hsl(var(--text-primary))] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[hsl(var(--ring))]"
+            data-state="closed"
+            data-testid="property-row-display-label-trigger"
+            type="button"
           >
             display
-          </div>
+          </button>
           <div
             class="flex min-w-0 flex-1 items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
             data-active="true"
@@ -610,12 +612,14 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
           data-property="align-items"
           data-testid="property-row-align-items"
         >
-          <div
-            class="w-32 shrink-0 truncate font-mono text-[hsl(var(--text-muted))]"
-            title="align-items"
+          <button
+            class="w-32 shrink-0 cursor-help truncate rounded text-left font-mono text-[hsl(var(--text-muted))] underline decoration-dotted underline-offset-2 hover:text-[hsl(var(--text-primary))] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[hsl(var(--ring))]"
+            data-state="closed"
+            data-testid="property-row-align-items-label-trigger"
+            type="button"
           >
             align-items
-          </div>
+          </button>
           <div
             class="flex min-w-0 flex-1 items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
             data-active="true"
@@ -635,12 +639,14 @@ exports[`InspectorPanel — pinned (block-level) > renders Clear button + breadc
           data-property="justify-content"
           data-testid="property-row-justify-content"
         >
-          <div
-            class="w-32 shrink-0 truncate font-mono text-[hsl(var(--text-muted))]"
-            title="justify-content"
+          <button
+            class="w-32 shrink-0 cursor-help truncate rounded text-left font-mono text-[hsl(var(--text-muted))] underline decoration-dotted underline-offset-2 hover:text-[hsl(var(--text-primary))] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[hsl(var(--ring))]"
+            data-state="closed"
+            data-testid="property-row-justify-content-label-trigger"
+            type="button"
           >
             justify-content
-          </div>
+          </button>
           <div
             class="flex min-w-0 flex-1 items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
             data-active="true"

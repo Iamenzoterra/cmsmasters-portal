@@ -7,8 +7,10 @@
 // because Inspector renders it; we ignore InspectorPanel render details
 // (covered by its own snapshot test).
 
+import type { ReactElement } from 'react'
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { act, render, cleanup, fireEvent } from '@testing-library/react'
+import { TooltipProvider } from '@cmsmasters/ui'
 import { Inspector } from '../components/Inspector'
 
 afterEach(() => {
@@ -17,6 +19,14 @@ afterEach(() => {
   // clear them so the next test's mountIframeFixture starts from a clean DOM.
   document.body.querySelectorAll('iframe').forEach((f) => f.remove())
 })
+
+/**
+ * WP-037 Phase 2: TooltipProvider required because Inspector renders
+ * InspectorPanel → PropertyRow which wraps enum-property labels in <Tooltip>.
+ */
+function renderInspector(ui: ReactElement) {
+  return render(<TooltipProvider>{ui}</TooltipProvider>)
+}
 
 type PinReq = {
   type: 'block-forge:inspector-request-pin'
@@ -55,7 +65,7 @@ function dispatchMessage(data: unknown) {
 
 describe('Inspector — slug=null empty state', () => {
   it('renders InspectorPanel with empty placeholder', () => {
-    const { getByTestId } = render(
+    const { getByTestId } = renderInspector(
       <Inspector slug={null} activeBp={1440} onActiveBpChange={() => undefined} />,
     )
     const panel = getByTestId('inspector-panel')
@@ -65,7 +75,7 @@ describe('Inspector — slug=null empty state', () => {
 
   it('ignores all messages when slug is null', () => {
     const onBpChange = vi.fn()
-    render(<Inspector slug={null} activeBp={1440} onActiveBpChange={onBpChange} />)
+    renderInspector(<Inspector slug={null} activeBp={1440} onActiveBpChange={onBpChange} />)
     dispatchMessage({
       type: 'block-forge:inspector-hover',
       slug: 'anything',
@@ -79,7 +89,7 @@ describe('Inspector — slug=null empty state', () => {
 
 describe('Inspector — hover listener', () => {
   it('updates breadcrumb when matching-slug hover message arrives', () => {
-    const { getByTestId, container } = render(
+    const { getByTestId, container } = renderInspector(
       <Inspector slug="hero" activeBp={1440} onActiveBpChange={() => undefined} />,
     )
     dispatchMessage({
@@ -94,7 +104,7 @@ describe('Inspector — hover listener', () => {
   })
 
   it('clears hover on inspector-unhover', () => {
-    const { getByTestId } = render(
+    const { getByTestId } = renderInspector(
       <Inspector slug="hero" activeBp={1440} onActiveBpChange={() => undefined} />,
     )
     dispatchMessage({
@@ -110,7 +120,7 @@ describe('Inspector — hover listener', () => {
   })
 
   it('ignores hover with mismatched slug (slug-filter)', () => {
-    const { getByTestId } = render(
+    const { getByTestId } = renderInspector(
       <Inspector slug="hero" activeBp={1440} onActiveBpChange={() => undefined} />,
     )
     dispatchMessage({
@@ -131,7 +141,7 @@ describe('Inspector — click-to-pin gesture', () => {
   })
 
   it('forwards element-click as inspector-request-pin to the iframe', () => {
-    render(<Inspector slug="hero" activeBp={1440} onActiveBpChange={() => undefined} />)
+    renderInspector(<Inspector slug="hero" activeBp={1440} onActiveBpChange={() => undefined} />)
     dispatchMessage({
       type: 'block-forge:element-click',
       slug: 'hero',
@@ -147,7 +157,7 @@ describe('Inspector — click-to-pin gesture', () => {
   })
 
   it('updates pinned state on inspector-pin-applied (renders Clear button)', () => {
-    const { getByTestId, queryByTestId } = render(
+    const { getByTestId, queryByTestId } = renderInspector(
       <Inspector slug="hero" activeBp={1440} onActiveBpChange={() => undefined} />,
     )
     expect(queryByTestId('inspector-clear-pin')).toBeNull()
@@ -164,7 +174,7 @@ describe('Inspector — click-to-pin gesture', () => {
   })
 
   it('clears pinned state on inspector-pin-applied with selector=null', () => {
-    const { queryByTestId } = render(
+    const { queryByTestId } = renderInspector(
       <Inspector slug="hero" activeBp={1440} onActiveBpChange={() => undefined} />,
     )
     dispatchMessage({
@@ -192,7 +202,7 @@ describe('Inspector — Escape clears pin', () => {
   })
 
   it('Escape sends __clear__ sentinel when pin is active', () => {
-    render(<Inspector slug="hero" activeBp={1440} onActiveBpChange={() => undefined} />)
+    renderInspector(<Inspector slug="hero" activeBp={1440} onActiveBpChange={() => undefined} />)
     // First, establish a pin
     dispatchMessage({
       type: 'block-forge:inspector-pin-applied',
@@ -209,7 +219,7 @@ describe('Inspector — Escape clears pin', () => {
   })
 
   it('Escape with no pin does NOT post any message (listener gated on pinned)', () => {
-    render(<Inspector slug="hero" activeBp={1440} onActiveBpChange={() => undefined} />)
+    renderInspector(<Inspector slug="hero" activeBp={1440} onActiveBpChange={() => undefined} />)
     iframeSpy.mockClear()
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(iframeSpy).not.toHaveBeenCalled()
@@ -222,7 +232,7 @@ describe('Inspector — slug change clears pin (block switch)', () => {
   })
 
   it('clears pinned state when slug prop changes', () => {
-    const { rerender, queryByTestId } = render(
+    const { rerender, queryByTestId } = renderInspector(
       <Inspector slug="hero" activeBp={1440} onActiveBpChange={() => undefined} />,
     )
     dispatchMessage({
@@ -233,7 +243,11 @@ describe('Inspector — slug change clears pin (block switch)', () => {
       computedStyle: {},
     })
     expect(queryByTestId('inspector-clear-pin')).toBeTruthy()
-    rerender(<Inspector slug="footer" activeBp={1440} onActiveBpChange={() => undefined} />)
+    rerender(
+      <TooltipProvider>
+        <Inspector slug="footer" activeBp={1440} onActiveBpChange={() => undefined} />
+      </TooltipProvider>,
+    )
     expect(queryByTestId('inspector-clear-pin')).toBeNull()
   })
 })
@@ -250,7 +264,7 @@ describe('Inspector — BP change re-pins', () => {
   })
 
   it('re-issues inspector-request-pin when activeBp changes', () => {
-    const { rerender } = render(
+    const { rerender } = renderInspector(
       <Inspector slug="hero" activeBp={1440} onActiveBpChange={() => undefined} />,
     )
     // Establish pin at 1440
@@ -263,7 +277,11 @@ describe('Inspector — BP change re-pins', () => {
     })
     iframeSpy.mockClear()
     // Switch BP — Inspector should re-pin after a short defer
-    rerender(<Inspector slug="hero" activeBp={768} onActiveBpChange={() => undefined} />)
+    rerender(
+      <TooltipProvider>
+        <Inspector slug="hero" activeBp={768} onActiveBpChange={() => undefined} />
+      </TooltipProvider>,
+    )
     // No immediate post (defer ~60ms for the new iframe IIFE to register)
     expect(iframeSpy).not.toHaveBeenCalled()
     vi.advanceTimersByTime(120)
@@ -273,11 +291,15 @@ describe('Inspector — BP change re-pins', () => {
   })
 
   it('does NOT re-pin when activeBp changes but no current pin', () => {
-    const { rerender } = render(
+    const { rerender } = renderInspector(
       <Inspector slug="hero" activeBp={1440} onActiveBpChange={() => undefined} />,
     )
     iframeSpy.mockClear()
-    rerender(<Inspector slug="hero" activeBp={768} onActiveBpChange={() => undefined} />)
+    rerender(
+      <TooltipProvider>
+        <Inspector slug="hero" activeBp={768} onActiveBpChange={() => undefined} />
+      </TooltipProvider>,
+    )
     vi.advanceTimersByTime(200)
     expect(iframeSpy).not.toHaveBeenCalled()
   })
@@ -286,7 +308,7 @@ describe('Inspector — BP change re-pins', () => {
 describe('Inspector — BP picker', () => {
   it('clicking inspector-bp-768 calls onActiveBpChange(768)', () => {
     const onBpChange = vi.fn()
-    const { getByTestId } = render(
+    const { getByTestId } = renderInspector(
       <Inspector slug="hero" activeBp={1440} onActiveBpChange={onBpChange} />,
     )
     fireEvent.click(getByTestId('inspector-bp-768'))

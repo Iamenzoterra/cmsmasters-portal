@@ -17,6 +17,7 @@
 // "(custom)" option so legacy tweaks survive.
 
 import { useEffect, useRef, type ReactNode } from 'react'
+import { Tooltip } from '@cmsmasters/ui'
 import { getPropertyMeta, type PropertyMeta } from '../lib/property-meta'
 
 export interface PropertyRowProps {
@@ -107,12 +108,24 @@ export function PropertyRow(props: PropertyRowProps) {
       data-property={label}
       className="flex items-center gap-2 py-1 text-[length:var(--text-xs-font-size)]"
     >
-      <div
-        className="w-32 shrink-0 truncate font-mono text-[hsl(var(--text-muted))]"
-        title={label}
-      >
-        {label}
-      </div>
+      {meta?.tooltip ? (
+        <Tooltip content={meta.tooltip}>
+          <button
+            type="button"
+            data-testid={`${testId}-label-trigger`}
+            className="w-32 shrink-0 cursor-help truncate rounded text-left font-mono text-[hsl(var(--text-muted))] underline decoration-dotted underline-offset-2 hover:text-[hsl(var(--text-primary))] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[hsl(var(--ring))]"
+          >
+            {label}
+          </button>
+        </Tooltip>
+      ) : (
+        <div
+          className="w-32 shrink-0 truncate font-mono text-[hsl(var(--text-muted))]"
+          title={label}
+        >
+          {label}
+        </div>
+      )}
 
       <div
         data-active="true"

@@ -2,12 +2,18 @@
 // WP-033 Phase 4 — Studio mirror of tools/block-forge InspectorPanel.test.tsx
 // (cross-surface test mirror per Phase 4 Ruling 1).
 
+import type { ReactElement } from 'react'
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup } from '@testing-library/react'
+import { TooltipProvider } from '@cmsmasters/ui'
 import { InspectorPanel } from '../InspectorPanel'
 import type { PinState } from '../Inspector'
 
 afterEach(cleanup)
+
+function renderPanel(ui: ReactElement) {
+  return render(<TooltipProvider>{ui}</TooltipProvider>)
+}
 
 const PINNED_BLOCK: PinState = {
   selector: '.cta',
@@ -55,7 +61,7 @@ const PINNED_GRID: PinState = {
 
 describe('InspectorPanel — empty state (no slug)', () => {
   it('renders empty placeholder', () => {
-    const { container } = render(
+    const { container } = renderPanel(
       <InspectorPanel
         slug={null}
         hovered={null}
@@ -71,7 +77,7 @@ describe('InspectorPanel — empty state (no slug)', () => {
 
 describe('InspectorPanel — populated, no hover/pin', () => {
   it('renders header + breadcrumb hint + BP picker + properties-empty hint', () => {
-    const { container, getByTestId } = render(
+    const { container, getByTestId } = renderPanel(
       <InspectorPanel
         slug="hero"
         hovered={null}
@@ -88,7 +94,7 @@ describe('InspectorPanel — populated, no hover/pin', () => {
 
 describe('InspectorPanel — hover only', () => {
   it('renders blue dot + selector in muted breadcrumb', () => {
-    const { container, getByTestId } = render(
+    const { container, getByTestId } = renderPanel(
       <InspectorPanel
         slug="hero"
         hovered={{ selector: 'h2.title', rect: { x: 0, y: 0, w: 100, h: 40 } }}
@@ -105,7 +111,7 @@ describe('InspectorPanel — hover only', () => {
 
 describe('InspectorPanel — pinned (block-level)', () => {
   it('renders Clear button + breadcrumb + 4 property sections', () => {
-    const { container, getByTestId } = render(
+    const { container, getByTestId } = renderPanel(
       <InspectorPanel
         slug="hero"
         hovered={null}
@@ -127,7 +133,7 @@ describe('InspectorPanel — pinned (block-level)', () => {
 
 describe('InspectorPanel — section conditional rows', () => {
   it('display:block → neither flex-direction nor grid-template-columns', () => {
-    const { container } = render(
+    const { container } = renderPanel(
       <InspectorPanel
         slug="hero"
         hovered={null}
@@ -142,7 +148,7 @@ describe('InspectorPanel — section conditional rows', () => {
   })
 
   it('display:flex → flex-direction row appears, no grid-template-columns', () => {
-    const { container } = render(
+    const { container } = renderPanel(
       <InspectorPanel
         slug="hero"
         hovered={null}
@@ -157,7 +163,7 @@ describe('InspectorPanel — section conditional rows', () => {
   })
 
   it('display:grid → grid-template-columns row appears, no flex-direction', () => {
-    const { container } = render(
+    const { container } = renderPanel(
       <InspectorPanel
         slug="hero"
         hovered={null}
@@ -172,7 +178,7 @@ describe('InspectorPanel — section conditional rows', () => {
   })
 
   it('gap row appears only when computedStyle has gap/rowGap/columnGap', () => {
-    const { container: blockContainer } = render(
+    const { container: blockContainer } = renderPanel(
       <InspectorPanel
         slug="hero"
         hovered={null}
@@ -186,7 +192,7 @@ describe('InspectorPanel — section conditional rows', () => {
 
     cleanup()
 
-    const { container: flexContainer } = render(
+    const { container: flexContainer } = renderPanel(
       <InspectorPanel
         slug="hero"
         hovered={null}
@@ -202,7 +208,7 @@ describe('InspectorPanel — section conditional rows', () => {
 
 describe('InspectorPanel — Visibility section', () => {
   it('renders disabled checkbox when no onVisibilityToggle (read-only fallback)', () => {
-    const { getByTestId } = render(
+    const { getByTestId } = renderPanel(
       <InspectorPanel
         slug="hero"
         hovered={null}
@@ -218,7 +224,7 @@ describe('InspectorPanel — Visibility section', () => {
   })
 
   it('renders enabled checkbox when onVisibilityToggle provided', () => {
-    const { getByTestId } = render(
+    const { getByTestId } = renderPanel(
       <InspectorPanel
         slug="hero"
         hovered={null}
@@ -235,7 +241,7 @@ describe('InspectorPanel — Visibility section', () => {
   })
 
   it('reflects isHiddenAtActiveBp=true → checked', () => {
-    const { getByTestId } = render(
+    const { getByTestId } = renderPanel(
       <InspectorPanel
         slug="hero"
         hovered={null}
@@ -255,7 +261,7 @@ describe('InspectorPanel — Visibility section', () => {
     const { vi } = await import('vitest')
     const { fireEvent } = await import('@testing-library/react')
     const onToggle = vi.fn()
-    const { getByTestId } = render(
+    const { getByTestId } = renderPanel(
       <InspectorPanel
         slug="hero"
         hovered={null}
@@ -275,7 +281,7 @@ describe('InspectorPanel — Visibility section', () => {
     const { vi } = await import('vitest')
     const { fireEvent } = await import('@testing-library/react')
     const onToggle = vi.fn()
-    const { getByTestId } = render(
+    const { getByTestId } = renderPanel(
       <InspectorPanel
         slug="hero"
         hovered={null}
@@ -295,7 +301,7 @@ describe('InspectorPanel — Visibility section', () => {
 
 describe('InspectorPanel — BP picker', () => {
   it('renders 3 BP radios with active one aria-checked', () => {
-    const { getAllByRole } = render(
+    const { getAllByRole } = renderPanel(
       <InspectorPanel
         slug="hero"
         hovered={null}
@@ -313,7 +319,7 @@ describe('InspectorPanel — BP picker', () => {
   })
 
   it('exposes data-testid for each BP option', () => {
-    const { getByTestId } = render(
+    const { getByTestId } = renderPanel(
       <InspectorPanel
         slug="hero"
         hovered={null}

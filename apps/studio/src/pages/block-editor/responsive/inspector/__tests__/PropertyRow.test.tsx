@@ -1,12 +1,20 @@
 // @vitest-environment jsdom
 // WP-033 Phase 4 — Studio mirror of tools/block-forge/src/__tests__/PropertyRow.test.tsx
 // (cross-surface test mirror per Phase 4 Ruling 1).
+// WP-037 Phase 2 — TooltipProvider wrapper helper added; all renders go through
+// renderRow() so enum-label tests (which trigger Tooltip) get a Provider.
 
+import type { ReactElement } from 'react'
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, cleanup, fireEvent } from '@testing-library/react'
+import { TooltipProvider } from '@cmsmasters/ui'
 import { PropertyRow } from '../PropertyRow'
 
 afterEach(cleanup)
+
+function renderRow(ui: ReactElement) {
+  return render(<TooltipProvider>{ui}</TooltipProvider>)
+}
 
 function makeValues(activeBp: 375 | 768 | 1440, value: string) {
   return {
@@ -18,7 +26,7 @@ function makeValues(activeBp: 375 | 768 | 1440, value: string) {
 
 describe('PropertyRow — label rendering', () => {
   it('renders the property label', () => {
-    const { getByText } = render(
+    const { getByText } = renderRow(
       <PropertyRow
         label="font-size"
         valuesByBp={makeValues(1440, '16px')}
@@ -30,7 +38,7 @@ describe('PropertyRow — label rendering', () => {
   })
 
   it('uses label as default data-testid', () => {
-    const { getByTestId } = render(
+    const { getByTestId } = renderRow(
       <PropertyRow
         label="font-size"
         valuesByBp={makeValues(1440, '16px')}
@@ -44,7 +52,7 @@ describe('PropertyRow — label rendering', () => {
 
 describe('PropertyRow — valuesByBp sourcing', () => {
   it('shows the value at the active BP cell', () => {
-    const { getByTestId } = render(
+    const { getByTestId } = renderRow(
       <PropertyRow
         label="font-size"
         valuesByBp={makeValues(1440, '16px')}
@@ -56,7 +64,7 @@ describe('PropertyRow — valuesByBp sourcing', () => {
   })
 
   it('shows em-dash on inactive cells (active-only sourcing)', () => {
-    const { getByTestId } = render(
+    const { getByTestId } = renderRow(
       <PropertyRow
         label="font-size"
         valuesByBp={makeValues(1440, '16px')}
@@ -71,7 +79,7 @@ describe('PropertyRow — valuesByBp sourcing', () => {
 
 describe('PropertyRow — active vs inactive cell attributes', () => {
   it('marks the active BP cell with data-active="true"', () => {
-    const { getByTestId } = render(
+    const { getByTestId } = renderRow(
       <PropertyRow
         label="font-size"
         valuesByBp={makeValues(768, '14px')}
@@ -89,7 +97,7 @@ describe('PropertyRow — active vs inactive cell attributes', () => {
   })
 
   it('marks the empty cells with data-empty="true"', () => {
-    const { getByTestId } = render(
+    const { getByTestId } = renderRow(
       <PropertyRow
         label="font-size"
         valuesByBp={makeValues(1440, '16px')}
@@ -106,7 +114,7 @@ describe('PropertyRow — active vs inactive cell attributes', () => {
 
 describe('PropertyRow — ↗ view icon', () => {
   it('renders ↗ button only on inactive cells', () => {
-    const { getByTestId, queryByTestId } = render(
+    const { getByTestId, queryByTestId } = renderRow(
       <PropertyRow
         label="font-size"
         valuesByBp={makeValues(1440, '16px')}
@@ -121,7 +129,7 @@ describe('PropertyRow — ↗ view icon', () => {
 
   it('clicking ↗ on inactive cell calls onBpSwitch with that BP', () => {
     const onBpSwitch = vi.fn()
-    const { getByTestId } = render(
+    const { getByTestId } = renderRow(
       <PropertyRow
         label="font-size"
         valuesByBp={makeValues(1440, '16px')}
@@ -139,7 +147,7 @@ describe('PropertyRow — ↗ view icon', () => {
 
 describe('PropertyRow — tokenChip slot', () => {
   it('renders chip slot when tokenChip is set', () => {
-    const { getByTestId } = render(
+    const { getByTestId } = renderRow(
       <PropertyRow
         label="font-size"
         valuesByBp={makeValues(1440, '16px')}
@@ -153,7 +161,7 @@ describe('PropertyRow — tokenChip slot', () => {
   })
 
   it('does NOT render chip slot when tokenChip is undefined', () => {
-    const { queryByTestId } = render(
+    const { queryByTestId } = renderRow(
       <PropertyRow
         label="font-size"
         valuesByBp={makeValues(1440, '16px')}
@@ -167,7 +175,7 @@ describe('PropertyRow — tokenChip slot', () => {
 
 describe('PropertyRow — inheritedFrom slot', () => {
   it('renders "(inherited from <selector>)" suffix when set', () => {
-    const { getByTestId } = render(
+    const { getByTestId } = renderRow(
       <PropertyRow
         label="color"
         valuesByBp={makeValues(1440, 'rgb(0,0,0)')}
@@ -181,7 +189,7 @@ describe('PropertyRow — inheritedFrom slot', () => {
   })
 
   it('does NOT render inherited label when undefined', () => {
-    const { queryByTestId } = render(
+    const { queryByTestId } = renderRow(
       <PropertyRow
         label="color"
         valuesByBp={makeValues(1440, 'rgb(0,0,0)')}
@@ -195,7 +203,7 @@ describe('PropertyRow — inheritedFrom slot', () => {
 
 describe('PropertyRow — BP labels', () => {
   it('renders M/T/D short labels for BPs 375/768/1440', () => {
-    const { container } = render(
+    const { container } = renderRow(
       <PropertyRow
         label="font-size"
         valuesByBp={makeValues(1440, '16px')}
@@ -214,7 +222,7 @@ describe('PropertyRow — BP labels', () => {
 
 describe('PropertyRow — typed enum inputs (WP-037 Phase 1)', () => {
   it('renders <select> instead of <input> on the active cell for enum property', () => {
-    const { getByTestId, queryByTestId } = render(
+    const { getByTestId, queryByTestId } = renderRow(
       <PropertyRow
         label="display"
         valuesByBp={makeValues(1440, 'block')}
@@ -228,7 +236,7 @@ describe('PropertyRow — typed enum inputs (WP-037 Phase 1)', () => {
   })
 
   it('inactive cells stay as text spans even for enum property', () => {
-    const { getByTestId, queryByTestId } = render(
+    const { getByTestId, queryByTestId } = renderRow(
       <PropertyRow
         label="display"
         valuesByBp={{ 375: null, 768: null, 1440: 'block' }}
@@ -245,7 +253,7 @@ describe('PropertyRow — typed enum inputs (WP-037 Phase 1)', () => {
   })
 
   it('lists all PROPERTY_META.options as <option> entries', () => {
-    const { getByTestId } = render(
+    const { getByTestId } = renderRow(
       <PropertyRow
         label="flex-direction"
         valuesByBp={makeValues(1440, 'row')}
@@ -261,7 +269,7 @@ describe('PropertyRow — typed enum inputs (WP-037 Phase 1)', () => {
 
   it('selecting an option fires onCellEdit(activeBp, value)', () => {
     const onCellEdit = vi.fn()
-    const { getByTestId } = render(
+    const { getByTestId } = renderRow(
       <PropertyRow
         label="align-items"
         valuesByBp={makeValues(768, 'stretch')}
@@ -277,7 +285,7 @@ describe('PropertyRow — typed enum inputs (WP-037 Phase 1)', () => {
   })
 
   it('custom value (not in PROPERTY_META.options) renders as disabled "(custom)" option', () => {
-    const { getByTestId } = render(
+    const { getByTestId } = renderRow(
       <PropertyRow
         label="display"
         valuesByBp={makeValues(1440, 'table-cell')}
@@ -295,7 +303,7 @@ describe('PropertyRow — typed enum inputs (WP-037 Phase 1)', () => {
   })
 
   it('enum property in read-only mode (no onCellEdit) still renders text span', () => {
-    const { getByTestId, queryByTestId } = render(
+    const { getByTestId, queryByTestId } = renderRow(
       <PropertyRow
         label="display"
         valuesByBp={makeValues(1440, 'flex')}
@@ -309,7 +317,7 @@ describe('PropertyRow — typed enum inputs (WP-037 Phase 1)', () => {
 
   it('selecting same value as current is a no-op (no onCellEdit call)', () => {
     const onCellEdit = vi.fn()
-    const { getByTestId } = render(
+    const { getByTestId } = renderRow(
       <PropertyRow
         label="justify-content"
         valuesByBp={makeValues(1440, 'center')}
@@ -324,7 +332,7 @@ describe('PropertyRow — typed enum inputs (WP-037 Phase 1)', () => {
   })
 
   it('non-enum property with onCellEdit still renders <input> (numeric property)', () => {
-    const { getByTestId, queryByTestId } = render(
+    const { getByTestId, queryByTestId } = renderRow(
       <PropertyRow
         label="font-size"
         valuesByBp={makeValues(1440, '16px')}
@@ -343,7 +351,7 @@ describe('PropertyRow — typed enum inputs (WP-037 Phase 1)', () => {
       tooltip: 'Custom',
       options: ['x', 'y', 'z'] as const,
     }
-    const { getByTestId } = render(
+    const { getByTestId } = renderRow(
       <PropertyRow
         label="font-size"
         valuesByBp={makeValues(1440, 'x')}
@@ -356,5 +364,66 @@ describe('PropertyRow — typed enum inputs (WP-037 Phase 1)', () => {
     const select = getByTestId('property-row-font-size-select-1440') as HTMLSelectElement
     const optionValues = Array.from(select.options).map((o) => o.value)
     expect(optionValues).toEqual(['x', 'y', 'z'])
+  })
+})
+
+describe('PropertyRow — label tooltip (WP-037 Phase 2)', () => {
+  it('renders <button> trigger for properties with PROPERTY_META.tooltip', () => {
+    const { getByTestId } = renderRow(
+      <PropertyRow
+        label="display"
+        valuesByBp={makeValues(1440, 'flex')}
+        activeBp={1440}
+        onBpSwitch={() => undefined}
+      />,
+    )
+    const trigger = getByTestId('property-row-display-label-trigger')
+    expect(trigger).toBeTruthy()
+    expect(trigger.tagName.toLowerCase()).toBe('button')
+    expect(trigger.textContent).toBe('display')
+  })
+
+  it('label trigger has cursor-help affordance class', () => {
+    const { getByTestId } = renderRow(
+      <PropertyRow
+        label="flex-direction"
+        valuesByBp={makeValues(1440, 'row')}
+        activeBp={1440}
+        onBpSwitch={() => undefined}
+      />,
+    )
+    const trigger = getByTestId('property-row-flex-direction-label-trigger')
+    expect(trigger.className).toContain('cursor-help')
+  })
+
+  it('renders plain <div> (no button, no tooltip) for properties without PROPERTY_META.tooltip', () => {
+    const { queryByTestId, getByText } = renderRow(
+      <PropertyRow
+        label="font-size"
+        valuesByBp={makeValues(1440, '16px')}
+        activeBp={1440}
+        onBpSwitch={() => undefined}
+      />,
+    )
+    expect(queryByTestId('property-row-font-size-label-trigger')).toBeNull()
+    expect(getByText('font-size')).toBeTruthy()
+  })
+
+  it('explicit meta with empty tooltip falls back to plain <div>', () => {
+    const meta = {
+      kind: 'enum' as const,
+      tooltip: '',
+      options: ['x', 'y'] as const,
+    }
+    const { queryByTestId } = renderRow(
+      <PropertyRow
+        label="font-size"
+        valuesByBp={makeValues(1440, 'x')}
+        activeBp={1440}
+        onBpSwitch={() => undefined}
+        meta={meta}
+      />,
+    )
+    expect(queryByTestId('property-row-font-size-label-trigger')).toBeNull()
   })
 })

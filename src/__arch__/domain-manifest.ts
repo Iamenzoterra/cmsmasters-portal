@@ -138,6 +138,11 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'packages/ui/src/primitives/button.tsx',
       'packages/ui/src/primitives/drawer.tsx',
       'packages/ui/src/primitives/slider.tsx',
+      // WP-037 Phase 2: Tooltip primitive (first in DS). Radix-underpinned
+      // hover/focus hint surface. Consumed by Inspector PropertyRow on both
+      // surfaces (block-forge + Studio) for label tooltips from
+      // PROPERTY_META.tooltip text.
+      'packages/ui/src/primitives/tooltip.tsx',
       'packages/ui/src/portal/animate-utils.js',
       'packages/ui/src/portal/portal-blocks.css',
       'packages/ui/src/theme/tokens.css',

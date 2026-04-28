@@ -81,12 +81,14 @@ exports[`PropertyRow — snapshot > matches snapshot — enum property renders s
     data-property="display"
     data-testid="property-row-display"
   >
-    <div
-      class="w-32 shrink-0 truncate font-mono text-[hsl(var(--text-muted))]"
-      title="display"
+    <button
+      class="w-32 shrink-0 cursor-help truncate rounded text-left font-mono text-[hsl(var(--text-muted))] underline decoration-dotted underline-offset-2 hover:text-[hsl(var(--text-primary))] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[hsl(var(--ring))]"
+      data-state="closed"
+      data-testid="property-row-display-label-trigger"
+      type="button"
     >
       display
-    </div>
+    </button>
     <div
       class="flex min-w-0 flex-1 items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
       data-active="true"
@@ -156,12 +158,14 @@ exports[`PropertyRow — snapshot > matches snapshot — enum with custom (legac
     data-property="display"
     data-testid="property-row-display"
   >
-    <div
-      class="w-32 shrink-0 truncate font-mono text-[hsl(var(--text-muted))]"
-      title="display"
+    <button
+      class="w-32 shrink-0 cursor-help truncate rounded text-left font-mono text-[hsl(var(--text-muted))] underline decoration-dotted underline-offset-2 hover:text-[hsl(var(--text-primary))] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[hsl(var(--ring))]"
+      data-state="closed"
+      data-testid="property-row-display-label-trigger"
+      type="button"
     >
       display
-    </div>
+    </button>
     <div
       class="flex min-w-0 flex-1 items-center gap-1 rounded border border-[hsl(var(--text-link))] bg-[hsl(var(--bg-surface-alt))] px-2 py-1 text-[hsl(var(--text-primary))]"
       data-active="true"

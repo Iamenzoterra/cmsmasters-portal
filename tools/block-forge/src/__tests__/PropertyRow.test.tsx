@@ -12,20 +12,31 @@
 //   re-emits with prior unit (or 'px' default); keyword passes through.
 // - Snapshot pins the typical-row shape.
 
+import type { ReactElement } from 'react'
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, cleanup, fireEvent } from '@testing-library/react'
+import { TooltipProvider } from '@cmsmasters/ui'
 import { PropertyRow } from '../components/PropertyRow'
 
 afterEach(cleanup)
 
+/**
+ * WP-037 Phase 2: TooltipProvider is required in the React tree when
+ * rendering enum-label PropertyRow (which wraps the label in <Tooltip>).
+ * Wraps the render so individual tests don't repeat the provider.
+ */
+function renderRow(ui: ReactElement) {
+  return render(<TooltipProvider>{ui}</TooltipProvider>)
+}
+
 describe('PropertyRow — label rendering', () => {
   it('renders the property label', () => {
-    const { getByText } = render(<PropertyRow label="font-size" value="16px" />)
+    const { getByText } = renderRow(<PropertyRow label="font-size" value="16px" />)
     expect(getByText('font-size')).toBeTruthy()
   })
 
   it('uses label as default data-testid', () => {
-    const { getByTestId } = render(<PropertyRow label="font-size" value="16px" />)
+    const { getByTestId } = renderRow(<PropertyRow label="font-size" value="16px" />)
     expect(getByTestId('property-row-font-size')).toBeTruthy()
   })
 
@@ -39,23 +50,23 @@ describe('PropertyRow — label rendering', () => {
 
 describe('PropertyRow — value display', () => {
   it('renders the value in the read-only cell when onEdit is absent', () => {
-    const { getByTestId } = render(<PropertyRow label="display" value="flex" />)
+    const { getByTestId } = renderRow(<PropertyRow label="display" value="flex" />)
     expect(getByTestId('property-row-display-cell').textContent).toBe('flex')
   })
 
   it('renders em-dash when value is null', () => {
-    const { container } = render(<PropertyRow label="font-size" value={null} />)
+    const { container } = renderRow(<PropertyRow label="font-size" value={null} />)
     expect(container.textContent).toContain('—')
   })
 
   it('marks empty cell with data-empty="true"', () => {
-    const { container } = render(<PropertyRow label="font-size" value={null} />)
+    const { container } = renderRow(<PropertyRow label="font-size" value={null} />)
     const cellWrap = container.querySelector('[data-active="true"]')
     expect(cellWrap?.getAttribute('data-empty')).toBe('true')
   })
 
   it('marks populated cell with data-empty="false"', () => {
-    const { container } = render(<PropertyRow label="font-size" value="16px" />)
+    const { container } = renderRow(<PropertyRow label="font-size" value="16px" />)
     const cellWrap = container.querySelector('[data-active="true"]')
     expect(cellWrap?.getAttribute('data-empty')).toBe('false')
   })
@@ -96,7 +107,7 @@ describe('PropertyRow — editable mode', () => {
   })
 
   it('marks read-only cell with data-editable="false"', () => {
-    const { container } = render(<PropertyRow label="font-size" value="16px" />)
+    const { container } = renderRow(<PropertyRow label="font-size" value="16px" />)
     const cellWrap = container.querySelector('[data-active="true"]')
     expect(cellWrap?.getAttribute('data-editable')).toBe('false')
   })
@@ -152,7 +163,7 @@ describe('PropertyRow — tokenChip slot', () => {
   })
 
   it('does NOT render chip slot when tokenChip is undefined', () => {
-    const { queryByTestId } = render(<PropertyRow label="font-size" value="16px" />)
+    const { queryByTestId } = renderRow(<PropertyRow label="font-size" value="16px" />)
     expect(queryByTestId('property-row-font-size-chip-slot')).toBeNull()
   })
 })
@@ -167,7 +178,7 @@ describe('PropertyRow — inheritedFrom slot', () => {
   })
 
   it('does NOT render inherited label when undefined', () => {
-    const { queryByTestId } = render(<PropertyRow label="color" value="rgb(0,0,0)" />)
+    const { queryByTestId } = renderRow(<PropertyRow label="color" value="rgb(0,0,0)" />)
     expect(queryByTestId('property-row-color-inherited')).toBeNull()
   })
 })
@@ -210,7 +221,7 @@ describe('PropertyRow — unit handling', () => {
 
 describe('PropertyRow — typed enum inputs (WP-037 Phase 1)', () => {
   it('renders <select> instead of <input> for enum property when editable', () => {
-    const { getByTestId, queryByTestId } = render(
+    const { getByTestId, queryByTestId } = renderRow(
       <PropertyRow label="display" value="block" onEdit={() => undefined} />,
     )
     expect(getByTestId('property-row-display-select')).toBeTruthy()
@@ -218,7 +229,7 @@ describe('PropertyRow — typed enum inputs (WP-037 Phase 1)', () => {
   })
 
   it('lists all PROPERTY_META.options as <option> entries', () => {
-    const { getByTestId } = render(
+    const { getByTestId } = renderRow(
       <PropertyRow label="flex-direction" value="row" onEdit={() => undefined} />,
     )
     const select = getByTestId('property-row-flex-direction-select') as HTMLSelectElement
@@ -229,7 +240,7 @@ describe('PropertyRow — typed enum inputs (WP-037 Phase 1)', () => {
 
   it('selecting an option fires onEdit with the option value', () => {
     const onEdit = vi.fn()
-    const { getByTestId } = render(
+    const { getByTestId } = renderRow(
       <PropertyRow label="align-items" value="stretch" onEdit={onEdit} />,
     )
     const select = getByTestId('property-row-align-items-select') as HTMLSelectElement
@@ -239,7 +250,7 @@ describe('PropertyRow — typed enum inputs (WP-037 Phase 1)', () => {
   })
 
   it('custom value (not in PROPERTY_META.options) renders as disabled "(custom)" option', () => {
-    const { getByTestId } = render(
+    const { getByTestId } = renderRow(
       <PropertyRow label="display" value="table-cell" onEdit={() => undefined} />,
     )
     const select = getByTestId('property-row-display-select') as HTMLSelectElement
@@ -250,7 +261,7 @@ describe('PropertyRow — typed enum inputs (WP-037 Phase 1)', () => {
   })
 
   it('custom value is selected as current select value', () => {
-    const { getByTestId } = render(
+    const { getByTestId } = renderRow(
       <PropertyRow label="display" value="table-cell" onEdit={() => undefined} />,
     )
     const select = getByTestId('property-row-display-select') as HTMLSelectElement
@@ -258,14 +269,16 @@ describe('PropertyRow — typed enum inputs (WP-037 Phase 1)', () => {
   })
 
   it('enum property in read-only mode (no onEdit) still renders <span>, not <select>', () => {
-    const { getByTestId, queryByTestId } = render(<PropertyRow label="display" value="flex" />)
+    const { getByTestId, queryByTestId } = renderRow(
+      <PropertyRow label="display" value="flex" />,
+    )
     expect(getByTestId('property-row-display-cell').textContent).toBe('flex')
     expect(queryByTestId('property-row-display-select')).toBeNull()
   })
 
   it('selecting same value as current is a no-op (no onEdit call)', () => {
     const onEdit = vi.fn()
-    const { getByTestId } = render(
+    const { getByTestId } = renderRow(
       <PropertyRow label="justify-content" value="center" onEdit={onEdit} />,
     )
     const select = getByTestId('property-row-justify-content-select') as HTMLSelectElement
@@ -274,7 +287,7 @@ describe('PropertyRow — typed enum inputs (WP-037 Phase 1)', () => {
   })
 
   it('non-enum property with onEdit still renders <input> (numeric property)', () => {
-    const { getByTestId, queryByTestId } = render(
+    const { getByTestId, queryByTestId } = renderRow(
       <PropertyRow label="font-size" value="16px" onEdit={() => undefined} />,
     )
     expect(getByTestId('property-row-font-size-input')).toBeTruthy()
@@ -287,7 +300,7 @@ describe('PropertyRow — typed enum inputs (WP-037 Phase 1)', () => {
       tooltip: 'Custom',
       options: ['x', 'y', 'z'] as const,
     }
-    const { getByTestId } = render(
+    const { getByTestId } = renderRow(
       <PropertyRow label="font-size" value="x" onEdit={() => undefined} meta={customMeta} />,
     )
     const select = getByTestId('property-row-font-size-select') as HTMLSelectElement
@@ -296,9 +309,46 @@ describe('PropertyRow — typed enum inputs (WP-037 Phase 1)', () => {
   })
 })
 
+describe('PropertyRow — label tooltip (WP-037 Phase 2)', () => {
+  it('renders <button> trigger for properties with PROPERTY_META.tooltip', () => {
+    const { getByTestId } = renderRow(<PropertyRow label="display" value="flex" />)
+    const trigger = getByTestId('property-row-display-label-trigger')
+    expect(trigger).toBeTruthy()
+    expect(trigger.tagName.toLowerCase()).toBe('button')
+    expect(trigger.textContent).toBe('display')
+  })
+
+  it('label trigger has cursor-help affordance class', () => {
+    const { getByTestId } = renderRow(<PropertyRow label="flex-direction" value="row" />)
+    const trigger = getByTestId('property-row-flex-direction-label-trigger')
+    expect(trigger.className).toContain('cursor-help')
+  })
+
+  it('renders plain <div> (no button, no tooltip) for properties without PROPERTY_META.tooltip', () => {
+    const { queryByTestId, getByText } = renderRow(
+      <PropertyRow label="font-size" value="16px" />,
+    )
+    expect(queryByTestId('property-row-font-size-label-trigger')).toBeNull()
+    // Label still renders as a div
+    expect(getByText('font-size')).toBeTruthy()
+  })
+
+  it('explicit meta with empty tooltip falls back to plain <div>', () => {
+    const meta = {
+      kind: 'enum' as const,
+      tooltip: '',
+      options: ['x', 'y'] as const,
+    }
+    const { queryByTestId } = renderRow(
+      <PropertyRow label="font-size" value="x" meta={meta} />,
+    )
+    expect(queryByTestId('property-row-font-size-label-trigger')).toBeNull()
+  })
+})
+
 describe('PropertyRow — snapshot', () => {
   it('matches snapshot — read-only cell with value', () => {
-    const { container } = render(<PropertyRow label="padding-left" value="8px" />)
+    const { container } = renderRow(<PropertyRow label="padding-left" value="8px" />)
     expect(container).toMatchSnapshot()
   })
 
@@ -315,19 +365,19 @@ describe('PropertyRow — snapshot', () => {
   })
 
   it('matches snapshot — empty cell renders em-dash', () => {
-    const { container } = render(<PropertyRow label="font-size" value={null} />)
+    const { container } = renderRow(<PropertyRow label="font-size" value={null} />)
     expect(container).toMatchSnapshot()
   })
 
   it('matches snapshot — enum property renders select with options', () => {
-    const { container } = render(
+    const { container } = renderRow(
       <PropertyRow label="display" value="flex" onEdit={() => undefined} />,
     )
     expect(container).toMatchSnapshot()
   })
 
   it('matches snapshot — enum with custom (legacy) value', () => {
-    const { container } = render(
+    const { container } = renderRow(
       <PropertyRow label="display" value="table-cell" onEdit={() => undefined} />,
     )
     expect(container).toMatchSnapshot()

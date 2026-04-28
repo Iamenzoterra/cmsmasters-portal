@@ -14,3 +14,16 @@ export {
   DrawerHeader,
   DrawerTitle,
 } from './src/primitives/drawer';
+// WP-037 Phase 2 — Tooltip primitive consumed by Inspector PropertyRow on
+// both surfaces (label hover hints from PROPERTY_META.tooltip).
+export {
+  Tooltip,
+  TooltipProvider,
+  TooltipRoot,
+  TooltipTrigger,
+  TooltipPortal,
+  TooltipContent,
+  TooltipArrow,
+  type TooltipProps,
+  type TooltipProviderProps,
+} from './src/primitives/tooltip';
