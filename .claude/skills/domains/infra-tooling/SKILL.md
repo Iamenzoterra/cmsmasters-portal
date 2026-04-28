@@ -329,3 +329,35 @@ status: full
 1. **Live smoke the group + Undo cycle:** `npm run block-forge` → `:7702` → load `global-settings` → see 1 grouped card with "3 selectors" badge → click chevron to expand → click Accept on row 1 → row gets pending pill + Undo button → click Undo → row returns to default Accept/Reject. Round-trip GREEN.
 2. **Verify hover-highlight in expanded group:** above setup, expand group → hover any selector row → that element outlines blue in iframe. Mouse-leave clears.
 3. **Add a new heuristic that should never group** — emit per-selector rationale that embeds something unique to that selector (e.g. childCount, px value). The 5-tuple `groupKey` will naturally separate them.
+
+### Start Here (Inspector typed inputs + tooltips / WP-037)
+1. `tools/block-forge/PARITY.md` §Inspector Typed Inputs + Tooltips (WP-037) — PROPERTY_META schema + Tooltip primitive + PARITY divergence ruling
+2. `tools/block-forge/src/lib/property-meta.ts` — PROPERTY_META source-of-truth (kind/options/tooltip text); 4 LAYOUT enum properties V1
+3. `tools/block-forge/src/components/PropertyRow.tsx` — `<select>` branch when `meta.kind === 'enum'`; `<button>` label trigger when `meta.tooltip` exists
+4. `packages/ui/src/primitives/tooltip.tsx` — first DS-level Tooltip primitive (Radix-based, token-driven, dark popover surface)
+5. `tools/block-forge/src/main.tsx` — `<TooltipProvider>` at React tree root
+
+### Invariants (Inspector typed inputs + tooltips / WP-037)
+- **PROPERTY_META is byte-identical between surfaces.** Mirror file at `apps/studio/src/pages/block-editor/responsive/inspector/property-meta.ts` mod 3-line JSDoc header. Adding a new entry to one MUST add to the other in the same commit.
+- **`<select>` renders ONLY when `isEditable && isEnum && meta.options`.** Non-enum (`kind: 'numeric'` or no entry) stays text input — no regression on numeric properties.
+- **Custom-value fallback prepends a disabled `<option>`** with `value` matching the current legacy value, label `"<value> (custom)"`. The current value must still be selectable (browser default selects it on mount), but user can't re-select disabled options after navigating away.
+- **Label-trigger branch render is gated on `meta?.tooltip`** — properties without curated tooltip text keep the plain `<div>` label. Avoids inconsistent UX (some labels show tooltip, others don't but look identical).
+- **`<TooltipProvider>` MUST wrap the React tree once** at app root (`main.tsx`) — single Provider coordinates `skipDelayDuration` across all instances. Multiple Providers are wasteful but not broken.
+- **`grid-template-columns` is NOT in PROPERTY_META** — it's a free-form template string, not enum. Stays as text input.
+
+### Traps & Gotchas (Inspector typed inputs + tooltips / WP-037)
+- **Tests rendering enum-label `<PropertyRow>` MUST wrap in `<TooltipProvider>`** — Radix Tooltip throws "must be used within TooltipProvider" otherwise. WP-037 added `renderRow` / `renderPanel` / `renderInspector` helpers to all 3 Inspector test files per surface. Forgetting the wrapper produces 5-20 cryptic failures.
+- **`rerender(...)` does NOT reuse the original wrapper.** RTL's `rerender` re-renders the SAME root element with new children. So if your initial render was `<TooltipProvider><X /></TooltipProvider>`, the `rerender(<X newProps />)` call drops the Provider and breaks any nested Tooltip. Wrap the rerender argument explicitly: `rerender(<TooltipProvider><X newProps /></TooltipProvider>)`.
+- **Working-tree drift mistaken for test rot.** Phase 0 RECON initially diagnosed "20 failing PropertyRow tests" as test rot when reality was uncommitted source-file polish in the working tree (single-cell PropertyRow) + matching tests in source. Always `git show HEAD:<path>` vs working tree before declaring rot — the polish was a pristine prepared body of work waiting to commit.
+- **Native `<select>` chevron is OS-styled.** Cannot fully match Inspector's text-input border radius / hover state. Future polish via Radix Select if cross-browser visual consistency becomes a field-data requirement.
+
+### Blast Radius (Inspector typed inputs + tooltips / WP-037)
+- **Adding an entry to `PROPERTY_META`** changes both surfaces' Inspector UX simultaneously. Coordinated edit across the byte-identical mirror required.
+- **Schema change to `PropertyMeta` interface** (e.g. adding a third `kind`) ripples to PropertyRow render branches on both surfaces + 3 test helpers per surface.
+- **Renaming `Tooltip` API in packages/ui** breaks every consumer (currently only Inspector PropertyRow on both surfaces; future portal-wide use will broaden the radius).
+- **Removing `--popover` / `--popover-foreground` tokens** breaks Tooltip primitive visual. These are shadcn semantic tokens — protect them.
+
+### Recipes (Inspector typed inputs + tooltips / WP-037)
+1. **Live smoke the typed input + tooltip:** `npm run block-forge` → `:7702` → load `header` → click on `nav` element to pin → scroll to LAYOUT section → see 4 select dropdowns (display=flex, flex-direction=row, align-items=center, justify-content=space-between) with dotted-underline labels → hover `display` label → tooltip appears with text from `PROPERTY_META.display.tooltip`. Round-trip GREEN.
+2. **Add a new enum entry:** edit BOTH `tools/block-forge/src/lib/property-meta.ts` AND `apps/studio/.../inspector/property-meta.ts` in the same commit. Add entry like `'overflow': { kind: 'enum', tooltip: '...', options: ['visible', 'hidden', 'scroll', 'auto'] }`. Run `npm test` on both surfaces to confirm no PropertyRow test breakage.
+3. **Verify Tooltip Provider coverage:** at app root (`main.tsx`), confirm `<TooltipProvider>` wraps the entire `<App />`. If you see "must be used within TooltipProvider" at runtime in any context, the Provider is missing or the test isn't using the helper.

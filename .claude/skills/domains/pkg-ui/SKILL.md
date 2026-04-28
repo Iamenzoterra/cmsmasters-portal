@@ -56,6 +56,40 @@ import { cn } from '@cmsmasters/ui'
 <div className={cn('base-class', isActive && 'active-class')}>
 ```
 
+```tsx
+// Tooltip primitive (WP-037 — first DS-level tooltip)
+// Wrap app root once to coordinate skipDelayDuration:
+import { TooltipProvider } from '@cmsmasters/ui'
+<TooltipProvider><App /></TooltipProvider>
+
+// Convenience usage — single-child trigger + content text:
+import { Tooltip } from '@cmsmasters/ui'
+<Tooltip content="Direction flex items flow along the main axis…">
+  <button type="button">flex-direction</button>
+</Tooltip>
+
+// Empty content escape — returns children unwrapped (no Provider needed):
+<Tooltip content={undefined}><button>Plain trigger</button></Tooltip>
+
+// Compound API — for rich content, custom positioning, manual portal:
+import {
+  TooltipRoot, TooltipTrigger, TooltipContent, TooltipPortal, TooltipArrow,
+} from '@cmsmasters/ui'
+<TooltipRoot delayDuration={200}>
+  <TooltipTrigger asChild><button>Trigger</button></TooltipTrigger>
+  <TooltipPortal>
+    <TooltipContent side="top" align="center">
+      Rich <strong>ReactNode</strong> content
+      <TooltipArrow />
+    </TooltipContent>
+  </TooltipPortal>
+</TooltipRoot>
+
+// Defaults: side="right" align="start" sideOffset=8 delayDuration=400.
+// Surface: --popover / --popover-foreground (intentionally inverted vs body
+// for high hover-distinct contrast — dark popover on light surfaces).
+```
+
 ```bash
 # Edit responsive tokens (WP-030+):
 cd tools/responsive-tokens-editor && npm run dev   # opens :7703

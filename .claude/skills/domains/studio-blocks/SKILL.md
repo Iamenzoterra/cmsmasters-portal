@@ -224,3 +224,30 @@ Reference: WP-030 Phase 0 Ruling #4 reduced Studio-side Phase 6 work to docs-onl
 1. **Live smoke at Studio:** `npm -w @cmsmasters/studio run dev` → `:5173/blocks/080da794-b6cd-4865-9c2a-7d7586ceaff7` (global-settings UUID) → switch to Responsive tab → 1 grouped card with "3 selectors" badge appears (instead of 3 separate cards) → expand → 3 selector rows visible → Accept on row 1 → row gets pending pill + Undo → click Undo → row returns to default. Round-trip GREEN.
 2. **Multi-iframe hover broadcast verification:** above setup, hover any selector row in expanded group → `data-bf-hover-from-suggestion` attribute appears on the matching element in ALL 3 iframes (1440 + 768 + 375). Confirmable via DevTools or Playwright `page.evaluate(...querySelectorAll('iframe').map(...contentDocument.querySelectorAll(...)))`.
 3. **Add a new heuristic suggestion that should never group** — emit per-selector rationale with selector-unique data (childCount, computed px, etc.). The 5-tuple groupKey will keep them separate.
+
+### Start Here (Inspector typed inputs + tooltips / Studio mirror — WP-037)
+1. `apps/studio/src/pages/block-editor/responsive/PARITY.md` §Inspector Typed Inputs + Tooltips (WP-037) — Studio-side cross-surface contract + active-cell-only `<select>` rendering + Tooltip Provider wrapping
+2. `apps/studio/src/pages/block-editor/responsive/inspector/property-meta.ts` — PROPERTY_META mirror file (byte-identical to block-forge mod 3-line JSDoc header)
+3. `apps/studio/src/pages/block-editor/responsive/inspector/PropertyRow.tsx` — active-cell `<select>` branch when `meta.kind === 'enum'`; label `<button>` trigger when `meta.tooltip` exists (M/T/D grid layout preserved — Phase 0 RECON Ruling 1B)
+4. `apps/studio/src/main.tsx` — `<TooltipProvider>` wraps `<App />` (via `<ToastProvider>`)
+
+### Invariants (Inspector typed inputs + tooltips / Studio mirror — WP-037)
+- **PROPERTY_META content byte-identical** between Studio and block-forge mirror (mod 3-line JSDoc header per Phase 4 Ruling 1 mirror discipline).
+- **Studio renders `<select>` in the ACTIVE M/T/D cell only** — inactive cells stay text spans + ↗ switch button (M/T/D grid UX preserved).
+- **Studio's PropertyRow shape DIVERGES from block-forge** post-WP-033 polish — Studio is M/T/D grid, block-forge is single-cell. Phase 0 RECON Ruling 1B formalizes this; PARITY trio "byte-identical" claim narrowed to PROPERTY_META content + Tooltip primitive consumption.
+- **`<TooltipProvider>` lives at `apps/studio/src/main.tsx`** (between `<ToastProvider>` and `<App />`). Providers compose; ToastProvider doesn't conflict.
+
+### Traps & Gotchas (Inspector typed inputs + tooltips / Studio mirror — WP-037)
+- **Studio Inspector test files need 3 `renderXxx` helpers** — `renderRow` / `renderPanel` / `renderInspector` in `__tests__/PropertyRow.test.tsx`, `…/InspectorPanel.test.tsx`, `…/Inspector.test.tsx` respectively. Pattern: `function renderRow(ui: ReactElement) { return render(<TooltipProvider>{ui}</TooltipProvider>) }`.
+- **Studio's PropertyRow exposes the active-cell `<select>` via `data-testid="property-row-{label}-select-{bp}"`** (note the BP suffix). block-forge's testid is `property-row-{label}-select` (no BP suffix — single-cell). Test mirror is per-shape; don't copy testid patterns blindly.
+- **Custom-value fallback works the same** on both surfaces — but Studio renders the disabled `(custom)` option only in the active cell. Inactive cells show the legacy value as plain text in their span.
+
+### Blast Radius (Inspector typed inputs + tooltips / Studio mirror — WP-037)
+- **Adding to PROPERTY_META** requires coordinated edit on Studio mirror file. Both surfaces' tests must update if a new property entry tests are added.
+- **Removing `<TooltipProvider>` from main.tsx** crashes EVERY Inspector usage where label has tooltip — instant prod break.
+- **Renaming `@cmsmasters/ui` Tooltip exports** breaks Studio's PropertyRow import — coordinated with block-forge mirror (both consume from the same DS package).
+
+### Recipes (Inspector typed inputs + tooltips / Studio mirror — WP-037)
+1. **Live smoke at Studio:** Studio dev → load any block → Responsive tab → click element to pin → scroll Inspector LAYOUT section → 4 select dropdowns visible (with dotted-underline labels) → hover `display` label → tooltip appears (auto-positioned to avoid Inspector right edge).
+2. **Verify M/T/D shape preserved:** active cell shows `<select>`; inactive cells (M and T when D is active) show text spans like "block" + ↗ switch button. Click ↗ on T → activeBp=768 → T cell becomes the `<select>`.
+3. **Cross-surface meta sync workflow:** edit `tools/block-forge/src/lib/property-meta.ts` first → copy entire body to `apps/studio/.../inspector/property-meta.ts` (preserve the JSDoc header) → run `npm test` on both surfaces.

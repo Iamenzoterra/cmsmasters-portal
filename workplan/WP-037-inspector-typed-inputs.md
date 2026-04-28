@@ -1,9 +1,33 @@
 # WP-037 — Inspector Typed Inputs + Property Tooltips
 
-> **Status:** 📋 PLAN (Phase 0 RECON in progress)
+> **Status:** ✅ DONE (Phase 0 RECON + pre-flight test rot repair + Phase 1 + Phase 2 + Phase 3 Close shipped 2026-04-28)
 > **Origin:** User feedback 2026-04-28 post-WP-036 close (block-forge live use — LAYOUT enum fields shown as plain text inputs without affordance for valid values)
-> **Estimated effort:** 2 phases (~4–6h)
+> **Estimated effort:** 2 phases (~4–6h) — actual 2 phases + 1 pre-flight commit delivered in 1 day
 > **Layer:** L2 authoring tools (refines WP-033 Inspector input affordances)
+> **Completed:** 2026-04-28
+
+---
+
+## Outcome ladder
+
+| Tier | Outcome | Evidence |
+|---|---|---|
+| Bronze | Pre-flight: WP-033 post-close polish landed (single-cell PropertyRow + tests regen) | commit `3a4f345c`; 54/54 tests on Inspector trio |
+| Silver | Phase 1: PROPERTY_META + `<select>` for 4 LAYOUT enum properties cross-surface | commit `b49c2cd7`; +20 enum-rendering tests |
+| Gold | Phase 2: Radix Tooltip primitive in packages/ui + label hover hints + visual smoke | commit `37acf1a6`; +8 tooltip tests + 5 smoke screenshots |
+| Platinum | Phase 3 Close — PARITY trio + SKILL flips + CONVENTIONS + status flip + atomic doc batch | this commit (TBD SHA) |
+
+---
+
+## Commit ladder
+
+| Phase | Commit message | SHA | Files |
+|---|---|---|---|
+| 0 | (RECON) | (no commit) | logs/wp-037/phase-0-recon-result.md (shipped Phase 1) |
+| Pre-flight | `feat(block-forge): WP-033 post-close polish — single-cell Inspector` | `3a4f345c` | 10 (5 source + 3 test + 2 snapshot) |
+| 1 | `feat(studio+block-forge): WP-037 phase 1 — Inspector typed enum inputs` | `b49c2cd7` | 13 (4 source + 4 test + 1 manifest + 4 doc) |
+| 2 | `feat(ui+studio+block-forge): WP-037 phase 2 — Tooltip primitive + label hints` | `37acf1a6` | 23 (5 source + 6 test + 1 manifest + 5 smoke screenshots + 6 misc) |
+| 3 (Close) | `docs(wp-037): phase 3 close — PARITY trio + SKILL flips + CONVENTIONS + status flip` | TBD | doc batch |
 
 ---
 
@@ -49,33 +73,33 @@ WP-037 needs to either:
 ## Acceptance criteria
 
 ### Typed inputs (Problem 1)
-- [ ] LAYOUT section renders `<select>` (or styled equivalent) for `display`, `flex-direction`, `align-items`, `justify-content` — not text input.
-- [ ] Select options sourced from `PROPERTY_META` map (single source of truth per surface, byte-identical between surfaces).
-- [ ] Selecting an option fires the existing `onEdit` / `onCellEdit` flow unchanged — no engine touch.
-- [ ] Custom-value fallback: if current value is NOT in the option list (e.g. legacy tweak with `display: table-cell`), include it as a special "(custom)" disabled option in dropdown so legacy tweaks render correctly without dropping the data.
-- [ ] Numeric properties (width, height, font-size, padding-*, etc.) keep the existing text input — no regression.
-- [ ] Vitest covers: enum-render, option-emit, custom-value rendering, numeric passthrough.
+- [x] LAYOUT section renders `<select>` (or styled equivalent) for `display`, `flex-direction`, `align-items`, `justify-content` — not text input.
+- [x] Select options sourced from `PROPERTY_META` map (single source of truth per surface, byte-identical between surfaces).
+- [x] Selecting an option fires the existing `onEdit` / `onCellEdit` flow unchanged — no engine touch.
+- [x] Custom-value fallback: if current value is NOT in the option list (e.g. legacy tweak with `display: table-cell`), include it as a special "(custom)" disabled option in dropdown so legacy tweaks render correctly without dropping the data.
+- [x] Numeric properties (width, height, font-size, padding-*, etc.) keep the existing text input — no regression.
+- [x] Vitest covers: enum-render, option-emit, custom-value rendering, numeric passthrough.
 
 ### Tooltips (Problem 2)
-- [ ] Label area for each LAYOUT property gets an info affordance — hover/focus shows a 1-2 sentence explanation of the property + visual cue of effect.
-- [ ] Implemented via new `Tooltip` primitive in `packages/ui/src/primitives/` (Radix-based) — first usable Tooltip in the DS, reusable across portal.
-- [ ] Tooltip text in `PROPERTY_META` map (single source of truth per surface).
-- [ ] Keyboard-accessible: focus on label → tooltip shows; Esc dismisses.
-- [ ] Vitest snapshot of tooltip render.
+- [x] Label area for each LAYOUT property gets an info affordance — hover/focus shows a 1-2 sentence explanation of the property + visual cue of effect.
+- [x] Implemented via new `Tooltip` primitive in `packages/ui/src/primitives/` (Radix-based) — first usable Tooltip in the DS, reusable across portal.
+- [x] Tooltip text in `PROPERTY_META` map (single source of truth per surface).
+- [x] Keyboard-accessible: focus on label → tooltip shows; Esc dismisses.
+- [x] Vitest snapshot of tooltip render.
 
 ### Cross-surface
-- [ ] Both `tools/block-forge/src/components/PropertyRow.tsx` and `apps/studio/src/pages/block-editor/responsive/inspector/PropertyRow.tsx` ship the typed-input + tooltip features in the same commit.
-- [ ] `PROPERTY_META` content byte-identical between surfaces (mirror file).
-- [ ] PARITY trio updated:
+- [x] Both `tools/block-forge/src/components/PropertyRow.tsx` and `apps/studio/src/pages/block-editor/responsive/inspector/PropertyRow.tsx` ship the typed-input + tooltip features in the same commit.
+- [x] `PROPERTY_META` content byte-identical between surfaces (mirror file).
+- [x] PARITY trio updated:
   - `tools/block-forge/PARITY.md` — typed-input + tooltip section
   - `apps/studio/.../PARITY.md` — Studio mirror
   - `tools/responsive-tokens-editor/PARITY.md` not affected (no Inspector consumer there)
-- [ ] PARITY divergence (Problem 3) — either resolved or explicitly documented per Brain ruling.
+- [x] PARITY divergence (Problem 3) — formalized per Phase 0 Ruling 1B (Studio M/T/D grid + block-forge single-cell stay diverged at row shape; PROPERTY_META content byte-identical; render adapts to each shape).
 
 ### Engine + tokens
-- [ ] No engine package edits (`packages/block-forge-core/**`).
-- [ ] No tokens.css edits — Tooltip primitive uses existing semantic tokens for surface + text.
-- [ ] DS lint clean (no hardcoded colors / fonts / shadows).
+- [x] No engine package edits (`packages/block-forge-core/**`).
+- [x] No tokens.css edits — Tooltip primitive uses existing semantic tokens (`--popover`, `--popover-foreground`, `--shadow-md`, `--rounded-md`, `--spacing-xs`, `--spacing-2xs`, `--text-xs-font-size`, `--text-xs-line-height`).
+- [x] DS lint clean (no hardcoded colors / fonts / shadows).
 
 ---
 
