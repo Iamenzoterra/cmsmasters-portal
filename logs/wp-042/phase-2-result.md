@@ -126,7 +126,7 @@ Auto mode active per session-start system reminder + explicit user
 |---|---|---|---|
 | 0 | (RECON) | (no commit — shipped with Phase 1) | logs/wp-042/phase-0-audit.md |
 | 1 | `feat(block-forge): WP-042 phase 1 — Playwright e2e Inspector coverage + CI workflow` | `5ef41c27` | 11 (3 root config + 4 e2e infra + 1 CI workflow + 2 result docs + 1 .gitignore) |
-| 2 (Close) | `docs(wp-042): phase 2 close — CONVENTIONS e2e infra + PARITY pair WP-042 cross-refs + WP-033 R3 DEFER retired + status flip` | TBD | 7 (CONVENTIONS + PARITY pair + WP doc + ROADMAP + WP-033 R3 marker + result.md) |
+| 2 (Close) | `docs(wp-042): phase 2 close — CONVENTIONS e2e infra + PARITY pair WP-042 cross-refs + WP-033 R3 DEFER retired + status flip` | `d4bb622a` | 7 (CONVENTIONS + PARITY pair + WP doc + ROADMAP + WP-033 R3 marker + result.md) |
 
 **Total WP-042 footprint: ~700 LOC test infra + ~125 LOC docs across 18 files
 in 2 commits over ~2.5h.**
