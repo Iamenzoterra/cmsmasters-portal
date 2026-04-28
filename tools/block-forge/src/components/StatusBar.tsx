@@ -14,6 +14,7 @@ type Props = {
   sourcePath: string | null
   session: SessionState
   onSave: () => void
+  onExport: () => void
   saveInFlight: boolean
   saveError: string | null
 }
@@ -22,6 +23,7 @@ export function StatusBar({
   sourcePath,
   session,
   onSave,
+  onExport,
   saveInFlight,
   saveError,
 }: Props) {
@@ -67,6 +69,16 @@ export function StatusBar({
           {saveError}
         </span>
       )}
+
+      <button
+        type="button"
+        data-action="export"
+        disabled={!sourcePath}
+        onClick={onExport}
+        className="rounded border border-[hsl(var(--border-default))] bg-[hsl(var(--bg-surface))] px-3 py-1 text-xs font-semibold text-[hsl(var(--text-default))] hover:bg-[hsl(var(--bg-surface-alt))] disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Export
+      </button>
 
       <button
         type="button"

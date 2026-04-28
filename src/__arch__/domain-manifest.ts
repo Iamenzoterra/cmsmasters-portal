@@ -674,6 +674,10 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'tools/block-forge/src/components/PropertyRow.tsx',
       // WP-033 Phase 3: TokenChip render component (in-use vs available modes).
       'tools/block-forge/src/components/TokenChip.tsx',
+      // WP-035 Phase 1: ExportDialog (Forge-side payload export gate). Ports
+      // layout-maker pattern; payload is in-memory state, no server roundtrip.
+      // Clone affordance deferred to Phase 3 (bundles with sandbox migration).
+      'tools/block-forge/src/components/ExportDialog.tsx',
       // WP-033 Phase 3: hooks/ directory established this phase. Per-BP value
       // sourcing (3 hidden iframes, Ruling E Option A) + chip detection
       // (Option B-subset PostCSS walk, Ruling 2).
@@ -700,6 +704,8 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       // WP-033 Phase 2: BreadcrumbNav + PropertyRow tests.
       'tools/block-forge/src/__tests__/BreadcrumbNav.test.tsx',
       'tools/block-forge/src/__tests__/PropertyRow.test.tsx',
+      // WP-035 Phase 1: ExportDialog interaction + byte-parity tests.
+      'tools/block-forge/src/__tests__/ExportDialog.test.tsx',
       // WP-033 Phase 3: cell-edit + per-BP hook + chip detection + TokenChip
       // + slider regression pin (the bug WP-033 was born to fix).
       'tools/block-forge/src/__tests__/inspector-cell-edit.test.tsx',

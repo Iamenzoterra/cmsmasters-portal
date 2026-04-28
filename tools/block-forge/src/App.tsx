@@ -34,6 +34,7 @@ import {
   type SessionState,
 } from './lib/session'
 import { BlockPicker } from './components/BlockPicker'
+import { ExportDialog } from './components/ExportDialog'
 import { Inspector, type InspectorBp } from './components/Inspector'
 import { PreviewTriptych } from './components/PreviewTriptych'
 import { SuggestionList } from './components/SuggestionList'
@@ -192,6 +193,42 @@ export function App() {
     setPreviewActiveId(BP_VIEWPORT[bp])
   }, [])
 
+  // WP-033 polish — resizable sidebar via left-edge drag handle.
+  // rAF-throttled mousemove to avoid re-render churn. Width clamped 320-960px.
+  const [sidebarWidth, setSidebarWidth] = useState(360)
+  const [sidebarDragging, setSidebarDragging] = useState(false)
+  useEffect(() => {
+    if (!sidebarDragging) return
+    let rafId: number | null = null
+    let pendingX: number | null = null
+    function onMove(e: MouseEvent) {
+      pendingX = e.clientX
+      if (rafId !== null) return
+      rafId = requestAnimationFrame(() => {
+        rafId = null
+        if (pendingX === null) return
+        const next = Math.max(320, Math.min(960, window.innerWidth - pendingX))
+        setSidebarWidth(next)
+        pendingX = null
+      })
+    }
+    function onUp() {
+      if (rafId !== null) cancelAnimationFrame(rafId)
+      setSidebarDragging(false)
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+    document.body.style.userSelect = 'none'
+    document.body.style.cursor = 'col-resize'
+    return () => {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+      document.body.style.userSelect = ''
+      document.body.style.cursor = ''
+      if (rafId !== null) cancelAnimationFrame(rafId)
+    }
+  }, [sidebarDragging])
+
   // WP-033 Phase 3 — Inspector dispatchers. Synchronous (not debounced like
   // TweakPanel's slider) — cell edit / token apply / visibility toggle are
   // discrete actions, not continuous drags. composedBlock memo picks up the
@@ -217,6 +254,37 @@ export function App() {
           ? addTweak(prev, { selector, bp, property: 'display', value: 'none' })
           : removeTweakFor(prev, selector, bp, 'display'),
       )
+    },
+    [],
+  )
+  // Revert handler — strips both BP-scoped tweak AND any bp:0 token-apply for
+  // this property, so a single ↺ click brings the cell back to the base CSS.
+  const handleInspectorRevert = useCallback(
+    (selector: string, bp: InspectorBp, property: string) => {
+      setSession((prev) => {
+        const afterBp = removeTweakFor(prev, selector, bp, property)
+        return removeTweakFor(afterBp, selector, 0, property)
+      })
+    },
+    [],
+  )
+  // Phase C — bake `transform: scale(N)` from parent into per-child px tweaks.
+  // Removes parent's transform / transform-origin tweaks and adds the supplied
+  // per-child px tweaks at the active BP.
+  const handleInspectorBakeScale = useCallback(
+    (
+      parentSelector: string,
+      bp: InspectorBp,
+      bakedTweaks: ReadonlyArray<{ selector: string; property: string; value: string }>,
+    ) => {
+      setSession((prev) => {
+        let next = removeTweakFor(prev, parentSelector, bp, 'transform')
+        next = removeTweakFor(next, parentSelector, bp, 'transform-origin')
+        for (const t of bakedTweaks) {
+          next = addTweak(next, { selector: t.selector, bp, property: t.property, value: t.value })
+        }
+        return next
+      })
     },
     [],
   )
@@ -254,6 +322,34 @@ export function App() {
   const handleReject = useCallback((id: string) => {
     setSession((prev) => rejectFn(prev, id))
   }, [])
+
+  // WP-036 Phase 1 — sidebar→iframe hover-highlight broadcast.
+  // Posts `block-forge:inspector-request-hover` to ALL triptych iframes for the
+  // current slug (querySelectorAll, not querySelector — Inspector's per-BP probe
+  // picks the first match, but for hover we want all visible BPs to light up so
+  // the author sees the element across desktop/tablet/mobile in one glance).
+  // selector === null sends the __clear__ sentinel (postMessage cross-realm
+  // safe). Iframe IIFE handles the resolve + outline; fire-and-forget shape.
+  const handlePreviewHover = useCallback(
+    (selector: string | null) => {
+      if (!currentSlug) return
+      const iframes = document.querySelectorAll<HTMLIFrameElement>(
+        `iframe[title^="${CSS.escape(currentSlug)}-"]`,
+      )
+      iframes.forEach((iframe) => {
+        if (!iframe.contentWindow) return
+        iframe.contentWindow.postMessage(
+          {
+            type: 'block-forge:inspector-request-hover',
+            slug: currentSlug,
+            selector: selector ?? '__clear__',
+          },
+          '*',
+        )
+      })
+    },
+    [currentSlug],
+  )
 
   // WP-028 Phase 2 — debounced tweak dispatch (Ruling I: 300ms on dispatch side).
   const debouncedAddTweak = useMemo(
@@ -296,6 +392,15 @@ export function App() {
 
   const handleClose = useCallback(() => {
     setSelection(null)
+  }, [])
+
+  // WP-035 Phase 1 — ExportDialog open state + minimal V1 toast (no shared
+  // toast infra in block-forge yet; Phase 5 polish absorbs proper toast).
+  const [showExportDialog, setShowExportDialog] = useState(false)
+  const [exportToast, setExportToast] = useState<string | null>(null)
+  const showExportToast = useCallback((msg: string) => {
+    setExportToast(msg)
+    window.setTimeout(() => setExportToast((cur) => (cur === msg ? null : cur)), 2500)
   }, [])
 
   // WP-028 Phase 3 — VariantsDrawer open state + action dispatcher.
@@ -424,7 +529,7 @@ export function App() {
         )}
       </header>
 
-      <main className="grid grid-cols-[1fr_360px] overflow-hidden">
+      <main className="grid grid-cols-[1fr_auto] overflow-hidden">
         <section
           data-region="triptych"
           className="overflow-auto border-r border-[hsl(var(--border-default))]"
@@ -437,35 +542,48 @@ export function App() {
             onActiveIdChange={setPreviewActiveId}
           />
         </section>
-        <aside data-region="suggestions" className="flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-hidden">
+        <aside
+          data-region="suggestions"
+          className="relative flex flex-col overflow-hidden border-l border-[hsl(var(--border-default))]"
+          style={{ width: sidebarWidth }}
+        >
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize sidebar"
+            data-testid="sidebar-resize-handle"
+            onMouseDown={(e) => {
+              e.preventDefault()
+              setSidebarDragging(true)
+            }}
+            className={`absolute left-0 top-0 bottom-0 z-20 w-1.5 cursor-col-resize transition-colors hover:bg-[hsl(var(--text-link))] ${sidebarDragging ? 'bg-[hsl(var(--text-link))]' : ''}`}
+          />
+          <div className="max-h-[40vh] shrink-0 overflow-auto">
             <SuggestionList
               suggestions={suggestions}
               warnings={warnings}
               session={session}
               onAccept={handleAccept}
               onReject={handleReject}
+              onPreviewHover={handlePreviewHover}
             />
           </div>
-          <TweakPanel
-            selection={selection}
-            appliedTweaks={appliedTweaksForSelection}
-            onBpChange={handleBpChange}
-            onTweak={handleTweak}
-            onReset={handleResetTweaks}
-            onClose={handleClose}
-          />
-          <Inspector
-            slug={currentSlug}
-            activeBp={inspectorActiveBp}
-            onActiveBpChange={handleInspectorBpChange}
-            onCellEdit={handleInspectorCellEdit}
-            onApplyToken={handleInspectorApplyToken}
-            onVisibilityToggle={handleInspectorVisibilityToggle}
-            tweaks={session.tweaks}
-            effectiveCss={composedBlock?.css ?? ''}
-            blockHtml={composedBlock?.html ?? ''}
-          />
+          {/* WP-033 post-close — TweakPanel sunset (user feedback: confusing dup of Inspector, slider showed wrong values). Inspector replaces it. State (selection, appliedTweaks, handlers) kept alive for now in case rollback needed. */}
+          <div className="min-h-0 flex-1 overflow-auto">
+            <Inspector
+              slug={currentSlug}
+              activeBp={inspectorActiveBp}
+              onActiveBpChange={handleInspectorBpChange}
+              onCellEdit={handleInspectorCellEdit}
+              onApplyToken={handleInspectorApplyToken}
+              onVisibilityToggle={handleInspectorVisibilityToggle}
+              onCellRevert={handleInspectorRevert}
+              onBakeScale={handleInspectorBakeScale}
+              tweaks={session.tweaks}
+              effectiveCss={composedBlock?.css ?? ''}
+              blockHtml={composedBlock?.html ?? ''}
+            />
+          </div>
         </aside>
       </main>
 
@@ -477,6 +595,7 @@ export function App() {
           sourcePath={sourcePath}
           session={session}
           onSave={handleSave}
+          onExport={() => setShowExportDialog(true)}
           saveInFlight={saveInFlight}
           saveError={saveError}
         />
@@ -490,6 +609,24 @@ export function App() {
         baseCss={block?.css ?? ''}
         onAction={handleVariantAction}
       />
+
+      {showExportDialog && composedBlock && (
+        <ExportDialog
+          block={composedBlock}
+          onClose={() => setShowExportDialog(false)}
+          onShowToast={showExportToast}
+        />
+      )}
+
+      {exportToast && (
+        <div
+          role="status"
+          data-testid="export-toast"
+          className="fixed bottom-6 left-1/2 z-[1100] -translate-x-1/2 rounded border border-[hsl(var(--border-default))] bg-[hsl(var(--bg-surface))] px-4 py-2 text-sm text-[hsl(var(--text-default))] shadow-lg"
+        >
+          {exportToast}
+        </div>
+      )}
     </div>
   )
 }
