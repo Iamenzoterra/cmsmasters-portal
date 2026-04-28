@@ -1,4 +1,5 @@
 import type { Block, BlockVariants } from '@cmsmasters/db'
+import type { ImportBlockPayload } from '@cmsmasters/validators'
 import { supabase } from './supabase'
 
 const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8787'
@@ -92,6 +93,31 @@ export async function updateBlockApi(
   }
   const json = await res.json() as { data: Block }
   return json.data
+}
+
+// ── WP-035 Phase 2: Import block (paste/upload roundtrip from Forge) ──
+
+export type ImportBlockResponse = {
+  data: Block
+  action: 'created' | 'updated'
+  revalidated: boolean
+}
+
+export async function importBlockApi(
+  payload: ImportBlockPayload,
+): Promise<ImportBlockResponse> {
+  const res = await fetch(`${apiUrl}/api/blocks/import`, {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    if (res.status === 400) throw new Error(await parseError(res, 'Validation failed'))
+    if (res.status === 401 || res.status === 403) throw new Error(await parseError(res, 'Not authorized'))
+    throw new Error(await parseError(res, 'Failed to import block'))
+  }
+  const json = await res.json() as ImportBlockResponse
+  return json
 }
 
 // ── Image upload ──

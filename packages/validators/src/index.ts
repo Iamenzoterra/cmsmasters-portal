@@ -11,8 +11,9 @@ export type { ThemeFormData } from './theme'
 export {
   createBlockSchema,
   updateBlockSchema,
+  importBlockSchema,
 } from './block'
-export type { CreateBlockPayload, UpdateBlockPayload } from './block'
+export type { CreateBlockPayload, UpdateBlockPayload, ImportBlockPayload } from './block'
 
 // ── Template schemas ──
 export {

@@ -295,6 +295,12 @@ export const DOMAINS: Record<string, DomainDefinition> = {
     owned_files: [
       'apps/studio/src/pages/block-editor.tsx',
       'apps/studio/src/components/block-import-panel.tsx',
+      // WP-035 Phase 2: Studio JSON-import surface — paste/upload Forge-exported
+      // BlockJson; dispatches POST /api/blocks/import (find-or-create-by-slug
+      // + server-side fire-and-forget revalidate). Parallel to block-import-panel
+      // (HTML import via Process flow).
+      'apps/studio/src/components/block-import-json-dialog.tsx',
+      'apps/studio/src/components/__tests__/block-import-json-dialog.test.tsx',
       'apps/studio/src/lib/block-processor.ts',
       'apps/studio/src/lib/token-map.ts',
       // WP-027 Phase 1: Responsive tab scaffold (source + PARITY contract).
@@ -385,7 +391,7 @@ export const DOMAINS: Record<string, DomainDefinition> = {
       'apps/studio/src/pages/theme-meta.tsx',
       'apps/studio/src/components/taxonomy-list.tsx',
       'apps/studio/src/components/taxonomy-picker-modal.tsx',
-      // components (20, excl block-import-panel which is in studio-blocks)
+      // components (20, excl block-import-panel + block-import-json-dialog which are in studio-blocks)
       'apps/studio/src/components/block-picker-modal.tsx',
       'apps/studio/src/components/block-preview.tsx',
       'apps/studio/src/components/char-counter.tsx',

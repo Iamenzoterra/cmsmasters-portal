@@ -6,12 +6,13 @@ import { createServiceClient } from '../lib/supabase'
 import {
   getBlocks,
   getBlockById,
+  getBlockBySlug,
   createBlock,
   updateBlock,
   deleteBlock,
   getBlockUsage,
 } from '@cmsmasters/db'
-import { createBlockSchema, updateBlockSchema } from '@cmsmasters/validators'
+import { createBlockSchema, updateBlockSchema, importBlockSchema } from '@cmsmasters/validators'
 
 const blocks = new Hono<AuthEnv>()
 
@@ -108,6 +109,92 @@ blocks.put(
     } catch (err) {
       if (isNotFound(err)) return c.json({ error: 'Block not found' }, 404)
       return c.json({ error: 'Internal server error' }, 500)
+    }
+  }
+)
+
+// ── POST /blocks/import — find-or-create by slug; auto-revalidate on success ──
+//
+// WP-035 Phase 2 / Ruling C — atomic upsert by slug. Studio's ImportDialog
+// posts a Forge-exported BlockJson; this route resolves "create or update"
+// via getBlockBySlug, then fires server-side fire-and-forget revalidate.
+
+blocks.post(
+  '/blocks/import',
+  authMiddleware,
+  requireRole('content_manager', 'admin'),
+  async (c) => {
+    const body = await c.req.json()
+    const parsed = importBlockSchema.safeParse(body)
+
+    if (!parsed.success) {
+      return c.json({ error: 'Validation failed', details: parsed.error.issues }, 400)
+    }
+
+    const supabase = createServiceClient(c.env)
+
+    try {
+      const { id: _ignored, ...payload } = parsed.data
+
+      let existing
+      try {
+        existing = await getBlockBySlug(supabase, payload.slug)
+      } catch (err) {
+        if (!isNotFound(err)) throw err
+        existing = null
+      }
+
+      let saved
+      let action: 'created' | 'updated'
+
+      if (existing) {
+        const { slug: _slugIgnored, ...updatePayload } = payload
+        if (updatePayload.is_default && updatePayload.block_type) {
+          await supabase.from('blocks').update({ is_default: false })
+            .eq('block_type', updatePayload.block_type).eq('is_default', true)
+            .neq('id', existing.id)
+        }
+        saved = await updateBlock(supabase, existing.id, updatePayload)
+        action = 'updated'
+      } else {
+        if (payload.is_default && payload.block_type) {
+          await supabase.from('blocks').update({ is_default: false })
+            .eq('block_type', payload.block_type).eq('is_default', true)
+        }
+        saved = await createBlock(supabase, {
+          ...payload,
+          created_by: c.get('userId'),
+        })
+        action = 'created'
+      }
+
+      // Fire-and-forget revalidate (Ruling E — failures non-fatal).
+      // Body `{}` per saved memory feedback_revalidate_default.
+      let revalidated = false
+      const portalUrl = c.env.PORTAL_REVALIDATE_URL
+      const portalSecret = c.env.PORTAL_REVALIDATE_SECRET
+      if (portalUrl && portalSecret) {
+        try {
+          const r = await fetch(portalUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-revalidate-token': portalSecret,
+            },
+            body: '{}',
+          })
+          const result = await r.json<{ revalidated?: boolean }>()
+          revalidated = result.revalidated === true
+        } catch (err) {
+          console.warn('[WP-035] Portal revalidation failed (import succeeded):', err)
+        }
+      }
+
+      return c.json({ data: saved, action, revalidated }, action === 'created' ? 201 : 200)
+    } catch (err) {
+      console.error('importBlock error:', err)
+      const detail = err instanceof Error ? err.message : 'Unknown'
+      return c.json({ error: 'Internal server error', detail }, 500)
     }
   }
 )

@@ -16,6 +16,7 @@ import { StyledSelect } from '../components/styled-select'
 import { FormSection } from '../components/form-section'
 import { DeleteConfirmModal } from '../components/delete-confirm-modal'
 import { BlockImportPanel } from '../components/block-import-panel'
+import { BlockImportJsonDialog } from '../components/block-import-json-dialog'
 import { ThumbnailUpload } from '../components/thumbnail-upload'
 import { ResponsiveTab, dispatchTweakToForm, resetTweaksInForm, dispatchVariantToForm, type VariantAction } from './block-editor/responsive/ResponsiveTab'
 import { dispatchInspectorEdit, type InspectorEdit } from './block-editor/responsive/inspector/lib/dispatchInspectorEdit'
@@ -297,6 +298,7 @@ export function BlockEditor() {
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [showProcess, setShowProcess] = useState(false)
+  const [showImportJsonDialog, setShowImportJsonDialog] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [blockCategories, setBlockCategories] = useState<BlockCategory[]>([])
   // WP-027 Phase 1: 2-tab bar. Tab 1 = Editor (all existing UI + Process button unchanged);
@@ -582,6 +584,10 @@ export function BlockEditor() {
           <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
             <Upload size={14} />
             Import HTML
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setShowImportJsonDialog(true)} data-action="import-json">
+            <Upload size={14} />
+            Import JSON
           </Button>
           <Button variant="outline" size="sm" onClick={() => setShowProcess(true)} disabled={!(watchedCode ?? '').trim()}>
             <Sparkles size={14} />
@@ -893,6 +899,23 @@ ${code}${scriptTag}
             onCancel={() => setShowDeleteConfirm(false)}
           />
         )}
+        <BlockImportJsonDialog
+          isOpen={showImportJsonDialog}
+          onClose={() => setShowImportJsonDialog(false)}
+          onSuccess={(block, action) => {
+            if (action === 'created') {
+              navigate(`${basePath}/${block.id}`, { replace: true })
+            } else if (block.id === id) {
+              window.location.reload()
+            } else {
+              toast({
+                type: 'info',
+                message: `Imported into a different slug (${block.slug}). Reload to view.`,
+              })
+            }
+          }}
+          onShowToast={(msg, type) => toast({ type, message: msg })}
+        />
       </div>
       )}
       {/* WP-027 Phase 4: tab-switch must preserve ResponsiveTab session state (pending accepts,

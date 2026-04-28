@@ -76,5 +76,36 @@ export const updateBlockSchema = z.object({
   variants: variantsSchema.nullable().optional(),
 })
 
+// ── Import block (Forge → Studio roundtrip) ──
+//
+// WP-035 Phase 2 — relaxed superset of createBlockSchema. Accepts the full
+// 11-key BlockJson exported by Forge ExportDialog. Server-side import endpoint
+// (POST /api/blocks/import) does find-or-create-by-slug upsert; client-side id
+// is ignored (server resolves id from slug lookup or generates on create).
+
+export const importBlockSchema = z.object({
+  // Optional — ignored server-side; slug is the upsert key.
+  // Forge BlockJson types `id: string | number`.
+  id: z.union([z.string(), z.number()]).optional(),
+
+  // Required — match createBlockSchema constraints exactly.
+  slug: z.string().regex(/^[a-z0-9-]+$/).min(2).max(100),
+  name: z.string().min(1).max(200),
+  html: z.string().min(1),
+
+  // Optional with createBlockSchema-aligned defaults.
+  css: z.string().default(''),
+  js: z.string().default(''),
+  block_type: z.string().default(''),
+  block_category_id: z.string().uuid().nullable().optional(),
+  is_default: z.boolean().default(false),
+  hooks: hooksSchema,
+  metadata: metadataSchema,
+
+  // Round-trip parity with Forge ExportDialog — null-sentinel preserved.
+  variants: variantsSchema.nullable().optional(),
+})
+
 export type CreateBlockPayload = z.infer<typeof createBlockSchema>
 export type UpdateBlockPayload = z.infer<typeof updateBlockSchema>
+export type ImportBlockPayload = z.infer<typeof importBlockSchema>
