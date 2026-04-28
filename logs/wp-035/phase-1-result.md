@@ -26,7 +26,7 @@ ExportDialog component ported from `tools/layout-maker/src/components/ExportDial
 | File | Change | LOC delta | Notes |
 |---|---|---|---|
 | `tools/block-forge/src/components/ExportDialog.tsx` | created | +189 | Pure presentational; no fetch; no validation gating. |
-| `tools/block-forge/src/__tests__/ExportDialog.test.tsx` | created | +213 | 15 cases covering render, close paths, toggles, Copy byte-parity, Download blob shape. |
+| `tools/block-forge/src/__tests__/ExportDialog.test.tsx` | created | +237 | 16 cases covering render, close paths, toggles, Copy byte-parity, Download blob shape + `<a download="${slug}.json">` attribute (AC #5 closure added in commit `3b8a9721`). |
 | `tools/block-forge/src/components/StatusBar.tsx` | modified | +12 | New `onExport` prop + `[Export]` button before Save. Disabled when `!sourcePath`. |
 | `tools/block-forge/src/App.tsx` | modified | +24 (visible) | Import ExportDialog; `showExportDialog` + `exportToast` state; `showExportToast` callback (auto-dismiss); StatusBar `onExport`; conditional `<ExportDialog>` + `<div role="status">` toast. |
 | `tools/block-forge/src/globals.css` | modified | +152 | Full bf-export-* CSS block with Portal DS tokens (overlay, dialog, header, body, meta, section, toggle, preview, actions, btn). Zero hardcoded colors/fonts/shadows. |
@@ -57,7 +57,7 @@ ExportDialog component ported from `tools/layout-maker/src/components/ExportDial
 |---|---|
 | `npm run arch-test` | ✅ **582 / 582** (post-baseline 580 + 2 new owned_files) |
 | `tools/block-forge` typecheck (`npx tsc --noEmit`) | ⚠️ Pre-existing errors in `PropertyRow.test.tsx` (10 type errors on `valuesByBp` prop drift). Not introduced by Phase 1; PropertyRow.tsx was modified pre-session. ExportDialog.tsx + ExportDialog.test.tsx + StatusBar.tsx + App.tsx Phase 1 deltas type-check clean. |
-| ExportDialog test suite | ✅ **15 / 15** passing — render, close paths (4 variants), toggle reveal/hide, Copy byte-parity, Download blob shape, JS/variants conditional rendering |
+| ExportDialog test suite | ✅ **16 / 16** passing — render, close paths (4 variants), toggle reveal/hide, Copy byte-parity, Download blob shape, `<a download>` attribute (AC #5 closure), JS/variants conditional rendering |
 | Full block-forge test run | ⚠️ 24 failed / 266 passed / 6 skipped — ALL 24 failures are in files with pre-existing `M` modifications unrelated to WP-035 (PropertyRow, InspectorPanel, preview-assets, app-save-regression). Phase 1 introduces zero regressions. |
 | `scripts/lint-ds.sh` (manual on Phase 1 files) | ✅ clean (script skips tools/ — self-audit via grep also clean) |
 | Live browser smoke (`http://localhost:7702/`) | ✅ Block selected → [Export] enabled → dialog renders with title `Export: fast-loading-speed` → backdrop `rgba(0,0,0,0.6)` (matches `--black-alpha-60`) → surface white, radius 8px (matches `--rounded-lg`) → toggle reveals HTML 29 lines / CSS 118 lines / JS 33 lines → Copy payload writes 7274-char pretty-printed string ending with `\n` to clipboard, parses to slug=`fast-loading-speed`, 11 expected keys → toast `"Payload copied to clipboard."` shows + auto-dismisses → footer Close button closes overlay |
@@ -66,5 +66,13 @@ ExportDialog component ported from `tools/layout-maker/src/components/ExportDial
 
 ## Git
 
-- Commit: TBD (next step in this session)
-- Commit message: `feat(block-forge): WP-035 phase 1 — ExportDialog (Download JSON / Copy payload) [WP-035 phase 1]`
+- `0b52f1f5` — `feat(block-forge): WP-035 phase 1 — ExportDialog (Download JSON / Copy payload) [WP-035 phase 1]` (9 files, +1540/-22)
+- `3b8a9721` — `test(block-forge): WP-035 phase 1 — close AC #5 gap with download-attribute assertion [WP-035 phase 1]` (1 file, +24)
+
+## /ac Audit Outcome (post-commit)
+
+`/ac` audit ran after Phase 1 landed. All 14 ACs + 6 verification items satisfied.
+
+- One AC gap surfaced: AC #5 mandated `<a download="${block.slug}.json">` assertion; original test asserted Blob shape + URL/toast but did not capture the synthetic anchor. Closed in commit `3b8a9721` via createElement spy + `expect(anchor.download).toBe('test-block.json')`.
+- Two ⚠️ items in verification (24 test failures + 10 typecheck errors in pre-existing `M` files: PropertyRow / InspectorPanel / Inspector / preview-assets / app-save-regression) confirmed empirically pre-date Phase 1 via `git diff --stat HEAD~1 HEAD -- <those files>` returning **empty**. Phase 1 commit (`0b52f1f5`) touched zero files in the failing-test paths; the failures are caused by uncommitted working-tree modifications that existed before Phase 0.
+- Saved memory `feedback_empirical_over_declarative` honored: pass/fail contracts evaluated BEFORE asserting; honest skips noted vs rubber-stamped tick.
