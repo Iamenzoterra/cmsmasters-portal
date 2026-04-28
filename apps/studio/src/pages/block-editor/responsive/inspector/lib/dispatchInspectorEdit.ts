@@ -12,7 +12,7 @@
 // All three flow through the same form.setValue('code', next, { shouldDirty: true })
 // pipe so RHF dirty tracking + Save button + beforeunload guard fire identically.
 
-import { emitTweak, type Tweak } from '@cmsmasters/block-forge-core'
+import { emitTweak, findConflictBps, type Tweak } from '@cmsmasters/block-forge-core'
 import { removeDeclarationFromCss } from './css-mutate'
 
 export type InspectorEdit =
@@ -55,18 +55,20 @@ export function dispatchInspectorEdit(form: FormSubset, edit: InspectorEdit): vo
       break
     }
     case 'apply-token': {
-      // WP-034 Path A — fan-out emit at canonical BPs to override any
-      // pre-existing @container slot (max-width: Npx) cascade conflicts.
-      // bp:0 sets the top-level rule; 375/768/1440 dedupe-update existing
-      // @container blocks (emitTweak Case C — replaces decl in place,
-      // preserves other decls) OR create new ones (Case A) when absent.
+      // WP-039 Smart Path A — scan source CSS for @container conflicts
+      // first; emit at bp:0 (always — chip contract) plus any canonical
+      // BP that already declares the property. Eliminates redundant
+      // @container blocks that would be cosmetic no-ops at BPs without
+      // pre-existing conflicts. Refines WP-034 Path A baseline.
       const value = `var(${edit.tokenName})`
-      const tweaks: Tweak[] = [
-        { selector: edit.selector, bp: 0, property: edit.property, value },
-        { selector: edit.selector, bp: 375, property: edit.property, value },
-        { selector: edit.selector, bp: 768, property: edit.property, value },
-        { selector: edit.selector, bp: 1440, property: edit.property, value },
-      ]
+      const conflicts = findConflictBps(css, edit.selector, edit.property)
+      const bps = [0, ...[375, 768, 1440].filter((bp) => conflicts.has(bp))]
+      const tweaks: Tweak[] = bps.map((bp) => ({
+        selector: edit.selector,
+        bp,
+        property: edit.property,
+        value,
+      }))
       nextCss = tweaks.reduce((acc, t) => emitTweak(t, acc), css)
       break
     }

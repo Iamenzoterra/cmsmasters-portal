@@ -59,8 +59,8 @@ describe('dispatchInspectorEdit — tweak kind', () => {
   })
 })
 
-describe('dispatchInspectorEdit — apply-token kind (WP-034 Path A fan-out)', () => {
-  it('emits 4 tweaks at canonical BPs (0/375/768/1440) with var(--token) value', () => {
+describe('dispatchInspectorEdit — apply-token kind (WP-039 Smart Path A scan-then-emit)', () => {
+  it('no-conflict source — emits ONLY bp:0 (no redundant @container blocks)', () => {
     const initial = `<style>\n.x { font-size: 16px; }\n</style>\n\n<div class="x">Hi</div>`
     const f = makeForm(initial)
     dispatchInspectorEdit(f.form, {
@@ -73,18 +73,16 @@ describe('dispatchInspectorEdit — apply-token kind (WP-034 Path A fan-out)', (
     const out = f.getCurrent()
     // Top-level rule has var(--token).
     expect(out).toContain('font-size: var(--h2-font-size)')
-    // 3 @container slot blocks created at canonical BPs.
-    expect(out).toContain('@container slot (max-width: 375px)')
-    expect(out).toContain('@container slot (max-width: 768px)')
-    expect(out).toContain('@container slot (max-width: 1440px)')
-    // var() value appears at all 4 spots (top-level + 3 @container).
+    // Smart emit: zero redundant @container blocks.
+    expect(out).not.toContain('@container slot (max-width: 375px)')
+    expect(out).not.toContain('@container slot (max-width: 768px)')
+    expect(out).not.toContain('@container slot (max-width: 1440px)')
+    // var() value appears at exactly 1 spot (top-level only).
     const matches = out.match(/font-size:\s*var\(--h2-font-size\)/g) ?? []
-    expect(matches.length).toBe(4)
+    expect(matches.length).toBe(1)
   })
 
-  it('cascade-conflict case — pre-existing @container overrides DEDUPE-UPDATE in place (Case C), preserving sibling decls', () => {
-    // Mirrors fast-loading-speed.json shape: top-level + 2 @container blocks
-    // with the same property + sibling decls in those blocks.
+  it('full-conflict source (cascade override at 375 + 768) — emits 3 tweaks (0/375/768) with in-place dedupe and sibling preservation', () => {
     const initial = [
       '<style>',
       '.heading { font-size: 42px; color: black; }',
@@ -110,18 +108,18 @@ describe('dispatchInspectorEdit — apply-token kind (WP-034 Path A fan-out)', (
     expect(out).not.toContain('font-size: 42px')
     expect(out).not.toContain('font-size: 32px')
     expect(out).not.toContain('font-size: 30px')
-    // Token applied at top-level + @container 768 + @container 375 (in place
-    // dedupe per emitTweak Case C).
+    // Smart emit: top-level + 768 + 375 (no redundant 1440).
     const matches = out.match(/font-size:\s*var\(--h2-font-size\)/g) ?? []
-    expect(matches.length).toBe(4) // top-level + 1440 (NEW) + 768 + 375
+    expect(matches.length).toBe(3)
+    // 1440 NOT created — no source conflict at that BP.
+    expect(out).not.toContain('@container slot (max-width: 1440px)')
     // Sibling decls preserved per emitTweak Case C contract.
     expect(out).toContain('color: black')
     expect(out).toContain('line-height: 1.2')
     expect(out).toContain('line-height: 36px')
   })
 
-  it('+1 @container block created when canonical BP missing from base CSS', () => {
-    // Base has @container 768 + 375, missing 1440. Path A creates 1440.
+  it('partial-conflict source (768 only) — emits 2 tweaks (0/768), skips 375 and 1440', () => {
     const initial = [
       '<style>',
       '.x { font-size: 16px; }',
@@ -138,10 +136,14 @@ describe('dispatchInspectorEdit — apply-token kind (WP-034 Path A fan-out)', (
       tokenName: '--text-sm-font-size',
     })
     const out = f.getCurrent()
-    // 1440 + 375 newly created (768 dedupe-updated).
-    expect(out).toContain('@container slot (max-width: 1440px)')
-    expect(out).toContain('@container slot (max-width: 375px)')
+    // Old @container 768 value gone (dedupe-update).
+    expect(out).not.toContain('font-size: 14px')
+    // Smart emit: top-level + 768 ONLY.
     expect(out).toContain('@container slot (max-width: 768px)')
+    expect(out).not.toContain('@container slot (max-width: 375px)')
+    expect(out).not.toContain('@container slot (max-width: 1440px)')
+    const matches = out.match(/font-size:\s*var\(--text-sm-font-size\)/g) ?? []
+    expect(matches.length).toBe(2)
   })
 })
 

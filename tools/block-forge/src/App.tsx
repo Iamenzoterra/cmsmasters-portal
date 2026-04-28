@@ -10,7 +10,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button } from '@cmsmasters/ui'
-import { applySuggestions, type Tweak } from '@cmsmasters/block-forge-core'
+import { applySuggestions, findConflictBps, type Tweak } from '@cmsmasters/block-forge-core'
 import type { BlockJson } from './types'
 import { cloneBlock, getBlock, listBlocks, saveBlock } from './lib/api-client'
 import { useAnalysis } from './lib/useAnalysis'
@@ -247,21 +247,25 @@ export function App() {
   )
   const handleInspectorApplyToken = useCallback(
     (selector: string, property: string, tokenName: string) => {
-      // WP-034 Path A — fan-out emit at canonical BPs to override any
-      // pre-existing @container slot (max-width: Npx) cascade conflicts.
-      // bp:0 sets the top-level rule; 375/768/1440 dedupe-update existing
-      // @container blocks (emitTweak Case C — replaces decl in place,
-      // preserves other decls) OR create new ones (Case A) when absent.
+      // WP-039 Smart Path A — scan composed CSS (base + already-applied
+      // tweaks) for @container conflicts; emit at bp:0 (always — chip
+      // contract) plus any canonical BP that already declares the
+      // property. Eliminates redundant @container blocks at BPs without
+      // pre-existing conflicts. Refines WP-034 Path A baseline.
+      if (!block) return
       const value = `var(${tokenName})`
       setSession((prev) => {
+        const currentCss = composeTweakedCss(block.css, prev.tweaks)
+        const conflicts = findConflictBps(currentCss, selector, property)
+        const bps = [0, ...[375, 768, 1440].filter((bp) => conflicts.has(bp))]
         let next = prev
-        for (const bp of [0, 375, 768, 1440] as const) {
+        for (const bp of bps) {
           next = addTweak(next, { selector, bp, property, value })
         }
         return next
       })
     },
-    [],
+    [block],
   )
   const handleInspectorVisibilityToggle = useCallback(
     (selector: string, bp: InspectorBp, hide: boolean) => {

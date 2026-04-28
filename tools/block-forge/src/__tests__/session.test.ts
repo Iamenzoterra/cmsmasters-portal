@@ -6,7 +6,7 @@
 // Pure transitions, no DOM, no React — Vitest default Node env is correct.
 
 import { describe, it, expect } from 'vitest'
-import type { Suggestion, Tweak } from '@cmsmasters/block-forge-core'
+import { findConflictBps, type Suggestion, type Tweak } from '@cmsmasters/block-forge-core'
 import type { BlockVariant } from '@cmsmasters/db'
 import {
   accept,
@@ -674,10 +674,31 @@ describe('session — composeTweakedCss (WP-028 Phase 2)', () => {
   })
 })
 
-describe('WP-034 Path A — chip-apply 4-tweak fan-out cascade fix', () => {
-  it('4 sequential addTweak calls at canonical BPs override @container conflicts', () => {
-    // Mirrors fast-loading-speed.json shape: top-level + 2 @container with
-    // same property + sibling decls.
+describe('WP-039 Smart Path A — App.tsx scan-then-emit mirror', () => {
+  // Mirrors block-forge App.tsx::handleInspectorApplyToken WP-039 logic:
+  //   1. compose currentCss = composeTweakedCss(block.css, session.tweaks)
+  //   2. conflicts = findConflictBps(currentCss, selector, property)
+  //   3. bps = [0, ...[375, 768, 1440].filter(bp => conflicts.has(bp))]
+  //   4. for bp in bps: session = addTweak(session, { selector, bp, property, value })
+
+  function smartApplyToken(
+    baseCss: string,
+    selector: string,
+    property: string,
+    tokenName: string,
+  ): { session: ReturnType<typeof createSession>; out: string } {
+    let session = createSession()
+    const value = `var(${tokenName})`
+    const currentCss = composeTweakedCss(baseCss, session.tweaks)
+    const conflicts = findConflictBps(currentCss, selector, property)
+    const bps = [0, ...[375, 768, 1440].filter((bp) => conflicts.has(bp))]
+    for (const bp of bps) {
+      session = addTweak(session, { selector, bp, property, value })
+    }
+    return { session, out: composeTweakedCss(baseCss, session.tweaks) }
+  }
+
+  it('full-conflict source (cascade override at 375 + 768) — emits 3 tweaks (0/375/768) with sibling preservation', () => {
     const baseCss = [
       '.heading { font-size: 42px; color: black; }',
       '@container slot (max-width: 768px) {',
@@ -688,58 +709,37 @@ describe('WP-034 Path A — chip-apply 4-tweak fan-out cascade fix', () => {
       '}',
     ].join('\n')
 
-    // Mimic block-forge App.tsx::handleInspectorApplyToken WP-034 fan-out.
-    let session = createSession()
-    const value = 'var(--h2-font-size)'
-    for (const bp of [0, 375, 768, 1440] as const) {
-      session = addTweak(session, {
-        selector: '.heading',
-        bp,
-        property: 'font-size',
-        value,
-      })
-    }
-    expect(session.tweaks).toHaveLength(4)
+    const { session, out } = smartApplyToken(baseCss, '.heading', 'font-size', '--h2-font-size')
 
-    const out = composeTweakedCss(baseCss, session.tweaks)
+    // Smart emit: 3 tweaks (no redundant 1440).
+    expect(session.tweaks).toHaveLength(3)
+    expect(session.tweaks.map((t) => t.bp)).toEqual([0, 375, 768])
     // Old hardcoded values gone.
     expect(out).not.toContain('font-size: 42px')
     expect(out).not.toContain('font-size: 32px')
     expect(out).not.toContain('font-size: 30px')
-    // Token at top-level + 3 @container (1440 newly created; 768 + 375
-    // dedupe-updated in place per emitTweak Case C).
+    // Token at top-level + 768 + 375 (no 1440 — no source conflict there).
     const matches = out.match(/font-size:\s*var\(--h2-font-size\)/g) ?? []
-    expect(matches.length).toBe(4)
-    // Sibling decls preserved.
+    expect(matches.length).toBe(3)
+    expect(out).not.toContain('@container slot (max-width: 1440px)')
+    // Sibling decls preserved per emitTweak Case C contract.
     expect(out).toContain('color: black')
     expect(out).toContain('line-height: 1.2')
     expect(out).toContain('line-height: 36px')
-    // 3 canonical @container blocks present.
-    expect(out).toContain('@container slot (max-width: 1440px)')
-    expect(out).toContain('@container slot (max-width: 768px)')
-    expect(out).toContain('@container slot (max-width: 375px)')
   })
 
-  it('chip apply on property without pre-existing @container conflicts creates 3 redundant blocks (acceptable Path A tradeoff)', () => {
-    // Author had only top-level rule, no @container overrides. Path A still
-    // emits 4 tweaks → 3 new @container blocks created with same token value.
-    // Cascade resolves correctly (browser's clamp does the work); source CSS
-    // gains 3 redundant blocks — documented Path A tradeoff.
+  it('no-conflict source — emits ONLY bp:0 (no redundant @container blocks)', () => {
     const baseCss = '.x { font-size: 16px; }'
-    let session = createSession()
-    for (const bp of [0, 375, 768, 1440] as const) {
-      session = addTweak(session, {
-        selector: '.x',
-        bp,
-        property: 'font-size',
-        value: 'var(--text-sm-font-size)',
-      })
-    }
-    const out = composeTweakedCss(baseCss, session.tweaks)
-    expect(out).toContain('@container slot (max-width: 1440px)')
-    expect(out).toContain('@container slot (max-width: 768px)')
-    expect(out).toContain('@container slot (max-width: 375px)')
+    const { session, out } = smartApplyToken(baseCss, '.x', 'font-size', '--text-sm-font-size')
+
+    // Smart emit: 1 tweak only.
+    expect(session.tweaks).toHaveLength(1)
+    expect(session.tweaks[0]).toMatchObject({ bp: 0, selector: '.x', property: 'font-size' })
+    // Zero @container blocks created.
+    expect(out).not.toContain('@container slot (max-width: 375px)')
+    expect(out).not.toContain('@container slot (max-width: 768px)')
+    expect(out).not.toContain('@container slot (max-width: 1440px)')
     const matches = out.match(/font-size:\s*var\(--text-sm-font-size\)/g) ?? []
-    expect(matches.length).toBe(4)
+    expect(matches.length).toBe(1)
   })
 })

@@ -18,5 +18,6 @@ export { generateSuggestions } from './rules'
 
 export { applySuggestions } from './compose/apply-suggestions'
 export { emitTweak } from './compose/emit-tweak'
+export { findConflictBps } from './compose/find-conflict-bps'
 export { composeVariants } from './compose/compose-variants'
 export { renderForPreview } from './compose/render-preview'
