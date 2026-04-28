@@ -373,19 +373,29 @@ Studio adds the SAME `block-forge:inspector-request-hover` listener at
 
 > Cross-surface mirror — block-forge owns `tools/block-forge/src/lib/property-meta.ts` + `packages/ui/src/primitives/tooltip.tsx`. Studio mirrors property-meta.ts byte-identically (mod 3-line JSDoc header).
 
-### PARITY divergence formalized (Phase 0 RECON Ruling 1B)
+### PropertyRow shape — UNIFIED (WP-040)
 
-Studio's `PropertyRow.tsx` + `InspectorPanel.tsx` are on the **3-BP M/T/D
-grid** shape (per WP-033 Phase 4 mirror); block-forge's are on **single-cell
-post-WP-033 polish** shape. The "byte-identical mod 3-line JSDoc header"
-claim in §"Inspector (Phase 4 — WP-033)" above is **stale at the row-shape
-level**. WP-037 introduces shape-agnostic content metadata and renders
-adapt to each shape:
+Studio's `PropertyRow.tsx` + `InspectorPanel.tsx` are byte-identical to
+the block-forge mirror mod 3-line JSDoc header + `'./property-meta'`
+import path. The **single-cell row shape** wins on both surfaces — the
+M/T/D 3-cell grid that Studio used pre-WP-040 is retired. The BP picker
+(`inspector-bp-{375|768|1440}` radiogroup) is the canonical BP-switch
+primitive on both surfaces.
 
-- **Studio**: only the active M/T/D cell renders `<select>` for enum
-  properties; inactive cells stay text spans. Switch BP via ↗ first to
-  edit a different BP.
-- **block-forge**: the single editable cell renders `<select>`.
+Brain ruling (WP-040 Phase 0 RECON Option B): single-cell wins because
+the BP picker already covers BP switching, the Forge single-cell shape
+was driven by user feedback ("three BP cells overwhelmed and required
+users to mentally diff three numbers"), and the Forge shape carries
+richer affordances (parseValueUnit/normalizeWithUnit unit-aware editing,
+↺ revert button slot).
+
+> **Historical:** WP-037 Phase 0 RECON Ruling 1B formalized the
+> divergence as a temporary debt. WP-040 retires Ruling 1B by porting
+> Studio to the single-cell shape.
+
+WP-037's content layer (`PROPERTY_META`) was always shape-agnostic — the
+editable cell renders `<select>` for enum properties, custom values
+prepend a disabled `(custom)` option.
 
 ### Phase 1 — typed enum inputs
 

@@ -16,6 +16,7 @@
 | Silver | Phase 1: PROPERTY_META + `<select>` for 4 LAYOUT enum properties cross-surface | commit `b49c2cd7`; +20 enum-rendering tests |
 | Gold | Phase 2: Radix Tooltip primitive in packages/ui + label hover hints + visual smoke | commit `37acf1a6`; +8 tooltip tests + 5 smoke screenshots |
 | Platinum | Phase 3 Close — PARITY trio + SKILL flips + CONVENTIONS + status flip + atomic doc batch | this commit (TBD SHA) |
+| Diamond (post-WP-037 polish) | PARITY Ruling 1B retired in WP-040 — Studio ported to single-cell row shape; PropertyRow + InspectorPanel byte-identical to Forge mod 3-line JSDoc | WP-040 commit `a8275e25` |
 
 ---
 

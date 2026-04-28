@@ -468,19 +468,28 @@ byte-identical.
 
 > **Studio mirror:** `apps/studio/src/pages/block-editor/responsive/inspector/property-meta.ts` + `PropertyRow.tsx`. PROPERTY_META content byte-identical between surfaces.
 
-### PARITY divergence formalized (Phase 0 RECON Ruling 1B)
+### PropertyRow shape — UNIFIED (WP-040)
 
-The §"Inspector (Phase 4 — WP-033)" claim above that "Inspector internals are byte-identical mod 3-line JSDoc headers" is **not currently true for `PropertyRow.tsx` + `InspectorPanel.tsx`**:
+Both surfaces ship the **single-cell row shape**. PropertyRow + InspectorPanel
+are byte-identical between Forge + Studio mod 3-line JSDoc headers + import
+paths. The BP picker (`inspector-bp-{375|768|1440}` radiogroup) is the
+canonical BP-switch primitive on both surfaces — the M/T/D 3-cell grid
+that Studio used pre-WP-040 is retired.
 
-| File | block-forge shape | Studio shape |
-|---|---|---|
-| `PropertyRow.tsx` | Single-cell (post-WP-033 polish: `value` / `onEdit` / `onRevert` + unit-handling via `parseValueUnit` / `normalizeWithUnit`) | 3-BP M/T/D grid (`valuesByBp` / `activeBp` / `onBpSwitch` / `onCellEdit`) |
-| `InspectorPanel.tsx` | Single-cell wiring (`value={valueOf(prop)}` + `onEdit={editProp(prop)}`) | M/T/D wiring (`valuesByBp={sourceByBp(prop)}` + `onCellEdit={editProp(prop)}`) |
+Brain ruling (WP-040 Phase 0 RECON Option B): single-cell wins because
+the BP picker already covers BP switching on both surfaces, the Forge
+single-cell shape was driven by user feedback ("three BP cells overwhelmed
+and required users to mentally diff three numbers"), and the Forge shape
+carries richer affordances (parseValueUnit/normalizeWithUnit unit-aware
+editing, ↺ revert button slot).
 
-WP-037 **does not** restore parity at the row-shape level — that is a separate larger workpackage. Instead WP-037 introduces a shape-agnostic content layer (`PROPERTY_META`) and renders enum `<select>` adapted per surface:
+> **Historical:** WP-037 Phase 0 RECON Ruling 1B formalized the
+> divergence as a temporary debt. WP-040 retires Ruling 1B by porting
+> Studio to the single-cell shape.
 
-- **block-forge**: single editable cell renders `<select>` for enum properties.
-- **Studio**: only the active M/T/D cell renders `<select>`; inactive cells stay text spans (per the existing "switch via ↗ to edit elsewhere" UX).
+WP-037's content layer (`PROPERTY_META`) was always shape-agnostic — both
+surfaces render enum `<select>` in the editable cell, custom values
+prepend a disabled `(custom)` option.
 
 ### Phase 1 — typed enum inputs
 
@@ -554,7 +563,6 @@ Pre-flight commit `3a4f345c` landed the polish + regenerated tests in one atomic
 
 ### Known limitations
 
-- **PARITY divergence on PropertyRow row-shape persists** — restoring it (porting Studio to single-cell, or porting block-forge back to M/T/D) is a separate WP candidate; WP-037 does not touch.
 - **Tooltip primitive is desktop-only by design** — Radix mobile fallback is long-press; Inspector authoring is not a mobile use case.
 - **Native `<select>` chevron rendering is OS-controlled** — visual smoke at WP-037 Phase 2 confirmed Chromium rendering is acceptable. Future polish could swap to Radix Select for cross-browser consistency if field data warrants.
 
