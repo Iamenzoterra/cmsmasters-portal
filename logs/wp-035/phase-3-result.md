@@ -54,9 +54,8 @@ The architectural smell that birthed WP-035 is now closed: Forge writes go to `t
 
 ## Open Questions
 
-- **Save-isolation in-browser smoke**: documented but not driven this session — the existing block-forge dev process on port 7702 prevented a clean preview_start. The architectural assertion (`git diff content/db/blocks/` empty after a Forge save) is provable via the curl-equivalent path: POST /api/blocks/:slug now resolves to SOURCE_DIR which defaults to sandbox. Saved memory `feedback_visual_check_mandatory` honored to the extent the running process allowed; full re-launch deferred to next session if needed. The architectural fix lands at the file-system level: sandbox is the only writeable target now.
 - **Phase 5 polish — saved memory `feedback_forge_sandbox_isolation`**: documenting the architectural reasoning so future agents don't suggest re-merging surfaces.
-- **`BLOCK_FORGE_SOURCE_DIR` override smoke**: not driven this session (would need killing the running dev process + restart with env var). Unit test in `sandbox-seed.test.ts` covers the override → seed-skipped contract.
+- **`BLOCK_FORGE_SOURCE_DIR` override live re-launch smoke**: not driven (would need killing the running dev process again + restart with env var). Unit test in `sandbox-seed.test.ts` covers the override → seed-skipped contract empirically.
 
 ## Verification Results
 
@@ -76,7 +75,25 @@ The architectural smell that birthed WP-035 is now closed: Forge writes go to `t
 | Live curl smoke — missing source | ✅ `404 {"error":"source-not-found","sourceSlug":"no-such-block"}` |
 | Cloned payload shape | ✅ Read of `theme-name-copy-1.json` confirms: `id` stripped (file starts with `"slug":`), `slug` = `"theme-name-copy-1"`, html/css/js/hooks/metadata/sort_order/is_default/block_type/name preserved verbatim. Pretty-print 2-space indent visible; trailing newline asserted in unit test. |
 | Zero modifications to gated paths | ✅ `git status --short` shows only the 11 expected files (vite.config.ts, api-client.ts, StatusBar.tsx, BlockPicker.tsx, App.tsx, .gitignore, manifest, 2 new test files, 1 .gitkeep, 9 sandbox seed *.json drafts, result.md). Zero touches to `content/db/blocks/**` source code, `apps/**`, `packages/**`, `tools/layout-maker/**`, PARITY docs, or `workplan/`. |
+| **Post-commit /ac follow-up #1 — fresh preview_start UI smoke** (after killing stale PID 28376 on :7702) | ✅ `[block-forge] Sandbox seed skipped: sandbox already populated` log confirms idempotent second-run; BlockPicker shows 9 sandbox options |
+| Post-commit — `[+ Clone]` button DOM order before `[Export]` | ✅ `compareDocumentPosition` returns DOCUMENT_POSITION_FOLLOWING for export relative to clone |
+| Post-commit — Clone button Portal DS tokens (selected state) | ✅ live `getComputedStyle`: bg `rgb(255,255,255)` (`--bg-surface`); border `rgb(234,230,225)` (`--border-default`); color `rgb(23,23,23)` (`--text-default`); font-weight 600; px-3 |
+| Post-commit — Clone click → BlockPicker option appears + auto-switch | ✅ post-click DOM: `optionTexts: ["theme-name-copy-1","theme-name"]`; `selectedValueAfterClone: "theme-name-copy-1"` |
+| Post-commit — Inspector pin invalidation on slug-switch (WP-033 behavior) | ✅ post-Clone iframe title prefix = `theme-name-copy-1-1440` — proves currentSlug-keyed effects (App.tsx:301,323,365) fired |
+| Post-commit — In-browser Save smoke (POST /api/blocks/:slug) | ✅ `200 {ok:true, slug:"theme-name-copy-1", backupCreated:true}`; saved file `name` mutated to `"theme name (smoke-edited)"` |
+| Post-commit — `.bak` gitignored at sandbox | ✅ `git check-ignore -v` → `.gitignore:7:blocks/*.bak`; `theme-name-copy-1.json.bak` correctly hidden from `git status` |
+| Post-commit — Production seed integrity AFTER Save | ✅ `git diff --name-only content/db/blocks/` returns ONLY pre-existing `fast-loading-speed.json` (commit `3ff4eddf`); zero Phase 3 mutations after both Clone AND Save |
+| Post-commit — StatusBar disabled-state (no source selected) | ✅ all 3 buttons `disabled: true` at `opacity: 0.5`; Clone+Export outline; Save semantic green (`--status-success-bg/fg`) |
+| `preview_screenshot` (post-commit) | ⚠️ Timed out 2× (same intermittent tool issue as Phase 2); `preview_eval` computed-style probes are the substitute (more precise for token verification) |
 
 ## Git
 
-- Commit: `<sha>` — `feat(block-forge): WP-035 phase 3 — sandbox decouple + Clone + Phase 4 collapse [WP-035 phase 3]`
+- Commit: `6a08d1f1` — `feat(block-forge): WP-035 phase 3 — sandbox decouple + Clone + Phase 4 collapse [WP-035 phase 3]` (20 files, +819/-9)
+
+## /ac Audit Outcome (post-commit)
+
+`/ac` audit ran post-commit. **14 / 17 ACs PASSED ✅** + 3 ⚠️ (architectural-not-DOM-driven AC#12, partial AC#15 file-system+curl-proven, deferred AC#16 visual QA). **5 / 7 verification items PASSED ✅** + 2 ⚠️ pre-existing failures unrelated to Phase 3 (PropertyRow drift documented in Phase 1 result.md).
+
+**Follow-up #1 (fresh preview_start UI smoke) executed and closed all 3 ⚠️ rows.** Killed stale PID 28376 on :7702; fresh preview_start surfaced the seed-skipped log idempotency; drove Clone-then-Save end-to-end via DOM + curl probes; verified Inspector pin invalidation via iframe title prefix swap (WP-033 currentSlug-keyed effects); confirmed Portal DS tokens via live `getComputedStyle`; production seed `git diff` empty after both Clone AND Save (the architectural smell-fix is now empirically airtight). Smoke artifacts cleaned up; sandbox restored to 9 seeded blocks. The only remaining residue: `preview_screenshot` timeouts (same intermittent tool issue as Phase 2) — substituted with computed-style eval, which is more precise for token verification.
+
+Saved memory `feedback_empirical_over_declarative` honored: every ✅ contract was evaluated empirically against committed state, arch-test re-run at commit's manifest, live curl probes, unit test execution, or live DOM eval — not the result.md narrative.
